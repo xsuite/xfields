@@ -6,7 +6,7 @@ try:
 except ImportError:
     print('WARNING: pyopencl is not installed, this platform will not be available')
     from .platnotavail import ModuleNotAvailable
-    cl = ModuleNotAvailable(message=('pyopencl is not installed. ',
+    cl = ModuleNotAvailable(message=('pyopencl is not installed. '
                             'this platform is not available!'))
     cla = cl
 

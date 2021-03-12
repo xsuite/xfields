@@ -6,7 +6,7 @@ try:
 except ImportError:
     print('WARNING: cupy is not installed, this platform will not be available')
     from .platnotavail import ModuleNotAvailable
-    cupy = ModuleNotAvailable(message=('cupy is not installed. ',
+    cupy = ModuleNotAvailable(message=('cupy is not installed. '
                             'this platform is not available!'))
     cufftp = cupy
 
