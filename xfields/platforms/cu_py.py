@@ -18,7 +18,7 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(object):
 
-    """Creates a Cupy Platform object, that allows performing the 
+    """Creates a Cupy Platform object, that allows performing the
     computations     on nVidia GPUs.
 
     Args:
@@ -149,11 +149,12 @@ class XfCupyPlatform(object):
                 'num_threads_from_arg': 'nparticles'
                 },}
 
+            # Import kernel in platform
             platform.add_kernels(src_code, kernel_descriptions)
 
             # With a1 and a2 being arrays on the platform, the kernel
             # can be called as follows:
-            platform.kernels.my_mul(n=len(a1), x1=a1, x2-a2)
+            platform.kernels.my_mul(n=len(a1), x1=a1, x2=a2)
         """
 
         src_content = 'extern "C"{'
