@@ -17,10 +17,14 @@ class MinimalDotDict(dict):
         return self.get(attr)
 
 class XfCupyPlatform(object):
+    """
+    Test class docstring
+    The device can be selected globally using cupy.cuda.Device
+    """
 
     def __init__(self, default_kernels=True, default_block_size=256):
 
-        'The device can be selected globally using cupy.cuda.Device'
+       
 
         self.default_block_size = default_block_size
         self.kernels = MinimalDotDict()
@@ -31,6 +35,9 @@ class XfCupyPlatform(object):
 
     @property
     def nplike_lib(self):
+        """
+        Test method docstring
+        """
         return cupy
 
     def nparray_to_platform_mem(self, arr):
