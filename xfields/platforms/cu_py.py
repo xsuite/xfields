@@ -18,27 +18,30 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(object):
 
-    """"Compute the one-dimensional inverse FFT.
-    
+    """COOrdinate format sparse matrix.
+
+    Now it has only one initializer format below:
+
+    ``coo_matrix(S)``
+        ``S`` is another sparse matrix. It is equivalent to ``S.tocoo()``.
+
+    ``coo_matrix((M, N), [dtype])``
+        It constructs an empty matrix whose shape is ``(M, N)``. Default dtype
+        is float64.
+
+    ``coo_matrix((data, (row, col))``
+        All ``data``, ``row`` and ``col`` are one-dimenaional
+        :class:`cupy.ndarray`.
+
     Args:
-        default_kernels (bool): Defines whether the Xfields default kernels are 
-            imported by the platform.
-        n (None or int): Length of the transformed axis of the output. If ``n``
-            is not given, the length of the input along the axis specified by
-            ``axis`` is used.
-        axis (int): Axis over which to compute the FFT.
-        norm (None or ``'ortho'``): Normalization mode.
-        overwrite_x (bool): If True, the contents of ``x`` can be destroyed.
-        plan (:class:`cupy.cuda.cufft.Plan1d` or ``None``): a cuFFT plan for
-            transforming ``x`` over ``axis``, which can be obtained using::
-                plan = cupyx.scipy.fftpack.get_fft_plan(x, n, axis)
-            Note that ``plan`` is defaulted to ``None``, meaning CuPy will use
-            an auto-generated plan behind the scene.
-    Returns:
-        cupy.ndarray:
-            The transformed array which shape is specified by ``n`` and type
-            will convert to complex if that of the input is another.
-    .. seealso:: :func:`scipy.fft.ifft`
+        arg1: Arguments for the initializer.
+        shape (tuple): Shape of a matrix. Its length must be two.
+        dtype: Data type. It must be an argument of :class:`numpy.dtype`.
+        copy (bool): If ``True``, copies of given data are always used.
+
+    .. seealso::
+       :class:`scipy.sparse.coo_matrix`
+
     """
 
     def __init__(self, default_kernels=True, default_block_size=256):
