@@ -18,37 +18,19 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(object):
 
-    """Creates an array on the current device.
-
-    This function currently does not support the ``subok`` option.
+    """Creates a Cupy Platform object, that allows performing the computation
+    on nVidia GPUs.
 
     Args:
-        obj: :class:`cupy.ndarray` object or any other object that can be
-            passed to :func:`numpy.array`.
-        dtype: Data type specifier.
-        copy (bool): If ``False``, this function returns ``obj`` if possible.
-            Otherwise this function always returns a new array.
-        order ({'C', 'F', 'A', 'K'}): Row-major (C-style) or column-major
-            (Fortran-style) order.
-            When ``order`` is ``'A'``, it uses ``'F'`` if ``a`` is column-major
-            and uses ``'C'`` otherwise.
-            And when ``order`` is ``'K'``, it keeps strides as closely as
-            possible.
-            If ``obj`` is :class:`numpy.ndarray`, the function returns ``'C'``
-            or ``'F'`` order array.
-        subok (bool): If ``True``, then sub-classes will be passed-through,
-            otherwise the returned array will be forced to be a base-class
-            array (default).
-        ndmin (int): Minimum number of dimensions. Ones are inserted to the
-            head of the shape if needed.
+        default_kernels (bool): If ``True``, the Xfields defult kernel are 
+            automatically imported.
+        default_block_size (int): Defined the CUDA thread size that is used
+            for kernel execution in case a block size is not specified 
+            directly in the kernel object. The default value is 256.
 
     Returns:
         cupy.ndarray: An array on the current device.
 
-    .. note::
-       This method currently does not support ``subok`` argument.
-
-    .. seealso:: :func:`numpy.array`
 
     """
 
@@ -64,7 +46,14 @@ class XfCupyPlatform(object):
     @property
     def nplike_lib(self):
         """
-        Test method docstring
+        Module containing all the numpy features supported by cupy.
+       
+        Example:
+            platform =  XfCupyPlatform()
+            nplike = platform.nplike_lib
+            
+            # This returns an array of zeros on the computing device (GPU):
+            a = nplike.zeros((10,10), dtype=nplike.float64) 
         """
         return cupy
 

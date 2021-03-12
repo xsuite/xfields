@@ -9,4 +9,3 @@ TODO: explain default kernels.
 .. automodule:: xfields.platforms
     :members:
     :undoc-members:
-    :show-inheritance:
