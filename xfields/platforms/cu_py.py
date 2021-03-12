@@ -73,6 +73,7 @@ class XfCupyPlatform(object):
 
     def nparray_from_platform_mem(self, dev_arr):
         """Copies an array to the device to a numpy array.
+        
         Args:
             dev_arr (cupy.ndarray): Array to be transferred/
         Returns:
@@ -83,6 +84,7 @@ class XfCupyPlatform(object):
 
     def plan_FFT(self, data, axes, ):
         """Generate an FFT plan object to be executed on the platform.
+
         Args:
             data (cupy.ndarray): Array having type and shape for which the FFT
                 needs to be planned.
