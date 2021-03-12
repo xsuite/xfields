@@ -18,19 +18,18 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(object):
 
-    """Creates a Cupy Platform object, that allows performing the computation
+    """Creates a Cupy Platform object, that allows performing the computations
     on nVidia GPUs.
 
     Args:
-        default_kernels (bool): If ``True``, the Xfields defult kernel are 
+        default_kernels (bool): If ``True``, the Xfields defult kernels are 
             automatically imported.
-        default_block_size (int): Defined the CUDA thread size that is used
+        default_block_size (int):  CUDA thread size that is used by default
             for kernel execution in case a block size is not specified 
             directly in the kernel object. The default value is 256.
 
     Returns:
-        cupy.ndarray: An array on the current device.
-
+        XfCupyPlatform: platform object.
 
     """
 
@@ -49,11 +48,12 @@ class XfCupyPlatform(object):
         Module containing all the numpy features supported by cupy.
        
         Example:
-        
+
         .. code-block:: python
 
-            platform =  XfCupyPlatform(
+            platform =  XfCupyPlatform()
             nplike = platform.nplike_lib
+            
             # This returns an array of zeros on the computing device (GPU):
             a = nplike.zeros((10,10), dtype=nplike.float64) 
             
@@ -61,10 +61,25 @@ class XfCupyPlatform(object):
         return cupy
 
     def nparray_to_platform_mem(self, arr):
+         """Copies a numpy array to the device memory.
+        Args:
+            arr (np.ndarray): Array to be transferred
+        Returns:
+            cupy.ndarray: the same array copied to the device.
+        """
         dev_arr = cupy.array(arr)
         return dev_arr
 
     def nparray_from_platform_mem(self, dev_arr):
+        """Copies a numpy array to the device memory.
+
+        Args:
+            arr (np.ndarray): Array to be transferred
+
+        Returns:
+            cupy.ndarray: the same array copied to the device.
+
+        """
         
         return dev_arr.get()
 
