@@ -49,8 +49,9 @@ class XfCupyPlatform(object):
         Module containing all the numpy features supported by cupy.
        
         Example:
-        .. code-block:: python
         
+        .. code-block:: python
+
             platform =  XfCupyPlatform(
             nplike = platform.nplike_lib
             # This returns an array of zeros on the computing device (GPU):
