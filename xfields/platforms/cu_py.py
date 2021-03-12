@@ -22,11 +22,11 @@ class XfCupyPlatform(object):
     on nVidia GPUs.
 
     Args:
-        default_kernels (bool): If ``True``, the Xfields defult kernels are 
+        default_kernels (bool): If ``True``, the Xfields defult kernels are
             automatically imported.
         default_block_size (int):  CUDA thread size that is used by default
-            for kernel execution in case a block size is not specified 
-            directly in the kernel object. The default value is 256. 
+            for kernel execution in case a block size is not specified
+            directly in the kernel object. The default value is 256.
     Returns:
         XfCupyPlatform: platform object.
 
@@ -45,17 +45,17 @@ class XfCupyPlatform(object):
     def nplike_lib(self):
         """
         Module containing all the numpy features supported by cupy.
-       
+
         Example:
 
         .. code-block:: python
 
             platform =  XfCupyPlatform()
             nplike = platform.nplike_lib
-            
+
             # This returns an array of zeros on the computing device (GPU):
-            a = nplike.zeros((10,10), dtype=nplike.float64) 
-            
+            a = nplike.zeros((10,10), dtype=nplike.float64
+
         """
         return cupy
 
@@ -73,7 +73,7 @@ class XfCupyPlatform(object):
 
     def nparray_from_platform_mem(self, dev_arr):
         """Copies an array to the device to a numpy array.
-        
+
         Args:
             dev_arr (cupy.ndarray): Array to be transferred/
         Returns:
@@ -88,7 +88,7 @@ class XfCupyPlatform(object):
         Args:
             data (cupy.ndarray): Array having type and shape for which the FFT
                 needs to be planned.
-            axes (sequence of ints): Axes along which the FFT needs to be performed.       
+            axes (sequence of ints): Axes along which the FFT needs to be performed.
         Returns:
             XfCupyFFT: FFT plan for the required array shape, type and axes.
 
@@ -97,13 +97,13 @@ class XfCupyPlatform(object):
         .. code-block:: python
 
             plan = platform.plan_FFT(data, axes=(0,1))
-            
+
             data2 = 2*data
 
-            # Forward tranform (done in place)
+            # Forward tranform (in place)
             plan.transform(data2)
 
-            # Inverse tranform (done in place)
+            # Inverse tranform (in place)
             plan.itransform(data2)
         """
         return XfCupyFFT(self, data, axes)
