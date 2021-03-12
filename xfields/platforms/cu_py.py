@@ -73,9 +73,43 @@ class XfCupyPlatform(object):
         return dev_arr
 
     def nparray_from_platform_mem(self, dev_arr):
+        
         return dev_arr.get()
 
     def plan_FFT(self, data, axes, ):
+        """Creates an array on the current device.
+
+        This function currently does not support the ``subok`` option.
+
+        Args:
+            obj: :class:`cupy.ndarray` object or any other object that can be
+                passed to :func:`numpy.array`.
+            dtype: Data type specifier.
+            copy (bool): If ``False``, this function returns ``obj`` if possible.
+                Otherwise this function always returns a new array.
+            order ({'C', 'F', 'A', 'K'}): Row-major (C-style) or column-major
+                (Fortran-style) order.
+                When ``order`` is ``'A'``, it uses ``'F'`` if ``a`` is column-major
+                and uses ``'C'`` otherwise.
+                And when ``order`` is ``'K'``, it keeps strides as closely as
+                possible.
+                If ``obj`` is :class:`numpy.ndarray`, the function returns ``'C'``
+                or ``'F'`` order array.
+            subok (bool): If ``True``, then sub-classes will be passed-through,
+                otherwise the returned array will be forced to be a base-class
+                array (default).
+            ndmin (int): Minimum number of dimensions. Ones are inserted to the
+                head of the shape if needed.
+
+        Returns:
+            cupy.ndarray: An array on the current device.
+
+        .. note::
+        This method currently does not support ``subok`` argument.
+
+        .. seealso:: :func:`numpy.array`
+
+        """
         return XfCupyFFT(self, data, axes)
 
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
