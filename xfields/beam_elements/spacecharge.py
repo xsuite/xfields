@@ -14,15 +14,19 @@ class SpaceCharge3D(object):
                  x_range=None, y_range=None, z_range=None,
                  solver=None,
                  gamma0=None,
-                 platform=XfCpuPlatform()):
+                 platform=None):
         '''
         Needed when transverse normalized distribution changes along z.
         mode can be 2.5D or 3D
         '''
 
+        if platform is None:
+            platform = XfCpuPlatform()
+
         self.length = length
         self.update_on_track = update_on_track
         self.apply_z_kick = apply_z_kick
+        self.platform=platform
 
         if solver=='FFTSolver3D':
             assert gamma0 is not None, ('To use FFTSolver3D '

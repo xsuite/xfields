@@ -12,7 +12,12 @@ class FFTSolver2D(Solver):
 
 class FFTSolver3D(Solver):
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, platform=XfCpuPlatform()):
+    def __init__(self, dx, dy, dz, nx, ny, nz, platform=None):
+
+        if platform is None:
+            platform = XfCpuPlatform()
+
+        self.platform = platform
 
         # Prepare arrays
         workspace_dev = platform.nparray_to_platform_mem(

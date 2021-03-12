@@ -15,11 +15,15 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                  solver=None,
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
-                 platform=XfCpuPlatform()):
+                 platform=None):
+
+        if platform is None:
+            platform = XfCpuPlatform()
 
         self.updatable = updatable
         self.platform = platform
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
+        self.platform=platform
 
         self._x_grid = _configure_grid('x', x_grid, dx, x_range, nx)
         self._y_grid = _configure_grid('y', y_grid, dy, y_range, ny)
