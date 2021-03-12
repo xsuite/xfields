@@ -18,29 +18,37 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(object):
 
-    """COOrdinate format sparse matrix.
+    """Creates an array on the current device.
 
-    Now it has only one initializer format below:
-
-    ``coo_matrix(S)``
-        ``S`` is another sparse matrix. It is equivalent to ``S.tocoo()``.
-
-    ``coo_matrix((M, N), [dtype])``
-        It constructs an empty matrix whose shape is ``(M, N)``. Default dtype
-        is float64.
-
-    ``coo_matrix((data, (row, col))``
-        All ``data``, ``row`` and ``col`` are one-dimenaional
-        :class:`cupy.ndarray`.
+    This function currently does not support the ``subok`` option.
 
     Args:
-        arg1: Arguments for the initializer.
-        shape (tuple): Shape of a matrix. Its length must be two.
-        dtype: Data type. It must be an argument of :class:`numpy.dtype`.
-        copy (bool): If ``True``, copies of given data are always used.
+        obj: :class:`cupy.ndarray` object or any other object that can be
+            passed to :func:`numpy.array`.
+        dtype: Data type specifier.
+        copy (bool): If ``False``, this function returns ``obj`` if possible.
+            Otherwise this function always returns a new array.
+        order ({'C', 'F', 'A', 'K'}): Row-major (C-style) or column-major
+            (Fortran-style) order.
+            When ``order`` is ``'A'``, it uses ``'F'`` if ``a`` is column-major
+            and uses ``'C'`` otherwise.
+            And when ``order`` is ``'K'``, it keeps strides as closely as
+            possible.
+            If ``obj`` is :class:`numpy.ndarray`, the function returns ``'C'``
+            or ``'F'`` order array.
+        subok (bool): If ``True``, then sub-classes will be passed-through,
+            otherwise the returned array will be forced to be a base-class
+            array (default).
+        ndmin (int): Minimum number of dimensions. Ones are inserted to the
+            head of the shape if needed.
 
-    .. seealso::
-       :class:`scipy.sparse.coo_matrix`
+    Returns:
+        cupy.ndarray: An array on the current device.
+
+    .. note::
+       This method currently does not support ``subok`` argument.
+
+    .. seealso:: :func:`numpy.array`
 
     """
 
