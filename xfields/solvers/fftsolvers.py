@@ -94,7 +94,11 @@ class FFTSolver3D(Solver):
 
 class FFTSolver2p5D(FFTSolver3D):
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, platform=XfCpuPlatform()):
+    def __init__(self, dx, dy, dz, nx, ny, nz, platform=None):
+
+        if platform is None:
+            platform = XfCpuPlatform()
+        self.platform = platform
 
         # Prepare arrays
         workspace_dev = platform.nparray_to_platform_mem(
