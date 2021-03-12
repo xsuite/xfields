@@ -61,7 +61,7 @@ class XfCupyPlatform(object):
         return cupy
 
     def nparray_to_platform_mem(self, arr):
-         """Copies a numpy array to the device memory.
+        """Copies a numpy array to the device memory.
         Args:
             arr (np.ndarray): Array to be transferred
         Returns:
