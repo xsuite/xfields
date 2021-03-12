@@ -16,7 +16,7 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
-   mysection
+   apireference
    history
    installation
 
