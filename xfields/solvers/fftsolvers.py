@@ -12,6 +12,10 @@ class FFTSolver2D(Solver):
 
 class FFTSolver3D(Solver):
 
+    '''
+    This is the fft solver
+    '''
+
     def __init__(self, dx, dy, dz, nx, ny, nz, platform=XfCpuPlatform()):
 
         # Prepare arrays
