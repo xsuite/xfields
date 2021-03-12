@@ -62,61 +62,47 @@ class XfCupyPlatform(object):
     def nparray_to_platform_mem(self, arr):
         """Copies a numpy array to the device memory.
         Args:
-            arr (np.ndarray): Array to be transferred
+            arr (numpy.ndarray): Array to be transferred
 
         Returns:
-            cupy.ndarray: the same array copied to the device.
+            cupy.ndarray:The same array copied to the device.
 
         """
         dev_arr = cupy.array(arr)
         return dev_arr
 
     def nparray_from_platform_mem(self, dev_arr):
-        """Copies a numpy array to the device memory.
-
+        """Copies an array to the device to a numpy array.
         Args:
-            arr (np.ndarray): Array to be transferred
-
+            dev_arr (cupy.ndarray): Array to be transferred/
         Returns:
-            cupy.ndarray: the same array copied to the device.
+            numpy.ndarray: The same data copied to a numpy array.
 
         """
-        
         return dev_arr.get()
 
     def plan_FFT(self, data, axes, ):
-        """Creates an array on the current device.
-
-        This function currently does not support the ``subok`` option.
-
+        """Generate an FFT plan object to be executed on the platform.
         Args:
-            obj: :class:`cupy.ndarray` object or any other object that can be
-                passed to :func:`numpy.array`.
-            dtype: Data type specifier.
-            copy (bool): If ``False``, this function returns ``obj`` if possible.
-                Otherwise this function always returns a new array.
-            order ({'C', 'F', 'A', 'K'}): Row-major (C-style) or column-major
-                (Fortran-style) order.
-                When ``order`` is ``'A'``, it uses ``'F'`` if ``a`` is column-major
-                and uses ``'C'`` otherwise.
-                And when ``order`` is ``'K'``, it keeps strides as closely as
-                possible.
-                If ``obj`` is :class:`numpy.ndarray`, the function returns ``'C'``
-                or ``'F'`` order array.
-            subok (bool): If ``True``, then sub-classes will be passed-through,
-                otherwise the returned array will be forced to be a base-class
-                array (default).
-            ndmin (int): Minimum number of dimensions. Ones are inserted to the
-                head of the shape if needed.
-
+            data (cupy.ndarray): Array having type and shape for which the FFT
+                needs to be planned.
+            axes (sequence of ints): Axes along which the FFT needs to be performed.       
         Returns:
-            cupy.ndarray: An array on the current device.
+            XfCupyFFT: FFT plan for the required array shape, type and axes.
 
-        .. note::
-        This method currently does not support ``subok`` argument.
+        Example
 
-        .. seealso:: :func:`numpy.array`
+        .. code-block:: python
 
+            plan = platform.plan_FFT(data, axes=(0,1))
+            
+            data2 = 2*data
+
+            # Forward tranform (done in place)
+            plan.transform(data2)
+
+            # Inverse tranform (done in place)
+            plan.itransform(data2)
         """
         return XfCupyFFT(self, data, axes)
 
