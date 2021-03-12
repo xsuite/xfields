@@ -1,8 +1,14 @@
 import numpy as np
 
-import cupy
-from cupyx.scipy import fftpack as cufftp
-
+try:
+    import cupy
+    from cupyx.scipy import fftpack as cufftp
+except ImportError:
+    print('WARNING: cupy is not installed, this platform will not be available')
+    from .platnotavail import ModuleNotAvailable
+    cupy = ModuleNotAvailable(message=('cupy is not installed. ',
+                            'this platform is not available!'))
+    cufftp = cupy
 
 from .default_kernels import cupy_default_kernels
 
