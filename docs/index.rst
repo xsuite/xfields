@@ -18,9 +18,11 @@ Contents:
 .. toctree::
    :maxdepth: 3
 
-   apireference
-   history
    installation
+   gettingstarted
+   apireference
+   autogeneration
+
 
 
 
