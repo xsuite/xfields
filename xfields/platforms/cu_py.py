@@ -26,8 +26,7 @@ class XfCupyPlatform(object):
             automatically imported.
         default_block_size (int):  CUDA thread size that is used by default
             for kernel execution in case a block size is not specified 
-            directly in the kernel object. The default value is 256.
-
+            directly in the kernel object. The default value is 256. 
     Returns:
         XfCupyPlatform: platform object.
 
@@ -67,7 +66,7 @@ class XfCupyPlatform(object):
 
         Returns:
             cupy.ndarray: the same array copied to the device.
-            
+
         """
         dev_arr = cupy.array(arr)
         return dev_arr
