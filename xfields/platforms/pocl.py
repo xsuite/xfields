@@ -1,5 +1,7 @@
 import numpy as np
 
+from .base import XfBasePlatform
+
 try:
     import pyopencl as cl
     import pyopencl.array as cla
@@ -16,7 +18,7 @@ class MinimalDotDict(dict):
     def __getattr__(self, attr):
         return self.get(attr)
 
-class XfPoclPlatform(object):
+class XfPoclPlatform(XfBasePlatform):
 
     def __init__(self, pocl_context=None, command_queue=None, default_kernels=True):
 

@@ -1,5 +1,7 @@
 import numpy as np
 
+from .base import XfBasePlatform
+
 try:
     import cupy
     from cupyx.scipy import fftpack as cufftp
@@ -16,7 +18,7 @@ class MinimalDotDict(dict):
     def __getattr__(self, attr):
         return self.get(attr)
 
-class XfCupyPlatform(object):
+class XfCupyPlatform(XfBasePlatform):
 
     """Creates a Cupy Platform object, that allows performing the
     computations     on nVidia GPUs.

@@ -2,6 +2,7 @@ import ctypes
 
 import numpy as np
 
+from .base import XfBasePlatform
 from .default_kernels import cpu_default_kernels
 
 class MinimalDotDict(dict):

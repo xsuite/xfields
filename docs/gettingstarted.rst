@@ -2,5 +2,5 @@ Getting Started Guide
 =====================
 
 
- For installation see :ref:`anchor text <installation-page>`
+ For installation see :doc:`installation`
 
