@@ -80,6 +80,29 @@ event = knl_copy_array_fcont(queue, (nelem,), None,
         buffer_dest, strides_dest.data, offset_dest)
 event.wait()
 
+def mycopy(src, dest):
+    assert src.shape == dest.shape
+    assert src.dtype.itemsize == dest.dtype.itemsize
+    shape = cla.to_device(queue, np.array(src.shape, dtype=np.int32))
+    ndim = np.int32(len(shape))
+    nelem = np.int32(np.prod(src.shape))
+    itemzisize = np.int32(src.dtype.itemsize)
+    buffer_src = src.base_data
+    strides_src = cla.to_device(src.queue,
+            np.array(src.strides, dtype=np.int32))
+    offset_src = np.int32(src.offset)
+    buffer_dest = dest.base_data
+    strides_dest = cla.to_device(src.queue,
+            np.array(dest.strides, dtype=np.int32))
+    offset_dest = np.int32(dest.offset)
+
+    event = knl_copy_array_fcont(src.queue, (nelem,), None,
+            # args:
+            ndim,  nelem, shape.data, itemzisize,
+            buffer_src, strides_src.data, offset_src,
+            buffer_dest, strides_dest.data, offset_dest)
+    event.wait()
+
 def mysetitem(self, *args, **kwargs):
 
     try:
@@ -87,43 +110,23 @@ def mysetitem(self, *args, **kwargs):
     except NotImplementedError:
         dest = self[args[0]]
         src = args[1]
+        mycopy(src, dest)
 
-        assert src.flags.f_contiguous
-        assert dest.flags.f_contiguous
-
-        assert src.shape == dest.shape
-        assert src.dtype.itemsize == dest.dtype.itemsize
-        shape = cla.to_device(queue, np.array(src.shape, dtype=np.int32))
-        ndim = np.int32(len(shape))
-        nelem = np.int32(np.prod(src.shape))
-        itemzisize = np.int32(src.dtype.itemsize)
-        buffer_src = src.base_data
-        strides_src = cla.to_device(self.queue,
-                np.array(src.strides, dtype=np.int32))
-        offset_src = np.int32(src.offset)
-        buffer_dest = dest.base_data
-        strides_dest = cla.to_device(self.queue,
-                np.array(dest.strides, dtype=np.int32))
-        offset_dest = np.int32(dest.offset)
-
-        event = knl_copy_array_fcont(self.queue, (nelem,), None,
-                # args:
-                ndim,  nelem, shape.data, itemzisize,
-                buffer_src, strides_src.data, offset_src,
-                buffer_dest, strides_dest.data, offset_dest)
-        event.wait()
-
-# def myget(self):
-#     try:
-#         return self.get()
-#     except AssertionError:
-#         res = cla.zeros(self.queue, shape=self.shape,
-#                 dtype=self.dtype, 
+def myget(self):
+    try:
+        return self._old_get()
+    except AssertionError:
+        res = cla.zeros(self.queue, shape=self.shape,
+                dtype=self.dtype, order='F')
+        mycopy(self, res)
+        return res.get()
 
 if not hasattr(cla.Array, '_old_setitem'):
     cla.Array._old_setitem = cla.Array.__setitem__
     cla.Array.__setitem__ = mysetitem
 
+    cla.Array._old_get = cla.Array.get
+    cla.Array.get = myget
 
 
 a_cont = cla.to_device(queue=platform.command_queue,
