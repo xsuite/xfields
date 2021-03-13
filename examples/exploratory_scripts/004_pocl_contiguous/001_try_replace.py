@@ -104,7 +104,6 @@ def mycopy(src, dest):
     event.wait()
 
 def mysetitem(self, *args, **kwargs):
-
     try:
         self._old_setitem(*args, **kwargs)
     except NotImplementedError:
@@ -116,12 +115,18 @@ def myget(self):
     try:
         return self._old_get()
     except AssertionError:
-        res = cla.zeros(self.queue, shape=self.shape,
-                dtype=self.dtype, order='F')
+        res = self._cont_zeros_like_me()
         mycopy(self, res)
         return res.get()
 
+def _cont_zeros_like_me(self):
+     res = cla.zeros(self.queue, shape=self.shape, dtype=self.dtype,
+                order={True:'F', False:'C'}[self.strides[0]<self.strides[-1]])
+     return res
+
 if not hasattr(cla.Array, '_old_setitem'):
+
+    cla.Array._cont_zeros_like_me = _cont_zeros_like_me
     cla.Array._old_setitem = cla.Array.__setitem__
     cla.Array.__setitem__ = mysetitem
 
