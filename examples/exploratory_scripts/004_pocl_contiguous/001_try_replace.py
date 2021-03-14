@@ -72,7 +72,10 @@ def _infer_fccont(arr):
 def copy_non_cont(src, dest):
 
     assert src.shape == dest.shape
-    assert src.dtype == dest.dtype
+
+    # The case float -> complex just works (by using the src itemsize)
+    if not(src.dtype == np.float64 and dest.dtype == np.complex128):
+        assert src.dtype == dest.dtype
 
     if src.strides[0] != src.strides[-1]: # check is needed for 1d arrays
         assert _infer_fccont(src) == _infer_fccont(dest)
@@ -194,4 +197,4 @@ c_cont = cla.to_device(queue=platform.command_queue,
              dtype=np.complex128))
 
 c = c_cont[1:, 1:]
-# c[:, :] = b
+c[:, :] = a
