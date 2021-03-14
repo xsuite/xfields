@@ -136,7 +136,7 @@ plt.plot(r_test, e_ref)
 plt.grid(True)
 
 # Check integral
-int_rho = np.sum(fmap.rho)*fmap.dx*fmap.dy*fmap.dz
+int_rho = np.sum(platf2np(fmap.rho))*fmap.dx*fmap.dy*fmap.dz
 assert np.isclose(int_rho, len(x))
 
 

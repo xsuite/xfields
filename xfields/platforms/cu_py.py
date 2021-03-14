@@ -61,6 +61,9 @@ class XfCupyPlatform(XfBasePlatform):
         """
         return cupy
 
+    def zeros(self, *args, **kwargs):
+        self.nplike_lib.zeros(*args, **kwargs)
+
     def nparray_to_platform_mem(self, arr):
         """Copies a numpy array to the device memory.
         Args:

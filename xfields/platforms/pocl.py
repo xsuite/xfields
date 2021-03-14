@@ -47,6 +47,10 @@ class XfPoclPlatform(XfBasePlatform):
     def nplike_lib(self):
         return cla
 
+    def zeros(self, *args, **kwargs):
+        return self.nplike_lib.zeros(queue=self.command_queue, *args, **kwargs)
+
+
     def nparray_to_platform_mem(self, arr):
         dev_arr = cla.to_device(self.command_queue, arr)
         return dev_arr

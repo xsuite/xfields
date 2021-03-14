@@ -130,8 +130,8 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         pos_in_buffer_of_maps_to_interp = self.platform.nparray_to_platform_mem(
                         np.array(pos_in_buffer_of_maps_to_interp, dtype=np.int32))
         nmaps_to_interp = len(pos_in_buffer_of_maps_to_interp)
-        buffer_out = self.platform.nplike_lib.zeros(
-                nmaps_to_interp * len(x), dtype=np.float64)
+        buffer_out = self.platform.zeros(
+                shape=(nmaps_to_interp * len(x),), dtype=np.float64)
         if nmaps_to_interp > 0:
             self.platform.kernels.m2p_rectmesh3d(
                     nparticles=len(x),
@@ -172,12 +172,20 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             raise ValueError('Not implemented!')
 
         # Compute gradient
+        # self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
+        #         self._phi_dev[2:,:,:]-self._phi_dev[:-2,:,:])
+        # self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
+        #         self._phi_dev[:,2:,:]-self._phi_dev[:,:-2,:])
+        # self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
+        #         self._phi_dev[:,:,2:]-self._phi_dev[:,:,:-2])
+
+        # Copies are needed only for pocl
         self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
-                self._phi_dev[2:,:,:]-self._phi_dev[:-2,:,:])
+                self._phi_dev[2:,:,:].copy()-self._phi_dev[:-2,:,:].copy())
         self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
-                self._phi_dev[:,2:,:]-self._phi_dev[:,:-2,:])
+                self._phi_dev[:,2:,:].copy()-self._phi_dev[:,:-2,:].copy())
         self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
-                self._phi_dev[:,:,2:]-self._phi_dev[:,:,:-2])
+                self._phi_dev[:,:,2:].copy()-self._phi_dev[:,:,:-2].copy())
 
     #@profile
     def update_phi_from_rho(self, solver=None):

@@ -23,6 +23,9 @@ class XfCpuPlatform(object):
     def nplike_lib(self):
         return np
 
+    def zeros(self, *args, **kwargs):
+        self.nplike_lib.zeros(*args, **kwargs)
+
     def nparray_to_platform_mem(self, arr):
         return arr
 
