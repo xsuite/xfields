@@ -60,16 +60,22 @@ def _patch_pocl_array(cl, cla, ctx):
         else:
             return 'C'
 
-    def copy_non_cont(src, dest):
+    def copy_non_cont(src, dest, custom_itemsize=None, skip_typecheck=False):
 
         assert src.shape == dest.shape
 
         # The case float -> complex just works (by using the src itemsize)
         if not(src.dtype == np.float64 and dest.dtype == np.complex128):
-            assert src.dtype == dest.dtype
+            if not skip_typecheck:
+                assert src.dtype == dest.dtype
 
         if src.strides[0] != src.strides[-1]: # check is needed for 1d arrays
             assert _infer_fccont(src) == _infer_fccont(dest)
+
+        if custom_itemsize is not None:
+            itemsize = np.int32(custom_itemsize)
+        else:
+            itemsize = np.int32(src.dtype.itemsize)
 
         fcontiguous = 0
         if _infer_fccont(dest) == 'F':
@@ -78,7 +84,6 @@ def _patch_pocl_array(cl, cla, ctx):
         shape = cla.to_device(dest.queue, np.array(src.shape, dtype=np.int32))
         ndim = np.int32(len(shape))
         nelem = np.int32(np.prod(src.shape))
-        itemzisize = np.int32(src.dtype.itemsize)
         buffer_src = src.base_data
         strides_src = cla.to_device(dest.queue,
                 np.array(src.strides, dtype=np.int32))
@@ -90,7 +95,7 @@ def _patch_pocl_array(cl, cla, ctx):
 
         event = knl_copy_array_fcont(dest.queue, (nelem,), None,
                 # args:
-                fcont, ndim,  nelem, shape.data, itemzisize,
+                fcont, ndim,  nelem, shape.data, itemsize,
                 buffer_src, strides_src.data, offset_src,
                 buffer_dest, strides_dest.data, offset_dest)
         event.wait()
@@ -108,6 +113,13 @@ def _patch_pocl_array(cl, cla, ctx):
     def mycopy(self):
         res = self._cont_zeros_like_me()
         copy_non_cont(self, res)
+        return res
+
+    def myreal(self):
+        assert self.dtype == np.complex128
+        res = cla.zeros(self.queue, shape=self.shape, dtype=np.float64,
+                    order=_infer_fccont(self))
+        copy_non_cont(self, res, custom_itemsize=8, skip_typecheck=True)
         return res
 
     def myget(self):
@@ -133,3 +145,5 @@ def _patch_pocl_array(cl, cla, ctx):
 
         cla.Array._old_get = cla.Array.get
         cla.Array.get = myget
+
+        cla.Array.real = property(myreal)
