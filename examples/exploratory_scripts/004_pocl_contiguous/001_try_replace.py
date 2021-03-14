@@ -73,11 +73,11 @@ def mycopy(src, dest):
 
     assert src.shape == dest.shape
     assert src.dtype.itemsize == dest.dtype.itemsize
-    #if len(dest.shape)>1:
-    #    assert _infer_fccont(src) == _infer_fccont(dest)
+    if src.strides[0] != src.strides[-1]: # check is needed for 1d arrays
+        assert _infer_fccont(src) == _infer_fccont(dest)
 
     fcontiguous = 0
-    if _infer_fccont(src) == 'F':
+    if _infer_fccont(dest) == 'F':
         fcontiguous = 1
     fcont = np.int32(fcontiguous)
     shape = cla.to_device(queue, np.array(src.shape, dtype=np.int32))
