@@ -103,12 +103,20 @@ def mycopy(src, dest):
             buffer_dest, strides_dest.data, offset_dest)
     event.wait()
 
+def _infer_fccont(arr):
+    if arr.strides[0]<arr.strides[-1]:
+        return 'F'
+    else:
+        return 'C'
+
 def mysetitem(self, *args, **kwargs):
     try:
         self._old_setitem(*args, **kwargs)
     except NotImplementedError:
         dest = self[args[0]]
         src = args[1]
+        if np.isscalar(src):
+            src = self._cont_zeros_like_me() + src
         mycopy(src, dest)
 
 def myget(self):
@@ -119,9 +127,10 @@ def myget(self):
         mycopy(self, res)
         return res.get()
 
+
 def _cont_zeros_like_me(self):
      res = cla.zeros(self.queue, shape=self.shape, dtype=self.dtype,
-                order={True:'F', False:'C'}[self.strides[0]<self.strides[-1]])
+                order=_infer_fccont(self))
      return res
 
 if not hasattr(cla.Array, '_old_setitem'):
