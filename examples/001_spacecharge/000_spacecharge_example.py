@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 from pysixtrack.particles import Particles
-from xfields.platforms import XfCpuPlatform, XfCupyPlatform
+from xfields.platforms import XfCpuPlatform, XfCupyPlatform, XfPoclPlatform
 
 ###################
 # Choose platform #
@@ -11,6 +11,7 @@ from xfields.platforms import XfCpuPlatform, XfCupyPlatform
 
 platform = XfCpuPlatform()
 platform = XfCupyPlatform(default_block_size=256)
+#platform = XfPoclPlatform()
 
 print(repr(platform))
 

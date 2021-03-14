@@ -4,6 +4,7 @@ from pysixtrack.particles import Particles
 
 from xfields.platforms import XfCpuPlatform
 from xfields.platforms import XfCupyPlatform
+from xfields.platforms import XfPoclPlatform
 
 class CupyMathlib(object):
 
@@ -13,6 +14,22 @@ class CupyMathlib(object):
     def wfun(cls, z_re, z_im):
         raise NotImplementedError
 
+class PoclMathlib(object):
+
+    from pyopencl.clmath import exp, sin, cos, tan
+    from pyopencl import clmath
+    from numpy import pi
+
+    @classmethod
+    def wfun(cls, z_re, z_im):
+        raise NotImplementedError
+
+    @classmethod
+    def sqrt(cls, a):
+        if np.isscalar(a):
+            return np.sqrt(a)
+        else:
+            return cls.clmath.sqrt(a)
 
 def generate_particles_object(platform,
                             n_macroparticles,
@@ -59,6 +76,8 @@ def generate_particles_object(platform,
 
     if isinstance(platform, XfCupyPlatform):
         kwargs = {'mathlib': CupyMathlib()}
+    elif isinstance(platform, XfPoclPlatform):
+        kwargs = {'mathlib': PoclMathlib()}
     elif isinstance(platform, XfCpuPlatform):
         kwargs = {}
     else:
