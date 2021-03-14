@@ -101,6 +101,38 @@ def copy_non_cont(src, dest):
             buffer_dest, strides_dest.data, offset_dest)
     event.wait()
 
+def copy_non_cont_float64_complex128(src, dest):
+
+    assert src.shape == dest.shape
+    assert src.dtype == np.float64
+    assert dest.dtype == np.complex128
+
+    if src.strides[0] != src.strides[-1]: # check is needed for 1d arrays
+        assert _infer_fccont(src) == _infer_fccont(dest)
+
+    fcontiguous = 0
+    if _infer_fccont(dest) == 'F':
+        fcontiguous = 1
+    fcont = np.int32(fcontiguous)
+    shape = cla.to_device(queue, np.array(src.shape, dtype=np.int32))
+    ndim = np.int32(len(shape))
+    nelem = np.int32(np.prod(src.shape))
+    itemzisize = np.int32(src.dtype.itemsize)
+    buffer_src = src.base_data
+    strides_src = cla.to_device(src.queue,
+            np.array(src.strides, dtype=np.int32))
+    offset_src = np.int32(src.offset)
+    buffer_dest = dest.base_data
+    strides_dest = cla.to_device(src.queue,
+            np.array(dest.strides, dtype=np.int32))
+    offset_dest = np.int32(dest.offset)
+
+    event = knl_copy_array_fcont(src.queue, (nelem,), None,
+            # args:
+            fcont, ndim,  nelem, shape.data, itemzisize,
+            buffer_src, strides_src.data, offset_src,
+            buffer_dest, strides_dest.data, offset_dest)
+    event.wait()
 
 def mysetitem(self, *args, **kwargs):
     try:
@@ -156,10 +188,10 @@ b[:, :] = 10
 
 b[1:, 2:] = 20
 
-# # Try complex 
-# c_cont = cla.to_device(queue=platform.command_queue,
-#             ary=1j*np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]], order='F',
-#             dtype=np.complex128))
-# 
-# c = c_cont[1:, 1:]
+# Try complex 
+c_cont = cla.to_device(queue=platform.command_queue,
+             ary=1j*np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]], order='F',
+             dtype=np.complex128))
+
+c = c_cont[1:, 1:]
 # c[:, :] = b
