@@ -72,7 +72,8 @@ def _infer_fccont(arr):
 def mycopy(src, dest):
 
     assert src.shape == dest.shape
-    assert src.dtype.itemsize == dest.dtype.itemsize
+    assert src.dtype == dest.dtype
+
     if src.strides[0] != src.strides[-1]: # check is needed for 1d arrays
         assert _infer_fccont(src) == _infer_fccont(dest)
 
@@ -104,7 +105,7 @@ def mycopy(src, dest):
 def mysetitem(self, *args, **kwargs):
     try:
         self._old_setitem(*args, **kwargs)
-    except NotImplementedError:
+    except (NotImplementedError, ValueError):
         dest = self[args[0]]
         src = args[1]
         if np.isscalar(src):
@@ -143,3 +144,16 @@ a = a_cont[1:, 1:]
 
 b_cont = a_cont * 10
 b = b_cont[1:, 1:]
+
+a[:, :] = b
+b[:, :] = 10
+
+b[1:, 2:] = 20
+
+# # Try complex 
+# c_cont = cla.to_device(queue=platform.command_queue,
+#             ary=1j*np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]], order='F',
+#             dtype=np.complex128))
+# 
+# c = c_cont[1:, 1:]
+# c[:, :] = b
