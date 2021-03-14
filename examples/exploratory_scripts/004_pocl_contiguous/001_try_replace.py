@@ -9,16 +9,10 @@ queue = platform.command_queue
 
 cla = platform.nplike_lib
 
-a_cont = cla.to_device(queue=platform.command_queue,
-        ary=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]], order='F',
-            dtype=np.float64))
-a = a_cont[1:, 1:]
-
-b_cont = a_cont * 10
-b = b_cont[1:, 1:]
 
 prg = cl.Program(ctx, """
     __kernel void copy_array_fcont(
+                 const int    fcont, // bool not accepted
                  const int    ndim,
                  const int    nelem,
         __global const int*   shape,
@@ -40,9 +34,17 @@ prg = cl.Program(ctx, """
       pos_src = offset_src;
       pos_dest = offset_dest;
       for (idim=0; idim<ndim; idim++){
-        this_shape = shape[ndim-idim-1];             // for f contiguous
-        this_stride_src = strides_src[ndim-idim-1];   // for f contiguous
-        this_stride_dest = strides_dest[ndim-idim-1]; // for f contiguous
+        if (fcont){
+           this_shape = shape[ndim-idim-1];              // for f contiguous
+           this_stride_src = strides_src[ndim-idim-1];   // for f contiguous
+           this_stride_dest = strides_dest[ndim-idim-1]; // for f contiguous
+           }
+        else {
+           this_shape = shape[idim];              // for c contiguous
+           this_stride_src = strides_src[idim];   // for c contiguous
+           this_stride_dest = strides_dest[idim]; // for c contiguous
+        }
+
 
         slice_size = slice_size/this_shape;
         this_index = flat_index/slice_size;
@@ -61,28 +63,23 @@ prg = cl.Program(ctx, """
 
 knl_copy_array_fcont = prg.copy_array_fcont
 
-assert a.shape == b.shape
-shape = cla.to_device(queue, np.array(a.shape, dtype=np.int32))
-ndim = np.int32(len(shape))
-nelem = np.int32(np.prod(a.shape))
-itemzisize = np.int32(8)
-buffer_src = a.base_data
-strides_src = cla.to_device(queue, np.array(a.strides, dtype=np.int32))
-offset_src = np.int32(a.offset)
-buffer_dest = b.base_data
-strides_dest = cla.to_device(queue, np.array(b.strides, dtype=np.int32))
-offset_dest = np.int32(b.offset)
-
-event = knl_copy_array_fcont(queue, (nelem,), None,
-        # args:
-        ndim,  nelem, shape.data, itemzisize,
-        buffer_src,strides_src.data, offset_src,
-        buffer_dest, strides_dest.data, offset_dest)
-event.wait()
+def _infer_fccont(arr):
+    if arr.strides[0]<arr.strides[-1]:
+        return 'F'
+    else:
+        return 'C'
 
 def mycopy(src, dest):
+
     assert src.shape == dest.shape
     assert src.dtype.itemsize == dest.dtype.itemsize
+    #if len(dest.shape)>1:
+    #    assert _infer_fccont(src) == _infer_fccont(dest)
+
+    fcontiguous = 0
+    if _infer_fccont(src) == 'F':
+        fcontiguous = 1
+    fcont = np.int32(fcontiguous)
     shape = cla.to_device(queue, np.array(src.shape, dtype=np.int32))
     ndim = np.int32(len(shape))
     nelem = np.int32(np.prod(src.shape))
@@ -98,16 +95,11 @@ def mycopy(src, dest):
 
     event = knl_copy_array_fcont(src.queue, (nelem,), None,
             # args:
-            ndim,  nelem, shape.data, itemzisize,
+            fcont, ndim,  nelem, shape.data, itemzisize,
             buffer_src, strides_src.data, offset_src,
             buffer_dest, strides_dest.data, offset_dest)
     event.wait()
 
-def _infer_fccont(arr):
-    if arr.strides[0]<arr.strides[-1]:
-        return 'F'
-    else:
-        return 'C'
 
 def mysetitem(self, *args, **kwargs):
     try:
@@ -116,7 +108,7 @@ def mysetitem(self, *args, **kwargs):
         dest = self[args[0]]
         src = args[1]
         if np.isscalar(src):
-            src = self._cont_zeros_like_me() + src
+            src = dest._cont_zeros_like_me() + src
         mycopy(src, dest)
 
 def myget(self):
@@ -147,3 +139,7 @@ a_cont = cla.to_device(queue=platform.command_queue,
         ary=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]], order='F',
             dtype=np.float64))
 
+a = a_cont[1:, 1:]
+
+b_cont = a_cont * 10
+b = b_cont[1:, 1:]
