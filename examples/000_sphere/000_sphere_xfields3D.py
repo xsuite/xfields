@@ -10,8 +10,11 @@ from xfields import TriLinearInterpolatedFieldMap
 from xfields.platforms import XfCpuPlatform
 platform = XfCpuPlatform()
 
-from xfields.platforms import XfCupyPlatform
-platform = XfCupyPlatform(default_block_size=256)
+#from xfields.platforms import XfCupyPlatform
+#platform = XfCupyPlatform(default_block_size=256)
+
+from xfields.platforms import XfPoclPlatform
+platform = XfPoclPlatform()
 
 print(repr(platform))
 

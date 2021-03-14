@@ -20,7 +20,8 @@ class MinimalDotDict(dict):
 
 class XfPoclPlatform(XfBasePlatform):
 
-    def __init__(self, pocl_context=None, command_queue=None, default_kernels=True):
+    def __init__(self, pocl_context=None, command_queue=None, default_kernels=True,
+                 patch_pocl_array=True):
 
         if pocl_context is None:
             pocl_context = cl.create_some_context()
@@ -33,6 +34,10 @@ class XfPoclPlatform(XfBasePlatform):
         self.pocl_context = pocl_context
         self.command_queue = command_queue
         self.kernels = MinimalDotDict()
+
+        if patch_pocl_array:
+            from ._patch_pocl_array import _patch_pocl_array
+            _patch_pocl_array(cl, cla, pocl_context)
 
         if default_kernels:
             self.add_kernels(src_files=pocl_default_kernels['src_files'],
