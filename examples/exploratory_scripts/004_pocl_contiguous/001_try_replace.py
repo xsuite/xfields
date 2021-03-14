@@ -69,7 +69,7 @@ def _infer_fccont(arr):
     else:
         return 'C'
 
-def mycopy(src, dest):
+def copy_non_cont(src, dest):
 
     assert src.shape == dest.shape
     assert src.dtype == dest.dtype
@@ -110,16 +110,18 @@ def mysetitem(self, *args, **kwargs):
         src = args[1]
         if np.isscalar(src):
             src = dest._cont_zeros_like_me() + src
-        mycopy(src, dest)
+        copy_non_cont(src, dest)
+
+def mycopy(self):
+    res = self._cont_zeros_like_me()
+    copy_non_cont(self, res)
+    return res
 
 def myget(self):
     try:
         return self._old_get()
     except AssertionError:
-        res = self._cont_zeros_like_me()
-        mycopy(self, res)
-        return res.get()
-
+        return self.copy().get()
 
 def _cont_zeros_like_me(self):
      res = cla.zeros(self.queue, shape=self.shape, dtype=self.dtype,
@@ -129,6 +131,10 @@ def _cont_zeros_like_me(self):
 if not hasattr(cla.Array, '_old_setitem'):
 
     cla.Array._cont_zeros_like_me = _cont_zeros_like_me
+
+    cla.Array._old_copy = cla.Array.copy
+    cla.Array.copy = mycopy
+
     cla.Array._old_setitem = cla.Array.__setitem__
     cla.Array.__setitem__ = mysetitem
 
