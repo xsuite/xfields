@@ -2,6 +2,17 @@ from xfields.platforms import XfCpuPlatform
 from xfields import TriLinearInterpolatedFieldMap
 
 class SpaceCharge3D(object):
+    """
+    Simulates the effect of space charge on the bunch.
+
+    Args:
+        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+            on which the computation is executed.
+        update_on_track (bool): If ``True`` the beam field map is update
+            at each interaction. If ``False`` the initial field map is
+            used at each interaction (frozen model). The default is
+            ``True``.
+    """
 
     def __init__(self,
                  platform=None,
@@ -15,10 +26,6 @@ class SpaceCharge3D(object):
                  x_range=None, y_range=None, z_range=None,
                  solver=None,
                  gamma0=None):
-        '''
-        Needed when transverse normalized distribution changes along z.
-        mode can be 2.5D or 3D
-        '''
 
         if platform is None:
             platform = XfCpuPlatform()
