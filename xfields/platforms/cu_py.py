@@ -20,8 +20,8 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(XfBasePlatform):
 
-    """Creates a Cupy Platform object, that allows performing the
-    computations     on nVidia GPUs.
+    """Creates a Cupy Platform object, that allows performing the computations
+       on nVidia GPUs.
 
     Args:
         default_kernels (bool): If ``True``, the Xfields defult kernels are
@@ -62,9 +62,15 @@ class XfCupyPlatform(XfBasePlatform):
         return cupy
 
     def synchronize(self):
+        """
+        Ensure that all computations submitted to the platform are completed.
+        Equivalent to ``cupy.cuda.stream.get_current_stream().synchronize()``
+        """
         cupy.cuda.stream.get_current_stream().synchronize()
 
     def zeros(self, *args, **kwargs):
+        """Allocates an array of zeros on the device. The function has the same 
+         interface of numpy.zeros"""
         return self.nplike_lib.zeros(*args, **kwargs)
 
     def nparray_to_platform_mem(self, arr):
