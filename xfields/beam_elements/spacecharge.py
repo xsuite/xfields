@@ -103,7 +103,7 @@ class SpaceCharge3D(object):
         particles.
 
         Args:
-            particles (Particles Object): Particlet to be tracked.
+            particles (Particles Object): Particles to be tracked.
         """
 
         if self.update_on_track:
