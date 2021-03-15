@@ -11,7 +11,9 @@ class MinimalDotDict(dict):
 
 class XfCpuPlatform(object):
 
-    """Creates a CPU Platform object, that allows performing the computations
+    """XfCpuPlatform platform class
+
+       Creates a CPU Platform object, that allows performing the computations
        on conventionla CPUs.
 
     Args:

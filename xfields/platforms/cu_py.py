@@ -20,8 +20,10 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(XfBasePlatform):
 
-    """Creates a Cupy Platform object, that allows performing the computations
-       on nVidia GPUs.
+    """XfCupyPlatform class
+
+    Creates a Cupy Platform object, that allows performing the computations
+    on nVidia GPUs.
 
     Args:
         default_kernels (bool): If ``True``, the Xfields defult kernels are
