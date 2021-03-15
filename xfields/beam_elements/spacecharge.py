@@ -49,6 +49,8 @@ class SpaceCharge3D(object):
             by the user, this argument can be omitted.
         gamma0 (float): Relativistic gamma factor of the beam. This is required
             only if the solver is ``FFTSolver3D``.
+    Returns:
+        (SpaceCharge3D): A space-charge 3D beam element.
     """
 
     def __init__(self,
@@ -95,6 +97,14 @@ class SpaceCharge3D(object):
         self.fieldmap = fieldmap
 
     def track(self, particles):
+
+        """
+        Computes and Applied the space-charge forces for the provided set of
+            particles.
+
+        Args:
+            particles (Particles Object): Particlet to be tracked.
+        """
 
         if self.update_on_track:
             self.fieldmap.update_from_particles(
