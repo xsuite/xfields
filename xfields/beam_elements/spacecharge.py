@@ -12,12 +12,19 @@ class SpaceCharge3D(object):
             at each interaction. If ``False`` the initial field map is
             used at each interaction (frozen model). The default is
             ``True``.
-        length (float64): the length of the space-charge interaction in
+        length (float): the length of the space-charge interaction in
             meters.
         apply_z_kick (bool): If ``True``, the longitudinal kick on the
             particles is applied.
-        x_range, y_range, z_range (tuples): hello
-
+        x_range (tuple): Horizontal extent (in meters) of the
+            computing grid.
+        y_range (tuple): Vertical extent (in meters) of the
+            computing grid.
+        z_range (tuple): Longitudina extent  (in meters) of
+            the computing grid.
+        dx (float): Horizontal cell size in meters.
+        dy (float): Vertical cell size in meters.
+        dz (float): Longitudinal cell size in meters.
     """
 
     def __init__(self,
