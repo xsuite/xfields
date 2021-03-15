@@ -7,10 +7,25 @@ Xfield can run on different kinds of hardware (CPUs and GPUs). The user selects 
 creating a :doc:`platform object<platforms>`, that is then passed to all other Xfields components.
 
 To run on conventional CPUs you need to create the corresponding platform:
+
 .. code-block:: python
 
     from xfields.platforms import XfCpuPlatform
     platform = XfCpuPlatform()
+
+Similarly to run on GPUs using cupy:
+
+.. code-block:: python
+
+    from xfields.platforms import XfCupyPlatform
+    platform = XfCupyPlatform()
+
+And to run oon GPUs and CPUs using PyOpenCL:
+
+.. code-block:: python
+
+    from xfields.platforms import XfPoclPlatform
+    platform = XfPoclPlatform()
 
 
 -------------
