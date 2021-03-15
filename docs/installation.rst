@@ -4,7 +4,7 @@ Installation
 ============
 
 
-The package can be cloned from GitHum and installed with pip:
+The package can be cloned from GitHub and installed with pip:
 
 .. code-block:: bash
 
@@ -14,10 +14,18 @@ The package can be cloned from GitHum and installed with pip:
 (The installation without the ``-e`` option is still untested).
 
 
-
 Installation of cupy
 --------------------
 
-In order to use the cupy platforms, the cupy library needs to be installed.
+In order to use the :doc:`cupy platform<platforms>`, the cupy package needs to be installed.
+In Anacoda or Miniconda this can be done as follows:
 
+.. code-block:: bash
+
+    $ conda install mamba -n base -c conda-forge
+    $ pip install cupy-cuda101
+    $ mamba install cudatoolkit=10.1.243
+
+Installation of PyOpenCL
+------------------------
 
