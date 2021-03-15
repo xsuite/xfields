@@ -3,8 +3,11 @@
 Installation
 ============
 
-Install the package with pip::
+The package can be cloned from GitHum and installed with pip:
 
-    $ pip install read-the-docs-template
+    $ git clone https://github.com/xsuite/xfields
+    $ pip install -e xfields
+
+(The installation without the ``-e`` option is still untested).
 
 
