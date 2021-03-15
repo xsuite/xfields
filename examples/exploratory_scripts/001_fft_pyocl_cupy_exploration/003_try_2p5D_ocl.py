@@ -10,7 +10,7 @@ import gpyfft
 context = cl.create_some_context()
 queue = cl.CommandQueue(context)
 
-n_time = 3
+n_time = 10
 
 nn_x = 256*2
 nn_y = 256*2
@@ -23,7 +23,7 @@ z = np.linspace(0, 1, nn_z)
 XX_F, YY_F, ZZ_F = np.meshgrid(x, y, z, indexing='ij')
 data = np.sin(2*np.pi*(50-20*(1-ZZ_F))*XX_F)*np.cos(2*np.pi*70*YY_F)
 
-data_host = np.zeros((nn_x, nn_y, nn_z), dtype = np.complex64, order='F')
+data_host = np.zeros((nn_x, nn_y, nn_z), dtype = np.complex128, order='F')
 data_host[:] = data
 data_gpu = cla.to_device(queue, data_host)
 
@@ -45,7 +45,7 @@ for _ in range(n_time):
     event2, = fftobj.enqueue_arrays(data_gpu, forward=False)
     event2.wait()
     t2 = time.time()
-    print(f't_gpu = {(t2-t1)/n_time:2e}')
+    print(f't_gpu = {(t2-t1):2e}')
 
 
 _ = np.fft.ifftn(np.fft.fftn(data_host, axes=(0,1)), axes=(0,1))

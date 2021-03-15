@@ -19,9 +19,9 @@ z = np.linspace(0, 1, nn_z)
 XX_F, YY_F, ZZ_F = np.meshgrid(x, y, z, indexing='ij')
 data = np.sin(2*np.pi*(50-20*(1-ZZ_F))*XX_F)*np.cos(2*np.pi*70*YY_F)
 
-data_host = np.zeros((nn_x, nn_y, nn_z), dtype = np.complex64, order='F')
+data_host = np.zeros((nn_x, nn_y, nn_z), dtype = np.complex128, order='F')
 data_from_gpu = np.zeros((nn_x, nn_y, nn_z),
-                           dtype = np.complex64, order='F')
+                           dtype = np.complex128, order='F')
 data_host[:] = data
 
 data_gpu = cp.array(data_host)
@@ -34,7 +34,7 @@ for _ in range(n_time):
     res_gpu = cufftp.ifftn(transf_gpu, axes=(0, 1), plan=plan)
     cp.cuda.stream.get_current_stream().synchronize()
     t2 = time.time()
-    print(f't_gpu = {(t2-t1)/n_time:2e}')
+    print(f't_gpu = {(t2-t1):2e}')
 data_from_gpu = res_gpu.get()
 
 
