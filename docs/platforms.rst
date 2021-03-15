@@ -8,9 +8,12 @@ A platform is initialized by instanciating objects from one of the platform clas
 
 Three platforms are presently available:
  - The :ref:`CPU platform<cpu_platform>`, to use conventional CPUs
- - The :ref:`Cupy platform<cupy_platform>`, based on cupy-cuda to run on NVidia GPUs
- - The :ref:`Pocl platform<pocl_platform>`, bases on PyOpenCL, to run on CPUs or GPUs throught PyOPENCL library.
+ - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda` to run on NVidia GPUs
+ - The :ref:`Pocl platform<pocl_platform>`, bases on `PyOpenCL_, to run on CPUs or GPUs throught PyOPENCL library.
 
+.. _cupy: https://cupy.dev
+.. _cuda: https://developer.nvidia.com/cuda-zone
+.. _PyOpenCL: https://documen.tician.de/pyopencl/
 
 .. _cpu_platform:
 
