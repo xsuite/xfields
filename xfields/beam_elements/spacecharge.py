@@ -4,7 +4,7 @@ from xfields import TriLinearInterpolatedFieldMap
 class SpaceCharge3D(object):
 
     def __init__(self,
-                 platform=None
+                 platform=None,
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
@@ -14,8 +14,7 @@ class SpaceCharge3D(object):
                  nx=None, ny=None, nz=None,
                  x_range=None, y_range=None, z_range=None,
                  solver=None,
-                 gamma0=None,
-                 ):
+                 gamma0=None):
         '''
         Needed when transverse normalized distribution changes along z.
         mode can be 2.5D or 3D
