@@ -16,8 +16,8 @@ Contents:
 .. toctree::
    :maxdepth: 1
 
-   installation
    gettingstarted
+   installation
    apireference
    autogeneration
 
