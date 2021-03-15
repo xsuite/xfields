@@ -100,7 +100,7 @@ class SpaceCharge3D(object):
 
         """
         Computes and Applied the space-charge forces for the provided set of
-            particles.
+        particles.
 
         Args:
             particles (Particles Object): Particlet to be tracked.
