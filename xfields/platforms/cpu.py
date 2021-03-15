@@ -11,7 +11,7 @@ class MinimalDotDict(dict):
 
 class XfCpuPlatform(object):
 
-    """XfCpuPlatform platform class
+    """
 
        Creates a CPU Platform object, that allows performing the computations
        on conventionla CPUs.
@@ -66,7 +66,8 @@ class XfCpuPlatform(object):
         return self.nplike_lib.zeros(*args, **kwargs)
 
     def nparray_to_platform_mem(self, arr):
-        """Moves a numpy array to the device memory. No action is performed by
+        """
+        Moves a numpy array to the device memory. No action is performed by
           this function in the CPU platform. The method is provided
           so that the CPU platform has an identical API to the GPU ones.
 
@@ -80,7 +81,8 @@ class XfCpuPlatform(object):
         return arr
 
     def nparray_from_platform_mem(self, dev_arr):
-        """Moves an array to the device to a numpy array. No action is performed by
+        """
+        Moves an array to the device to a numpy array. No action is performed by
         this function in the CPU platform. The method is provided so that the CPU
         platform has an identical API to the GPU ones.
 
@@ -93,7 +95,8 @@ class XfCpuPlatform(object):
         return dev_arr
 
     def plan_FFT(self, data, axes):
-        """Generate an FFT plan object to be executed on the platform.
+        """
+        Generate an FFT plan object to be executed on the platform.
 
         Args:
             data (numpy.ndarray): Array having type and shape for which the FFT
@@ -121,7 +124,8 @@ class XfCpuPlatform(object):
 
     def add_kernels(self, lib_file, kernel_descriptions={}):
 
-        """Adds user-defined kernels to to the platform. The kernel source
+        """
+        Adds user-defined kernels to to the platform. The kernel source
            code is provided as a string and/or in source files and must contain
            the kernel names defined in the kernel descriptions.
 

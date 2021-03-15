@@ -20,7 +20,7 @@ class MinimalDotDict(dict):
 
 class XfCupyPlatform(XfBasePlatform):
 
-    """XfCupyPlatform class
+    """
 
     Creates a Cupy Platform object, that allows performing the computations
     on nVidia GPUs.

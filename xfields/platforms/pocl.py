@@ -20,7 +20,7 @@ class MinimalDotDict(dict):
 
 class XfPoclPlatform(XfBasePlatform):
 
-    """ XfCpuPlatform platform class
+    """ 
 
         Creates a Pocl Platform object, that allows performing the computations
         on GPUs and CPUs through PyOpenCL.
