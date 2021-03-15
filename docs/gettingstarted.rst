@@ -1,8 +1,7 @@
 Getting Started Guide
 =====================
 
-
- For installation see :doc:`installation`
+To install Xfields please follow the instructions in the dedicated :doc:`installation page <installation>`.
 
 .. code-block:: python
 
