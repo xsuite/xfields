@@ -12,6 +12,8 @@ class SpaceCharge3D(object):
             at each interaction. If ``False`` the initial field map is
             used at each interaction (frozen model). The default is
             ``True``.
+        length (float64): the length of the space-charge interaction in 
+            meters.
     """
 
     def __init__(self,
@@ -20,10 +22,10 @@ class SpaceCharge3D(object):
                  length=None,
                  apply_z_kick=True,
                  rho=None, phi=None,
-                 x_grid=None, y_grid=None, z_grid=None,
+                 x_range=None, y_range=None, z_range=None,
                  dx=None, dy=None, dz=None,
                  nx=None, ny=None, nz=None,
-                 x_range=None, y_range=None, z_range=None,
+                 x_grid=None, y_grid=None, z_grid=None,
                  solver=None,
                  gamma0=None):
 
