@@ -71,12 +71,15 @@ class XfCupyPlatform(XfBasePlatform):
         cupy.cuda.stream.get_current_stream().synchronize()
 
     def zeros(self, *args, **kwargs):
-        """Allocates an array of zeros on the device. The function has the same
-         interface of numpy.zeros"""
+        """
+        Allocates an array of zeros on the device. The function has the same
+        interface of numpy.zeros"""
         return self.nplike_lib.zeros(*args, **kwargs)
 
     def nparray_to_platform_mem(self, arr):
-        """Copies a numpy array to the device memory.
+        """
+        Copies a numpy array to the device memory.
+
         Args:
             arr (numpy.ndarray): Array to be transferred
 
@@ -88,7 +91,8 @@ class XfCupyPlatform(XfBasePlatform):
         return dev_arr
 
     def nparray_from_platform_mem(self, dev_arr):
-        """Copies an array to the device to a numpy array.
+        """
+        Copies an array to the device to a numpy array.
 
         Args:
             dev_arr (cupy.ndarray): Array to be transferred.
@@ -99,7 +103,8 @@ class XfCupyPlatform(XfBasePlatform):
         return dev_arr.get()
 
     def plan_FFT(self, data, axes, ):
-        """Generates an FFT plan object to be executed on the platform.
+        """
+        Generates an FFT plan object to be executed on the platform.
 
         Args:
             data (cupy.ndarray): Array having type and shape for which the FFT
@@ -127,9 +132,10 @@ class XfCupyPlatform(XfBasePlatform):
 
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
-        """Adds user-defined kernels to to the platform. The kernel source
-           code is provided as a string and/or in source files and must contain
-           the kernel names defined in the kernel descriptions.
+        """
+        Adds user-defined kernels to to the platform. The kernel source
+        code is provided as a string and/or in source files and must contain
+        the kernel names defined in the kernel descriptions.
 
         Args:
             src_code (str): String with the kernel source code. Default: empty

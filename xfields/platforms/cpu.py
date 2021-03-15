@@ -62,14 +62,14 @@ class XfCpuPlatform(object):
     def zeros(self, *args, **kwargs):
         """
         Allocates an array of zeros on the device. The function has the same
-         interface of numpy.zeros"""
+        interface of numpy.zeros"""
         return self.nplike_lib.zeros(*args, **kwargs)
 
     def nparray_to_platform_mem(self, arr):
         """
         Moves a numpy array to the device memory. No action is performed by
-          this function in the CPU platform. The method is provided
-          so that the CPU platform has an identical API to the GPU ones.
+        this function in the CPU platform. The method is provided
+        so that the CPU platform has an identical API to the GPU ones.
 
         Args:
             arr (numpy.ndarray): Array to be transferred
@@ -126,8 +126,8 @@ class XfCpuPlatform(object):
 
         """
         Adds user-defined kernels to to the platform. The kernel source
-           code is provided as a string and/or in source files and must contain
-           the kernel names defined in the kernel descriptions.
+        code is provided as a string and/or in source files and must contain
+        the kernel names defined in the kernel descriptions.
 
         Args:
             src_code (str): String with the kernel source code. Default: empty

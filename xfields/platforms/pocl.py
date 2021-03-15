@@ -20,8 +20,7 @@ class MinimalDotDict(dict):
 
 class XfPoclPlatform(XfBasePlatform):
 
-    """ 
-
+    """
         Creates a Pocl Platform object, that allows performing the computations
         on GPUs and CPUs through PyOpenCL.
 
@@ -30,7 +29,7 @@ class XfPoclPlatform(XfBasePlatform):
             automatically imported.
         pocl_context: A PyOpenCL context can be optionally provided. Otherwise
             a context is created by the platform.
-        command_queue: A PyOpenCL command que can be optionally provided. 
+        command_queue: A PyOpenCL command que can be optionally provided.
             Otherwise a queue is created by the platform.
         patch_pocl_array (bool): If ``True``, the PyOpecCL class is patched to
             allow some operations with non-contiguous arrays.
@@ -93,12 +92,13 @@ class XfPoclPlatform(XfBasePlatform):
     def zeros(self, *args, **kwargs):
         """
         Allocates an array of zeros on the device. The function has the same
-         interface of numpy.zeros"""
+        interface of numpy.zeros"""
         return self.nplike_lib.zeros(queue=self.command_queue, *args, **kwargs)
 
 
     def nparray_to_platform_mem(self, arr):
-        """Copies a numpy array to the device memory.
+        """
+        Copies a numpy array to the device memory.
         Args:
             arr (numpy.ndarray): Array to be transferred
 
@@ -110,7 +110,8 @@ class XfPoclPlatform(XfBasePlatform):
         return dev_arr
 
     def nparray_from_platform_mem(self, dev_arr):
-        """Copies an array to the device to a numpy array.
+        """
+        Copies an array to the device to a numpy array.
 
         Args:
             dev_arr (pyopencl.array.Array): Array to be transferred.
@@ -121,7 +122,8 @@ class XfPoclPlatform(XfBasePlatform):
         return dev_arr.get()
 
     def plan_FFT(self, data, axes, wait_on_call=True):
-        """Generates an FFT plan object to be executed on the platform.
+        """
+        Generates an FFT plan object to be executed on the platform.
 
         Args:
             data (pyopencl.array.Array): Array having type and shape for which
@@ -149,9 +151,10 @@ class XfPoclPlatform(XfBasePlatform):
 
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
-        """Adds user-defined kernels to to the platform. The kernel source
-           code is provided as a string and/or in source files and must contain
-           the kernel names defined in the kernel descriptions.
+        """
+        Adds user-defined kernels to to the platform. The kernel source
+        code is provided as a string and/or in source files and must contain
+        the kernel names defined in the kernel descriptions.
 
         Args:
             src_code (str): String with the kernel source code. Default: empty
