@@ -18,7 +18,8 @@ Installation of cupy
 --------------------
 
 In order to use the :doc:`cupy platform<platforms>`, the cupy package needs to be installed.
-In Anacoda or Miniconda this can be done as follows:
+In Anacoda or Miniconda (if needed, see dedicated section on :ref:`how to get a miniconda installation<miniconda>`)
+this can be done as follows:
 
 .. code-block:: bash
 
@@ -77,7 +78,7 @@ We locate the library and headers here:
 
 
 
-We install gpyffe install pip providing extra flags as follows:
+We install gpyfft install pip providing extra flags as follows:
 
 .. code-block:: bash
 
@@ -85,5 +86,16 @@ We install gpyffe install pip providing extra flags as follows:
     $ pip install --global-option=build_ext --global-option="-I/home/giadarol/miniconda3/pkgs/clfft-2.12.2-h83d4a3d_1/include" --global-option="-L/home/giadarol/miniconda3/pkgs/clfft-2.12.2-h83d4a3d_1/lib" gpyfft/
 
 
+.. _miniconda:
 
+Install Miniconda
+-----------------
 
+If you don't have a miniconda installatio, you can quickly get one with the following steps:
+
+.. code-block:: bash
+    $ cd ~
+    $ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+    $ bash Miniconda3-latest-Linux-x86_64.sh
+    $ source miniconda3/bin/activate
+    $ pip install numpy scipy matplotlib pandas ipython
