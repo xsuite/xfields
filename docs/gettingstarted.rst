@@ -31,7 +31,25 @@ And to run on GPUs and CPUs using PyOpenCL:
     platform = XfPoclPlatform()
 
 
--------------
+Create Beam Element
+-------------------
+The platform that has been created can be passed when constructing a beam element. For example we can create a spacecharge beam element as follows
+
+.. code-block:: python
+
+    spcharge = SpaceCharge3D(
+        platform=platform, # defines the hardware
+        length=5.,
+        update_on_track=True,
+        apply_z_kick=True,
+        x_range=(-0.02, 0.02),
+        y_range=(-0.015, 0.015),
+        z_range=(-1.5, 1.5),
+        nx=256, ny=256, nz=50,
+        solver='FFTSolver2p5D',
+        gamma0=27.64)
+
+-------------------
 
 
 .. code-block:: python
