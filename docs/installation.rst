@@ -94,6 +94,7 @@ Install Miniconda
 If you don't have a miniconda installatio, you can quickly get one with the following steps:
 
 .. code-block:: bash
+
     $ cd ~
     $ wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
     $ bash Miniconda3-latest-Linux-x86_64.sh
