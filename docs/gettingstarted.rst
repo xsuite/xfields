@@ -59,3 +59,9 @@ The beam element can be used to track a bunch stored on the same platform:
 
     spcharge.track(bunch)
 
+Full example
+------------
+
+A complete example, including also the generation of the bunch is available `here <exgit>`_.
+
+.. _exgit: https://github.com/xsuite/xfields/blob/master/examples/001_spacecharge/000_spacecharge_example.py

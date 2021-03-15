@@ -10,7 +10,7 @@ Platforms are interchangeable as they expose the same API.
 Three platforms are presently available:
 
  - The :ref:`CPU platform<cpu_platform>`, to use conventional CPUs
- - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda` to run on NVidia GPUs
+ - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda`_ to run on NVidia GPUs
  - The :ref:`Pocl platform<pocl_platform>`, bases on `PyOpenCL`_, to run on CPUs or GPUs throught PyOPENCL library.
 
 The corresponfig API is described in the following subsections.
