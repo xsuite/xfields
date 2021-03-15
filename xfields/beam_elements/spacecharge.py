@@ -42,6 +42,13 @@ class SpaceCharge3D(object):
         phi (np.ndarray): initial electric potential at the grid points in
             Volts. If not provided the ``phi`` is calculated from ``rho``
             using the Poisson solver (if available).
+        solver (str or solver object): Defines the Poisson solver to be used
+            to compute phi from rho. Accepted values are ``FFTSolver3D`` and
+            ``FFTSolver2p5D``. A Xfields solver object can also be provided.
+            In case ``update_on_track``is ``False`` and ``phi`` is provided
+            by the user, this argument can be omitted.
+        gamma0 (float): Relativistic gamma factor of the beam. This is required
+            only if the solver is ``FFTSolver3D``.
     """
 
     def __init__(self,
