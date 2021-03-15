@@ -6,7 +6,7 @@ import cupy as cp
 
 from cupyx.scipy import fftpack as cufftp
 
-n_time = 3
+n_time = 10
 
 nn_x = 256*2
 nn_y = 256*2
@@ -28,13 +28,14 @@ data_gpu = cp.array(data_host)
 
 plan = cufftp.get_fft_plan(data_host, axes=(0,1), value_type='C2C')
 
-t1 = time.time()
 for _ in range(n_time):
+    t1 = time.time()
     transf_gpu = cufftp.fftn(data_gpu, axes=(0, 1), plan=plan)
     res_gpu = cufftp.ifftn(transf_gpu, axes=(0, 1), plan=plan)
-    data_from_gpu = res_gpu.get()
-t2 = time.time()
-print(f't_gpu = {(t2-t1)/n_time:2e}')
+    cp.cuda.stream.get_current_stream().synchronize()
+    t2 = time.time()
+    print(f't_gpu = {(t2-t1)/n_time:2e}')
+data_from_gpu = res_gpu.get()
 
 
 _ = np.fft.ifftn(np.fft.fftn(data_host, axes=(0,1)), axes=(0,1))

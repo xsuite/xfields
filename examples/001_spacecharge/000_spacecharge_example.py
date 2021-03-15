@@ -11,7 +11,7 @@ from xfields.platforms import XfCpuPlatform, XfCupyPlatform, XfPoclPlatform
 
 platform = XfCpuPlatform()
 platform = XfCupyPlatform(default_block_size=256)
-#platform = XfPoclPlatform()
+platform = XfPoclPlatform()
 
 print(repr(platform))
 
@@ -62,7 +62,7 @@ spcharge = SpaceCharge3D(
         y_range=(-y_lim, y_lim),
         z_range=(-z_lim, z_lim),
         nx=256, ny=256, nz=50,
-        solver='FFTSolver3D',
+        solver='FFTSolver2p5D',
         gamma0=particles.gamma0,
         platform=platform)
 
