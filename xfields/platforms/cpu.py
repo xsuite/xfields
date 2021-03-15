@@ -51,7 +51,7 @@ class XfCpuPlatform(object):
 
     def synchronize(self):
         """
-        Ensure that all computations submitted to the platform are completed.
+        Ensures that all computations submitted to the platform are completed.
         No action is performed by this function in the CPU platform. The method
         is provided so that the CPU platform has an identical API to the GPU ones.
         """
@@ -64,8 +64,9 @@ class XfCpuPlatform(object):
         return self.nplike_lib.zeros(*args, **kwargs)
 
     def nparray_to_platform_mem(self, arr):
-        """Moves a numpy array to the device memory. No action is performed by this function in the CPU platform. The method
-        is provided so that the CPU platform has an identical API to the GPU ones.
+        """Moves a numpy array to the device memory. No action is performed by
+          this function in the CPU platform. The method is provided
+          so that the CPU platform has an identical API to the GPU ones.
 
         Args:
             arr (numpy.ndarray): Array to be transferred
@@ -77,8 +78,9 @@ class XfCpuPlatform(object):
         return arr
 
     def nparray_from_platform_mem(self, dev_arr):
-        """Moves an array to the device to a numpy array. No action is performed by this function in the CPU platform. The method
-        is provided so that the CPU platform has an identical API to the GPU ones.
+        """Moves an array to the device to a numpy array. No action is performed by
+        this function in the CPU platform. The method is provided so that the CPU
+        platform has an identical API to the GPU ones.
 
         Args:
             dev_arr (numpy.ndarray): Array to be transferred/

@@ -63,13 +63,13 @@ class XfCupyPlatform(XfBasePlatform):
 
     def synchronize(self):
         """
-        Ensure that all computations submitted to the platform are completed.
+        Ensures that all computations submitted to the platform are completed.
         Equivalent to ``cupy.cuda.stream.get_current_stream().synchronize()``
         """
         cupy.cuda.stream.get_current_stream().synchronize()
 
     def zeros(self, *args, **kwargs):
-        """Allocates an array of zeros on the device. The function has the same 
+        """Allocates an array of zeros on the device. The function has the same
          interface of numpy.zeros"""
         return self.nplike_lib.zeros(*args, **kwargs)
 
@@ -89,7 +89,7 @@ class XfCupyPlatform(XfBasePlatform):
         """Copies an array to the device to a numpy array.
 
         Args:
-            dev_arr (cupy.ndarray): Array to be transferred/
+            dev_arr (cupy.ndarray): Array to be transferred.
         Returns:
             numpy.ndarray: The same data copied to a numpy array.
 
@@ -97,7 +97,7 @@ class XfCupyPlatform(XfBasePlatform):
         return dev_arr.get()
 
     def plan_FFT(self, data, axes, ):
-        """Generate an FFT plan object to be executed on the platform.
+        """Generates an FFT plan object to be executed on the platform.
 
         Args:
             data (cupy.ndarray): Array having type and shape for which the FFT
@@ -130,7 +130,7 @@ class XfCupyPlatform(XfBasePlatform):
            the kernel names defined in the kernel descriptions.
 
         Args:
-            src_code (str): String with the kernel source code. Default: empty 
+            src_code (str): String with the kernel source code. Default: empty
                 string.
             src_files (list of strings): paths to files containing the
                 source code. Default: empty list.
