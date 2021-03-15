@@ -7,3 +7,4 @@ This is the API reference
    :maxdepth: 2
 
    platforms
+   beamelements
