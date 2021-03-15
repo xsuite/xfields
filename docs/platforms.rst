@@ -11,6 +11,8 @@ Three platforms are presently available:
  - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda` to run on NVidia GPUs
  - The :ref:`Pocl platform<pocl_platform>`, bases on `PyOpenCL_, to run on CPUs or GPUs throught PyOPENCL library.
 
+The corresponfig API is described in the following subsections.
+
 .. _cupy: https://cupy.dev
 .. _cuda: https://developer.nvidia.com/cuda-zone
 .. _PyOpenCL: https://documen.tician.de/pyopencl/
