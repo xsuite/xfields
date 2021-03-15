@@ -11,7 +11,7 @@ from xfields.platforms import XfCpuPlatform, XfCupyPlatform, XfPoclPlatform
 
 platform = XfCpuPlatform()
 platform = XfCupyPlatform(default_block_size=256)
-platform = XfPoclPlatform()
+#platform = XfPoclPlatform()
 
 print(repr(platform))
 
@@ -114,6 +114,7 @@ n_rep = 10
 for _ in range(n_rep):
     t1 = time.time()
     spcharge.track(particles)
+    platform.synchronize()
     t2 = time.time()
     print(f'Time: {(t2-t1)*1e3:.2f} ms')
 

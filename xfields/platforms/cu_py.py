@@ -61,6 +61,9 @@ class XfCupyPlatform(XfBasePlatform):
         """
         return cupy
 
+    def synchronize(self):
+        cupy.cuda.stream.get_current_stream().synchronize()
+
     def zeros(self, *args, **kwargs):
         return self.nplike_lib.zeros(*args, **kwargs)
 

@@ -23,6 +23,9 @@ class XfCpuPlatform(object):
     def nplike_lib(self):
         return np
 
+    def synchronize(self):
+        pass
+
     def zeros(self, *args, **kwargs):
         return self.nplike_lib.zeros(*args, **kwargs)
 

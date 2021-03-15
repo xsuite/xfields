@@ -47,6 +47,9 @@ class XfPoclPlatform(XfBasePlatform):
     def nplike_lib(self):
         return cla
 
+    def synchronize(self):
+        pass
+
     def zeros(self, *args, **kwargs):
         return self.nplike_lib.zeros(queue=self.command_queue, *args, **kwargs)
 
