@@ -37,6 +37,11 @@ class SpaceCharge3D(object):
             It can be provided alternatively to ``y_range``, ``dy``/``ny``.
         z_grid (np.ndarray): Equispaced array with the horizontal grid points.
             It can be provided alternatively to ``z_range``, ``dz``/``nz``.
+        rho (np.ndarray): initial charge density at the grid points in
+            Coulomb/m^3.
+        phi (np.ndarray): initial electric potential at the grid points in
+            Volts. If not provided the ``phi`` is calculated from ``rho``
+            using the Poisson solver (if available).
     """
 
     def __init__(self,
