@@ -31,6 +31,12 @@ class SpaceCharge3D(object):
             provided alternatively to ``dy``.
         nz (int): Number of cells in the vertical direction. It can be
             provided alternatively to ``dz``.
+        x_grid (np.ndarray): Equispaced array with the horizontal grid points.
+            It can be provided alternatively to ``x_range``, ``dx``/``nx``.
+        y_grid (np.ndarray): Equispaced array with the horizontal grid points.
+            It can be provided alternatively to ``y_range``, ``dy``/``ny``.
+        z_grid (np.ndarray): Equispaced array with the horizontal grid points.
+            It can be provided alternatively to ``z_range``, ``dz``/``nz``.
     """
 
     def __init__(self,
