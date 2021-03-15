@@ -3,6 +3,19 @@ Getting Started Guide
 
 To install Xfields please follow the instructions in the dedicated :doc:`installation page <installation>`.
 
+Xfield can run on different kinds of hardware (CPUs and GPUs). The user selects the herdware to be used by
+creating a :doc:`platform object<platforms>`, that is then passed to all other Xfields components.
+
+To run on conventional CPUs you need to create the corresponding platform:
+.. code-block:: python
+
+    from xfields.platforms import XfCpuPlatform
+    platform = XfCpuPlatform()
+
+
+-------------
+
+
 .. code-block:: python
 
     import time
