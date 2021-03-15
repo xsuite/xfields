@@ -12,8 +12,12 @@ class SpaceCharge3D(object):
             at each interaction. If ``False`` the initial field map is
             used at each interaction (frozen model). The default is
             ``True``.
-        length (float64): the length of the space-charge interaction in 
+        length (float64): the length of the space-charge interaction in
             meters.
+        apply_z_kick (bool): If ``True``, the longitudinal kick on the
+            particles is applied.
+        x_range, y_range, z_range (tuples): hello
+
     """
 
     def __init__(self,
@@ -21,11 +25,11 @@ class SpaceCharge3D(object):
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
-                 rho=None, phi=None,
                  x_range=None, y_range=None, z_range=None,
                  dx=None, dy=None, dz=None,
                  nx=None, ny=None, nz=None,
                  x_grid=None, y_grid=None, z_grid=None,
+                 rho=None, phi=None,
                  solver=None,
                  gamma0=None):
 
