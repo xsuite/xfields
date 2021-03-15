@@ -38,6 +38,8 @@ The platform that has been created can be passed when constructing a beam elemen
 
 .. code-block:: python
 
+    from xfields import SpaceCharge3D
+
     spcharge = SpaceCharge3D(
         platform=platform,   # defines the hardware
         length=5.,
