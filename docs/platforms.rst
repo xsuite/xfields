@@ -7,6 +7,7 @@ Xfields supports different plaforms allowing the exploitation of different kinds
 A platform is initialized by instanciating objects from one of the platform classes, which is then passed to the other Xfields components.
 
 Three platforms are presently available:
+
  - The :ref:`CPU platform<cpu_platform>`, to use conventional CPUs
  - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda` to run on NVidia GPUs
  - The :ref:`Pocl platform<pocl_platform>`, bases on `PyOpenCL_, to run on CPUs or GPUs throught PyOPENCL library.
