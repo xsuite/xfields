@@ -26,6 +26,25 @@ In Anacoda or Miniconda this can be done as follows:
     $ pip install cupy-cuda101
     $ mamba install cudatoolkit=10.1.243
 
+
 Installation of PyOpenCL
 ------------------------
 
+## Install pyopencl
+In order to use the :doc:`pocl platform<platforms>`, the PyOpenCL package needs to be installed.
+In Anacoda or Miniconda this can be done as follows:
+
+```
+conda config --add channels conda-forge
+conda install pyopencl
+```
+
+Check that there is an OpenCL installation in the system:
+```
+ls /etc/OpenCL/vendors
+```
+
+Make the OpenCL installation visible to pyopencl:
+```bash
+conda install ocl-icd-system
+```
