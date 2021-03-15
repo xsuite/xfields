@@ -25,6 +25,12 @@ class SpaceCharge3D(object):
         dx (float): Horizontal cell size in meters.
         dy (float): Vertical cell size in meters.
         dz (float): Longitudinal cell size in meters.
+        nx (int): Number of cells in the horizontal direction. It can be
+            provided alternatively to ``dx``.
+        ny (int): Number of cells in the vertical direction. It can be
+            provided alternatively to ``dy``.
+        nz (int): Number of cells in the vertical direction. It can be
+            provided alternatively to ``dz``.
     """
 
     def __init__(self,
