@@ -9,3 +9,4 @@ TODO: explain default kernels.
 .. automodule:: xfields.platforms
     :members:
     :undoc-members:
+    :member-order: bysource
