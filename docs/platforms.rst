@@ -23,7 +23,7 @@ The corresponfig API is described in the following subsections.
 Xfields CPU platform
 --------------------
 
-.. automodule:: xfields.platforms.cpu
+.. autoclass:: xfields.platforms.XfCpuPlatform
     :members:
     :undoc-members:
     :member-order: bysource
@@ -33,7 +33,7 @@ Xfields CPU platform
 Xfields cupy platform
 ---------------------
 
-.. automodule:: xfields.platforms.cu_py
+.. autoclass:: xfields.platforms.XfCupyPlatform
     :members:
     :undoc-members:
     :member-order: bysource
@@ -42,7 +42,7 @@ Xfields cupy platform
 
 Xfields PyOpenCL platform
 -------------------------
-.. automodule:: xfields.platforms.pocl
+.. autoclass:: xfields.platforms.XfPoclPlatform
     :members:
     :undoc-members:
     :member-order: bysource
