@@ -5,7 +5,7 @@ Xfields platforms
 
 Xfields supports different plaforms allowing the exploitation of different kinds of hardware (CPUs and GPUs).
 A platform is initialized by instanciating objects from one of the platform classes, which is then passed to the other Xfields components.
-Platforms are interchangeable as they expose the exact same API.
+Platforms are interchangeable as they expose the same API.
 
 Three platforms are presently available:
 
