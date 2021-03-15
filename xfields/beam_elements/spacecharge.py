@@ -5,7 +5,6 @@ class SpaceCharge3D(object):
 
     def __init__(self,
                  length=None,
-                 update_on_track=True, # Decides if frozen or PIC
                  apply_z_kick=True,
                  rho=None, phi=None,
                  x_grid=None, y_grid=None, z_grid=None,
