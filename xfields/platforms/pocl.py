@@ -21,8 +21,8 @@ class MinimalDotDict(dict):
 class XfPoclPlatform(XfBasePlatform):
 
     """
-        Creates a Pocl Platform object, that allows performing the computations
-        on GPUs and CPUs through PyOpenCL.
+    Creates a Pocl Platform object, that allows performing the computations
+    on GPUs and CPUs through PyOpenCL.
 
     Args:
         default_kernels (bool): If ``True``, the Xfields defult kernels are

@@ -13,7 +13,20 @@ class FFTSolver2D(Solver):
 class FFTSolver3D(Solver):
 
     '''
-    This is the fft solver
+    Creates a Poisson solver object that solves the full 3D Poisson
+    equation using the FFT method (free space).
+
+    Args:
+        nx (int): Number of cells in the horizontal direction.
+        ny (int): Number of cells in the vertical direction.
+        nz (int): Number of cells in the vertical direction.
+        dx (float): Horizontal cell size in meters.
+        dy (float): Vertical cell size in meters.
+        dz (float): Longitudinal cell size in meters.
+        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+            on which the computation is executed.
+    Returns:
+        (FFTSolver3D): Poisson solver object.
     '''
 
     def __init__(self, dx, dy, dz, nx, ny, nz, platform=None):
@@ -83,6 +96,18 @@ class FFTSolver3D(Solver):
 
     #@profile
     def solve(self, rho):
+
+        '''
+        Solves Poisson's equation in free space for a given charge density.
+
+        Args:
+            rho (float64 array): charge density at the grid points in
+                Coulomb/m^3.
+        Returns:
+            phi (float64 array): electric potential at the grid points in
+                Volts.
+        '''
+
         #The transforms are done in place
         self._workspace_dev[:,:,:] = 0. # reset
         self._workspace_dev[:self.nx, :self.ny, :self.nz] = rho
@@ -93,6 +118,23 @@ class FFTSolver3D(Solver):
         return self._workspace_dev.real[:self.nx, :self.ny, :self.nz]
 
 class FFTSolver2p5D(FFTSolver3D):
+
+    '''
+    Creates a Poisson solver object that solve's Poisson equation in
+    the 2.5D aaoroximation equation the FFT method (free space).
+
+    Args:
+        nx (int): Number of cells in the horizontal direction.
+        ny (int): Number of cells in the vertical direction.
+        nz (int): Number of cells in the vertical direction.
+        dx (float): Horizontal cell size in meters.
+        dy (float): Vertical cell size in meters.
+        dz (float): Longitudinal cell size in meters.
+        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+            on which the computation is executed.
+    Returns:
+        (FFTSolver3D): Poisson solver object.
+    '''
 
     def __init__(self, dx, dy, dz, nx, ny, nz, platform=None):
 
