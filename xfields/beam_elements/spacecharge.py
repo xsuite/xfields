@@ -99,7 +99,7 @@ class SpaceCharge3D(object):
     def track(self, particles):
 
         """
-        Computes and Applied the space-charge forces for the provided set of
+        Computes and applies the space-charge forces for the provided set of
         particles.
 
         Args:
