@@ -349,6 +349,11 @@ class TriLinearInterpolatedFieldMap(FieldMap):
     def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0, reset=True,
                             update_phi=True, solver=None, force=False):
 
+        """
+        Updates the charge density 
+        """
+
+
         if not force:
             self._assert_updatable()
 
