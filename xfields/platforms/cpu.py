@@ -131,7 +131,6 @@ class XfCpuPlatform(object):
         interface of numpy.zeros"""
         return self.nplike_lib.zeros(*args, **kwargs)
 
-
     def plan_FFT(self, data, axes):
         """
         Generate an FFT plan object to be executed on the platform.
