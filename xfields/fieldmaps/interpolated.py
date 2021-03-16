@@ -350,7 +350,26 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                         reset=True, update_phi=True, solver=None, force=False):
 
         """
-        Updates the charge density 
+        Updates the charge density at the grid using a given set of particles.
+        The potential can be optionally updated accordingly.
+
+        Args:
+            x_p (float64 array): Horizontal coordinates of the macroparticles.
+            y_p (float64 array): Vertical coordinates of the macroparticles.
+            z_p (float64 array): Longitudinal coordinates of the macroparticles.
+            ncharges_p (float64 array): Number of reference charges in the
+                macroparticles.
+            q0_coulomb (float64): Reference charge in Coulomb.
+            reset (bool): If ``True`` the stored charge density is overwritten
+                with the provided one. If ``False`` the provided charge density
+                is added to the stored one. The default is ``True``.
+            update_phi (bool): If ``True`` the stored potential is recalculated
+                from the stored charge density.
+            solver (Solver object): solver object to be used to solve Poisson's
+                equation (compute phi from rho). If ``None`` is provided the solver
+                attached to the fieldmap is used (if any). The default is ``None``.
+            force (bool): If ``True`` the potential is updated even if the
+                map is declared as not updateable. The default is ``False``.
         """
 
 
