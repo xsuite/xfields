@@ -91,7 +91,7 @@ We install gpyfft install pip providing extra flags as follows:
 Install Miniconda
 -----------------
 
-If you don't have a miniconda installatio, you can quickly get one with the following steps:
+If you don't have a miniconda installation, you can quickly get one with the following steps:
 
 .. code-block:: bash
 
