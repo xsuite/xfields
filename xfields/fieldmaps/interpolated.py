@@ -178,10 +178,16 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
     @property
     def rho(self):
+        """
+        Charge density at the grid points in Coulomb/m^3.
+        """
         return self._rho_dev
 
     @property
     def phi(self):
+        """
+        Electric potential at the grid points in Volts.
+        """
         return self._phi_dev
 
     #@profile
@@ -192,6 +198,28 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             return_dphi_dx=True,
             return_dphi_dy=True,
             return_dphi_dz=True):
+
+        """
+        Returns the charge density, the field potential and its derivatives
+        at the points specified by x, y, z. The output can be customized (see below).
+        Zeros are returned for points outside the grid.
+
+        Args:
+            x (float64 array): Horizontal coordinates at which the field is evaluated.
+            y (float64 array): Vertical coordinates at which the field is evaluated.
+            z (float64 array): Longitudinal coordinates at which the field is evaluated.
+            return_rho (bool): If ``True``, the charge density at the given points is
+                returned.
+            return_phi (bool): If ``True``, the potential at the given points is returned.
+            return_dphi_dx (bool): If ``True``, the horizontal derivative of the potential
+                at the given points is returned.
+            return_dphi_dy: If ``True``, the vertical derivative of the potential
+                at the given points is returned.
+            return_dphi_dz: If ``True``, the longitudinal derivative of the potential
+                at the given points is returned.
+        Returns:
+            (tuple of float64 array): The required quantitie at the provided points.
+        """
 
         assert len(x) == len(y) == len(z)
 
