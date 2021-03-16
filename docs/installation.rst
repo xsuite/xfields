@@ -54,15 +54,15 @@ Make the OpenCL installation visible to pyopencl:
     $ conda install ocl-icd-system
 
 
-For the pocl platform we will need the `gpyfft <https://github.com/geggo/gpyfft>`_ library.
-For this we need to install cython.
+For the PyOpenCL platform we will need the `gpyfft <https://github.com/geggo/gpyfft>`_ and the `clfft <https://github.com/clMathLibraries/clFFT>`_ libraries.
+For this purpose we need to install cython.
 
 .. code-block:: bash
 
     $ pip install cython
 
 
-The we install clfft.
+Then we can install clfft.
 
 .. code-block:: bash
 
@@ -75,7 +75,6 @@ We locate the library and headers here:
 
     $ ls ~/miniconda3/pkgs/clfft-2.12.2-h83d4a3d_1/
     # gives: include  info  lib
-
 
 
 We install gpyfft install pip providing extra flags as follows:
