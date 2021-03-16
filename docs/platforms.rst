@@ -1,5 +1,5 @@
-Xfields platforms
-=================
+Platforms
+=========
 
 .. TODO: explain default kernels.
 
@@ -21,8 +21,8 @@ The corresponfig API is described in the following subsections.
 
 .. _cpu_platform:
 
-Xfields CPU platform
---------------------
+CPU platform
+------------
 
 .. autoclass:: xfields.platforms.XfCpuPlatform
     :members:
@@ -31,8 +31,8 @@ Xfields CPU platform
 
 .. _cupy_platform:
 
-Xfields cupy platform
----------------------
+Cupy platform
+-------------
 
 .. autoclass:: xfields.platforms.XfCupyPlatform
     :members:
@@ -41,8 +41,8 @@ Xfields cupy platform
 
 .. _pocl_platform:
 
-Xfields PyOpenCL platform
--------------------------
+PyOpenCL platform
+-----------------
 .. autoclass:: xfields.platforms.XfPoclPlatform
     :members:
     :undoc-members:
