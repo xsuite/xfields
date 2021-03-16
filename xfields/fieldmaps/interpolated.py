@@ -113,83 +113,6 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             if solver is not None:
                 self.update_phi_from_rho()
 
-    @property
-    def x_grid(self):
-        """
-        Array with the horizontal grid points (cell centers).
-        """
-        return self._x_grid
-
-    @property
-    def y_grid(self):
-        """
-        Array with the vertical grid points (cell centers).
-        """
-        return self._y_grid
-
-    @property
-    def z_grid(self):
-        """
-        Array with the longitudinal grid points (cell centers).
-        """
-        return self._z_grid
-
-    @property
-    def nx(self):
-        """
-        Number of cells in the horizontal direction.
-        """
-        return len(self.x_grid)
-
-    @property
-    def ny(self):
-        """
-        Number of cells in the vertical direction.
-        """
-        return len(self.y_grid)
-
-    @property
-    def nz(self):
-        """
-        Number of cells in the longitudinal direction.
-        """
-        return len(self.z_grid)
-
-    @property
-    def dx(self):
-        """
-        Horizontal cell size in meters.
-        """
-        return self.x_grid[1] - self.x_grid[0]
-
-    @property
-    def dy(self):
-        """
-        Vertical cell size in meters.
-        """
-        return self.y_grid[1] - self.y_grid[0]
-
-    @property
-    def dz(self):
-        """
-        Longitudinal cell size in meters.
-        """
-        return self.z_grid[1] - self.z_grid[0]
-
-    @property
-    def rho(self):
-        """
-        Charge density at the grid points in Coulomb/m^3.
-        """
-        return self._rho_dev
-
-    @property
-    def phi(self):
-        """
-        Electric potential at the grid points in Volts.
-        """
-        return self._phi_dev
-
     #@profile
     def get_values_at_points(self,
             x, y, z,
@@ -258,6 +181,53 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                                         for ii in range(nmaps_to_interp)]
 
         return particles_quantities
+
+    #@profile
+    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
+                        reset=True, update_phi=True, solver=None, force=False):
+
+        """
+        Updates the charge density at the grid using a given set of particles.
+        The potential can be optionally updated accordingly.
+
+        Args:
+            x_p (float64 array): Horizontal coordinates of the macroparticles.
+            y_p (float64 array): Vertical coordinates of the macroparticles.
+            z_p (float64 array): Longitudinal coordinates of the macroparticles.
+            ncharges_p (float64 array): Number of reference charges in the
+                macroparticles.
+            q0_coulomb (float64): Reference charge in Coulomb.
+            reset (bool): If ``True`` the stored charge density is overwritten
+                with the provided one. If ``False`` the provided charge density
+                is added to the stored one. The default is ``True``.
+            update_phi (bool): If ``True`` the stored potential is recalculated
+                from the stored charge density.
+            solver (Solver object): solver object to be used to solve Poisson's
+                equation (compute phi from rho). If ``None`` is provided the solver
+                attached to the fieldmap is used (if any). The default is ``None``.
+            force (bool): If ``True`` the potential is updated even if the
+                map is declared as not updateable. The default is ``False``.
+        """
+
+        if not force:
+            self._assert_updatable()
+
+        if reset:
+            self._rho_dev[:,:,:] = 0.
+
+        assert len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
+
+        self.platform.kernels.p2m_rectmesh3d(
+                nparticles=len(x_p),
+                x=x_p, y=y_p, z=z_p,
+                part_weights=q0_coulomb*ncharges_p,
+                x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
+                dx=self.dx, dy=self.dy, dz=self.dz,
+                nx=self.nx, ny=self.ny, nz=self.nz,
+                grid1d=self._rho_dev)
+
+        if update_phi:
+            self.update_phi_from_rho(solver=solver)
 
     def update_rho(self, rho, reset=True, force=False):
         """
@@ -345,53 +315,6 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         new_phi = solver.solve(self._rho_dev)
         self.update_phi(new_phi)
 
-    #@profile
-    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
-                        reset=True, update_phi=True, solver=None, force=False):
-
-        """
-        Updates the charge density at the grid using a given set of particles.
-        The potential can be optionally updated accordingly.
-
-        Args:
-            x_p (float64 array): Horizontal coordinates of the macroparticles.
-            y_p (float64 array): Vertical coordinates of the macroparticles.
-            z_p (float64 array): Longitudinal coordinates of the macroparticles.
-            ncharges_p (float64 array): Number of reference charges in the
-                macroparticles.
-            q0_coulomb (float64): Reference charge in Coulomb.
-            reset (bool): If ``True`` the stored charge density is overwritten
-                with the provided one. If ``False`` the provided charge density
-                is added to the stored one. The default is ``True``.
-            update_phi (bool): If ``True`` the stored potential is recalculated
-                from the stored charge density.
-            solver (Solver object): solver object to be used to solve Poisson's
-                equation (compute phi from rho). If ``None`` is provided the solver
-                attached to the fieldmap is used (if any). The default is ``None``.
-            force (bool): If ``True`` the potential is updated even if the
-                map is declared as not updateable. The default is ``False``.
-        """
-
-        if not force:
-            self._assert_updatable()
-
-        if reset:
-            self._rho_dev[:,:,:] = 0.
-
-        assert len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
-
-        self.platform.kernels.p2m_rectmesh3d(
-                nparticles=len(x_p),
-                x=x_p, y=y_p, z=z_p,
-                part_weights=q0_coulomb*ncharges_p,
-                x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
-                dx=self.dx, dy=self.dy, dz=self.dz,
-                nx=self.nx, ny=self.ny, nz=self.nz,
-                grid1d=self._rho_dev)
-
-        if update_phi:
-            self.update_phi_from_rho(solver=solver)
-
     def generate_solver(self, solver):
 
         """
@@ -425,6 +348,83 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             raise ValueError(f'solver name {solver} not recognized')
 
         return solver
+
+    @property
+    def x_grid(self):
+        """
+        Array with the horizontal grid points (cell centers).
+        """
+        return self._x_grid
+
+    @property
+    def y_grid(self):
+        """
+        Array with the vertical grid points (cell centers).
+        """
+        return self._y_grid
+
+    @property
+    def z_grid(self):
+        """
+        Array with the longitudinal grid points (cell centers).
+        """
+        return self._z_grid
+
+    @property
+    def nx(self):
+        """
+        Number of cells in the horizontal direction.
+        """
+        return len(self.x_grid)
+
+    @property
+    def ny(self):
+        """
+        Number of cells in the vertical direction.
+        """
+        return len(self.y_grid)
+
+    @property
+    def nz(self):
+        """
+        Number of cells in the longitudinal direction.
+        """
+        return len(self.z_grid)
+
+    @property
+    def dx(self):
+        """
+        Horizontal cell size in meters.
+        """
+        return self.x_grid[1] - self.x_grid[0]
+
+    @property
+    def dy(self):
+        """
+        Vertical cell size in meters.
+        """
+        return self.y_grid[1] - self.y_grid[0]
+
+    @property
+    def dz(self):
+        """
+        Longitudinal cell size in meters.
+        """
+        return self.z_grid[1] - self.z_grid[0]
+
+    @property
+    def rho(self):
+        """
+        Charge density at the grid points in Coulomb/m^3.
+        """
+        return self._rho_dev
+
+    @property
+    def phi(self):
+        """
+        Electric potential at the grid points in Volts.
+        """
+        return self._phi_dev
 
 def _configure_grid(vname, v_grid, dv, v_range, nv):
 
