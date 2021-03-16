@@ -217,6 +217,7 @@ class XfPoclPlatform(XfBasePlatform):
         """
         return XfPoclFFT(self, data, axes, wait_on_call)
 
+    @property
     def kernels(self):
 
         """
