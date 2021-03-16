@@ -113,15 +113,6 @@ class XfCpuPlatform(object):
         Module containing all the numpy features. Numpy members should be accessed
         through ``nplike_lib`` to keep compatibility with the other platforms.
 
-        Example:
-
-        .. code-block:: python
-
-            platform =  XfCpuPlatform()
-            nplike = platform.nplike_lib
-
-            # This returns an array of zeros on the computing device (GPU):
-            a = nplike.zeros((10,10), dtype=nplike.float64
         """
 
         return np
