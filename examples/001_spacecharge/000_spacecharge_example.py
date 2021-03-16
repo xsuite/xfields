@@ -11,7 +11,7 @@ from xfields.platforms import XfCpuPlatform, XfCupyPlatform, XfPoclPlatform
 
 platform = XfCpuPlatform()
 platform = XfCupyPlatform(default_block_size=256)
-#platform = XfPoclPlatform()
+platform = XfPoclPlatform()
 
 print(repr(platform))
 

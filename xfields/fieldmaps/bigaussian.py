@@ -33,7 +33,8 @@ class BiGaussianFieldMap(FieldMap):
         raise ValueError('rho cannot be directly updated'
                          'for UpdatableBiGaussianFieldMap')
 
-    def update_rho_from_particles(x_p, y_p, z_p, ncharges_p, q0, reset=True):
+    def update_rho_from_particles(x_p, y_p, z_p, ncharges_p, q0_coulomb,
+            reset=True):
 
         assert reset, ('rho cannot be added (reset must be True) for '
                       'for UpdatableBiGaussianFieldMap')

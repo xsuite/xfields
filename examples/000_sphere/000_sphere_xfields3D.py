@@ -84,7 +84,7 @@ n_rep = 10
 for _ in range(n_rep):
     t1 = time.time()
     fmap.update_from_particles(x_p=x_dev, y_p=y_dev, z_p=z_dev,
-            ncharges_p=pweights_dev, q0=1.)
+            ncharges_p=pweights_dev, q0_coulomb=1.)
 
     # Check on the x axis
     (rho_test_dev, phi_test_dev, dx_test_dev, dy_test_dev,

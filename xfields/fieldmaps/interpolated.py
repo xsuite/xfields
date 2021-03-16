@@ -346,8 +346,8 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         self.update_phi(new_phi)
 
     #@profile
-    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0, reset=True,
-                            update_phi=True, solver=None, force=False):
+    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
+                        reset=True, update_phi=True, solver=None, force=False):
 
         """
         Updates the charge density 
@@ -365,7 +365,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         self.platform.kernels.p2m_rectmesh3d(
                 nparticles=len(x_p),
                 x=x_p, y=y_p, z=z_p,
-                part_weights=q0*ncharges_p,
+                part_weights=q0_coulomb*ncharges_p,
                 x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
                 dx=self.dx, dy=self.dy, dz=self.dz,
                 nx=self.nx, ny=self.ny, nz=self.nz,

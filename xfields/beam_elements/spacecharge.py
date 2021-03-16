@@ -115,7 +115,7 @@ class SpaceCharge3D(object):
                     y_p=particles.y,
                     z_p=particles.zeta,
                     ncharges_p=particles.weight,
-                    q0=particles.q0*particles.echarge)
+                    q0_coulomb=particles.q0*particles.echarge)
 
 
         res = self.fieldmap.get_values_at_points(
