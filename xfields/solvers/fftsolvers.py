@@ -104,8 +104,7 @@ class FFTSolver3D(Solver):
             rho (float64 array): charge density at the grid points in
                 Coulomb/m^3.
         Returns:
-            phi (float64 array): electric potential at the grid points in
-                Volts.
+            phi (float64 array): electric potential at the grid points in Volts.
         '''
 
         #The transforms are done in place
