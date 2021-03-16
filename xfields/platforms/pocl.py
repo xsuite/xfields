@@ -52,7 +52,7 @@ class XfPoclPlatform(XfBasePlatform):
 
         self.pocl_context = pocl_context
         self.command_queue = command_queue
-        self.kernels = MinimalDotDict()
+        self._kernels = MinimalDotDict()
 
         if patch_pocl_array:
             from ._patch_pocl_array import _patch_pocl_array
@@ -85,10 +85,10 @@ class XfPoclPlatform(XfBasePlatform):
         .. code-block:: python
 
             src_code = r'''
-            __global__
-            void my_mul(const int n, const float* x1,
-                        const float* x2, float* y) {
-                int tid = blockDim.x * blockIdx.x + threadIdx.x;
+            __kernel
+            void my_mul(const int n, __global const float* x1,
+                        __global const float* x2, __global float* y) {
+                int tid = get_global_id(0);
                 if (tid < n){
                     y[tid] = x1[tid] * x2[tid];
                     }
@@ -216,6 +216,48 @@ class XfPoclPlatform(XfBasePlatform):
             plan.itransform(data2)
         """
         return XfPoclFFT(self, data, axes, wait_on_call)
+
+    def kernels(self):
+
+        """
+        Dictionary containing all the kernels that have been imported to the platform.
+        The syntax ``platform.kernels.mykernel`` can also be used.
+
+        Example:
+
+        .. code-block:: python
+
+            src_code = r'''
+            __kernel
+            void my_mul(const int n, __global const float* x1,
+                        __global const float* x2, __global float* y) {
+                int tid = get_global_id(0);
+                if (tid < n){
+                    y[tid] = x1[tid] * x2[tid];
+                    }
+                }
+            '''
+            kernel_descriptions = {'my_mul':{
+                args':(
+                    (('scalar', np.int32),   'n',),
+                    (('array',  np.float64), 'x1',),
+                    (('array',  np.float64), 'x2',),
+                    )
+                'num_threads_from_arg': 'nparticles'
+                },}
+
+            # Import kernel in platform
+            platform.add_kernels(src_code, kernel_descriptions)
+
+            # With a1 and a2 being arrays on the platform, the kernel
+            # can be called as follows:
+            platform.kernels.my_mul(n=len(a1), x1=a1, x2=a2)
+            # or as follows:
+            platform.kernels['my_mul'](n=len(a1), x1=a1, x2=a2)
+
+        """
+
+        return self._kernels
 
 
 

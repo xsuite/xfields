@@ -195,7 +195,7 @@ class XfCpuPlatform(object):
             # With a1 and a2 being arrays on the platform, the kernel
             # can be called as follows:
             platform.kernels.my_mul(n=len(a1), x1=a1, x2=a2)
-            #or as follows:
+            # or as follows:
             platform.kernels['my_mul'](n=len(a1), x1=a1, x2=a2)
 
         """
