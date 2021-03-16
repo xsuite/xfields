@@ -260,6 +260,17 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         return particles_quantities
 
     def update_rho(self, rho, reset=True, force=False):
+        """
+        Updates the charge density on the grid.
+
+        Args:
+            rho (float64 array): Charge density at the grid points in C/m^3.
+            reset (bool): If ``True`` the stored charge density is overwritten
+                with the provided one. If ``False`` the provided charge density
+                is added to the stored one. The default is ``True``.
+            force (bool): If ``True`` the charge density is updated even if the
+                map is declared as not updateable. The default is ``False``.
+        """
 
         if not force:
             self._assert_updatable()
@@ -271,6 +282,19 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
     #@profile
     def update_phi(self, phi, reset=True, force=False):
+
+        """
+        Updates the potential on the grid. The stored derivatives are also
+        updated.
+
+        Args:
+            rho (float64 array): Potential at the grid points.
+            reset (bool): If ``True`` the stored potential is overwritten
+                with the provided one. If ``False`` the provided potential
+                is added to the stored one. The default is ``True``.
+            force (bool): If ``True`` the potential is updated even if the
+                map is declared as not updateable. The default is ``False``.
+        """
 
         if not force:
             self._assert_updatable()
@@ -298,6 +322,17 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
     #@profile
     def update_phi_from_rho(self, solver=None):
+
+        """
+        Updates the potential on the grid (phi) from the charge density on the
+        grid (phi). It requires a :doc:`Poisson solver object <solvers>`. If
+        none is provided the one attached to the fieldmap is used (if any).
+
+        Args:
+            solver (Solver object): solver object to be used to solve Poisson's
+                equation. If ``None`` is provided the solver attached to the fieldmap
+                is used (if any). The default is ``None``.
+        """
 
         self._assert_updatable()
 
