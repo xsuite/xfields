@@ -1,7 +1,8 @@
-Code autogeneration
-===================
+Code autogeneration (for developers)
+====================================
 
 This library uses code autogeneration to specialize kernel code for the different platforms.
+Three platform are presently available: ``cpu``, ``cuda``,  and ``opencl``.
 
 Configuring and running the code generator
 ------------------------------------------
@@ -25,8 +26,6 @@ The code generator is configured by editing the initial part of the `xfields/src
         },
     ]
 
-Three platform are presently availablem: ``cpu``, ``cuda``,  and ``opencl``.
-
 .. _autogfile: https://github.com/xsuite/xfields/blob/master/xfields/src/000_specialize_code.py
 
 and by executing it:
@@ -36,8 +35,8 @@ and by executing it:
     $ cd fields/src/
     $ python 000_specialize_code.py
 
-Syntax
-------
+Writing the source code
+-----------------------
 
 The developer writes a single C source code, providing additional information through the following comment strings, as described in the following.
 
