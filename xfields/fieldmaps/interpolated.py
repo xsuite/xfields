@@ -29,11 +29,14 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             provided alternatively to ``ny``.
         dz (float): Longitudinal cell size in meters.It can be
             provided alternatively to ``nz``.
-        x_grid (np.ndarray): Equispaced array with the horizontal grid points.
+        x_grid (np.ndarray): Equispaced array with the horizontal grid points
+            (cell centers).
             It can be provided alternatively to ``x_range``, ``dx``/``nx``.
-        y_grid (np.ndarray): Equispaced array with the horizontal grid points.
+        y_grid (np.ndarray): Equispaced array with the horizontal grid points
+            (cell centers).
             It can be provided alternatively to ``y_range``, ``dy``/``ny``.
-        z_grid (np.ndarray): Equispaced array with the horizontal grid points.
+        z_grid (np.ndarray): Equispaced array with the horizontal grid points
+            (cell centers).
             It can be provided alternatively to ``z_range``, ``dz``/``nz``.
         rho (np.ndarray): initial charge density at the grid points in
             Coulomb/m^3.
@@ -112,38 +115,65 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
     @property
     def x_grid(self):
+        """
+        Array with the horizontal grid points (cell centers).
+        """
         return self._x_grid
 
     @property
     def y_grid(self):
+        """
+        Array with the vertical grid points (cell centers).
+        """
         return self._y_grid
 
     @property
     def z_grid(self):
+        """
+        Array with the longitudinal grid points (cell centers).
+        """
         return self._z_grid
 
     @property
     def nx(self):
+        """
+        Number of cells in the horizontal direction.
+        """
         return len(self.x_grid)
 
     @property
     def ny(self):
+        """
+        Number of cells in the vertical direction.
+        """
         return len(self.y_grid)
 
     @property
     def nz(self):
+        """
+        Number of cells in the longitudinal direction.
+        """
         return len(self.z_grid)
 
     @property
     def dx(self):
+        """
+        Horizontal cell size in meters.
+        """
         return self.x_grid[1] - self.x_grid[0]
 
     @property
     def dy(self):
+        """
+        Vertical cell size in meters.
+        """
         return self.y_grid[1] - self.y_grid[0]
 
     @property
     def dz(self):
+        """
+        Longitudinal cell size in meters.
+        """
         return self.z_grid[1] - self.z_grid[0]
 
     @property

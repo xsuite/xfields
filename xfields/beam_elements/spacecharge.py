@@ -31,11 +31,14 @@ class SpaceCharge3D(object):
             provided alternatively to ``ny``.
         dz (float): Longitudinal cell size in meters.It can be
             provided alternatively to ``nz``.
-        x_grid (np.ndarray): Equispaced array with the horizontal grid points.
+        x_grid (np.ndarray): Equispaced array with the horizontal grid points
+            (cell centers).
             It can be provided alternatively to ``x_range``, ``dx``/``nx``.
-        y_grid (np.ndarray): Equispaced array with the horizontal grid points.
+        y_grid (np.ndarray): Equispaced array with the horizontal grid points
+            (cell centers).
             It can be provided alternatively to ``y_range``, ``dy``/``ny``.
-        z_grid (np.ndarray): Equispaced array with the horizontal grid points.
+        z_grid (np.ndarray): Equispaced array with the horizontal grid points
+            (cell centers).
             It can be provided alternatively to ``z_range``, ``dz``/``nz``.
         rho (np.ndarray): initial charge density at the grid points in
             Coulomb/m^3.
