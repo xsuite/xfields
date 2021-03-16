@@ -72,6 +72,11 @@ For example with the following code the line marked line is included only in the
 The ``gpukern`` directive is used to qualify kernel functions. The code generator replaces it with ``__global__`` in the CUDA code and with ``__kernel`` in the OpenCL code.
 
 
+``gpuglmem`` directive
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``gpukern`` directive is used to qualify pointers to locations in the device global memoru. The code generator replaces it with ``__global`` in the OpenCL code.
+
 
 
 
