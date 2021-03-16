@@ -9,3 +9,4 @@ This is the API reference
    platforms
    beamelements
    fieldmaps
+   solvers
