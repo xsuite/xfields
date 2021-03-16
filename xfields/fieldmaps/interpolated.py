@@ -7,15 +7,66 @@ from ..platforms import XfCpuPlatform
 
 class TriLinearInterpolatedFieldMap(FieldMap):
 
-    def __init__(self, rho=None, phi=None,
-                 x_grid=None, y_grid=None, z_grid=None,
-                 dx=None, dy=None, dz=None,
-                 nx=None, ny=None, nz=None,
+    """
+    Builds a linear interpolator for a 3D field map. The map can be updated
+    using the Parcle In Cell method.
+
+    Args:
+        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+            on which the computation is executed.
+        x_range (tuple): Horizontal extent (in meters) of the
+            computing grid.
+        y_range (tuple): Vertical extent (in meters) of the
+            computing grid.
+        z_range (tuple): Longitudina extent  (in meters) of
+            the computing grid.
+        nx (int): Number of cells in the horizontal direction.
+        ny (int): Number of cells in the vertical direction.
+        nz (int): Number of cells in the vertical direction.
+        dx (float): Horizontal cell size in meters. It can be
+            provided alternatively to ``nx``.
+        dy (float): Vertical cell size in meters. It can be
+            provided alternatively to ``ny``.
+        dz (float): Longitudinal cell size in meters.It can be
+            provided alternatively to ``nz``.
+        x_grid (np.ndarray): Equispaced array with the horizontal grid points.
+            It can be provided alternatively to ``x_range``, ``dx``/``nx``.
+        y_grid (np.ndarray): Equispaced array with the horizontal grid points.
+            It can be provided alternatively to ``y_range``, ``dy``/``ny``.
+        z_grid (np.ndarray): Equispaced array with the horizontal grid points.
+            It can be provided alternatively to ``z_range``, ``dz``/``nz``.
+        rho (np.ndarray): initial charge density at the grid points in
+            Coulomb/m^3.
+        phi (np.ndarray): initial electric potential at the grid points in
+            Volts. If not provided the ``phi`` is calculated from ``rho``
+            using the Poisson solver (if available).
+        solver (str or solver object): Defines the Poisson solver to be used
+            to compute phi from rho. Accepted values are ``FFTSolver3D`` and
+            ``FFTSolver2p5D``. A Xfields solver object can also be provided.
+            In case ``update_on_track``is ``False`` and ``phi`` is provided
+            by the user, this argument can be omitted.
+        scale_coordinates_in_solver (tuple): Three coefficients used to rescale
+            the grid coordinates in the definition of the solver. The default is
+            (1.,1.,1.).
+        updatable (bool): If ``True`` the field map can be updated after
+            creation. Default is ``True``.
+    Returns:
+        (TriLinearInterpolatedFieldMap): Interpolator object.
+    """
+
+    def __init__(self,
+                 platform=None,
                  x_range=None, y_range=None, z_range=None,
+                 nx=None, ny=None, nz=None,
+                 dx=None, dy=None, dz=None,
+                 x_grid=None, y_grid=None, z_grid=None,
+                 rho=None, phi=None,
                  solver=None,
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
-                 platform=None):
+                 ):
+
+
 
         if platform is None:
             platform = XfCpuPlatform()

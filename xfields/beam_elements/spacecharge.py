@@ -22,15 +22,15 @@ class SpaceCharge3D(object):
             computing grid.
         z_range (tuple): Longitudina extent  (in meters) of
             the computing grid.
-        dx (float): Horizontal cell size in meters.
-        dy (float): Vertical cell size in meters.
-        dz (float): Longitudinal cell size in meters.
-        nx (int): Number of cells in the horizontal direction. It can be
-            provided alternatively to ``dx``.
-        ny (int): Number of cells in the vertical direction. It can be
-            provided alternatively to ``dy``.
-        nz (int): Number of cells in the vertical direction. It can be
-            provided alternatively to ``dz``.
+        nx (int): Number of cells in the horizontal direction.
+        ny (int): Number of cells in the vertical direction.
+        nz (int): Number of cells in the vertical direction.
+        dx (float): Horizontal cell size in meters. It can be
+            provided alternatively to ``nx``.
+        dy (float): Vertical cell size in meters. It can be
+            provided alternatively to ``ny``.
+        dz (float): Longitudinal cell size in meters.It can be
+            provided alternatively to ``nz``.
         x_grid (np.ndarray): Equispaced array with the horizontal grid points.
             It can be provided alternatively to ``x_range``, ``dx``/``nx``.
         y_grid (np.ndarray): Equispaced array with the horizontal grid points.
@@ -59,8 +59,8 @@ class SpaceCharge3D(object):
                  length=None,
                  apply_z_kick=True,
                  x_range=None, y_range=None, z_range=None,
-                 dx=None, dy=None, dz=None,
                  nx=None, ny=None, nz=None,
+                 dx=None, dy=None, dz=None,
                  x_grid=None, y_grid=None, z_grid=None,
                  rho=None, phi=None,
                  solver=None,
