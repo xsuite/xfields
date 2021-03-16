@@ -3,7 +3,7 @@ Getting Started Guide
 
 To install Xfields please follow the instructions in the dedicated :doc:`installation page <installation>`.
 
-Create an Xfields Platform
+Create a Platform
 --------------------------
 
 Xfield can run on different kinds of hardware (CPUs and GPUs). The user selects the herdware to be used by
@@ -31,8 +31,8 @@ And to run on GPUs and CPUs using PyOpenCL:
     platform = XfPoclPlatform()
 
 
-Create Beam Element
--------------------
+Create a Beam Element
+---------------------
 
 The platform that has been created can be passed when constructing a beam element defining the hardware on which the calculation is performed. For example we can create a spacecharge beam element as follows:
 
