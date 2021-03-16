@@ -81,7 +81,7 @@ The ``\*gpuglmem*\`` directive is used to qualify pointers to locations in the d
 Configuring and running the code generator
 ------------------------------------------
 
-The code generator is configured by editing the initial part of the `000_specialize_code.py <autogfile>`_ file:
+The code generator is configured by editing the initial part of the `xfields/src/000_specialize_code.py <autogfile>`_ file:
 
 .. code-block:: python
 
@@ -101,6 +101,14 @@ The code generator is configured by editing the initial part of the `000_special
     ]
 
 .. _autogfile: https://github.com/xsuite/xfields/blob/master/xfields/src/000_specialize_code.py
+
+and by executing it:
+
+.. code-block:: bash
+
+    $ cd fields/src/
+    $ python 000_specialize_code.py
+
 
 
 
