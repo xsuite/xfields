@@ -372,7 +372,6 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                 map is declared as not updateable. The default is ``False``.
         """
 
-
         if not force:
             self._assert_updatable()
 
@@ -394,6 +393,17 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             self.update_phi_from_rho(solver=solver)
 
     def generate_solver(self, solver):
+
+        """
+        Generates a Poisson solver associated to the defined grid.
+
+        Args:
+            solver (str): Defines the Poisson solver to be used
+            to compute phi from rho. Accepted values are ``FFTSolver3D`` and
+            ``FFTSolver2p5D``.
+        Returns:
+            (Solver): Solver object associated to the defined grid.
+        """
 
         scale_dx, scale_dy, scale_dz = self.scale_coordinates_in_solver
 
