@@ -26,7 +26,7 @@ class XfCpuPlatform(object):
 
     def __init__(self, default_kernels=True):
 
-        self.kernels = MinimalDotDict()
+        self._kernels = MinimalDotDict()
 
         if default_kernels:
             self.add_kernels(lib_file=cpu_default_kernels['lib_file'],
@@ -181,6 +181,46 @@ class XfCpuPlatform(object):
             plan.itransform(data2)
         """
         return XfCpuFFT(data, axes)
+
+    @property
+    def kernels(self):
+
+        """
+        Dictionary containing all the kernels that have been imported to the platform.
+        The syntax ``platform.kernels.mykernel`` can also be used.
+
+        Example:
+
+        .. code-block:: python
+
+            src_code = r'''
+            __global__
+            void my_mul(const int n, const float* x1,
+                        const float* x2, float* y) {
+                int tid = blockDim.x * blockIdx.x + threadIdx.x;
+                if (tid < n){
+                    y[tid] = x1[tid] * x2[tid];
+                    }
+                }
+            '''
+            kernel_descriptions = {'my_mul':{
+                args':(
+                    (('scalar', np.int32),   'n',),
+                    (('array',  np.float64), 'x1',),
+                    (('array',  np.float64), 'x2',),
+                    )
+                'num_threads_from_arg': 'nparticles'
+                },}
+
+            # Import kernel in platform
+            platform.add_kernels(src_code, kernel_descriptions)
+
+            # With a1 and a2 being arrays on the platform, the kernel
+            # can be called as follows:
+            platform.kernels.my_mul(n=len(a1), x1=a1, x2=a2)
+        """
+
+        return self._kernels
 
 
 class XfCpuKernel(object):

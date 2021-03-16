@@ -130,6 +130,7 @@ class XfPoclPlatform(XfBasePlatform):
                 command_queue=self.command_queue)
 
     def nparray_to_platform_mem(self, arr):
+
         """
         Copies a numpy array to the device memory.
         Args:
@@ -143,6 +144,7 @@ class XfPoclPlatform(XfBasePlatform):
         return dev_arr
 
     def nparray_from_platform_mem(self, dev_arr):
+
         """
         Copies an array to the device to a numpy array.
 
