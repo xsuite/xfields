@@ -62,93 +62,6 @@ class XfPoclPlatform(XfBasePlatform):
             self.add_kernels(src_files=pocl_default_kernels['src_files'],
                     kernel_descriptions=pocl_default_kernels['kernel_descriptions'])
 
-    @property
-    def nplike_lib(self):
-        """
-        Module containing all the numpy features supported by PyOpenCL (optionally
-        with patches to operate with non-contiguous arrays).
-
-        Example:
-
-        .. code-block:: python
-
-            platform =  XfPoclPlatform()
-            nplike = platform.nplike_lib
-
-            # This returns an array of zeros on the computing device (GPU):
-            a = nplike.zeros((10,10), dtype=nplike.float64
-
-        """
-        return cla
-
-    def synchronize(self):
-        """
-        Ensures that all computations submitted to the platform are completed.
-        No action is performed by this function in the Pocl platform. The method
-        is provided so that the Pocl platform has an identical API to the Cupy one.
-        """
-        pass
-
-    def zeros(self, *args, **kwargs):
-        """
-        Allocates an array of zeros on the device. The function has the same
-        interface of numpy.zeros"""
-        return self.nplike_lib.zeros(queue=self.command_queue, *args, **kwargs)
-
-
-    def nparray_to_platform_mem(self, arr):
-        """
-        Copies a numpy array to the device memory.
-        Args:
-            arr (numpy.ndarray): Array to be transferred
-
-        Returns:
-            pyopencl.array.Array:The same array copied to the device.
-
-        """
-        dev_arr = cla.to_device(self.command_queue, arr)
-        return dev_arr
-
-    def nparray_from_platform_mem(self, dev_arr):
-        """
-        Copies an array to the device to a numpy array.
-
-        Args:
-            dev_arr (pyopencl.array.Array): Array to be transferred.
-        Returns:
-            numpy.ndarray: The same data copied to a numpy array.
-
-        """
-        return dev_arr.get()
-
-    def plan_FFT(self, data, axes, wait_on_call=True):
-        """
-        Generates an FFT plan object to be executed on the platform.
-
-        Args:
-            data (pyopencl.array.Array): Array having type and shape for which
-                the FFT needs to be planned.
-            axes (sequence of ints): Axes along which the FFT needs to be
-                performed.
-        Returns:
-            XfPoclFFT: FFT plan for the required array shape, type and axes.
-
-        Example:
-
-        .. code-block:: python
-
-            plan = platform.plan_FFT(data, axes=(0,1))
-
-            data2 = 2*data
-
-            # Forward tranform (in place)
-            plan.transform(data2)
-
-            # Inverse tranform (in place)
-            plan.itransform(data2)
-        """
-        return XfPoclFFT(self, data, axes, wait_on_call)
-
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
         """
@@ -215,6 +128,94 @@ class XfPoclPlatform(XfBasePlatform):
                 arg_names=aa_names, arg_types=aa_types,
                 num_threads_from_arg=nt_from,
                 command_queue=self.command_queue)
+
+    def nparray_to_platform_mem(self, arr):
+        """
+        Copies a numpy array to the device memory.
+        Args:
+            arr (numpy.ndarray): Array to be transferred
+
+        Returns:
+            pyopencl.array.Array:The same array copied to the device.
+
+        """
+        dev_arr = cla.to_device(self.command_queue, arr)
+        return dev_arr
+
+    def nparray_from_platform_mem(self, dev_arr):
+        """
+        Copies an array to the device to a numpy array.
+
+        Args:
+            dev_arr (pyopencl.array.Array): Array to be transferred.
+        Returns:
+            numpy.ndarray: The same data copied to a numpy array.
+
+        """
+        return dev_arr.get()
+
+    @property
+    def nplike_lib(self):
+        """
+        Module containing all the numpy features supported by PyOpenCL (optionally
+        with patches to operate with non-contiguous arrays).
+
+        Example:
+
+        .. code-block:: python
+
+            platform =  XfPoclPlatform()
+            nplike = platform.nplike_lib
+
+            # This returns an array of zeros on the computing device (GPU):
+            a = nplike.zeros((10,10), dtype=nplike.float64
+
+        """
+        return cla
+
+    def synchronize(self):
+        """
+        Ensures that all computations submitted to the platform are completed.
+        No action is performed by this function in the Pocl platform. The method
+        is provided so that the Pocl platform has an identical API to the Cupy one.
+        """
+        pass
+
+    def zeros(self, *args, **kwargs):
+        """
+        Allocates an array of zeros on the device. The function has the same
+        interface of numpy.zeros"""
+        return self.nplike_lib.zeros(queue=self.command_queue, *args, **kwargs)
+
+    def plan_FFT(self, data, axes, wait_on_call=True):
+        """
+        Generates an FFT plan object to be executed on the platform.
+
+        Args:
+            data (pyopencl.array.Array): Array having type and shape for which
+                the FFT needs to be planned.
+            axes (sequence of ints): Axes along which the FFT needs to be
+                performed.
+        Returns:
+            XfPoclFFT: FFT plan for the required array shape, type and axes.
+
+        Example:
+
+        .. code-block:: python
+
+            plan = platform.plan_FFT(data, axes=(0,1))
+
+            data2 = 2*data
+
+            # Forward tranform (in place)
+            plan.transform(data2)
+
+            # Inverse tranform (in place)
+            plan.itransform(data2)
+        """
+        return XfPoclFFT(self, data, axes, wait_on_call)
+
+
 
 class XfPoclKernel(object):
 

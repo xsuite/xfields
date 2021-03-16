@@ -45,91 +45,6 @@ class XfCupyPlatform(XfBasePlatform):
             self.add_kernels(src_files=cupy_default_kernels['src_files'],
                     kernel_descriptions=cupy_default_kernels['kernel_descriptions'])
 
-    @property
-    def nplike_lib(self):
-        """
-        Module containing all the numpy features supported by cupy.
-
-        Example:
-
-        .. code-block:: python
-
-            platform =  XfCupyPlatform()
-            nplike = platform.nplike_lib
-
-            # This returns an array of zeros on the computing device (GPU):
-            a = nplike.zeros((10,10), dtype=nplike.float64
-
-        """
-        return cupy
-
-    def synchronize(self):
-        """
-        Ensures that all computations submitted to the platform are completed.
-        Equivalent to ``cupy.cuda.stream.get_current_stream().synchronize()``
-        """
-        cupy.cuda.stream.get_current_stream().synchronize()
-
-    def zeros(self, *args, **kwargs):
-        """
-        Allocates an array of zeros on the device. The function has the same
-        interface of numpy.zeros"""
-        return self.nplike_lib.zeros(*args, **kwargs)
-
-    def nparray_to_platform_mem(self, arr):
-        """
-        Copies a numpy array to the device memory.
-
-        Args:
-            arr (numpy.ndarray): Array to be transferred
-
-        Returns:
-            cupy.ndarray:The same array copied to the device.
-
-        """
-        dev_arr = cupy.array(arr)
-        return dev_arr
-
-    def nparray_from_platform_mem(self, dev_arr):
-        """
-        Copies an array to the device to a numpy array.
-
-        Args:
-            dev_arr (cupy.ndarray): Array to be transferred.
-        Returns:
-            numpy.ndarray: The same data copied to a numpy array.
-
-        """
-        return dev_arr.get()
-
-    def plan_FFT(self, data, axes, ):
-        """
-        Generates an FFT plan object to be executed on the platform.
-
-        Args:
-            data (cupy.ndarray): Array having type and shape for which the FFT
-                needs to be planned.
-            axes (sequence of ints): Axes along which the FFT needs to be
-                performed.
-        Returns:
-            XfCupyFFT: FFT plan for the required array shape, type and axes.
-
-        Example:
-
-        .. code-block:: python
-
-            plan = platform.plan_FFT(data, axes=(0,1))
-
-            data2 = 2*data
-
-            # Forward tranform (in place)
-            plan.transform(data2)
-
-            # Inverse tranform (in place)
-            plan.itransform(data2)
-        """
-        return XfCupyFFT(self, data, axes)
-
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
         """
@@ -197,6 +112,92 @@ class XfCupyPlatform(XfBasePlatform):
                 arg_names=aa_names, arg_types=aa_types,
                 num_threads_from_arg=nt_from,
                 block_size=self.default_block_size)
+
+    def nparray_to_platform_mem(self, arr):
+        """
+        Copies a numpy array to the device memory.
+
+        Args:
+            arr (numpy.ndarray): Array to be transferred
+
+        Returns:
+            cupy.ndarray:The same array copied to the device.
+
+        """
+        dev_arr = cupy.array(arr)
+        return dev_arr
+
+    def nparray_from_platform_mem(self, dev_arr):
+        """
+        Copies an array to the device to a numpy array.
+
+        Args:
+            dev_arr (cupy.ndarray): Array to be transferred.
+        Returns:
+            numpy.ndarray: The same data copied to a numpy array.
+
+        """
+        return dev_arr.get()
+
+    @property
+    def nplike_lib(self):
+        """
+        Module containing all the numpy features supported by cupy.
+
+        Example:
+
+        .. code-block:: python
+
+            platform =  XfCupyPlatform()
+            nplike = platform.nplike_lib
+
+            # This returns an array of zeros on the computing device (GPU):
+            a = nplike.zeros((10,10), dtype=nplike.float64
+
+        """
+        return cupy
+
+    def synchronize(self):
+        """
+        Ensures that all computations submitted to the platform are completed.
+        Equivalent to ``cupy.cuda.stream.get_current_stream().synchronize()``
+        """
+        cupy.cuda.stream.get_current_stream().synchronize()
+
+    def zeros(self, *args, **kwargs):
+        """
+        Allocates an array of zeros on the device. The function has the same
+        interface of numpy.zeros"""
+        return self.nplike_lib.zeros(*args, **kwargs)
+
+    def plan_FFT(self, data, axes, ):
+        """
+        Generates an FFT plan object to be executed on the platform.
+
+        Args:
+            data (cupy.ndarray): Array having type and shape for which the FFT
+                needs to be planned.
+            axes (sequence of ints): Axes along which the FFT needs to be
+                performed.
+        Returns:
+            XfCupyFFT: FFT plan for the required array shape, type and axes.
+
+        Example:
+
+        .. code-block:: python
+
+            plan = platform.plan_FFT(data, axes=(0,1))
+
+            data2 = 2*data
+
+            # Forward tranform (in place)
+            plan.transform(data2)
+
+            # Inverse tranform (in place)
+            plan.itransform(data2)
+        """
+        return XfCupyFFT(self, data, axes)
+
 
 class XfCupyKernel(object):
 
