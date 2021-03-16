@@ -9,9 +9,9 @@ Platforms are interchangeable as they expose the same API.
 
 Three platforms are presently available:
 
- - The :ref:`CPU platform<cpu_platform>`, to use conventional CPUs
  - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda`_ to run on NVidia GPUs
  - The :ref:`Pocl platform<pocl_platform>`, bases on `PyOpenCL`_, to run on CPUs or GPUs throught PyOPENCL library.
+ - The :ref:`CPU platform<cpu_platform>`, to use conventional CPUs
 
 The corresponfig API is described in the following subsections.
 
@@ -19,15 +19,6 @@ The corresponfig API is described in the following subsections.
 .. _cuda: https://developer.nvidia.com/cuda-zone
 .. _PyOpenCL: https://documen.tician.de/pyopencl/
 
-.. _cpu_platform:
-
-CPU platform
-------------
-
-.. autoclass:: xfields.platforms.XfCpuPlatform
-    :members:
-    :undoc-members:
-    :member-order: bysource
 
 .. _cupy_platform:
 
@@ -48,3 +39,13 @@ PyOpenCL platform
     :undoc-members:
     :member-order: bysource
 
+
+.. _cpu_platform:
+
+CPU platform
+------------
+
+.. autoclass:: xfields.platforms.XfCpuPlatform
+    :members:
+    :undoc-members:
+    :member-order: bysource
