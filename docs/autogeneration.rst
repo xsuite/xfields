@@ -8,7 +8,6 @@ Syntax
 
 The developer writes a single C source code, providing additional information through the following comment strings, as described in the following.
 
-
 ``vectorize_over`` block
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -60,26 +59,31 @@ The corresponding generated OpenCL code will be:
 
 ``only_for_platform`` directive
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The ``only_for_platform`` directive can be used to include a givem line only for a certain platform.
+The ``\\only_for_platform`` directive can be used to include a givem line only for a certain platform.
 For example with the following code the line marked line is included only in the GPU implementation.
 
 .. code-block:: C
+
     #include <atomicadd.h> //only_for_platform cpu
 
 ``gpukern`` directive
 ~~~~~~~~~~~~~~~~~~~~~
 
-The ``gpukern`` directive is used to qualify kernel functions. The code generator replaces it with ``__global__`` in the CUDA code and with ``__kernel`` in the OpenCL code.
+The ``\*gpukern*\`` directive is used to qualify kernel functions. The code generator replaces it with ``__global__`` in the CUDA code and with ``__kernel`` in the OpenCL code.
 
 
 ``gpuglmem`` directive
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``gpukern`` directive is used to qualify pointers to locations in the device global memoru. The code generator replaces it with ``__global`` in the OpenCL code.
+The ``\*gpuglmem*\`` directive is used to qualify pointers to locations in the device global memoru. The code generator replaces it with ``__global`` in the OpenCL code.
 
 
+Configuring and running the code generator
+------------------------------------------
 
+The code generator is configured by editing the initial part of the `000_specialize_code.py <autogfile>`_ file:
 
+.. _autogfile: https://github.com/xsuite/xfields/blob/master/xfields/src/000_specialize_code.py
 
 
 
