@@ -12,7 +12,7 @@ Xfields is a python package belonging to the Xsuite library for the simulation o
 
 The implemented physics models are being documented in `this document <https://github.com/xsuite/xfields/blob/master/docs/physics_manual/physics_man.pdf>`_.
 
-The source code is available in this `GitHub repository <https://github.com/xsuite/xfields/blob/master/docs/physics_manual/physics_man.pdf>`.
+The source code is available in this `GitHub repository <https://github.com/xsuite/xfields/blob/master/docs/physics_manual/physics_man.pdf>`_.
 
 
 Contents:
