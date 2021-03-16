@@ -3,8 +3,8 @@ Getting Started Guide
 
 To install Xfields please follow the instructions in the dedicated :doc:`installation page <installation>`.
 
-Create an Xfield Platform
--------------------------
+Create an Xfields Platform
+--------------------------
 
 Xfield can run on different kinds of hardware (CPUs and GPUs). The user selects the herdware to be used by
 creating a :doc:`platform object<platforms>`, that is then passed to all other Xfields components.
