@@ -2,9 +2,9 @@ import time
 
 import numpy as np
 
-# Pocl platform
-from xfields.platforms.pocl import XfPoclPlatform
-platform = XfPoclPlatform()
+# Pyopencl platform
+from xfields.platforms import XfPyopenclPlatform
+platform = XfPyopenclPlatform()
 
 # # CPU platformr
 # from xfields.platforms.cpu import XfCpuPlatform

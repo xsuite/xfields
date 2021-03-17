@@ -12,55 +12,55 @@ except ImportError:
                             'this platform is not available!'))
     cla = cl
 
-from .default_kernels import pocl_default_kernels
+from .default_kernels import pyopencl_default_kernels
 
 class MinimalDotDict(dict):
     def __getattr__(self, attr):
         return self.get(attr)
 
-class XfPoclPlatform(XfBasePlatform):
+class XfPyopenclPlatform(XfBasePlatform):
 
     """
-    Creates a Pocl Platform object, that allows performing the computations
+    Creates a Pyopencl Platform object, that allows performing the computations
     on GPUs and CPUs through PyOpenCL.
 
     Args:
         default_kernels (bool): If ``True``, the Xfields defult kernels are
             automatically imported.
-        pocl_context: A PyOpenCL context can be optionally provided. Otherwise
+        pyopencl_context: A PyOpenCL context can be optionally provided. Otherwise
             a context is created by the platform.
         command_queue: A PyOpenCL command que can be optionally provided.
             Otherwise a queue is created by the platform.
-        patch_pocl_array (bool): If ``True``, the PyOpecCL class is patched to
+        patch_pyopencl_array (bool): If ``True``, the PyOpecCL class is patched to
             allow some operations with non-contiguous arrays.
 
     Returns:
-        XfPoclPlatform: platform object.
+        XfPyopenclPlatform: platform object.
 
     """
 
-    def __init__(self, pocl_context=None, command_queue=None, default_kernels=True,
-                 patch_pocl_array=True):
+    def __init__(self, pyopencl_context=None, command_queue=None, default_kernels=True,
+                 patch_pyopencl_array=True):
 
-        if pocl_context is None:
-            pocl_context = cl.create_some_context()
+        if pyopencl_context is None:
+            pyopencl_context = cl.create_some_context()
 
         if command_queue is None:
-            command_queue = cl.CommandQueue(pocl_context)
+            command_queue = cl.CommandQueue(pyopencl_context)
 
-        assert command_queue.context == pocl_context
+        assert command_queue.context == pyopencl_context
 
-        self.pocl_context = pocl_context
+        self.pyopencl_context = pyopencl_context
         self.command_queue = command_queue
         self._kernels = MinimalDotDict()
 
-        if patch_pocl_array:
-            from ._patch_pocl_array import _patch_pocl_array
-            _patch_pocl_array(cl, cla, pocl_context)
+        if patch_pyopencl_array:
+            from ._patch_pyopencl_array import _patch_pyopencl_array
+            _patch_pyopencl_array(cl, cla, pyopencl_context)
 
         if default_kernels:
-            self.add_kernels(src_files=pocl_default_kernels['src_files'],
-                    kernel_descriptions=pocl_default_kernels['kernel_descriptions'])
+            self.add_kernels(src_files=pyopencl_default_kernels['src_files'],
+                    kernel_descriptions=pyopencl_default_kernels['kernel_descriptions'])
 
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
@@ -116,7 +116,7 @@ class XfPoclPlatform(XfBasePlatform):
             with open(ff, 'r') as fid:
                 src_content += ('\n\n' + fid.read())
 
-        prg = cl.Program(self.pocl_context, src_content).build()
+        prg = cl.Program(self.pyopencl_context, src_content).build()
 
         ker_names = kernel_descriptions.keys()
         for nn in ker_names:
@@ -124,7 +124,7 @@ class XfPoclPlatform(XfBasePlatform):
             aa = kernel_descriptions[nn]['args']
             nt_from = kernel_descriptions[nn]['num_threads_from_arg']
             aa_types, aa_names = zip(*aa)
-            self.kernels[nn] = XfPoclKernel(pocl_kernel=kk,
+            self.kernels[nn] = XfPyopenclKernel(pyopencl_kernel=kk,
                 arg_names=aa_names, arg_types=aa_types,
                 num_threads_from_arg=nt_from,
                 command_queue=self.command_queue)
@@ -167,8 +167,8 @@ class XfPoclPlatform(XfBasePlatform):
     def synchronize(self):
         """
         Ensures that all computations submitted to the platform are completed.
-        No action is performed by this function in the Pocl platform. The method
-        is provided so that the Pocl platform has an identical API to the Cupy one.
+        No action is performed by this function in the Pyopencl platform. The method
+        is provided so that the Pyopencl platform has an identical API to the Cupy one.
         """
         pass
 
@@ -188,7 +188,7 @@ class XfPoclPlatform(XfBasePlatform):
             axes (sequence of ints): Axes along which the FFT needs to be
                 performed.
         Returns:
-            XfPoclFFT: FFT plan for the required array shape, type and axes.
+            XfPyopenclFFT: FFT plan for the required array shape, type and axes.
 
         Example:
 
@@ -204,7 +204,7 @@ class XfPoclPlatform(XfBasePlatform):
             # Inverse tranform (in place)
             plan.itransform(data2)
         """
-        return XfPoclFFT(self, data, axes, wait_on_call)
+        return XfPyopenclFFT(self, data, axes, wait_on_call)
 
     @property
     def kernels(self):
@@ -251,16 +251,16 @@ class XfPoclPlatform(XfBasePlatform):
 
 
 
-class XfPoclKernel(object):
+class XfPyopenclKernel(object):
 
-    def __init__(self, pocl_kernel, arg_names, arg_types,
+    def __init__(self, pyopencl_kernel, arg_names, arg_types,
                  num_threads_from_arg, command_queue,
                  wait_on_call=True):
 
-        assert (len(arg_names) == len(arg_types) == pocl_kernel.num_args)
+        assert (len(arg_names) == len(arg_types) == pyopencl_kernel.num_args)
         assert num_threads_from_arg in arg_names
 
-        self.pocl_kernel = pocl_kernel
+        self.pyopencl_kernel = pyopencl_kernel
         self.arg_names = arg_names
         self.arg_types = arg_types
         self.num_threads_from_arg = num_threads_from_arg
@@ -281,12 +281,12 @@ class XfPoclKernel(object):
                 arg_list.append(tt[1](vv))
             elif tt[0] == 'array':
                 assert isinstance(vv, cla.Array)
-                assert vv.context == self.pocl_kernel.context
+                assert vv.context == self.pyopencl_kernel.context
                 arg_list.append(vv.base_data[vv.offset:])
             else:
                 raise ValueError(f'Type {tt} not recognized')
 
-        event = self.pocl_kernel(self.command_queue,
+        event = self.pyopencl_kernel(self.command_queue,
                 (kwargs[self.num_threads_from_arg],),
                 None, *arg_list)
 
@@ -295,7 +295,7 @@ class XfPoclKernel(object):
 
         return event
 
-class XfPoclFFT(object):
+class XfPyopenclFFT(object):
     def __init__(self, platform, data, axes, wait_on_call=True):
 
         self.platform = platform
@@ -312,7 +312,7 @@ class XfPoclFFT(object):
                     ' all dimensions apart from the last to be powers of two!')
 
         import gpyfft
-        self._fftobj = gpyfft.fft.FFT(platform.pocl_context,
+        self._fftobj = gpyfft.fft.FFT(platform.pyopencl_context,
                 platform.command_queue, data, axes=axes)
 
     def transform(self, data):

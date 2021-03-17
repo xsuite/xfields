@@ -1,5 +1,5 @@
 from .cu_py import XfCupyPlatform
-from .pocl import XfPoclPlatform
+from .py_opencl import XfPyopenclPlatform
 from .cpu import XfCpuPlatform
 
-__all__=['XfCupyPlatform', 'XfPoclPlatform', 'XfCpuPlatform']
+__all__=['XfCupyPlatform', 'XfPyopenclPlatform', 'XfCpuPlatform']

@@ -1,9 +1,9 @@
 import numpy as np
 import numpy.linalg as la
 
-# Pocl platform
-from xfields.platforms.pocl import XfPoclPlatform # , XfPoclKernel
-platform = XfPoclPlatform()
+# Pyopencl platform
+from xfields.platforms import XfPyopenclPlatform # , XfPyopenclKernel
+platform = XfPyopenclPlatform()
 
 # # CPU platform
 # from xfields.platforms.cpu import XfCpuPlatform

@@ -4,7 +4,7 @@ from pysixtrack.particles import Particles
 
 from xfields.platforms import XfCpuPlatform
 from xfields.platforms import XfCupyPlatform
-from xfields.platforms import XfPoclPlatform
+from xfields.platforms import XfPyopenclPlatform
 
 class CupyMathlib(object):
 
@@ -14,7 +14,7 @@ class CupyMathlib(object):
     def wfun(cls, z_re, z_im):
         raise NotImplementedError
 
-class PoclMathlib(object):
+class PyopenclMathlib(object):
 
     from pyopencl.clmath import exp, sin, cos, tan
     from pyopencl import clmath
@@ -76,8 +76,8 @@ def generate_particles_object(platform,
 
     if isinstance(platform, XfCupyPlatform):
         kwargs = {'mathlib': CupyMathlib()}
-    elif isinstance(platform, XfPoclPlatform):
-        kwargs = {'mathlib': PoclMathlib()}
+    elif isinstance(platform, XfPyopenclPlatform):
+        kwargs = {'mathlib': PyopenclMathlib()}
     elif isinstance(platform, XfCpuPlatform):
         kwargs = {}
     else:

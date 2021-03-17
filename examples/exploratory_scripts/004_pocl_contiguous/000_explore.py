@@ -1,10 +1,10 @@
 import numpy as np
 import pyopencl as cl
 
-from xfields.platforms import XfPoclPlatform
+from xfields.platforms import XfPyopenclPlatform
 
-platform = XfPoclPlatform()
-ctx = platform.pocl_context
+platform = XfPyopenclPlatform()
+ctx = platform.pyopencl_context
 queue = platform.command_queue
 
 cla = platform.nplike_lib

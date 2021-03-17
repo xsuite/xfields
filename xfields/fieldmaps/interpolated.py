@@ -282,7 +282,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         # self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
         #         self._phi_dev[:,:,2:]-self._phi_dev[:,:,:-2])
 
-        # Copies are needed only for pocl
+        # Copies are needed only for pyopencl
         self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
                 self._phi_dev[2:,:,:].copy()-self._phi_dev[:-2,:,:].copy())
         self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(

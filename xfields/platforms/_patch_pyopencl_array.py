@@ -1,6 +1,6 @@
 import numpy as np
 
-def _patch_pocl_array(cl, cla, ctx):
+def _patch_pyopencl_array(cl, cla, ctx):
     prg = cl.Program(ctx, """
         __kernel void copy_array_fcont(
                      const int    fcont, // bool not accepted
