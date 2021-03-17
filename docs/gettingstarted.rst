@@ -27,8 +27,8 @@ And to run on GPUs and CPUs using PyOpenCL:
 
 .. code-block:: python
 
-    from xfields.platforms import XfPoclPlatform
-    platform = XfPoclPlatform()
+    from xfields.platforms import XfPyopenclPlatform
+    platform = XfPyopenclPlatform()
 
 
 Create a Beam Element

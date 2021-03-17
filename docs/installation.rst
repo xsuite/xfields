@@ -31,7 +31,7 @@ this can be done as follows:
 Installation of PyOpenCL
 ------------------------
 
-In order to use the :doc:`pocl platform<platforms>`, the PyOpenCL package needs to be installed.
+In order to use the :doc:`pyopencl platform<platforms>`, the PyOpenCL package needs to be installed.
 In Anacoda or Miniconda this can be done as follows:
 
 .. code-block:: bash
