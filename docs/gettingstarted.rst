@@ -1,7 +1,7 @@
 Getting Started Guide
 =====================
 
-To install Xfields please follow the instructions in the dedicated :doc:`installation page <installation>`.
+This page describes the basic usage of Xfields (if you need to install Xfields, please follow the instructions in the dedicated :doc:`installation page <installation>`).
 
 Create a Platform
 --------------------------
