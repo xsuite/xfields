@@ -36,6 +36,53 @@ class XfCpuPlatform(object):
 
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
+        """
+        Adds user-defined kernels to to the platform. The kernel source
+        code is provided as a string and/or in source files and must contain
+        the kernel names defined in the kernel descriptions.
+
+        Args:
+            src_code (str): String with the kernel source code. Default: empty
+                string.
+            src_files (list of strings): paths to files containing the
+                source code. Default: empty list.
+            kernel_descriptions (dict): Dictionary with the kernel descriptions
+                in the form given by the following examples. The decriptions
+                define the kernel names, the type and name of the arguments
+                and identifies one input argument that defines the number of
+                threads to be launched.
+
+        Example:
+
+        .. code-block:: python
+
+            src_code = r'''
+            void my_mul(const int n, const float* x1,
+                        const float* x2, float* y) {
+                int tid;
+                for (tid=0; tid<n; tid++){
+                    y[tid] = x1[tid] * x2[tid];
+                    }
+                }
+            '''
+            kernel_descriptions = {'my_mul':{
+                args':(
+                    (('scalar', np.int32),   'n',),
+                    (('array',  np.float64), 'x1',),
+                    (('array',  np.float64), 'x2',),
+                    )
+                'num_threads_from_arg': 'nparticles'
+                },}
+
+            # Import kernel in platform
+            platform.add_kernels(src_code, kernel_descriptions)
+
+            # With a1 and a2 being arrays on the platform, the kernel
+            # can be called as follows:
+            platform.kernels.my_mul(n=len(a1), x1=a1, x2=a2)
+        """
+
+
         src_content = src_code;
         for ff in src_files:
             with open(ff, 'r') as fid:
@@ -55,7 +102,6 @@ class XfCpuPlatform(object):
                   'please restart python')
         else:
             cppyy.cppdef(src_content)
-
 
         for nn in ker_names:
             kk = getattr(cppyy.gbl, nn)
@@ -156,6 +202,15 @@ class XfCpuPlatform(object):
 
         .. code-block:: python
 
+            src_code = r'''
+            void my_mul(const int n, const float* x1,
+                        const float* x2, float* y) {
+                int tid;
+                for (tid=0; tid<n; tid++){
+                    y[tid] = x1[tid] * x2[tid];
+                    }
+                }
+            '''
             kernel_descriptions = {'my_mul':{
                 args':(
                     (('scalar', np.int32),   'n',),
@@ -166,7 +221,7 @@ class XfCpuPlatform(object):
                 },}
 
             # Import kernel in platform
-            platform.add_kernels(lib_file='lib.so', kernel_descriptions)
+            platform.add_kernels(src_code, kernel_descriptions)
 
             # With a1 and a2 being arrays on the platform, the kernel
             # can be called as follows:
