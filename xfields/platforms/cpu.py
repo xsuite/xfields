@@ -1,4 +1,4 @@
-import ctypes
+import cppyy
 
 import numpy as np
 
@@ -29,53 +29,21 @@ class XfCpuPlatform(object):
         self._kernels = MinimalDotDict()
 
         if default_kernels:
-            self.add_kernels(lib_file=cpu_default_kernels['lib_file'],
+            self.add_kernels(lib_file=cpu_default_kernels['src_files'],
                     kernel_descriptions=cpu_default_kernels['kernel_descriptions'])
 
-    def add_kernels(self, lib_file, kernel_descriptions={}):
+    def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
-        """
-        Adds user-defined kernels to to the platform. A compiled shared-object
-        file containing the functions should be provided.
-
-        Args:
-            lib_file (shared-object file): compiled shared-object file containing
-                the functions.
-            kernel_descriptions (dict): Dictionary with the kernel descriptions
-                in the form given by the following examples. The descriptions
-                define the kernel names, the type and name of the arguments
-                and identifies one input argument that defines the number of
-                threads to be launched.
-
-        Example:
-
-        .. code-block:: python
-
-            kernel_descriptions = {'my_mul':{
-                args':(
-                    (('scalar', np.int32),   'n',),
-                    (('array',  np.float64), 'x1',),
-                    (('array',  np.float64), 'x2',),
-                    )
-                'num_threads_from_arg': 'nparticles'
-                },}
-
-            # Import kernel in platform
-            platform.add_kernels(lib_file='lib.so', kernel_descriptions)
-
-            # With a1 and a2 being arrays on the platform, the kernel
-            # can be called as follows:
-            platform.kernels.my_mul(n=len(a1), x1=a1, x2=a2)
-        """
-
-        lib = ctypes.CDLL(lib_file)
+        for ff in src_files:
+            with open(ff, 'r') as fid:
+                src_content += ('\n\n' + fid.read())
 
         ker_names = kernel_descriptions.keys()
         for nn in ker_names:
             kk = getattr(lib, nn)
             aa = kernel_descriptions[nn]['args']
             aa_types, aa_names = zip(*aa)
-            self.kernels[nn] = XfCpuKernel(ctypes_kernel=kk,
+            self.kernels[nn] = XfCpuKernel(cppyy_kernel=kk,
                 arg_names=aa_names, arg_types=aa_types)
 
     def nparray_to_platform_mem(self, arr):
@@ -195,23 +163,23 @@ class XfCpuPlatform(object):
 
 class XfCpuKernel(object):
 
-    def __init__(self, ctypes_kernel, arg_names, arg_types):
+    def __init__(self, cppyy_kernel, arg_names, arg_types):
 
         assert (len(arg_names) == len(arg_types))
 
-        self.ctypes_kernel = ctypes_kernel
+        self.cppyy_kernel = cppyy_kernel
         self.arg_names = arg_names
         self.arg_types = arg_types
 
-        ct_argtypes = []
-        for tt in arg_types:
-            if tt[0] == 'scalar':
-                ct_argtypes.append(np.ctypeslib.as_ctypes_type(tt[1]))
-            elif tt[0] == 'array':
-                ct_argtypes.append(np.ctypeslib.ndpointer(dtype=tt[1]))
-            else:
-                raise ValueError(f'Type {tt} not recognized')
-            self.ctypes_kernel.argtypes = ct_argtypes
+        #ct_argtypes = []
+        #for tt in arg_types:
+        #    if tt[0] == 'scalar':
+        #        ct_argtypes.append(np.ctypeslib.as_ctypes_type(tt[1]))
+        #    elif tt[0] == 'array':
+        #        ct_argtypes.append(np.ctypeslib.ndpointer(dtype=tt[1]))
+        #    else:
+        #        raise ValueError(f'Type {tt} not recognized')
+        #    self.ctypes_kernel.argtypes = ct_argtypes
 
     @property
     def num_args(self):
@@ -230,7 +198,7 @@ class XfCpuKernel(object):
             else:
                 raise ValueError(f'Type {tt} not recognized')
 
-        event = self.ctypes_kernel(*arg_list)
+        event = self.cppyy_kernel(*arg_list)
 
 
 class XfCpuFFT(object):
