@@ -87,6 +87,7 @@ for _ in range(n_rep):
     (rho_test_dev, phi_test_dev, dx_test_dev, dy_test_dev,
             dz_test_dev) = fmap.get_values_at_points(
                 x=x_test_dev, y=y_test_dev, z=z_test_dev)
+    platform.synchronize()
     t2 = time.time()
     print(f'Time: {t2-t1:.2e}')
 

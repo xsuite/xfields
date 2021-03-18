@@ -1,4 +1,4 @@
-#include <atomicadd.h> //only_for_platform cpu
+//#include <atomicadd.h> //only_for_platform none
 
   void p2m_rectmesh3d(
         // INPUTS:

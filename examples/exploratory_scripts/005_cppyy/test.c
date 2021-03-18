@@ -1,6 +1,10 @@
-//#include <atomicadd.h> //only_for_platform none
 
-__global__ void p2m_rectmesh3d(
+inline void atomicAdd(double *addr, double val)
+{
+   *addr = *addr + val;
+}
+
+  void p2m_rectmesh3d(
         // INPUTS:
           // length of x, y, z arrays
         const int nparticles,
@@ -23,7 +27,7 @@ __global__ void p2m_rectmesh3d(
     double vol_m1 = 1/(dx*dy*dz);
 
 int pidx; //autovectorized
-pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
+for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
     
         double pwei = part_weights[pidx];
     
@@ -76,11 +80,11 @@ pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
                 //	       grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny] +wi1j1k1;
             }
         }
-//end autovectorized
+}//end autovectorized
 }
 
 
-__global__ void m2p_rectmesh3d(
+  void m2p_rectmesh3d(
     // INPUTS:
       // length of x, y, z arrays
     const int nparticles,
@@ -109,7 +113,7 @@ __global__ void m2p_rectmesh3d(
     int iq;
 
 int pidx; //autovectorized
-pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
+for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
     
         // indices
         int jx = floor((x[pidx] - x0) / dx);
@@ -152,5 +156,5 @@ pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
     		}
             }
         }
-//end autovectorized
+}//end autovectorized
 }
