@@ -1,3 +1,5 @@
+import ctypes
+
 import cppyy
 
 import numpy as np
@@ -29,18 +31,34 @@ class XfCpuPlatform(object):
         self._kernels = MinimalDotDict()
 
         if default_kernels:
-            self.add_kernels(lib_file=cpu_default_kernels['src_files'],
+            self.add_kernels(src_files=cpu_default_kernels['src_files'],
                     kernel_descriptions=cpu_default_kernels['kernel_descriptions'])
 
     def add_kernels(self, src_code='', src_files=[], kernel_descriptions={}):
 
+        src_content = src_code;
         for ff in src_files:
             with open(ff, 'r') as fid:
                 src_content += ('\n\n' + fid.read())
 
         ker_names = kernel_descriptions.keys()
+
+        skip_compile = False
+        for kk in ker_names:
+            if hasattr(cppyy.gbl, kk):
+                skip_compile = True
+                break
+
+        if skip_compile:
+            print('Warning! Compilation is skipped because some of'
+                  ' the kernels already exist! To recompile all '
+                  'please restart python')
+        else:
+            cppyy.cppdef(src_content)
+
+
         for nn in ker_names:
-            kk = getattr(lib, nn)
+            kk = getattr(cppyy.gbl, nn)
             aa = kernel_descriptions[nn]['args']
             aa_types, aa_names = zip(*aa)
             self.kernels[nn] = XfCpuKernel(cppyy_kernel=kk,
@@ -171,15 +189,18 @@ class XfCpuKernel(object):
         self.arg_names = arg_names
         self.arg_types = arg_types
 
-        #ct_argtypes = []
-        #for tt in arg_types:
-        #    if tt[0] == 'scalar':
-        #        ct_argtypes.append(np.ctypeslib.as_ctypes_type(tt[1]))
-        #    elif tt[0] == 'array':
-        #        ct_argtypes.append(np.ctypeslib.ndpointer(dtype=tt[1]))
-        #    else:
-        #        raise ValueError(f'Type {tt} not recognized')
-        #    self.ctypes_kernel.argtypes = ct_argtypes
+        c_argtypes = []
+        for tt in arg_types:
+            if tt[0] == 'scalar':
+                if np.issubdtype(tt[1], np.integer):
+                    c_argtypes.append(int)
+                else:
+                    c_argtypes.append(tt[1])
+            elif tt[0] == 'array':
+                c_argtypes.append(None) # Not needed for cppyy
+            else:
+                raise ValueError(f'Type {tt} not recognized')
+        self.c_arg_types = c_argtypes
 
     @property
     def num_args(self):
@@ -188,13 +209,14 @@ class XfCpuKernel(object):
     def __call__(self, **kwargs):
         assert len(kwargs.keys()) == self.num_args
         arg_list = []
-        for nn, tt in zip(self.arg_names, self.arg_types):
+        for nn, tt, ctt in zip(self.arg_names, self.arg_types, self.c_arg_types):
             vv = kwargs[nn]
             if tt[0] == 'scalar':
                 assert np.isscalar(vv)
-                arg_list.append(tt[1](vv))
+                arg_list.append(ctt(vv))
             elif tt[0] == 'array':
-                arg_list.append(vv)
+                arg_list.append(vv.ctypes.data_as(ctypes.POINTER(
+                    np.ctypeslib.as_ctypes_type(tt[1]))))
             else:
                 raise ValueError(f'Type {tt} not recognized')
 
