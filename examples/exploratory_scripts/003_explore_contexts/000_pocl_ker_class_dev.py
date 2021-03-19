@@ -31,18 +31,18 @@ nz = fmap.nz
 
 # Test p2m
 n_gen = 1000000
-x_gen_dev = context.nparray_to_context_mem(
+x_gen_dev = context.nparray_to_context_array(
         np.zeros([n_gen], dtype=np.float64)+fmap.x_grid[10]
         + 20* dx* np.linspace(0, 1., n_gen))
-y_gen_dev = context.nparray_to_context_mem(
+y_gen_dev = context.nparray_to_context_array(
         np.zeros([n_gen], dtype=np.float64)+fmap.y_grid[10]
         + 20*dy* np.linspace(0, 1., n_gen))
-z_gen_dev = context.nparray_to_context_mem(
+z_gen_dev = context.nparray_to_context_array(
         np.zeros([n_gen], dtype=np.float64)+fmap.z_grid[10]
         + 20*dz* np.linspace(0, 1., n_gen))
-part_weights_dev = context.nparray_to_context_mem(
+part_weights_dev = context.nparray_to_context_array(
         np.arange(0, n_gen, 1,  dtype=np.float64))
-dev_buff = context.nparray_to_context_mem(0*fmap._maps_buffer)
+dev_buff = context.nparray_to_context_array(0*fmap._maps_buffer)
 dev_rho = dev_buff[:,:,:,1] # This does not support .data
 #dev_rho = dev_buff[:,:,:,0]
 

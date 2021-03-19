@@ -84,7 +84,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         self._z_grid = _configure_grid('z', z_grid, dz, z_range, nz)
 
         # Prepare arrays (contiguous to use a single pointer in C/GPU)
-        self._maps_buffer_dev = context.nparray_to_context_mem(
+        self._maps_buffer_dev = context.nparray_to_context_array(
                 np.zeros((self.nx, self.ny, self.nz, 5),
                          dtype=np.float64, order='F'))
 
@@ -159,7 +159,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         if return_dphi_dz:
             pos_in_buffer_of_maps_to_interp.append(4*mapsize)
 
-        pos_in_buffer_of_maps_to_interp = self.context.nparray_to_context_mem(
+        pos_in_buffer_of_maps_to_interp = self.context.nparray_to_context_array(
                         np.array(pos_in_buffer_of_maps_to_interp, dtype=np.int32))
         nmaps_to_interp = len(pos_in_buffer_of_maps_to_interp)
         buffer_out = self.context.zeros(

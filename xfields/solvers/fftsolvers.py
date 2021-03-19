@@ -37,7 +37,7 @@ class FFTSolver3D(Solver):
         self.context = context
 
         # Prepare arrays
-        workspace_dev = context.nparray_to_context_mem(
+        workspace_dev = context.nparray_to_context_array(
                     np.zeros((2*nx, 2*ny, 2*nz), dtype=np.complex128, order='F'))
 
 
@@ -76,7 +76,7 @@ class FFTSolver3D(Solver):
         self._gint_rep = gint_rep.copy()
 
         # Tranasfer to device
-        gint_rep_dev = context.nparray_to_context_mem(gint_rep)
+        gint_rep_dev = context.nparray_to_context_array(gint_rep)
 
         # Prepare fft plan
         fftplan = context.plan_FFT(gint_rep_dev, axes=(0,1,2))
@@ -142,7 +142,7 @@ class FFTSolver2p5D(FFTSolver3D):
         self.context = context
 
         # Prepare arrays
-        workspace_dev = context.nparray_to_context_mem(
+        workspace_dev = context.nparray_to_context_array(
                     np.zeros((2*nx, 2*ny, nz), dtype=np.complex128, order='F'))
 
 
@@ -183,7 +183,7 @@ class FFTSolver2p5D(FFTSolver3D):
             gint_rep_transf_3D[:,:,iz] = gint_rep_transf
 
         # Transfer to GPU (if needed)
-        gint_rep_transf_dev = context.nparray_to_context_mem(gint_rep_transf_3D)
+        gint_rep_transf_dev = context.nparray_to_context_array(gint_rep_transf_3D)
 
         self.dx = dx
         self.dy = dy

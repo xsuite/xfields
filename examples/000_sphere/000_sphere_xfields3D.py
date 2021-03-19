@@ -60,7 +60,7 @@ y_test = center_xyz[1] + y0_test
 z_test = center_xyz[2] + z0_test
 
 # Moving particles and test coordinates to GPU (if needed)
-np2platf = context.nparray_to_context_mem
+np2platf = context.nparray_to_context_array
 x_dev = np2platf(x)
 y_dev = np2platf(y)
 z_dev = np2platf(z)

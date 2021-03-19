@@ -65,7 +65,7 @@ def generate_particles_object(context,
     pt_part = 0*x_part
 
     # Move to context
-    np2platf = context.nparray_to_context_mem
+    np2platf = context.nparray_to_context_array
     x_part_dev = np2platf(x_part)
     y_part_dev = np2platf(y_part)
     z_part_dev = np2platf(z_part)

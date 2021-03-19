@@ -10,7 +10,7 @@ context = XfPyopenclContext()
 # from xfields.contexts.cpu import XfCpuContext
 # context = XfCpuContext()
 
-np2dev = context.nparray_to_context_mem
+np2dev = context.nparray_to_context_array
 dev2np = context.nparray_from_context_mem
 
 n_time = 10
@@ -28,7 +28,7 @@ data = np.sin(2*np.pi*(50-20*(1-ZZ_F))*XX_F)*np.cos(2*np.pi*70*YY_F)
 
 data_host = np.zeros((nn_x, nn_y, nn_z), dtype = np.complex128, order='F')
 data_host[:] = data
-data_gpu = context.nparray_to_context_mem(data_host)
+data_gpu = context.nparray_to_context_array(data_host)
 
 fftobj = context.plan_FFT(data_gpu, axes=(0,1,))
 
