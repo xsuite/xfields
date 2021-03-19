@@ -7,16 +7,16 @@ from numpy import pi
 
 from xfields import TriLinearInterpolatedFieldMap
 
-from xfields.platforms import XfCpuPlatform
-platform = XfCpuPlatform()
+from xfields.contexts import XfCpuContext
+context = XfCpuContext()
 
-from xfields.platforms import XfCupyPlatform
-platform = XfCupyPlatform(default_block_size=256)
+from xfields.contexts import XfCupyContext
+context = XfCupyContext(default_block_size=256)
 
-from xfields.platforms import XfPyopenclPlatform
-platform = XfPyopenclPlatform()
+from xfields.contexts import XfPyopenclContext
+context = XfPyopenclContext()
 
-print(repr(platform))
+print(repr(context))
 
 import matplotlib.pyplot as plt
 plt.close('all')
@@ -60,7 +60,7 @@ y_test = center_xyz[1] + y0_test
 z_test = center_xyz[2] + z0_test
 
 # Moving particles and test coordinates to GPU (if needed)
-np2platf = platform.nparray_to_platform_mem
+np2platf = context.nparray_to_context_mem
 x_dev = np2platf(x)
 y_dev = np2platf(y)
 z_dev = np2platf(z)
@@ -76,7 +76,7 @@ z_test_dev = np2platf(z_test)
 # Build fieldmap object
 fmap = TriLinearInterpolatedFieldMap(x_range=x_lim, nx=nx,
     y_range=y_lim, ny=ny, z_range=z_lim, nz=nz, solver='FFTSolver3D',
-    platform=platform)
+    context=context)
 
 
 # Compute potential
@@ -90,12 +90,12 @@ for _ in range(n_rep):
     (rho_test_dev, phi_test_dev, dx_test_dev, dy_test_dev,
             dz_test_dev) = fmap.get_values_at_points(
                 x=x_test_dev, y=y_test_dev, z=z_test_dev)
-    platform.synchronize()
+    context.synchronize()
     t2 = time.time()
     print(f'Time: {t2-t1:.2e}')
 
 # Copy back for plotting
-platf2np = platform.nparray_from_platform_mem
+platf2np = context.nparray_from_context_mem
 rho_test =  platf2np(rho_test_dev)
 phi_test = platf2np(phi_test_dev)
 dx_test = platf2np(dx_test_dev)

@@ -1,17 +1,17 @@
-Platforms
+Contexts
 =========
 
 .. TODO: explain default kernels.
 
 Xfields supports different plaforms allowing the exploitation of different kinds of hardware (CPUs and GPUs).
-A platform is initialized by instanciating objects from one of the platform classes, which is then passed to the other Xfields components.
-Platforms are interchangeable as they expose the same API.
+A context is initialized by instanciating objects from one of the context classes, which is then passed to the other Xfields components.
+Contexts are interchangeable as they expose the same API.
 
-Three platforms are presently available:
+Three contexts are presently available:
 
- - The :ref:`Cupy platform<cupy_platform>`, based on `cupy`_-`cuda`_ to run on NVidia GPUs
- - The :ref:`Pyopencl platform<pyopencl_platform>`, bases on `PyOpenCL`_, to run on CPUs or GPUs throught PyOPENCL library.
- - The :ref:`CPU platform<cpu_platform>`, to use conventional CPUs
+ - The :ref:`Cupy context<cupy_context>`, based on `cupy`_-`cuda`_ to run on NVidia GPUs
+ - The :ref:`Pyopencl context<pyopencl_context>`, bases on `PyOpenCL`_, to run on CPUs or GPUs throught PyOPENCL library.
+ - The :ref:`CPU context<cpu_context>`, to use conventional CPUs
 
 The corresponfig API is described in the following subsections.
 
@@ -20,32 +20,32 @@ The corresponfig API is described in the following subsections.
 .. _PyOpenCL: https://documen.tician.de/pyopencl/
 
 
-.. _cupy_platform:
+.. _cupy_context:
 
-Cupy platform
+Cupy context
 -------------
 
-.. autoclass:: xfields.platforms.XfCupyPlatform
+.. autoclass:: xfields.contexts.XfCupyContext
     :members:
     :undoc-members:
     :member-order: bysource
 
-.. _pyopencl_platform:
+.. _pyopencl_context:
 
-PyOpenCL platform
+PyOpenCL context
 -----------------
-.. autoclass:: xfields.platforms.XfPyopenclPlatform
+.. autoclass:: xfields.contexts.XfPyopenclContext
     :members:
     :undoc-members:
     :member-order: bysource
 
 
-.. _cpu_platform:
+.. _cpu_context:
 
-CPU platform
+CPU context
 ------------
 
-.. autoclass:: xfields.platforms.XfCpuPlatform
+.. autoclass:: xfields.contexts.XfCpuContext
     :members:
     :undoc-members:
     :member-order: bysource

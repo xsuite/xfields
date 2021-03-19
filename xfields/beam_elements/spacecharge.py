@@ -1,4 +1,4 @@
-from xfields.platforms import XfCpuPlatform
+from xfields.contexts import XfCpuContext
 from xfields import TriLinearInterpolatedFieldMap
 
 class SpaceCharge3D(object):
@@ -6,7 +6,7 @@ class SpaceCharge3D(object):
     Simulates the effect of space charge on the bunch.
 
     Args:
-        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+        context (XfContext): identifies the :doc:`context <contexts>`
             on which the computation is executed.
         update_on_track (bool): If ``True`` the beam field map is update
             at each interaction. If ``False`` the initial field map is
@@ -57,7 +57,7 @@ class SpaceCharge3D(object):
     """
 
     def __init__(self,
-                 platform=None,
+                 context=None,
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
@@ -69,13 +69,13 @@ class SpaceCharge3D(object):
                  solver=None,
                  gamma0=None):
 
-        if platform is None:
-            platform = XfCpuPlatform()
+        if context is None:
+            context = XfCpuContext()
 
         self.length = length
         self.update_on_track = update_on_track
         self.apply_z_kick = apply_z_kick
-        self.platform=platform
+        self.context=context
 
         if solver=='FFTSolver3D':
             assert gamma0 is not None, ('To use FFTSolver3D '
@@ -95,7 +95,7 @@ class SpaceCharge3D(object):
                     solver=solver,
                     scale_coordinates_in_solver=scale_coordinates_in_solver,
                     updatable=update_on_track,
-                    platform=platform)
+                    context=context)
 
         self.fieldmap = fieldmap
 
@@ -149,7 +149,7 @@ class SpaceCharge2D(object):
                  apply_z_kick=True,
                  transverse_field_map=None,
                  longitudinal_profile=None,
-                 platform=None,
+                 context=None,
                  ):
         pass
 
@@ -163,7 +163,7 @@ class SpaceCharge2DBiGaussian(SpaceCharge2D):
                  sigma_z=None,
                  z_grid=None, dz=None,
                  z_interp_method='linear',
-                 platform=None,
+                 context=None,
                  ):
         pass
 

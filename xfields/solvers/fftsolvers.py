@@ -3,7 +3,7 @@ from scipy.constants import epsilon_0
 from numpy import pi
 
 from .base import Solver
-from ..platforms import XfCpuPlatform
+from ..contexts import XfCpuContext
 
 class FFTSolver2D(Solver):
 
@@ -23,21 +23,21 @@ class FFTSolver3D(Solver):
         dx (float): Horizontal cell size in meters.
         dy (float): Vertical cell size in meters.
         dz (float): Longitudinal cell size in meters.
-        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+        context (XfContext): identifies the :doc:`context <contexts>`
             on which the computation is executed.
     Returns:
         (FFTSolver3D): Poisson solver object.
     '''
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, platform=None):
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
 
-        if platform is None:
-            platform = XfCpuPlatform()
+        if context is None:
+            context = XfCpuContext()
 
-        self.platform = platform
+        self.context = context
 
         # Prepare arrays
-        workspace_dev = platform.nparray_to_platform_mem(
+        workspace_dev = context.nparray_to_context_mem(
                     np.zeros((2*nx, 2*ny, 2*nz), dtype=np.complex128, order='F'))
 
 
@@ -76,10 +76,10 @@ class FFTSolver3D(Solver):
         self._gint_rep = gint_rep.copy()
 
         # Tranasfer to device
-        gint_rep_dev = platform.nparray_to_platform_mem(gint_rep)
+        gint_rep_dev = context.nparray_to_context_mem(gint_rep)
 
         # Prepare fft plan
-        fftplan = platform.plan_FFT(gint_rep_dev, axes=(0,1,2))
+        fftplan = context.plan_FFT(gint_rep_dev, axes=(0,1,2))
 
         # Transform the green function (in place)
         fftplan.transform(gint_rep_dev)
@@ -129,20 +129,20 @@ class FFTSolver2p5D(FFTSolver3D):
         dx (float): Horizontal cell size in meters.
         dy (float): Vertical cell size in meters.
         dz (float): Longitudinal cell size in meters.
-        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+        context (XfContext): identifies the :doc:`context <contexts>`
             on which the computation is executed.
     Returns:
         (FFTSolver3D): Poisson solver object.
     '''
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, platform=None):
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
 
-        if platform is None:
-            platform = XfCpuPlatform()
-        self.platform = platform
+        if context is None:
+            context = XfCpuContext()
+        self.context = context
 
         # Prepare arrays
-        workspace_dev = platform.nparray_to_platform_mem(
+        workspace_dev = context.nparray_to_context_mem(
                     np.zeros((2*nx, 2*ny, nz), dtype=np.complex128, order='F'))
 
 
@@ -171,7 +171,7 @@ class FFTSolver2p5D(FFTSolver3D):
 
 
         # Prepare fft plan
-        fftplan = platform.plan_FFT(workspace_dev, axes=(0,1))
+        fftplan = context.plan_FFT(workspace_dev, axes=(0,1))
 
         # Transform the green function
         gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
@@ -183,7 +183,7 @@ class FFTSolver2p5D(FFTSolver3D):
             gint_rep_transf_3D[:,:,iz] = gint_rep_transf
 
         # Transfer to GPU (if needed)
-        gint_rep_transf_dev = platform.nparray_to_platform_mem(gint_rep_transf_3D)
+        gint_rep_transf_dev = context.nparray_to_context_mem(gint_rep_transf_3D)
 
         self.dx = dx
         self.dy = dy

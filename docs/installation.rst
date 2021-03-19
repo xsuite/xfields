@@ -17,7 +17,7 @@ The package can be cloned from GitHub and installed with pip:
 Installation of cupy
 --------------------
 
-In order to use the :doc:`cupy platform<platforms>`, the cupy package needs to be installed.
+In order to use the :doc:`cupy context<contexts>`, the cupy package needs to be installed.
 In Anacoda or Miniconda (if needed, see dedicated section on :ref:`how to get a miniconda installation<miniconda>`)
 this can be done as follows:
 
@@ -31,7 +31,7 @@ this can be done as follows:
 Installation of PyOpenCL
 ------------------------
 
-In order to use the :doc:`pyopencl platform<platforms>`, the PyOpenCL package needs to be installed.
+In order to use the :doc:`pyopencl context<contexts>`, the PyOpenCL package needs to be installed.
 In Anacoda or Miniconda this can be done as follows:
 
 .. code-block:: bash
@@ -54,7 +54,7 @@ Make the OpenCL installation visible to pyopencl:
     $ conda install ocl-icd-system
 
 
-For the PyOpenCL platform we will need the `gpyfft <https://github.com/geggo/gpyfft>`_ and the `clfft <https://github.com/clMathLibraries/clFFT>`_ libraries.
+For the PyOpenCL context we will need the `gpyfft <https://github.com/geggo/gpyfft>`_ and the `clfft <https://github.com/clMathLibraries/clFFT>`_ libraries.
 For this purpose we need to install cython.
 
 .. code-block:: bash

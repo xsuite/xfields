@@ -2,7 +2,7 @@ import numpy as np
 
 from .base import FieldMap
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
-from ..platforms import XfCpuPlatform
+from ..contexts import XfCpuContext
 
 
 class TriLinearInterpolatedFieldMap(FieldMap):
@@ -12,7 +12,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
     using the Parcle In Cell method.
 
     Args:
-        platform (XfPlatform): identifies the :doc:`platform <platforms>`
+        context (XfContext): identifies the :doc:`context <contexts>`
             on which the computation is executed.
         x_range (tuple): Horizontal extent (in meters) of the
             computing grid.
@@ -58,7 +58,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
     """
 
     def __init__(self,
-                 platform=None,
+                 context=None,
                  x_range=None, y_range=None, z_range=None,
                  nx=None, ny=None, nz=None,
                  dx=None, dy=None, dz=None,
@@ -71,24 +71,24 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
 
 
-        if platform is None:
-            platform = XfCpuPlatform()
+        if context is None:
+            context = XfCpuContext()
 
         self.updatable = updatable
-        self.platform = platform
+        self.context = context
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
-        self.platform=platform
+        self.context=context
 
         self._x_grid = _configure_grid('x', x_grid, dx, x_range, nx)
         self._y_grid = _configure_grid('y', y_grid, dy, y_range, ny)
         self._z_grid = _configure_grid('z', z_grid, dz, z_range, nz)
 
         # Prepare arrays (contiguous to use a single pointer in C/GPU)
-        self._maps_buffer_dev = platform.nparray_to_platform_mem(
+        self._maps_buffer_dev = context.nparray_to_context_mem(
                 np.zeros((self.nx, self.ny, self.nz, 5),
                          dtype=np.float64, order='F'))
 
-        # These are slices (they are are on the platform)
+        # These are slices (they are are on the context)
         self._rho_dev = self._maps_buffer_dev[:, :, :, 0]
         self._phi_dev = self._maps_buffer_dev[:, :, :, 1]
         self._dphi_dx_dev = self._maps_buffer_dev[:, :, :, 2]
@@ -159,13 +159,13 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         if return_dphi_dz:
             pos_in_buffer_of_maps_to_interp.append(4*mapsize)
 
-        pos_in_buffer_of_maps_to_interp = self.platform.nparray_to_platform_mem(
+        pos_in_buffer_of_maps_to_interp = self.context.nparray_to_context_mem(
                         np.array(pos_in_buffer_of_maps_to_interp, dtype=np.int32))
         nmaps_to_interp = len(pos_in_buffer_of_maps_to_interp)
-        buffer_out = self.platform.zeros(
+        buffer_out = self.context.zeros(
                 shape=(nmaps_to_interp * len(x),), dtype=np.float64)
         if nmaps_to_interp > 0:
-            self.platform.kernels.m2p_rectmesh3d(
+            self.context.kernels.m2p_rectmesh3d(
                     nparticles=len(x),
                     x=x, y=y, z=z,
                     x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
@@ -217,7 +217,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
         assert len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
 
-        self.platform.kernels.p2m_rectmesh3d(
+        self.context.kernels.p2m_rectmesh3d(
                 nparticles=len(x_p),
                 x=x_p, y=y_p, z=z_p,
                 part_weights=q0_coulomb*ncharges_p,
@@ -336,14 +336,14 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    platform=self.platform)
+                    context=self.context)
         elif solver == 'FFTSolver2p5D':
             solver = FFTSolver2p5D(
                     dx=self.dx*scale_dx,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    platform=self.platform)
+                    context=self.context)
         else:
             raise ValueError(f'solver name {solver} not recognized')
 
