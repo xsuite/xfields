@@ -29,6 +29,7 @@ Cupy context
     :members:
     :undoc-members:
     :member-order: bysource
+    :inherited-members:
 
 .. _pyopencl_context:
 
@@ -38,6 +39,7 @@ PyOpenCL context
     :members:
     :undoc-members:
     :member-order: bysource
+    :inherited-members:
 
 
 .. _cpu_context:
@@ -49,3 +51,4 @@ CPU context
     :members:
     :undoc-members:
     :member-order: bysource
+    :inherited-members:
