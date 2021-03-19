@@ -20,7 +20,7 @@ import os
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 sys.path.insert(0, os.path.abspath('../'))
 os.system('git clone https://github.com/xsuite/xobjects')
-os.system('cd xobjects; git checkout integration_xobjects_xfields; cd ..')
+os.system('cd xobjects; git branch; git checkout integration_xobjects_xfields; cd ..')
 sys.path.insert(0, os.path.abspath('./xobjects'))
 import xobjects
 import xfields
