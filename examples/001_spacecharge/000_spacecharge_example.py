@@ -3,15 +3,15 @@ import time
 import numpy as np
 
 from pysixtrack.particles import Particles
-from xfields.contexts import XfCpuContext, XfCupyContext, XfPyopenclContext
+from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 
 ###################
 # Choose context #
 ###################
 
-context = XfCpuContext()
-context = XfCupyContext(default_block_size=256)
-#context = XfPyopenclContext()
+context = ContextCpu()
+#context = ContextCupy(default_block_size=256)
+#context = ContextPyopencl()
 
 print(repr(context))
 

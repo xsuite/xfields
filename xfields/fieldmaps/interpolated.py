@@ -1,8 +1,10 @@
 import numpy as np
 
+from xobjects.context import ContextCpu
+
 from .base import FieldMap
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
-from ..contexts import XfCpuContext
+from ..contexts import add_default_kernels
 
 
 class TriLinearInterpolatedFieldMap(FieldMap):
@@ -72,12 +74,13 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
 
         if context is None:
-            context = XfCpuContext()
+            context = ContextCpu()
+
+        add_default_kernels(context)
 
         self.updatable = updatable
         self.context = context
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
-        self.context=context
 
         self._x_grid = _configure_grid('x', x_grid, dx, x_range, nx)
         self._y_grid = _configure_grid('y', y_grid, dy, y_range, ny)

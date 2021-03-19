@@ -2,9 +2,7 @@ import numpy as np
 
 from pysixtrack.particles import Particles
 
-from xfields.contexts import XfCpuContext
-from xfields.contexts import XfCupyContext
-from xfields.contexts import XfPyopenclContext
+from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 
 class CupyMathlib(object):
 
@@ -74,11 +72,11 @@ def generate_particles_object(context,
     ptau_part_dev = np2platf(pt_part)
     weights_part_dev = np2platf(weights_part)
 
-    if isinstance(context, XfCupyContext):
+    if isinstance(context, ContextCupy):
         kwargs = {'mathlib': CupyMathlib()}
-    elif isinstance(context, XfPyopenclContext):
+    elif isinstance(context, ContextPyopencl):
         kwargs = {'mathlib': PyopenclMathlib()}
-    elif isinstance(context, XfCpuContext):
+    elif isinstance(context, ContextCpu):
         kwargs = {}
     else:
         raise ValueError('Unknown context!')
