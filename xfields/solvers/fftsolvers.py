@@ -139,7 +139,7 @@ class FFTSolver2p5D(FFTSolver3D):
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
 
         if context is None:
-            context = XfCpuContext()
+            context = ContextDefault()
         self.context = context
 
         # Prepare arrays
