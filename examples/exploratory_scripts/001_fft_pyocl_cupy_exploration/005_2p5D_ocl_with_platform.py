@@ -11,7 +11,7 @@ context = XfPyopenclContext()
 # context = XfCpuContext()
 
 np2dev = context.nparray_to_context_array
-dev2np = context.nparray_from_context_mem
+dev2np = context.nparray_from_context_array
 
 n_time = 10
 

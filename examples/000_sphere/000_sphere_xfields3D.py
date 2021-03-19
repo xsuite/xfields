@@ -95,7 +95,7 @@ for _ in range(n_rep):
     print(f'Time: {t2-t1:.2e}')
 
 # Copy back for plotting
-platf2np = context.nparray_from_context_mem
+platf2np = context.nparray_from_context_array
 rho_test =  platf2np(rho_test_dev)
 phi_test = platf2np(phi_test_dev)
 dx_test = platf2np(dx_test_dev)

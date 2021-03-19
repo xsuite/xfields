@@ -74,7 +74,7 @@ spcharge.track(particles)
 ##############################
 
 
-p2np = context.nparray_from_context_mem
+p2np = context.nparray_from_context_array
 
 from pysixtrack.elements import SpaceChargeBunched
 scpyst = SpaceChargeBunched(

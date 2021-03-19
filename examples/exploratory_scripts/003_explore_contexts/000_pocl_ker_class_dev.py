@@ -59,6 +59,6 @@ event = p2mk(nparticles=n_gen,
 t2 = time.time()
 print(f't = {t2-t1:.2e}')
 
-get = context.nparray_from_context_mem
+get = context.nparray_from_context_array
 assert(np.isclose(np.sum(get(dev_rho))*dx*dy*dz,
     np.sum(get(part_weights_dev))))
