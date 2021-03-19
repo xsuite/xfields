@@ -5,16 +5,12 @@ from numpy.random import rand
 from scipy.constants import epsilon_0
 from numpy import pi
 
+from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 from xfields import TriLinearInterpolatedFieldMap
 
-from xfields.contexts import XfCpuContext
-context = XfCpuContext()
-
-from xfields.contexts import XfCupyContext
-context = XfCupyContext(default_block_size=256)
-
-from xfields.contexts import XfPyopenclContext
-context = XfPyopenclContext()
+context = ContextCpu()
+context = ContextCupy(default_block_size=256)
+#context = ContextPyopencl()
 
 print(repr(context))
 

@@ -5,13 +5,12 @@ from numpy.random import rand
 from scipy.constants import epsilon_0
 from numpy import pi
 
+from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 from xfields import TriLinearInterpolatedFieldMap
 
-from xfields.contexts import XfCpuContext
-context = XfCpuContext()
-
-from xfields.contexts import XfCupyContext
-context = XfCupyContext(default_block_size=256)
+context = ContextCpu()
+context = ContextCupy(default_block_size=256)
+context = ContextPyopencl()
 
 print(repr(context))
 
@@ -138,7 +137,7 @@ plt.plot(r_test, e_ref)
 plt.grid(True)
 
 # Check integral
-int_rho = np.sum(fmap.rho)*fmap.dx*fmap.dy*fmap.dz
+int_rho = np.sum(platf2np(fmap.rho))*fmap.dx*fmap.dy*fmap.dz
 assert np.isclose(int_rho, len(x))
 
 
