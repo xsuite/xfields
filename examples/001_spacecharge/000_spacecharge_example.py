@@ -10,7 +10,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 ###################
 
 context = ContextCpu()
-#context = ContextCupy(default_block_size=256)
+context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl()
 
 print(repr(context))

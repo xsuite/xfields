@@ -1,5 +1,6 @@
-from xfields.contexts import XfCpuContext
 from xfields import TriLinearInterpolatedFieldMap
+
+from xobjects.context import ContextDefault
 
 class SpaceCharge3D(object):
     """
@@ -70,7 +71,7 @@ class SpaceCharge3D(object):
                  gamma0=None):
 
         if context is None:
-            context = XfCpuContext()
+            context = ContextDefault()
 
         self.length = length
         self.update_on_track = update_on_track

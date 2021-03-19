@@ -3,7 +3,8 @@ from scipy.constants import epsilon_0
 from numpy import pi
 
 from .base import Solver
-from ..contexts import XfCpuContext
+
+from xobjects.context import ContextDefault
 
 class FFTSolver2D(Solver):
 
@@ -32,7 +33,7 @@ class FFTSolver3D(Solver):
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
 
         if context is None:
-            context = XfCpuContext()
+            context = ContextDefault()
 
         self.context = context
 

@@ -1,6 +1,6 @@
 import numpy as np
 
-from xobjects.context import ContextCpu
+from xobjects.context import ContextDefault
 
 from .base import FieldMap
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
@@ -74,7 +74,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
 
         if context is None:
-            context = ContextCpu()
+            context = ContextDefault()
 
         add_default_kernels(context)
 
