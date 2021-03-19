@@ -2,16 +2,16 @@ import time
 
 import numpy as np
 
-# Pyopencl platform
-from xfields.platforms import XfPyopenclPlatform
-platform = XfPyopenclPlatform()
+# Pyopencl context
+from xfields.contexts import XfPyopenclContext
+context = XfPyopenclContext()
 
-# # CPU platformr
-# from xfields.platforms.cpu import XfCpuPlatform
-# platform = XfCpuPlatform()
+# # CPU contextr
+# from xfields.contexts.cpu import XfCpuContext
+# context = XfCpuContext()
 
-np2dev = platform.nparray_to_platform_mem
-dev2np = platform.nparray_from_platform_mem
+np2dev = context.nparray_to_context_mem
+dev2np = context.nparray_from_context_mem
 
 n_time = 10
 
@@ -28,9 +28,9 @@ data = np.sin(2*np.pi*(50-20*(1-ZZ_F))*XX_F)*np.cos(2*np.pi*70*YY_F)
 
 data_host = np.zeros((nn_x, nn_y, nn_z), dtype = np.complex128, order='F')
 data_host[:] = data
-data_gpu = platform.nparray_to_platform_mem(data_host)
+data_gpu = context.nparray_to_context_mem(data_host)
 
-fftobj = platform.plan_FFT(data_gpu, axes=(0,1,))
+fftobj = context.plan_FFT(data_gpu, axes=(0,1,))
 
 fftobj.transform(data_gpu)
 transf_from_gpu = dev2np(data_gpu)

@@ -1,15 +1,15 @@
 import numpy as np
 import pyopencl as cl
 
-from xfields.platforms import XfPyopenclPlatform
+from xfields.contexts import XfPyopenclContext
 
-platform = XfPyopenclPlatform()
-ctx = platform.pyopencl_context
-queue = platform.command_queue
+context = XfPyopenclContext()
+ctx = context.pyopencl_context
+queue = context.command_queue
 
-cla = platform.nplike_lib
+cla = context.nplike_lib
 
-a_cont = cla.to_device(queue=platform.command_queue,
+a_cont = cla.to_device(queue=context.command_queue,
         ary=np.array([[1,2,3,4],[5,6,7,8],[9,10,11,12]], order='F',
             dtype=np.float64))
 

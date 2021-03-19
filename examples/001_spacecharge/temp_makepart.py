@@ -2,9 +2,9 @@ import numpy as np
 
 from pysixtrack.particles import Particles
 
-from xfields.platforms import XfCpuPlatform
-from xfields.platforms import XfCupyPlatform
-from xfields.platforms import XfPyopenclPlatform
+from xfields.contexts import XfCpuContext
+from xfields.contexts import XfCupyContext
+from xfields.contexts import XfPyopenclContext
 
 class CupyMathlib(object):
 
@@ -31,7 +31,7 @@ class PyopenclMathlib(object):
         else:
             return cls.clmath.sqrt(a)
 
-def generate_particles_object(platform,
+def generate_particles_object(context,
                             n_macroparticles,
                             bunch_intensity,
                             sigma_x,
@@ -64,8 +64,8 @@ def generate_particles_object(platform,
     py_part = 0*x_part
     pt_part = 0*x_part
 
-    # Move to platform
-    np2platf = platform.nparray_to_platform_mem
+    # Move to context
+    np2platf = context.nparray_to_context_mem
     x_part_dev = np2platf(x_part)
     y_part_dev = np2platf(y_part)
     z_part_dev = np2platf(z_part)
@@ -74,14 +74,14 @@ def generate_particles_object(platform,
     ptau_part_dev = np2platf(pt_part)
     weights_part_dev = np2platf(weights_part)
 
-    if isinstance(platform, XfCupyPlatform):
+    if isinstance(context, XfCupyContext):
         kwargs = {'mathlib': CupyMathlib()}
-    elif isinstance(platform, XfPyopenclPlatform):
+    elif isinstance(context, XfPyopenclContext):
         kwargs = {'mathlib': PyopenclMathlib()}
-    elif isinstance(platform, XfCpuPlatform):
+    elif isinstance(context, XfCpuContext):
         kwargs = {}
     else:
-        raise ValueError('Unknown platform!')
+        raise ValueError('Unknown context!')
 
     particles = Particles(
             p0c=p0c,

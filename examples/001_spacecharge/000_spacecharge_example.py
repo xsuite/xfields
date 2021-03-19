@@ -3,17 +3,17 @@ import time
 import numpy as np
 
 from pysixtrack.particles import Particles
-from xfields.platforms import XfCpuPlatform, XfCupyPlatform, XfPyopenclPlatform
+from xfields.contexts import XfCpuContext, XfCupyContext, XfPyopenclContext
 
 ###################
-# Choose platform #
+# Choose context #
 ###################
 
-platform = XfCpuPlatform()
-platform = XfCupyPlatform(default_block_size=256)
-#platform = XfPyopenclPlatform()
+context = XfCpuContext()
+context = XfCupyContext(default_block_size=256)
+#context = XfPyopenclContext()
 
-print(repr(platform))
+print(repr(context))
 
 #################################
 # Generate particles and probes #
@@ -33,7 +33,7 @@ n_probes = 1000
 
 from temp_makepart import generate_particles_object
 (particles, r_probes, x_probes,
-        y_probes, z_probes) = generate_particles_object(platform,
+        y_probes, z_probes) = generate_particles_object(context,
                             n_macroparticles,
                             bunch_intensity,
                             sigma_x,
@@ -64,7 +64,7 @@ spcharge = SpaceCharge3D(
         nx=256, ny=256, nz=50,
         solver='FFTSolver2p5D',
         gamma0=particles.gamma0,
-        platform=platform)
+        context=context)
 
 spcharge.track(particles)
 
@@ -74,7 +74,7 @@ spcharge.track(particles)
 ##############################
 
 
-p2np = platform.nparray_from_platform_mem
+p2np = context.nparray_from_context_mem
 
 from pysixtrack.elements import SpaceChargeBunched
 scpyst = SpaceChargeBunched(
@@ -114,7 +114,7 @@ n_rep = 10
 for _ in range(n_rep):
     t1 = time.time()
     spcharge.track(particles)
-    platform.synchronize()
+    context.synchronize()
     t2 = time.time()
     print(f'Time: {(t2-t1)*1e3:.2f} ms')
 

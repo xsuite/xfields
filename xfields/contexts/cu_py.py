@@ -4,11 +4,11 @@ from xobjects.context import ContextCupy
 
 from .default_kernels import cupy_default_kernels
 
-class XfCupyPlatform(ContextCupy):
+class XfCupyContext(ContextCupy):
 
     """
 
-    Creates a Cupy Platform object, that allows performing the computations
+    Creates a Cupy Context object, that allows performing the computations
     on nVidia GPUs.
 
     Args:
@@ -18,7 +18,7 @@ class XfCupyPlatform(ContextCupy):
             for kernel execution in case a block size is not specified
             directly in the kernel object. The default value is 256.
     Returns:
-        XfCupyPlatform: platform object.
+        XfCupyContext: context object.
 
     """
 
@@ -30,8 +30,8 @@ class XfCupyPlatform(ContextCupy):
             self.add_kernels(src_files=cupy_default_kernels['src_files'],
                     kernel_descriptions=cupy_default_kernels['kernel_descriptions'])
 
-    def nparray_to_platform_mem(self, arr):
+    def nparray_to_context_mem(self, arr):
         return self.nparray_to_context_array(arr)
 
-    def nparray_from_platform_mem(self, arr):
+    def nparray_from_context_mem(self, arr):
         return self.nparray_from_context_array(arr)

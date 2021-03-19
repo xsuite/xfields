@@ -5,10 +5,10 @@ from xobjects.context import ContextPyopencl
 from .default_kernels import pyopencl_default_kernels
 
 
-class XfPyopenclPlatform(ContextPyopencl):
+class XfPyopenclContext(ContextPyopencl):
 
     """
-    Creates a Pyopencl Platform object, that allows performing the computations
+    Creates a Pyopencl Context object, that allows performing the computations
     on GPUs and CPUs through PyOpenCL.
 
     Args:
@@ -19,7 +19,7 @@ class XfPyopenclPlatform(ContextPyopencl):
             allow some operations with non-contiguous arrays.
 
     Returns:
-        XfPyopenclPlatform: platform object.
+        XfPyopenclContext: context object.
 
     """
 
@@ -31,9 +31,9 @@ class XfPyopenclPlatform(ContextPyopencl):
             self.add_kernels(src_files=pyopencl_default_kernels['src_files'],
                     kernel_descriptions=pyopencl_default_kernels['kernel_descriptions'])
 
-    def nparray_to_platform_mem(self, arr):
+    def nparray_to_context_mem(self, arr):
         return self.nparray_to_context_array(arr)
 
-    def nparray_from_platform_mem(self, arr):
+    def nparray_from_context_mem(self, arr):
         return self.nparray_from_context_array(arr)
 
