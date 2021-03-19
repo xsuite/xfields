@@ -32,8 +32,8 @@ class XfPyopenclPlatform(ContextPyopencl):
                     kernel_descriptions=pyopencl_default_kernels['kernel_descriptions'])
 
     def nparray_to_platform_mem(self, arr):
-        return self.nparray_to_context_mem(arr)
+        return self.nparray_to_context_array(arr)
 
     def nparray_from_platform_mem(self, arr):
-        return self.nparray_from_context_mem(arr)
+        return self.nparray_from_context_array(arr)
 
