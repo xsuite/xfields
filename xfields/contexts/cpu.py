@@ -28,8 +28,3 @@ class XfCpuContext(ContextCpu):
             self.add_kernels(src_files=cpu_default_kernels['src_files'],
                     kernel_descriptions=cpu_default_kernels['kernel_descriptions'])
 
-    def nparray_to_context_mem(self, arr):
-        return self.nparray_to_context_array(arr)
-
-    def nparray_from_context_mem(self, arr):
-        return self.nparray_from_context_array(arr)
