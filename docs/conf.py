@@ -21,7 +21,8 @@ import os
 sys.path.insert(0, os.path.abspath('../'))
 os.system('git clone https://github.com/xsuite/xobjects')
 os.system('cd xobjects; git checkout integration_xobjects_xfields; cd ..')
-sys.path.insert(0, os.path.abspath('./'))
+sys.path.insert(0, os.path.abspath('./xobjects'))
+import xobjects
 import xfields
 
 
