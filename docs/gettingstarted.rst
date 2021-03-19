@@ -3,45 +3,45 @@ Getting Started Guide
 
 This page describes the basic usage of Xfields (if you need to install Xfields, please follow the instructions in the dedicated :doc:`installation page <installation>`).
 
-Create a Platform
+Create a Context
 --------------------------
 
 Xfield can run on different kinds of hardware (CPUs and GPUs). The user selects the herdware to be used by
-creating a :doc:`platform object<platforms>`, that is then passed to all other Xfields components.
+creating a :doc:`context object<contexts>`, that is then passed to all other Xfields components.
 
-To run on conventional CPUs you need to create the corresponding platform:
+To run on conventional CPUs you need to create the corresponding context:
 
 .. code-block:: python
 
-    from xfields.platforms import XfCpuPlatform
-    platform = XfCpuPlatform()
+    from xfields.contexts import XfCpuContext
+    context = XfCpuContext()
 
 Similarly to run on GPUs using cupy:
 
 .. code-block:: python
 
-    from xfields.platforms import XfCupyPlatform
-    platform = XfCupyPlatform()
+    from xfields.contexts import XfCupyContext
+    context = XfCupyContext()
 
 And to run on GPUs and CPUs using PyOpenCL:
 
 .. code-block:: python
 
-    from xfields.platforms import XfPyopenclPlatform
-    platform = XfPyopenclPlatform()
+    from xfields.contexts import XfPyopenclContext
+    context = XfPyopenclContext()
 
 
 Create a Beam Element
 ---------------------
 
-The platform that has been created can be passed when constructing a beam element defining the hardware on which the calculation is performed. For example we can create a spacecharge beam element as follows:
+The context that has been created can be passed when constructing a beam element defining the hardware on which the calculation is performed. For example we can create a spacecharge beam element as follows:
 
 .. code-block:: python
 
     from xfields import SpaceCharge3D
 
     spcharge = SpaceCharge3D(
-        platform=platform,   # defines the hardware
+        context=context,   # defines the hardware
         length=5.,
         update_on_track=True,
         apply_z_kick=True,
@@ -55,7 +55,7 @@ The platform that has been created can be passed when constructing a beam elemen
 Track
 -----
 
-The beam element can be used to track a bunch stored on the same platform:
+The beam element can be used to track a bunch stored on the same context:
 
 .. code-block:: python
 
