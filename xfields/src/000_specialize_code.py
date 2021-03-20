@@ -1,4 +1,4 @@
-
+from xobjects.context import specialize_source
 
 todo = [
         {'src_file': './linear_interpolators.h',
@@ -21,60 +21,9 @@ for job in todo:
     newfname = job['out_file']
     context = job['context']
 
-    assert context in ['cpu', 'opencl', 'cuda']
 
     with open(fname, 'r') as fid:
-        lines = fid.readlines()
-
-    indent = True
-    new_lines = []
-    inside_vect_block = False
-    for ii, ll in enumerate(lines):
-        if '//vectorize_over' in ll:
-            if inside_vect_block:
-                raise ValueError(
-                        f'Line {ii}: Previous vect block not closed!')
-            inside_vect_block = True
-            varname, limname = ll.split('//vectorize_over')[-1].split()
-            if context == 'cpu':
-                new_lines.append(f'int {varname}; //autovectorized\n')
-                new_lines.append(
-                    f'for ({varname}=0; {varname}<{limname}; {varname}++)'
-                    +'{ //autovectorized\n')
-            elif context == 'opencl':
-                new_lines.append(f'int {varname}; //autovectorized\n')
-                new_lines.append(
-                    f'{varname}=get_global_id(0); //autovectorized\n')
-            elif context == 'cuda':
-                new_lines.append(f'int {varname}; //autovectorized\n')
-                new_lines.append(
-                    f'{varname}=blockDim.x * blockIdx.x + threadIdx.x;'
-                      '//autovectorized\n')
-        elif '//end_vectorize' in ll:
-            if context == 'cpu':
-                new_lines.append('}//end autovectorized\n')
-            elif context == 'opencl':
-                new_lines.append('//end autovectorized\n')
-            elif context == 'cuda':
-                new_lines.append('//end autovectorized\n')
-
-            inside_vect_block = False
-        else:
-            if '//only_for_context' in ll:
-                ptemp = ll.split(
-                    '//only_for_context')[-1].split()[0].strip()
-                if context != ptemp:
-                    ll = '//' + ll
-            if indent and inside_vect_block:
-                new_lines.append('    ' + ll)
-            else:
-                new_lines.append(ll)
-
-    newfilecontent = ''.join(new_lines)
-    newfilecontent = newfilecontent.replace('/*gpukern*/',
-        {'cpu':' ', 'opencl': ' __kernel ', 'cuda': '__global__'}[context])
-    newfilecontent = newfilecontent.replace('/*gpuglmem*/',
-        {'cpu':' ', 'opencl': ' __global ', 'cuda': ' '}[context])
+        source = fid.read()
 
     with open(newfname, 'w') as fid:
-        fid.write(newfilecontent)
+        fid.write(specialize_source(source, specialize_for=context))

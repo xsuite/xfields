@@ -23,7 +23,9 @@
     double vol_m1 = 1/(dx*dy*dz);
 
 int pidx; //autovectorized
+
 pidx=get_global_id(0); //autovectorized
+
     
         double pwei = part_weights[pidx];
     
@@ -77,6 +79,7 @@ pidx=get_global_id(0); //autovectorized
             }
         }
 //end autovectorized
+
 }
 
 
@@ -109,7 +112,9 @@ pidx=get_global_id(0); //autovectorized
     int iq;
 
 int pidx; //autovectorized
+
 pidx=get_global_id(0); //autovectorized
+
     
         // indices
         int jx = floor((x[pidx] - x0) / dx);
@@ -153,4 +158,5 @@ pidx=get_global_id(0); //autovectorized
             }
         }
 //end autovectorized
+
 }

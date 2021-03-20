@@ -23,7 +23,9 @@
     double vol_m1 = 1/(dx*dy*dz);
 
 int pidx; //autovectorized
+
 for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
+
     
         double pwei = part_weights[pidx];
     
@@ -77,6 +79,7 @@ for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
             }
         }
 }//end autovectorized
+
 }
 
 
@@ -109,7 +112,9 @@ for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
     int iq;
 
 int pidx; //autovectorized
+
 for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
+
     
         // indices
         int jx = floor((x[pidx] - x0) / dx);
@@ -153,4 +158,5 @@ for (pidx=0; pidx<nparticles; pidx++){ //autovectorized
             }
         }
 }//end autovectorized
+
 }

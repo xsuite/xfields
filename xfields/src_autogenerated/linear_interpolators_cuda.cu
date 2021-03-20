@@ -23,7 +23,9 @@ __global__ void p2m_rectmesh3d(
     double vol_m1 = 1/(dx*dy*dz);
 
 int pidx; //autovectorized
+
 pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
+
     
         double pwei = part_weights[pidx];
     
@@ -77,6 +79,7 @@ pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
             }
         }
 //end autovectorized
+
 }
 
 
@@ -109,7 +112,9 @@ __global__ void m2p_rectmesh3d(
     int iq;
 
 int pidx; //autovectorized
+
 pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
+
     
         // indices
         int jx = floor((x[pidx] - x0) / dx);
@@ -153,4 +158,5 @@ pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
             }
         }
 //end autovectorized
+
 }
