@@ -7,7 +7,7 @@ thisfolder = Path(__file__).parent.absolute()
 pkg_root = thisfolder.parent.absolute()
 so_suffix = sysconfig.get_config_var('EXT_SUFFIX')
 
-shared_kernel_descriptions = {
+kernel_descriptions = {
     'p2m_rectmesh3d':{
         'args':(
             (('scalar', np.int32),   'nparticles',),
@@ -50,23 +50,10 @@ shared_kernel_descriptions = {
         },
     }
 
-pyopencl_default_kernels = {
-    'kernel_descriptions': shared_kernel_descriptions,
+default_kernels = {
+    'kernel_descriptions': kernel_descriptions,
     'src_files': [
         pkg_root.joinpath('src/linear_interpolators.h')
         ]
     }
 
-cupy_default_kernels = {
-    'kernel_descriptions': shared_kernel_descriptions,
-    'src_files': [
-        pkg_root.joinpath('src/linear_interpolators.h')
-        ]
-    }
-
-cpu_default_kernels = {
-    'kernel_descriptions': shared_kernel_descriptions,
-    'src_files': [
-        pkg_root.joinpath('src/linear_interpolators.h')
-        ]
-    }
