@@ -1,4 +1,5 @@
 //include_file atomicadd.clh for_context opencl
+//include_file atomicadd.h for_context cpu_serial cpu_openmp
 
 /*gpukern*/ void p2m_rectmesh3d(
         // INPUTS:
