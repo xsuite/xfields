@@ -1,3 +1,7 @@
+#ifndef _ATOMICADD_CLH_
+#define _ATOMICADD_CLH_
+
+
 #pragma OPENCL EXTENSION cl_khr_int64_base_atomics : enable
 inline void atomicAdd(volatile __global double *addr, double val)
 {
@@ -14,3 +18,4 @@ inline void atomicAdd(volatile __global double *addr, double val)
 		         expected.u64, next.u64);
 	} while( current.u64 != expected.u64 );
 }
+#endif
