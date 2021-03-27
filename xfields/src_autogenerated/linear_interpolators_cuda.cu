@@ -1,4 +1,3 @@
-//#include <atomicadd.h> //only_for_context none
 
 __global__ void p2m_rectmesh3d(
         // INPUTS:
@@ -21,63 +20,49 @@ __global__ void p2m_rectmesh3d(
 ) {
 
     double vol_m1 = 1/(dx*dy*dz);
-
+    
+//    #pragma omp parallel for //only_for_context cpu_openmp 
 int pidx; //autovectorized
 
 pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
 
     
-        double pwei = part_weights[pidx];
+        	double pwei = part_weights[pidx];
     
-        // indices
-        int jx = floor((x[pidx] - x0) / dx);
-        int ix = floor((y[pidx] - y0) / dy);
-        int kx = floor((z[pidx] - z0) / dz);
+        	// indices
+        	int jx = floor((x[pidx] - x0) / dx);
+        	int ix = floor((y[pidx] - y0) / dy);
+        	int kx = floor((z[pidx] - z0) / dz);
     
-        // distances
-        double dxi = x[pidx] - (x0 + jx * dx);
-        double dyi = y[pidx] - (y0 + ix * dy);
-        double dzi = z[pidx] - (z0 + kx * dz);
+        	// distances
+        	double dxi = x[pidx] - (x0 + jx * dx);
+        	double dyi = y[pidx] - (y0 + ix * dy);
+        	double dzi = z[pidx] - (z0 + kx * dz);
     
-        // weights
-        double wijk =    pwei * vol_m1 * (1.-dxi/dx) * (1.-dyi/dy) * (1.-dzi/dz);
-        double wi1jk =   pwei * vol_m1 * (1.-dxi/dx) * (dyi/dy)    * (1.-dzi/dz);
-        double wij1k =   pwei * vol_m1 * (dxi/dx)    * (1.-dyi/dy) * (1.-dzi/dz);
-        double wi1j1k =  pwei * vol_m1 * (dxi/dx)    * (dyi/dy)    * (1.-dzi/dz);
-        double wijk1 =   pwei * vol_m1 * (1.-dxi/dx) * (1.-dyi/dy) * (dzi/dz);
-        double wi1jk1 =  pwei * vol_m1 * (1.-dxi/dx) * (dyi/dy)    * (dzi/dz);
-        double wij1k1 =  pwei * vol_m1 * (dxi/dx)    * (1.-dyi/dy) * (dzi/dz);
-        double wi1j1k1 = pwei * vol_m1 * (dxi/dx)    * (dyi/dy)    * (dzi/dz);
+        	// weights
+        	double wijk =    pwei * vol_m1 * (1.-dxi/dx) * (1.-dyi/dy) * (1.-dzi/dz);
+        	double wi1jk =   pwei * vol_m1 * (1.-dxi/dx) * (dyi/dy)    * (1.-dzi/dz);
+        	double wij1k =   pwei * vol_m1 * (dxi/dx)    * (1.-dyi/dy) * (1.-dzi/dz);
+        	double wi1j1k =  pwei * vol_m1 * (dxi/dx)    * (dyi/dy)    * (1.-dzi/dz);
+        	double wijk1 =   pwei * vol_m1 * (1.-dxi/dx) * (1.-dyi/dy) * (dzi/dz);
+        	double wi1jk1 =  pwei * vol_m1 * (1.-dxi/dx) * (dyi/dy)    * (dzi/dz);
+        	double wij1k1 =  pwei * vol_m1 * (dxi/dx)    * (1.-dyi/dy) * (dzi/dz);
+        	double wi1j1k1 = pwei * vol_m1 * (dxi/dx)    * (dyi/dy)    * (dzi/dz);
     
-        if (pidx < nparticles) {
-            if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1 && kx >= 0 && kx < nz - 1)
-            {
-                atomicAdd(&grid1d[jx   + ix*nx     + kx*nx*ny],     wijk);
-                atomicAdd(&grid1d[jx+1 + ix*nx     + kx*nx*ny],     wij1k);
-                atomicAdd(&grid1d[jx   + (ix+1)*nx + kx*nx*ny],     wi1jk);
-                atomicAdd(&grid1d[jx+1 + (ix+1)*nx + kx*nx*ny],     wi1j1k);
-                atomicAdd(&grid1d[jx   + ix*nx     + (kx+1)*nx*ny], wijk1);
-                atomicAdd(&grid1d[jx+1 + ix*nx     + (kx+1)*nx*ny], wij1k1);
-                atomicAdd(&grid1d[jx   + (ix+1)*nx + (kx+1)*nx*ny], wi1jk1);
-                atomicAdd(&grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny], wi1j1k1);
-                // grid1d[jx   + ix*nx     + kx*nx*ny] = 
-    	    //         grid1d[jx   + ix*nx     + kx*nx*ny] +    wijk;
-                // grid1d[jx+1 + ix*nx     + kx*nx*ny] = 
-    	    //         grid1d[jx+1 + ix*nx     + kx*nx*ny] +    wij1k;
-                // grid1d[jx   + (ix+1)*nx + kx*nx*ny] = 
-    	    //         grid1d[jx   + (ix+1)*nx + kx*nx*ny] +    wi1jk;
-                // grid1d[jx+1 + (ix+1)*nx + kx*nx*ny] = 
-    	    //         grid1d[jx+1 + (ix+1)*nx + kx*nx*ny] +    wi1j1k;
-                // grid1d[jx   + ix*nx     + (kx+1)*nx*ny] = 
-    	    //         grid1d[jx   + ix*nx     + (kx+1)*nx*ny] +wijk1;
-                // grid1d[jx+1 + ix*nx     + (kx+1)*nx*ny] = 
-    	    //         grid1d[jx+1 + ix*nx     + (kx+1)*nx*ny] +wij1k1;
-                // grid1d[jx   + (ix+1)*nx + (kx+1)*nx*ny] = 
-    	    //         grid1d[jx   + (ix+1)*nx + (kx+1)*nx*ny] +wi1jk1;
-                // grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny] = 
-                //	       grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny] +wi1j1k1;
-            }
-        }
+        	if (pidx < nparticles) { //only_for_context cuda
+        	    if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1
+    			    && kx >= 0 && kx < nz - 1)
+        	    {
+        	        atomicAdd(&grid1d[jx   + ix*nx     + kx*nx*ny],     wijk);
+        	        atomicAdd(&grid1d[jx+1 + ix*nx     + kx*nx*ny],     wij1k);
+        	        atomicAdd(&grid1d[jx   + (ix+1)*nx + kx*nx*ny],     wi1jk);
+        	        atomicAdd(&grid1d[jx+1 + (ix+1)*nx + kx*nx*ny],     wi1j1k);
+        	        atomicAdd(&grid1d[jx   + ix*nx     + (kx+1)*nx*ny], wijk1);
+        	        atomicAdd(&grid1d[jx+1 + ix*nx     + (kx+1)*nx*ny], wij1k1);
+        	        atomicAdd(&grid1d[jx   + (ix+1)*nx + (kx+1)*nx*ny], wi1jk1);
+        	        atomicAdd(&grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny], wi1j1k1);
+        	    }
+        	}//only_for_context cuda
 //end autovectorized
 
 }
@@ -108,55 +93,57 @@ __global__ void m2p_rectmesh3d(
 ) {
 
 
-    int offset_mq; 
-    int iq;
 
+//    #pragma omp parallel for //only_for_context cpu_openmp 
 int pidx; //autovectorized
 
 pidx=blockDim.x * blockIdx.x + threadIdx.x;//autovectorized
 
     
-        // indices
-        int jx = floor((x[pidx] - x0) / dx);
-        int ix = floor((y[pidx] - y0) / dy);
-        int kx = floor((z[pidx] - z0) / dz);
+        	int offset_mq; 
+        	int iq;
     
-        // distances
-        double dxi = x[pidx] - (x0 + jx * dx);
-        double dyi = y[pidx] - (y0 + ix * dy);
-        double dzi = z[pidx] - (z0 + kx * dz);
+        	// indices
+        	int jx = floor((x[pidx] - x0) / dx);
+        	int ix = floor((y[pidx] - y0) / dy);
+        	int kx = floor((z[pidx] - z0) / dz);
     
-        // weights
-        double wijk =    (1.-dxi/dx)*(1.-dyi/dy)*(1.-dzi/dz);
-        double wi1jk =   (1.-dxi/dx)*(dyi/dy)   *(1.-dzi/dz);
-        double wij1k =   (dxi/dx)   *(1.-dyi/dy)*(1.-dzi/dz);
-        double wi1j1k =  (dxi/dx)   *(dyi/dy)   *(1.-dzi/dz);
-        double wijk1 =   (1.-dxi/dx)*(1.-dyi/dy)*(dzi/dz);
-        double wi1jk1 =  (1.-dxi/dx)*(dyi/dy)   *(dzi/dz);
-        double wij1k1 =  (dxi/dx)   *(1.-dyi/dy)*(dzi/dz);
-        double wi1j1k1 = (dxi/dx)   *(dyi/dy)   *(dzi/dz);
+        	// distances
+        	double dxi = x[pidx] - (x0 + jx * dx);
+        	double dyi = y[pidx] - (y0 + ix * dy);
+        	double dzi = z[pidx] - (z0 + kx * dz);
     
-        if (pidx < nparticles) {
-            if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1 && kx >= 0 && kx < nz - 1)
-            {
-                for (iq=0; iq<n_quantities; iq++){
-    		offset_mq = offsets_mesh_quantities[iq];
-    		particles_quantity[iq*nparticles + pidx] = ( 
-    			wijk   * mesh_quantity[offset_mq  +   jx   + ix*nx     + kx*nx*ny]
-                          + wij1k  * mesh_quantity[offset_mq  +   jx+1 + ix*nx     + kx*nx*ny]
-                          + wi1jk  * mesh_quantity[offset_mq  +   jx+  + (ix+1)*nx + kx*nx*ny]
-                          + wi1j1k * mesh_quantity[offset_mq  +   jx+1 + (ix+1)*nx + kx*nx*ny]
-                          + wijk1  * mesh_quantity[offset_mq  +   jx   + ix*nx     + (kx+1)*nx*ny]
-                          + wij1k1 * mesh_quantity[offset_mq  +   jx+1 + ix*nx     + (kx+1)*nx*ny]
-                          + wi1jk1 * mesh_quantity[offset_mq  +   jx+  + (ix+1)*nx + (kx+1)*nx*ny]
-                          + wi1j1k1* mesh_quantity[offset_mq  +   jx+1 + (ix+1)*nx + (kx+1)*nx*ny]);
-    	    }
-            } else {
-                for (iq=0; iq<n_quantities; iq++){
-    		particles_quantity[iq*nparticles + pidx] = 0; 
-    		}
-            }
-        }
+        	// weights
+        	double wijk =    (1.-dxi/dx)*(1.-dyi/dy)*(1.-dzi/dz);
+        	double wi1jk =   (1.-dxi/dx)*(dyi/dy)   *(1.-dzi/dz);
+        	double wij1k =   (dxi/dx)   *(1.-dyi/dy)*(1.-dzi/dz);
+        	double wi1j1k =  (dxi/dx)   *(dyi/dy)   *(1.-dzi/dz);
+        	double wijk1 =   (1.-dxi/dx)*(1.-dyi/dy)*(dzi/dz);
+        	double wi1jk1 =  (1.-dxi/dx)*(dyi/dy)   *(dzi/dz);
+        	double wij1k1 =  (dxi/dx)   *(1.-dyi/dy)*(dzi/dz);
+        	double wi1j1k1 = (dxi/dx)   *(dyi/dy)   *(dzi/dz);
+    
+        	if (pidx < nparticles) { //only_for_context cuda
+        	    if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1
+    			    && kx >= 0 && kx < nz - 1){
+        	      for (iq=0; iq<n_quantities; iq++){
+        	    	offset_mq = offsets_mesh_quantities[iq];
+        	    	particles_quantity[iq*nparticles + pidx] = ( 
+        	    	   wijk   * mesh_quantity[offset_mq + jx   + ix*nx     + kx*nx*ny]
+        	         + wij1k  * mesh_quantity[offset_mq + jx+1 + ix*nx     + kx*nx*ny]
+        	         + wi1jk  * mesh_quantity[offset_mq + jx+  + (ix+1)*nx + kx*nx*ny]
+        	         + wi1j1k * mesh_quantity[offset_mq + jx+1 + (ix+1)*nx + kx*nx*ny]
+        	         + wijk1  * mesh_quantity[offset_mq + jx   + ix*nx     + (kx+1)*nx*ny]
+        	         + wij1k1 * mesh_quantity[offset_mq + jx+1 + ix*nx     + (kx+1)*nx*ny]
+        	         + wi1jk1 * mesh_quantity[offset_mq + jx+  + (ix+1)*nx + (kx+1)*nx*ny]
+        	         + wi1j1k1* mesh_quantity[offset_mq + jx+1 + (ix+1)*nx + (kx+1)*nx*ny]);
+        	        }
+        	    } else {
+        	        for (iq=0; iq<n_quantities; iq++){
+        	    	particles_quantity[iq*nparticles + pidx] = 0; 
+        	    	}
+        	    }
+        	}//only_for_context cuda
 //end autovectorized
 
 }
