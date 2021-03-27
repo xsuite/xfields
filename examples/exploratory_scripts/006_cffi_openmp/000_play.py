@@ -36,8 +36,8 @@ from _example import ffi, lib
 x_test = np.linspace(0, 2*np.pi, 200000000)
 x_cffi = ffi_interface.cast('double *', ffi_interface.from_buffer(x_test))
 
-N_test = 1
-for n_threads in [1, 48]:
+N_test = 3
+for n_threads in [1, 12, 24, 48]:
     lib.omp_set_num_threads(n_threads)
     t1 = time.time()
     for _ in range(N_test):
