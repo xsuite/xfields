@@ -1,3 +1,7 @@
+# To run:
+# export OMP_NUM_THREADS=48; python 000_play.py
+import os
+import time
 import numpy as np
 import cffi
 
@@ -5,23 +9,36 @@ ffi_interface = cffi.FFI()
 
 src = r'''
 #include <math.h>
+
+double sinsin(double x){
+    return sin(x);
+}
+
 void mysin(double* x, int n){
    int ii;
+   #pragma omp parallel for private(ii)
    for (ii=0; ii<n; ii++){
-      x[ii] = sin(x[ii]);
+      x[ii] = sinsin(x[ii]);
    }
 }
 '''
 
 ffi_interface.cdef("void mysin(double*, int);")
 
-ffi_interface.set_source("_example", src)
+ffi_interface.set_source("_example", src,
+        extra_compile_args=['-fopenmp'],
+        extra_link_args=['-fopenmp'],)
 
-ffi_interface.compile(verbose=True)
+ffi_interface.compile(verbose=False)
 
 from _example import ffi, lib
 
-x_test = np.linspace(0, 2*np.pi, 1000)
+x_test = np.linspace(0, 2*np.pi, 200000000)
 x_cffi = ffi_interface.cast('double *', ffi_interface.from_buffer(x_test))
 
-lib.mysin(x_cffi, len(x_test))
+N_test = 1
+t1 = time.time()
+for _ in range(N_test):
+    lib.mysin(x_cffi, len(x_test))
+t2 = time.time()
+print(f'Time: {1e3*(t2-t1)/N_test:.2f} ms')
