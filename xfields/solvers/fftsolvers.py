@@ -80,7 +80,7 @@ class FFTSolver3D(Solver):
         gint_rep_dev = context.nparray_to_context_array(gint_rep)
 
         # Prepare fft plan
-        fftplan = context.plan_FFT(gint_rep_dev, axes=(0,1,2))
+        fftplan = context.plan_FFT(workspace_dev, axes=(0,1,2))
 
         # Transform the green function (in place)
         fftplan.transform(gint_rep_dev)
@@ -145,7 +145,6 @@ class FFTSolver2p5D(FFTSolver3D):
         # Prepare arrays
         workspace_dev = context.nparray_to_context_array(
                     np.zeros((2*nx, 2*ny, nz), dtype=np.complex128, order='F'))
-
 
         # Build grid for primitive function
         xg_F = np.arange(0, nx+2) * dx - dx/2

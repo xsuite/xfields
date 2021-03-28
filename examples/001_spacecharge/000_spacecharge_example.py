@@ -9,9 +9,10 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 # Choose context #
 ###################
 
-context = ContextCpu(omp_num_threads=10)
+context = ContextCpu(omp_num_threads=0) # no omp
+context = ContextCpu(omp_num_threads=24) # omp
 #context = ContextCupy(default_block_size=256)
-#context = ContextPyopencl()
+#context = ContextPyopencl('1.0')
 
 print(repr(context))
 
