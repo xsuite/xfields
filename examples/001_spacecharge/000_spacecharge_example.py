@@ -9,7 +9,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 # Choose context #
 ###################
 
-context = ContextCpu()
+context = ContextCpu(omp_num_threads=10)
 #context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl()
 
@@ -110,12 +110,21 @@ plt.plot(r_probes, p2np(particles.py[:n_probes]), color='blue',
 # Time it #
 ###########
 
-n_rep = 10
+n_rep = 5
+
 for _ in range(n_rep):
     t1 = time.time()
     spcharge.track(particles)
     context.synchronize()
     t2 = time.time()
-    print(f'Time: {(t2-t1)*1e3:.2f} ms')
+    print(f'Time (full PIC): {(t2-t1)*1e3:.2f} ms')
+
+spcharge.update_on_track = False
+for _ in range(n_rep):
+    t1 = time.time()
+    spcharge.track(particles)
+    context.synchronize()
+    t2 = time.time()
+    print(f'Time (interp only): {(t2-t1)*1e3:.2f} ms')
 
 plt.show()
