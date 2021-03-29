@@ -77,8 +77,8 @@ spcharge.track(particles)
 
 p2np = context.nparray_from_context_array
 
-from pysixtrack.elements import SpaceChargeBunched
-scpyst = SpaceChargeBunched(
+from pysixtrack.elements import SCQGaussProfile
+scpyst = SCQGaussProfile(
         number_of_particles = bunch_intensity,
         bunchlength_rms=sigma_z,
         sigma_x=sigma_x,
