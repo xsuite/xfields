@@ -1,6 +1,7 @@
 import numpy as np
 
 from xobjects.context import ContextDefault
+import xobjects as xo
 
 from .base import FieldMap
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
@@ -278,20 +279,22 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             raise ValueError('Not implemented!')
 
         # Compute gradient
-        # self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
-        #         self._phi_dev[2:,:,:]-self._phi_dev[:-2,:,:])
-        # self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
-        #         self._phi_dev[:,2:,:]-self._phi_dev[:,:-2,:])
-        # self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
-        #         self._phi_dev[:,:,2:]-self._phi_dev[:,:,:-2])
+        if isinstance(self.context, xo.ContextPyopencl):
+            # Copies are needed only for pyopencl
+            self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
+                    self._phi_dev[2:,:,:].copy()-self._phi_dev[:-2,:,:].copy())
+            self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
+                    self._phi_dev[:,2:,:].copy()-self._phi_dev[:,:-2,:].copy())
+            self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
+                    self._phi_dev[:,:,2:].copy()-self._phi_dev[:,:,:-2].copy())
+        else:
+            self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
+                    self._phi_dev[2:,:,:]-self._phi_dev[:-2,:,:])
+            self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
+                    self._phi_dev[:,2:,:]-self._phi_dev[:,:-2,:])
+            self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
+                    self._phi_dev[:,:,2:]-self._phi_dev[:,:,:-2])
 
-        # Copies are needed only for pyopencl
-        self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
-                self._phi_dev[2:,:,:].copy()-self._phi_dev[:-2,:,:].copy())
-        self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
-                self._phi_dev[:,2:,:].copy()-self._phi_dev[:,:-2,:].copy())
-        self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
-                self._phi_dev[:,:,2:].copy()-self._phi_dev[:,:,:-2].copy())
 
     #@profile
     def update_phi_from_rho(self, solver=None):
