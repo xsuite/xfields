@@ -6,7 +6,10 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 
 class CupyMathlib(object):
 
-    from cupy import sqrt, exp, sin, cos, abs, pi, tan
+    try:
+        from cupy import sqrt, exp, sin, cos, abs, pi, tan
+    except:
+        pass
 
     @classmethod
     def wfun(cls, z_re, z_im):
