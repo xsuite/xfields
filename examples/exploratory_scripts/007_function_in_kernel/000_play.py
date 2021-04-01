@@ -15,7 +15,7 @@ for (CTX, kwargs) in zip(
     ctx = CTX(**kwargs)
 
     src_code='''
-    __device__ //only_for_context cuda
+    /*gpufun*/
     void myfun(double x, double y,
         double* z){
         z[0] = x * y;
