@@ -37,8 +37,8 @@ ctx.kernels.get_Ex_Ey_Gx_Gy_gauss(
     skip_Gs=0,
     Ex_ptr=Ex_dev,
     Ey_ptr=Ey_dev,
-    Gx_ptr=Gy_dev,
-    Gy_ptr=Gx_dev,
+    Gx_ptr=Gx_dev,
+    Gy_ptr=Gy_dev,
     )
 
 Ex = ctx.nparray_from_context_array(Ex_dev)
