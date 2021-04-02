@@ -157,8 +157,10 @@ void get_Ex_Ey_Gx_Gy_gauss(
     	}
     	Ex_ptr[ip] = Ex;
     	Ey_ptr[ip] = Ey;
-    	Gx_ptr[ip] = Gx;
-    	Gy_ptr[ip] = Gy;
+	if (!skip_Gs){
+    	   Gx_ptr[ip] = Gx;
+    	   Gy_ptr[ip] = Gy;
+	}
     }//end_vectorize
 }
 
