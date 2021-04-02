@@ -4,6 +4,9 @@ import xobjects as xo
 
 ctx = xo.ContextCpu()
 ctx = xo.ContextCupy()
+ctx = xo.ContextPyopencl()
+
+print(ctx)
 
 kernel_descriptions = {'get_Ex_Ey_Gx_Gy_gauss':{
     'args':(
