@@ -3,6 +3,7 @@ import numpy as np
 import xobjects as xo
 
 ctx = xo.ContextCpu()
+ctx = xo.ContextCupy()
 
 kernel_descriptions = {'get_Ex_Ey_Gx_Gy_gauss':{
     'args':(
