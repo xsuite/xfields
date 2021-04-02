@@ -48,20 +48,18 @@
     	double wij1k1 =  pwei * vol_m1 * (dxi/dx)    * (1.-dyi/dy) * (dzi/dz);
     	double wi1j1k1 = pwei * vol_m1 * (dxi/dx)    * (dyi/dy)    * (dzi/dz);
 
-    	if (pidx < nparticles) { //only_for_context cuda
-    	    if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1
-			    && kx >= 0 && kx < nz - 1)
-    	    {
-    	        atomicAdd(&grid1d[jx   + ix*nx     + kx*nx*ny],     wijk);
-    	        atomicAdd(&grid1d[jx+1 + ix*nx     + kx*nx*ny],     wij1k);
-    	        atomicAdd(&grid1d[jx   + (ix+1)*nx + kx*nx*ny],     wi1jk);
-    	        atomicAdd(&grid1d[jx+1 + (ix+1)*nx + kx*nx*ny],     wi1j1k);
-    	        atomicAdd(&grid1d[jx   + ix*nx     + (kx+1)*nx*ny], wijk1);
-    	        atomicAdd(&grid1d[jx+1 + ix*nx     + (kx+1)*nx*ny], wij1k1);
-    	        atomicAdd(&grid1d[jx   + (ix+1)*nx + (kx+1)*nx*ny], wi1jk1);
-    	        atomicAdd(&grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny], wi1j1k1);
-    	    }
-    	}//only_for_context cuda
+    	if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1
+	    	    && kx >= 0 && kx < nz - 1)
+    	{
+    	    atomicAdd(&grid1d[jx   + ix*nx     + kx*nx*ny],     wijk);
+    	    atomicAdd(&grid1d[jx+1 + ix*nx     + kx*nx*ny],     wij1k);
+    	    atomicAdd(&grid1d[jx   + (ix+1)*nx + kx*nx*ny],     wi1jk);
+    	    atomicAdd(&grid1d[jx+1 + (ix+1)*nx + kx*nx*ny],     wi1j1k);
+    	    atomicAdd(&grid1d[jx   + ix*nx     + (kx+1)*nx*ny], wijk1);
+    	    atomicAdd(&grid1d[jx+1 + ix*nx     + (kx+1)*nx*ny], wij1k1);
+    	    atomicAdd(&grid1d[jx   + (ix+1)*nx + (kx+1)*nx*ny], wi1jk1);
+    	    atomicAdd(&grid1d[jx+1 + (ix+1)*nx + (kx+1)*nx*ny], wi1j1k1);
+    	}
     }//end_vectorize
 }
 
@@ -118,26 +116,24 @@
     	double wij1k1 =  (dxi/dx)   *(1.-dyi/dy)*(dzi/dz);
     	double wi1j1k1 = (dxi/dx)   *(dyi/dy)   *(dzi/dz);
 
-    	if (pidx < nparticles) { //only_for_context cuda
-    	    if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1
-			    && kx >= 0 && kx < nz - 1){
-    	      for (iq=0; iq<n_quantities; iq++){
-    	    	offset_mq = offsets_mesh_quantities[iq];
-    	    	particles_quantity[iq*nparticles + pidx] = ( 
-    	    	   wijk   * mesh_quantity[offset_mq + jx   + ix*nx     + kx*nx*ny]
-    	         + wij1k  * mesh_quantity[offset_mq + jx+1 + ix*nx     + kx*nx*ny]
-    	         + wi1jk  * mesh_quantity[offset_mq + jx+  + (ix+1)*nx + kx*nx*ny]
-    	         + wi1j1k * mesh_quantity[offset_mq + jx+1 + (ix+1)*nx + kx*nx*ny]
-    	         + wijk1  * mesh_quantity[offset_mq + jx   + ix*nx     + (kx+1)*nx*ny]
-    	         + wij1k1 * mesh_quantity[offset_mq + jx+1 + ix*nx     + (kx+1)*nx*ny]
-    	         + wi1jk1 * mesh_quantity[offset_mq + jx+  + (ix+1)*nx + (kx+1)*nx*ny]
-    	         + wi1j1k1* mesh_quantity[offset_mq + jx+1 + (ix+1)*nx + (kx+1)*nx*ny]);
-    	        }
-    	    } else {
-    	        for (iq=0; iq<n_quantities; iq++){
-    	    	particles_quantity[iq*nparticles + pidx] = 0; 
-    	    	}
+    	if (jx >= 0 && jx < nx - 1 && ix >= 0 && ix < ny - 1
+	    	    && kx >= 0 && kx < nz - 1){
+    	  for (iq=0; iq<n_quantities; iq++){
+    		offset_mq = offsets_mesh_quantities[iq];
+    		particles_quantity[iq*nparticles + pidx] = ( 
+    		   wijk   * mesh_quantity[offset_mq + jx   + ix*nx     + kx*nx*ny]
+    	     + wij1k  * mesh_quantity[offset_mq + jx+1 + ix*nx     + kx*nx*ny]
+    	     + wi1jk  * mesh_quantity[offset_mq + jx+  + (ix+1)*nx + kx*nx*ny]
+    	     + wi1j1k * mesh_quantity[offset_mq + jx+1 + (ix+1)*nx + kx*nx*ny]
+    	     + wijk1  * mesh_quantity[offset_mq + jx   + ix*nx     + (kx+1)*nx*ny]
+    	     + wij1k1 * mesh_quantity[offset_mq + jx+1 + ix*nx     + (kx+1)*nx*ny]
+    	     + wi1jk1 * mesh_quantity[offset_mq + jx+  + (ix+1)*nx + (kx+1)*nx*ny]
+    	     + wi1j1k1* mesh_quantity[offset_mq + jx+1 + (ix+1)*nx + (kx+1)*nx*ny]);
     	    }
-    	}//only_for_context cuda
+    	} else {
+    	    for (iq=0; iq<n_quantities; iq++){
+    		particles_quantity[iq*nparticles + pidx] = 0; 
+    		}
+    	}
     	//end_vectorize
 }
