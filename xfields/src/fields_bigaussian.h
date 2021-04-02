@@ -5,6 +5,7 @@
 #include "constants.h" //only_for_context none
 #include "complex_error_function.h" //only_for_context none
 
+/*gpufun*/
 void get_transv_field_gauss_round(
     double sigma, double Delta_x, double Delta_y,
     double x, double y,
@@ -21,10 +22,12 @@ void get_transv_field_gauss_round(
   (*Ey) = temp * (y-Delta_y);
 }
 
+/*gpufun*/
 void get_transv_field_gauss_ellip(
         double sigma_x,  double sigma_y,
         double Delta_x,  double Delta_y,
-        double x, double y,
+        const double x, 
+	const double y,
         double* Ex_out,
         double* Ey_out)
 {
@@ -98,65 +101,65 @@ void get_transv_field_gauss_ellip(
 }
 
 
-
+/*gpukern*/
 void get_Ex_Ey_Gx_Gy_gauss(
-    double x, double  y,
-    double sigma_x, double sigma_y,
-    double min_sigma_diff, int skip_Gs,
-    double* Ex_ptr,
-    double* Ey_ptr,
-    double* Gx_ptr,
-    double* Gy_ptr){
+                 const int n_points,
+    /*gpuglmem*/ const double* x_ptr, 
+    /*gpuglmem*/ const double* y_ptr,
+                 const double  sigma_x, 
+                 const double  sigma_y,
+                 const double  min_sigma_diff, 
+                 const int     skip_Gs,
+    /*gpuglmem*/       double* Ex_ptr,
+    /*gpuglmem*/       double* Ey_ptr,
+    /*gpuglmem*/       double* Gx_ptr,
+    /*gpuglmem*/       double* Gy_ptr){
 
-    double Ex, Ey, Gx, Gy;
+    for (int ip=0; ip<n_points; ip++){  //vectorize_over ip n_points
+    	double x, y, Ex, Ey, Gx, Gy;
 
-    if (fabs(sigma_x-sigma_y)< min_sigma_diff){
+    	x = x_ptr[ip];
+    	y = y_ptr[ip];
 
-        double sigma = 0.5*(sigma_x+sigma_y);
+    	if (fabs(sigma_x-sigma_y)< min_sigma_diff){
+    	    double sigma = 0.5*(sigma_x+sigma_y);
+    	    	get_transv_field_gauss_round(sigma, 0., 0., x, y, &Ex, &Ey);
 
-        get_transv_field_gauss_round(sigma, 0., 0., x, y, &Ex, &Ey);
+    	    	if(skip_Gs){
+    	    	  Gx = 0.;
+    	    	  Gy = 0.;
+    	    	}
+    	    	else{
+    	    	  Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
+    	    	                    *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+    	    	  Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
+    	    	                    *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+    	    	}
+    	}
+    	else{
 
-        if(skip_Gs){
-          Gx = 0.;
-          Gy = 0.;
-        }
-        else{
-          Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
-                            *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
-          Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
-                            *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
-        }
+    	    get_transv_field_gauss_ellip(
+    	            sigma_x, sigma_y, 0., 0., x, y, &Ex, &Ey);
 
-    }
-    else{
+    	    double Sig_11 = sigma_x*sigma_x;
+    	    double Sig_33 = sigma_y*sigma_y;
 
-        get_transv_field_gauss_ellip(
-                sigma_x, sigma_y, 0., 0., x, y, &Ex, &Ey);
-
-        double Sig_11 = sigma_x*sigma_x;
-        double Sig_33 = sigma_y*sigma_y;
-
-        if(skip_Gs){
-          Gx = 0.;
-          Gy = 0.;
-        }
-        else{
-          Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
-                      (sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-          Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
-                      (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-        }
-
-    }
-
-    *Ex_ptr = Ex;
-    *Ey_ptr = Ey;
-
-    if( !skip_Gs )
-    {
-        *Gx_ptr = Gx;
-        *Gy_ptr = Gy;
-    }
+    	    if(skip_Gs){
+    	      Gx = 0.;
+    	      Gy = 0.;
+    	    }
+    	    else{
+    	      Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
+    	                  (sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
+    	      Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
+    	                  (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
+    	    }
+    	}
+    	Ex_ptr[ip] = Ex;
+    	Ey_ptr[ip] = Ey;
+    	Gx_ptr[ip] = Gx;
+    	Gy_ptr[ip] = Gy;
+    }//end_vectorize
 }
 
 
