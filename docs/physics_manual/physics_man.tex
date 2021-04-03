@@ -231,6 +231,7 @@ where:
 In this case the potential can be factorized as:
 \begin{equation}
 \phi(x,y,\zeta) = q_0\lambda_0(\zeta)\phi_\perp(x,y) 
+\label{eq:factorized2d}
 \end{equation}
 
 where $\phi_\perp(x,y)$ is the solution of the following 2D Poisson equation:
@@ -290,9 +291,9 @@ where $\phi_\perp(x,y)$ is the solution of the following 2D Poisson equation:
 %\Delta p_y = \frac{\Delta P_y} {P}= -\frac{qL}{ m\gamma\beta^2 c^2} \frac{\partial \phi}{\partial y}\left(x, y,\zeta\right)\label{dpy}
 %\end{equation}
 
-\section{Space charge}
-We now compute the Lorentz force on the particles of the same bunch.
-We assume thin-lens approximation so we approximate the velocity vector of the particle as:
+\section{Lorentz force}
+We now compute the Lorentz force on the particles moving in the longitudinal directions, including particles of the bunch itself (space charge forces) and particles of a colliding bunch moving in the opposite directions (beam-beam forces).
+The angles of such test particles are neglected as done in the usual thin-lens approximation. Therefore the velocity of a test particle can be written as:
 \begin{equation}
 \textbf{v} = \beta c\, \hat{\textbf{i}}_s
 \end{equation}
@@ -353,10 +354,14 @@ Reorganizing:
 
 Writing the dependencies explicitly:
 \begin{align}
-F_x(x, y, \zeta(t)) &=  -q(1-\beta  \beta_0) \frac{\partial \phi}{\partial x}(x, y, \zeta(t))\\
-F_y(x, y, \zeta(t)) &=  -q(1-\beta  \beta_0) \frac{\partial \phi}{\partial y}(x, y, \zeta(t))\\
-F_z(x, y, \zeta(t)) &=  -q\left(1-\beta  \beta_0 -\frac{\beta_0(\beta-\beta_0)}{\gamma_0}\right) \frac{\partial \phi}{\partial \zeta}(x, y, \zeta(t))
+F_x(x, y, \zeta(t)) &=  -q(1-\beta  \beta_0) \frac{\partial \phi}{\partial x}(x, y, \zeta(t))\label{eq:forcex}\\
+F_y(x, y, \zeta(t)) &=  -q(1-\beta  \beta_0) \frac{\partial \phi}{\partial y}(x, y, \zeta(t))\label{eq:forcey}\\
+F_z(x, y, \zeta(t)) &=  -q\left(1-\beta  \beta_0 -\frac{\beta_0(\beta-\beta_0)}{\gamma_0}\right) \frac{\partial \phi}{\partial \zeta}(x, y, \zeta(t))\label{eq:forcez}
 \end{align}
+where $\zeta(t)$ is the position of the particle within the bunch.
+
+
+\section{Space charge}
 
 Over the single interaction we neglect the particle slippage\footnote{In any case one would need to take into account also the dispersion in order to have the right slippage.}:
 \begin{align}
@@ -364,7 +369,7 @@ Over the single interaction we neglect the particle slippage\footnote{In any cas
 &\zeta(t) = \zeta
 \end{align}
 
-This gives the following simplification:
+This gives the following simplification of Eqs.\,\eqref{eq:forcex}\,-\,\eqref{eq:forcez}:
 \begin{align}
 F_x(x, y, \zeta) &=  -q(1-\beta_0^2) \frac{\partial \phi}{\partial x}(x, y, \zeta)\\
 F_y(x, y, \zeta) &=  -q(1-\beta_0^2) \frac{\partial \phi}{\partial y}(x, y, \zeta)\\
@@ -375,8 +380,9 @@ In this way the force over the single interaction becomes independent on time an
 \begin{equation}
 \Delta \textbf{P} = \frac{L}{\beta_0 c}\textbf{F} 
 \end{equation}
+where $L$ is the portion of the machine on which we want to compute the e-cloud interaction.
 
-from which we can compute the kicks on the normalized momenta (recalling that $P_0=m_0\beta_0\gamma_0c$):
+The kicks on the normalized momenta can be expressed as (recalling that $P_0=m_0\beta_0\gamma_0c$):
 
 \begin{align}
 &\boxed{
@@ -392,15 +398,37 @@ If the beam includes particles of different species (tracking of fragments), not
 
 
 
-In the modulated 2D assumption (see Sec.\,\ref{sec:modulated2d}), the kick can be expressed as:
+In the modulated 2D case (see Sec.\,\ref{sec:modulated2d} and in particular Eq.\,\ref{eq:factorized2d}), the kick can be expressed as:
 \begin{align}
 &\boxed{
-\Delta p_x = \frac{m_0}{m}\frac{\Delta P_x} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\,\frac{\partial \phi}{\partial x}\left(x, y\right)}\label{dpx_mod}\\
+\Delta p_x = \frac{m_0}{m}\frac{\Delta P_x} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\,\frac{\partial {\phi_\perp}}{\partial x}\left(x, y\right)}\label{dpx_mod}\\
 &\boxed{
-\Delta p_y = \frac{m_0}{m}\frac{\Delta P_y} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\, \frac{\partial \phi}{\partial y}\left(x, y\right)}\label{dpy_mod}\\
+\Delta p_y = \frac{m_0}{m}\frac{\Delta P_y} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\, \frac{\partial{\phi_\perp}}{\partial y}\left(x, y\right)}\label{dpy_mod}\\
 &\boxed{
-\Delta \delta \simeq \Delta p_z = \frac{ m_0} {m}\frac{\Delta P_z} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\frac{d\lambda_0}{d\zeta}(\zeta)\,\phi\left(x, y\right)}\label{dpz_mod}
+\Delta \delta \simeq \Delta p_z = \frac{ m_0} {m}\frac{\Delta P_z} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\frac{d\lambda_0}{d\zeta}(\zeta)\,{\phi_\perp}\left(x, y\right)}\label{dpz_mod}
 \end{align}
+
+\section{Beam-beam interaction}
+
+We consider a test particle moving in the opposite direction with velocity:
+\begin{align}
+\textbf{v}_W = -\beta_{0W} c\, \hat{\textbf{i}}_s\\
+s_W(t) = -\beta_{0W} ct
+\end{align}
+Equations\,\eqref{eq:forcex}\,-\,\eqref{eq:forcez} become:
+\begin{align}
+F_x(x, y, \zeta(t)) &=  -q(1+\beta_{0W}  \beta_{0s}) \frac{\partial \phi}{\partial x}(x, y, \zeta_W(t))\\
+F_y(x, y, \zeta(t)) &=  -q(1+\beta_{0W}  \beta_{0S}) \frac{\partial \phi}{\partial y}(x, y, \zeta_W(t))\\
+F_z(x, y, \zeta(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} +\frac{\beta_0(\beta_{0W}\beta_{0S})}{\gamma_{0S}}\right) \frac{\partial \phi}{\partial \zeta}(x, y, \zeta_W(t))
+\end{align}
+where we have used the the subscript $S$ (strong) for the bunch generating the fields, and the subscript $W$ (weak) for the test particle. 
+
+$\zeta_W(t)$ is the position of the test particle within the bunch generating the fields: 
+\begin{equation}
+\zeta_W(t)= s_W(t) -\beta_{0S} c t  = -(\beta_{0W}+\beta_{0S})ct
+\end{equation}
+
+DA CONTINUARE...
 
 \section{FFT Poisson solver}
 
