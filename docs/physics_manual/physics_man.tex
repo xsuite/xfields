@@ -230,7 +230,7 @@ where:
 \end{align}
 In this case the potential can be factorized as:
 \begin{equation}
-\phi(x,y,\zeta) = q_0\lambda_0(\zeta)\phi_\perp(x,y) 
+\phi(x,y,\zeta) = q_0N\lambda_0(\zeta)\phi_\perp(x,y) 
 \label{eq:factorized2d}
 \end{equation}
 
@@ -417,19 +417,41 @@ s_W(t) = -\beta_{0W} ct
 \end{align}
 Equations\,\eqref{eq:forcex}\,-\,\eqref{eq:forcez} become:
 \begin{align}
-F_x(x, y, \zeta(t)) &=  -q(1+\beta_{0W}  \beta_{0s}) \frac{\partial \phi}{\partial x}(x, y, \zeta_W(t))\\
-F_y(x, y, \zeta(t)) &=  -q(1+\beta_{0W}  \beta_{0S}) \frac{\partial \phi}{\partial y}(x, y, \zeta_W(t))\\
-F_z(x, y, \zeta(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} +\frac{\beta_0(\beta_{0W}\beta_{0S})}{\gamma_{0S}}\right) \frac{\partial \phi}{\partial \zeta}(x, y, \zeta_W(t))
+F_x(x, y, \zeta_W(t)) &=  -q(1+\beta_{0W}  \beta_{0s}) \frac{\partial \phi}{\partial x}(x, y, \zeta_W(t)) \label{eq:bbfgenx}\\
+F_y(x, y, \zeta_W(t)) &=  -q(1+\beta_{0W}  \beta_{0S}) \frac{\partial \phi}{\partial y}(x, y, \zeta_W(t))\label{eq:bbfgeny}\\
+F_z(x, y, \zeta_W(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \frac{\partial \phi}{\partial \zeta}(x, y, \zeta_W(t))\label{eq:bbfgenz}
 \end{align}
 where we have used the the subscript $S$ (strong) for the bunch generating the fields, and the subscript $W$ (weak) for the test particle. 
 
 $\zeta_W(t)$ is the position of the test particle within the bunch generating the fields: 
 \begin{equation}
 \zeta_W(t)= s_W(t) -\beta_{0S} c t  = -(\beta_{0W}+\beta_{0S})ct
+\label{eq:zetaw}
 \end{equation}
 
-DA CONTINUARE...
+In modulated-2D case (Eq.\,\ref{eq:factorized2d}), Eqs.\,\eqref{eq:bbfgenx}\,-\,\eqref{eq:bbfgeny} become:
+\begin{align}
+F_x(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+\lambda_{0S}(\zeta_W(t))
+ \frac{\partial \phi_\perp}{\partial x}(x, y ) \\
+F_y(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+\lambda_{0S}(\zeta_W(t))
+ \frac{\partial \phi_\perp}{\partial y}(x, y ) \\
+F_z(x, y, \zeta_W(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \phi_\perp(x, y)
+\end{align}
 
+The change in momentum for the test particle is given by:
+\begin{equation}
+\Delta \textbf{P} = \int_{-\infty}^{+\infty} \textbf{F}(t) \,dt
+\end{equation}
+Therefore:
+\begin{align}
+\Delta P_x(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+\frac{\partial \phi_\perp}{\partial x}(x, y ) \int_{-\infty}^{+\infty}\lambda_{0S}(\zeta_W(t)) \,dt\\
+\Delta P_y(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+ \frac{\partial \phi_\perp}{\partial y}(x, y ) \int_{-\infty}^{+\infty}\lambda_{0S}(\zeta_W(t)) \,dt\\
+\Delta P_z(x, y, \zeta_W(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \phi_\perp(x, y) \int_{-\infty}^{+\infty}\frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \, dt
+\end{align}
 \section{FFT Poisson solver}
 
 \subsection{Discrete Fourier Transform}
