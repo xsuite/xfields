@@ -115,6 +115,8 @@ void get_Ex_Ey_Gx_Gy_gauss(
     /*gpuglmem*/       double* Gx_ptr,
     /*gpuglmem*/       double* Gy_ptr){
 
+
+    #pragma omp parallel for //only_for_context cpu_openmp 
     for (int ip=0; ip<n_points; ip++){  //vectorize_over ip n_points
     	double x, y, Ex, Ey, Gx, Gy;
 

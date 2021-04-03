@@ -9,6 +9,7 @@ from pysixtrack.be_beamfields.gaussian_fields import get_Ex_Ey_Gx_Gy_gauss
 from pysixtrack.mathlibs import MathlibDefault
 
 ctx = xo.ContextCpu()
+ctx = xo.ContextCpu(omp_num_threads=4)
 #ctx = xo.ContextCupy()
 #ctx = xo.ContextPyopencl()
 
@@ -92,4 +93,4 @@ for sigma_x, sigma_y in ((0.2, 0.3), (0.3, 0.2), (0.2, 0.2)):
             )
         ctx.synchronize()
         t2 = time.time()
-        print(f'Time): {(t2-t1)*1e3:.2f} ms')
+        print(f'Time: {(t2-t1)*1e3:.2f} ms')
