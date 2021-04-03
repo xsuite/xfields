@@ -225,7 +225,7 @@ Often the beam distribution can be factorized as:
 \end{equation}
 where:
 \begin{align}
-&\int \lambda_0(z) \,dz = 1\\
+&\int \lambda_0(z) \,dz = 1 \label{eq:lamnorm}\\
 &\int \rho_\perp(x,y) \,dx\,dy = 1
 \end{align}
 In this case the potential can be factorized as:
@@ -431,13 +431,13 @@ $\zeta_W(t)$ is the position of the test particle within the bunch generating th
 
 In modulated-2D case (Eq.\,\ref{eq:factorized2d}), Eqs.\,\eqref{eq:bbfgenx}\,-\,\eqref{eq:bbfgeny} become:
 \begin{align}
-F_x(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+F_x(x, y, \zeta_W(t)) &=  -q q_{0S} N_S (1+\beta_{0W}  \beta_{0s})
 \lambda_{0S}(\zeta_W(t))
  \frac{\partial \phi_\perp}{\partial x}(x, y ) \\
-F_y(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+F_y(x, y, \zeta_W(t)) &=  -qq_{0S} N_S (1+\beta_{0W}  \beta_{0s})
 \lambda_{0S}(\zeta_W(t))
  \frac{\partial \phi_\perp}{\partial y}(x, y ) \\
-F_z(x, y, \zeta_W(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \phi_\perp(x, y)
+F_z(x, y, \zeta_W(t)) &=  -qq_{0S}\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \phi_\perp(x, y)
 \end{align}
 
 The change in momentum for the test particle is given by:
@@ -446,12 +446,42 @@ The change in momentum for the test particle is given by:
 \end{equation}
 Therefore:
 \begin{align}
-\Delta P_x(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+\Delta P_x(x, y, \zeta_W(t)) &=  -qq_{0S} N_S (1+\beta_{0W}  \beta_{0s})
 \frac{\partial \phi_\perp}{\partial x}(x, y ) \int_{-\infty}^{+\infty}\lambda_{0S}(\zeta_W(t)) \,dt\\
-\Delta P_y(x, y, \zeta_W(t)) &=  -q N_S (1+\beta_{0W}  \beta_{0s})
+\Delta P_y(x, y, \zeta_W(t)) &=  -qq_{0S} N_S (1+\beta_{0W}  \beta_{0s})
  \frac{\partial \phi_\perp}{\partial y}(x, y ) \int_{-\infty}^{+\infty}\lambda_{0S}(\zeta_W(t)) \,dt\\
-\Delta P_z(x, y, \zeta_W(t)) &=  -q\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \phi_\perp(x, y) \int_{-\infty}^{+\infty}\frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \, dt
+\Delta P_z(x, y, \zeta_W(t)) &=  -qq_{0S}\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \phi_\perp(x, y) \int_{-\infty}^{+\infty}\frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \, dt
 \end{align}
+
+Using Eq.\,\eqref{eq:zetaw} and Eq.\,\eqref{eq:lamnorm} we can write:
+\begin{equation}
+\int_{-\infty}^{+\infty}\lambda_{0S}(\zeta_W(t)) \,dt 
+=\frac{1}{(\beta_{0W}+\beta_{0S})c}\int_{-\infty}^{+\infty}\lambda_{0S}(\zeta) \,d\zeta = \frac{1}{(\beta_{0W}+\beta_{0S})c}
+\end{equation}
+
+Similarly:
+\begin{equation}
+\int_{-\infty}^{+\infty}
+\frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \,dt 
+=\frac{1}{(\beta_{0W}+\beta_{0S})c}\int_{-\infty}^{+\infty}\frac{d \lambda_{0S}}{d \zeta} \,d\zeta = \frac{ \lambda_{0S}(+\infty)-\lambda_{0S}(-\infty)}{(\beta_{0W}+\beta_{0S})c} = 0
+\end{equation}
+
+From which we can write:
+\begin{align}
+&\boxed{
+\Delta p_x = \frac{m_0}{m}\frac{\Delta P_x} {P_0}= -\frac{qq_{0S} N_S 
+}{m\beta_{0W}\gamma_{0W}c^2}
+\frac{(1+\beta_{0W}  \beta_{0s})}{(\beta_{0W}+\beta_{0S})}
+\frac{\partial \phi_\perp}{\partial x}(x, y )}\\
+&\boxed{
+\Delta p_y = \frac{m_0}{m}\frac{\Delta P_y} {P_0}= -\frac{qq_{0S} N_S 
+}{m\beta_{0W}\gamma_{0W}c^2}
+\frac{(1+\beta_{0W}  \beta_{0s})}{(\beta_{0W}+\beta_{0S})}
+\frac{\partial \phi_\perp}{\partial y}(x, y )}\\
+&\boxed{
+\Delta p_z = \frac{m_0}{m}\frac{\Delta P_z} {P_0}=0}
+\end{align}
+
 \section{FFT Poisson solver}
 
 \subsection{Discrete Fourier Transform}
