@@ -73,7 +73,6 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                  ):
 
 
-
         if context is None:
             context = ContextDefault()
 
