@@ -1,6 +1,8 @@
+import numpy as np
 from xobjects.context import ContextDefault
 
 from .base import FieldMap
+from ..contexts import add_default_kernels
 
 class BiGaussianFieldMap(FieldMap):
     '''
@@ -32,6 +34,7 @@ class BiGaussianFieldMap(FieldMap):
         self.y0 = y0
         self.sigma_x = sigma_x
         self.sigma_y = sigma_y
+        self.min_sigma_diff=min_sigma_diff
 
     def get_values_at_points(self,
             x, y,
@@ -41,7 +44,7 @@ class BiGaussianFieldMap(FieldMap):
             return_dphi_dy=False,
             ):
 
-        assert len(x) == len(y) == len(z)
+        assert len(x) == len(y)
         tobereturned = []
 
         if return_rho:
@@ -59,7 +62,7 @@ class BiGaussianFieldMap(FieldMap):
                 sigma_x=self.sigma_x,
                 sigma_y=self.sigma_y,
                 min_sigma_diff=self.min_sigma_diff,
-                skip_Gs=0,
+                skip_Gs=1,
                 Ex_ptr=Ex,
                 Ey_ptr=Ey,
                 Gx_ptr=Ex, # untouchd when skip_Gs is zero
@@ -68,7 +71,7 @@ class BiGaussianFieldMap(FieldMap):
             if return_dphi_dx:
                 tobereturned.append(-Ex)
             if return_dphi_dy:
-                tobereturned.append(Ey)
+                tobereturned.append(-Ey)
 
         return tobereturned
 
@@ -77,6 +80,8 @@ class BiGaussianFieldMap(FieldMap):
 
         if not force:
             self._assert_updatable()
+
+        raise NotImplementedError()
 
     def update_rho(self, rho, reset):
         raise ValueError('rho cannot be directly updated'
