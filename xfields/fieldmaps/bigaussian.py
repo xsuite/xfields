@@ -10,6 +10,7 @@ class BiGaussianFieldMap(FieldMap):
     Must be 2D, no closed form for 3D poisson.
     We assume normalized charge density, see twx.
     '''
+
     def __init__(self,
                  context=None,
                  x0=0., y0=0.,

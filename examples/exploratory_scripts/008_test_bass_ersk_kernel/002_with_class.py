@@ -11,8 +11,8 @@ from pysixtrack.mathlibs import MathlibDefault
 
 ctx = xo.ContextCpu()
 ctx = xo.ContextCpu(omp_num_threads=4)
-#ctx = xo.ContextCupy()
-#ctx = xo.ContextPyopencl()
+ctx = xo.ContextCupy()
+ctx = xo.ContextPyopencl()
 
 print(ctx)
 
