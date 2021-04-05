@@ -12,7 +12,7 @@ class FieldMap(ABC):
         in which wee store the state of the field map
         '''
         if solver is not None:
-            'Check conmpatibility with grid'
+            'Check compatibility with grid'
             self.solver = solver
         elif solver=='generate':
             self.generate_solver(solver_type)

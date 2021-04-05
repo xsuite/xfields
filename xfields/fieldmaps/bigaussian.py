@@ -33,8 +33,6 @@ class BiGaussianFieldMap(FieldMap):
         self.sigma_x = sigma_x
         self.sigma_y = sigma_y
 
-
-
     def get_values_at_points(self,
             x, y,
             return_rho=False,
@@ -74,22 +72,24 @@ class BiGaussianFieldMap(FieldMap):
 
         return tobereturned
 
+    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
+                reset=True, update_phi=True, solver=None, force=False):
+
+        if not force:
+            self._assert_updatable()
 
     def update_rho(self, rho, reset):
         raise ValueError('rho cannot be directly updated'
-                         'for UpdatableBiGaussianFieldMap')
+                         'for BiGaussianFieldMap')
 
-    def update_rho_from_particles(x_p, y_p, z_p, ncharges_p, q0_coulomb,
-            reset=True):
-
-        assert reset, ('rho cannot be added (reset must be True) for '
-                      'for UpdatableBiGaussianFieldMap')
-        # Basically updates sigma_rhos
+    def update_phi(self, phi, reset=True, force=False):
+        raise ValueError('phi cannot be directly updated'
+                         'for BiGaussianFieldMap')
 
     def update_phi_from_rho(self, solver=None):
+        raise ValueError('phi cannot be directly updated'
+                         'for BiGaussianFieldMap')
 
-        assert (solver is None), ('no solver can be passed for'
-                                  'UpdatableBiGaussianFieldMap')
-        # Updates sigma_phi from sigma_rho
-        pass
-
+    def generate_solver(self, solver):
+        raise ValueError('solver cannot be generated'
+                         'for BiGaussianFieldMap')
