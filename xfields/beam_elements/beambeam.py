@@ -31,6 +31,12 @@ class BeamBeamBiGaussian2D(object):
                      min_sigma_diff=min_sigma_diff,
                      updatable=True)
 
+    def update(self, **kwargs):
+        for kk in kwargs.keys():
+            if not hasattr(self, kk):
+                raise NameError(f'Unknown parameter: {kk}')
+            setattr(self, kk, kwargs[kk])
+
     @property
     def mean_x(self):
         return self.fieldmap.mean_x
