@@ -33,7 +33,7 @@ r_max_probes = 2e-2
 z_probes = 1.2*sigma_z
 n_probes = 1000
 
-from temp_makepart import generate_particles_object
+from xfields.test_support.temp_makepart import generate_particles_object
 (particles, r_probes, x_probes,
         y_probes, z_probes) = generate_particles_object(context,
                             n_macroparticles,

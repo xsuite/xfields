@@ -35,7 +35,7 @@ class BeamBeamBiGaussian2D(object):
     def mean_x(self):
         return self.fieldmap.mean_x
 
-    @property.setter
+    @ mean_x.setter
     def mean_x(self, value):
         self.fieldmap.mean_x = value
 
@@ -43,7 +43,7 @@ class BeamBeamBiGaussian2D(object):
     def mean_y(self):
         return self.fieldmap.mean_y
 
-    @property.setter
+    @ mean_y.setter
     def mean_y(self, value):
         self.fieldmap.mean_y = value
 
@@ -51,7 +51,7 @@ class BeamBeamBiGaussian2D(object):
     def sigma_x(self):
         return self.fieldmap.sigma_x
 
-    @property.setter
+    @ sigma_x.setter
     def sigma_x(self, value):
         self.fieldmap.sigma_x = value
 
@@ -59,14 +59,14 @@ class BeamBeamBiGaussian2D(object):
     def sigma_y(self):
         return self.fieldmap.sigma_y
 
-    @property.setter
+    @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
 
     def track(self, particles):
 
         dphi_dx, dphi_dy = self.fieldmap.get_values_at_points(
-                            x=particles.x, y=particles.y
+                            x=particles.x, y=particles.y,
                             return_rho=False, return_phi=False)
 
         clight = float(particles.clight)
@@ -74,6 +74,7 @@ class BeamBeamBiGaussian2D(object):
                     /(particles.mass0*particles.echarge/(clight*clight)))
 
         factor = -(charge_mass_ratio*self.n_particles*self.q0
+                    * particles.echarge
                     /(particles.gamma0*particles.beta0*
                         clight*clight)
                     *(1+self.beta0*particles.beta0)
