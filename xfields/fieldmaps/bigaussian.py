@@ -4,6 +4,18 @@ from xobjects.context import ContextDefault
 from .base import FieldMap
 from ..contexts import add_default_kernels
 
+def mean_and_std(a, weights=None):
+    if weights is None:
+        mean = a.sum()/len(a)
+        std = np.sqrt(((a-mean)**2).sum() / len(a))
+    else:
+        assert len(weights) == len(a)
+        tot = weights.sum()
+        mean = (a*weights).sum() / tot
+        std = np.sqrt(((a-mean)**2 * weights).sum() / tot)
+
+    return mean, std
+
 class BiGaussianFieldMap(FieldMap):
     '''
     Bassetti-Erskine
