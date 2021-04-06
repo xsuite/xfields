@@ -9,10 +9,10 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 # Choose context #
 ###################
 
-#context = ContextCpu(omp_num_threads=0) # no omp
+context = ContextCpu(omp_num_threads=0) # no omp
 #context = ContextCpu(omp_num_threads=1) # omp
-context = ContextCpu(omp_num_threads=48) # omp
-context = ContextCupy(default_block_size=256)
+#context = ContextCpu(omp_num_threads=48) # omp
+#context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl('0.0')
 
 print(repr(context))
@@ -130,4 +130,16 @@ plt.plot(r_probes, p_pyst.py, color='red')
 plt.plot(r_probes, p2np(particles_b1.py[:n_probes]), color='blue',
         linestyle='--')
 
+###########
+# Time it #
+###########
+
+n_rep = 5
+
+for _ in range(n_rep):
+    t1 = time.time()
+    bbeam_b1.track(particles_b1)
+    context.synchronize()
+    t2 = time.time()
+    print(f'Time: {(t2-t1)*1e3:.2f} ms')
 plt.show()
