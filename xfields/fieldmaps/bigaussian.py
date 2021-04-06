@@ -25,15 +25,11 @@ class BiGaussianFieldMap(FieldMap):
 
     def __init__(self,
                  context=None,
-                 x0=0., y0=0.,
+                 mean_x=0., mean_y=0.,
                  sigma_x=None, sigma_y=None,
                  min_sigma_diff=1e-10,
                  updatable=True):
 
-        if sigma_x is None:
-            raise ValueError('sigma_x must be provided')
-        if sigma_y is None:
-            raise ValueError('sigma_y must be provided')
 
         if context is None:
             context = ContextDefault()
@@ -43,19 +39,24 @@ class BiGaussianFieldMap(FieldMap):
         self.updatable = updatable
         self.context = context
 
-        self.x0 = x0
-        self.y0 = y0
+        self.mean_x = mean_x
+        self.mean_y = mean_y
         self.sigma_x = sigma_x
         self.sigma_y = sigma_y
         self.min_sigma_diff=min_sigma_diff
 
     def get_values_at_points(self,
             x, y,
-            return_rho=False,
-            return_phi=False,
-            return_dphi_dx=False,
-            return_dphi_dy=False,
+            return_rho=True,
+            return_phi=True,
+            return_dphi_dx=True,
+            return_dphi_dy=True,
             ):
+
+        if self.sigma_x is None:
+            raise ValueError('sigma_x must be set')
+        if self.sigma_y is None:
+            raise ValueError('sigma_y must be set')
 
         assert len(x) == len(y)
         tobereturned = []
@@ -70,8 +71,8 @@ class BiGaussianFieldMap(FieldMap):
             Ey = self.context.zeros(x.shape, dtype=np.float64)
             self.context.kernels.get_Ex_Ey_Gx_Gy_gauss(
                 n_points=len(x),
-                x_ptr=x-self.x0,
-                y_ptr=y-self.y0,
+                x_ptr=x-self.mean_x,
+                y_ptr=y-self.mean_y,
                 sigma_x=self.sigma_x,
                 sigma_y=self.sigma_y,
                 min_sigma_diff=self.min_sigma_diff,

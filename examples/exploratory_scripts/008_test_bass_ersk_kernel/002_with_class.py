@@ -42,6 +42,7 @@ for sigma_x, sigma_y in ((0.2, 0.3), (0.3, 0.2), (0.2, 0.2)):
     Ey_dev = 0 * y_dev
 
     dphi_dx_dev, dphi_dy_dev = fmap.get_values_at_points(x_dev, y_dev,
+            return_rho=False, return_phi=False,
             return_dphi_dx=True, return_dphi_dy=True)
 
     Ex = ctx.nparray_from_context_array(-dphi_dx_dev)
