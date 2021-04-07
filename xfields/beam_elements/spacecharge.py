@@ -4,7 +4,7 @@ from xobjects.context import ContextDefault
 
 class SpaceCharge3D(object):
     """
-    Simulates the effect of space charge on the bunch.
+    Simulates the effect of space charge on a bunch.
 
     Args:
         context (XfContext): identifies the :doc:`context <contexts>`

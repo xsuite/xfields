@@ -26,10 +26,10 @@ class BiGaussianFieldMap(FieldMap):
             on which the computation is executed.
         mean_x (float64): Horizontal position (in meters) of the Gaussian
             distribution. It can be updated after the object creation.
-            Default is ``None``.
+            Default is ``0.``.
         mean_y (float64): Vertical position (in meters) of the Gaussian
             distribution. It can be updated after the object creation.
-            Default is ``None``.
+            Default is ``0.``.
         sigma_x (float64): Horizontal r.m.s. size (in meters) of the Gaussian
             distribution. It can be updated after the object creation.
             Default is ``None``.

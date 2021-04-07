@@ -2,16 +2,40 @@ from xfields import BiGaussianFieldMap
 from xobjects.context import ContextDefault
 
 class BeamBeamBiGaussian2D(object):
+    """
+    Simulates the effect of beam-beam on a bunch.
+
+    Args:
+        context (xobjects context): identifies the :doc:`context <contexts>`
+            on which the computation is executed.
+        n_particles (float64): Number of particles in the colliding bunch.
+        q0 (float64): Number of particles in the colliding bunch.
+        beta0 (float64): Relativistic beta of the colliding bunch.
+        mean_x (float64): Horizontal position (in meters) of the colliding
+            bunch. It can be updated after the object creation.
+            Default is ``0.``.
+        mean_y (float64): Vertical position (in meters) of the Gaussian
+            distribution. It can be updated after the object creation.
+            Default is ``0.``.
+        sigma_x (float64): Horizontal r.m.s. size (in meters) of the colliding
+            bunch. It can be updated after the object creation.
+            Default is ``None``.
+        sigma_y (float64): Vertical r.m.s. size (in meters) of the colliding
+            bunch. It can be updated after the object creation.
+            Default is ``None``.
+    Returns:
+        (BeamBeamBiGaussian2D): A beam-beam element.
+    """
 
     def __init__(self,
             context=None,
             n_particles=None,
             q0=None,
             beta0=None,
-            sigma_x=None,
-            sigma_y=None,
             mean_x=0.,
             mean_y=0.,
+            sigma_x=None,
+            sigma_y=None,
             min_sigma_diff=1e-10):
 
         if context is None:
@@ -70,6 +94,13 @@ class BeamBeamBiGaussian2D(object):
         self.fieldmap.sigma_y = value
 
     def track(self, particles):
+        """
+        Computes and applies the beam-beam forces for the provided set of
+        particles.
+
+        Args:
+            particles (Particles Object): Particles to be tracked.
+        """
 
         dphi_dx, dphi_dy = self.fieldmap.get_values_at_points(
                             x=particles.x, y=particles.y,
