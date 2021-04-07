@@ -144,7 +144,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             return_dphi_dz: If ``True``, the longitudinal derivative of the potential
                 at the given points is returned.
         Returns:
-            (tuple of float64 array): The required quantitie at the provided points.
+            (tuple of float64 array): The required quantities at the provided points.
         """
 
         assert len(x) == len(y) == len(z)

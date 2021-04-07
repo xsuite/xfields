@@ -71,6 +71,23 @@ class BiGaussianFieldMap(FieldMap):
             return_dphi_dy=True,
             ):
 
+        """
+        Returns the derivatives ot the electric potential at the points specified by x, y.
+        The output can be customized (see below).
+
+        Args:
+            x (float64 array): Horizontal coordinates at which the field is evaluated.
+            y (float64 array): Vertical coordinates at which the field is evaluated.
+            return_rho (bool): If ``True``, the charge density at the given points is
+                returned. Default is ``False``.
+            return_phi (bool): If ``True``, the potential at the given points is returned.
+            return_dphi_dx (bool): If ``True``, the horizontal derivative of the potential
+                at the given points is returned. Default is ``True``.
+            return_dphi_dy: If ``True``, the vertical derivative of the potential
+                at the given points is returned. Default is ``True``.
+        Returns:
+            (tuple of float64 array): The required quantities at the provided points.
+        """
         if self.sigma_x is None:
             raise ValueError('sigma_x must be set')
         if self.sigma_y is None:
