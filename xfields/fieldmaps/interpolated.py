@@ -15,7 +15,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
     using the Parcle In Cell method.
 
     Args:
-        context (XfContext): identifies the :doc:`context <contexts>`
+        context (xobjects context): identifies the :doc:`context <contexts>`
             on which the computation is executed.
         x_range (tuple): Horizontal extent (in meters) of the
             computing grid.
