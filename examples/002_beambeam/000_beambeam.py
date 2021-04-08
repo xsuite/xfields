@@ -129,6 +129,11 @@ p_pyst = Particles(p0c=p0c,
 
 bb_b1_pyst.track(p_pyst)
 
+assert np.allclose(p_pyst.px,
+    p2np(particles_b1.px[:n_probes]))
+assert np.allclose(p_pyst.py,
+    p2np(particles_b1.py[:n_probes]))
+
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure()
