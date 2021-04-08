@@ -96,6 +96,16 @@ p_pyst = Particles(p0c=p0c,
 
 scpyst.track(p_pyst)
 
+mask_inside_grid = ((np.abs(x_probes)<0.9*x_lim) &
+                    (np.abs(y_probes)<0.9*y_lim))
+
+assert np.allclose(
+        p2np(particles.px[:n_probes][mask_inside_grid]),
+        p_pyst.px[mask_inside_grid])
+assert np.allclose(
+        p2np(particles.py[:n_probes][mask_inside_grid]),
+        p_pyst.py[mask_inside_grid])
+
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure()
