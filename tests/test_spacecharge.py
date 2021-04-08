@@ -49,9 +49,9 @@ def test_spacecharge():
             # Space charge (PIC) #
             ######################
 
-            x_lim = 5.*sigma_x
-            y_lim = 5.*sigma_y
-            z_lim = 5.*sigma_z
+            x_lim = 4.*sigma_x
+            y_lim = 4.*sigma_y
+            z_lim = 4.*sigma_z
 
             from xfields import SpaceCharge3D
 
@@ -60,7 +60,7 @@ def test_spacecharge():
                     x_range=(-x_lim, x_lim),
                     y_range=(-y_lim, y_lim),
                     z_range=(-z_lim, z_lim),
-                    nx=256, ny=256, nz=50,
+                    nx=128, ny=128, nz=25,
                     solver=solver,
                     gamma0=particles.gamma0,
                     context=context)

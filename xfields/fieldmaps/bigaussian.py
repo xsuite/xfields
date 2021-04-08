@@ -14,7 +14,7 @@ def mean_and_std(a, weights=None):
         mean = (a*weights).sum() / tot
         std = np.sqrt(((a-mean)**2 * weights).sum() / tot)
 
-    return mean, std
+    return float(mean), float(std)
 
 class BiGaussianFieldMap(FieldMap):
     '''

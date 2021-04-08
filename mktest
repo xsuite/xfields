@@ -1,0 +1,1 @@
+pytest -s --cov=xfields --cov-report html:cov_html tests
