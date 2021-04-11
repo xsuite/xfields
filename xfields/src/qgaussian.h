@@ -1,10 +1,10 @@
 #include <math.h> //only_for_context none
 
 
-
+/*gpukern*/
 void q_gaussian_profile(
 		    const int n,
-		    const double* z,
+      /*gpuglmem*/  const double* z,
 		    const double z0,
 		    const double z_min,
 		    const double z_max,
@@ -12,8 +12,10 @@ void q_gaussian_profile(
 		    const double q, 
 		    const double q_tol,
 		    const double factor,
-		          double* res){
+      /*gpuglmem*/        double* res){
+
     if (fabs(q-1.) < q_tol){
+    	#pragma omp parallel for //only_for_context cpu_openmp 
     	for(int ii; ii<n; ii++){ //vectorize_over ii n 
     	    double zi = z[ii];
 	    if (zi<z_max && zi>z_min){
@@ -27,6 +29,7 @@ void q_gaussian_profile(
     }
     else{
     	double exponent = 1./(1.-q);
+    	#pragma omp parallel for //only_for_context cpu_openmp 
     	for(int ii; ii<n; ii++){ //vectorize_over ii n
     	    double zi = z[ii];
 	    if (zi<z_max && zi>z_min){
