@@ -1,17 +1,20 @@
+#ifndef QGAUSSIAN 
+#define QGAUSSIAN 
+
 #include <math.h> //only_for_context none
 
 
 /*gpukern*/
 void q_gaussian_profile(
-		    const int n,
+		    const int     n,
       /*gpuglmem*/  const double* z,
-		    const double z0,
-		    const double z_min,
-		    const double z_max,
-		    const double beta, 
-		    const double q, 
-		    const double q_tol,
-		    const double factor,
+		    const double  z0,
+		    const double  z_min,
+		    const double  z_max,
+		    const double  beta, 
+		    const double  q, 
+		    const double  q_tol,
+		    const double  factor,
       /*gpuglmem*/        double* res){
 
     if (fabs(q-1.) < q_tol){
@@ -35,7 +38,8 @@ void q_gaussian_profile(
 	    if (zi<z_max && zi>z_min){
 		double zi_m_z0 = zi - z0;
     	    	double q_exp_arg =  -(beta*zi_m_z0*zi_m_z0 );
-    	    	double q_exp_res = pow(q_exp_arg, exponent );
+    	    	double q_exp_res = pow(
+			 (1.+(1.-q)*q_exp_arg), exponent );
     	    	res[ii] = factor*q_exp_res;
 	    }
 	    else{
@@ -44,3 +48,5 @@ void q_gaussian_profile(
     	}//end_vectorize
     }
 }	
+
+#endif
