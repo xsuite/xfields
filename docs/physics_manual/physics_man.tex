@@ -489,6 +489,45 @@ From which we can write:
 \Delta p_z = \frac{m_0}{m}\frac{\Delta P_z} {P_0}=0}
 \end{align}
 
+\section{Longitudinal profiles}
+\subsection{Gaussian profile}
+
+The profile is in the form:
+\begin{equation}
+\lambda_{0}(z)=\frac{N}{\sqrt{2 \pi} \sigma} e^{-\frac{(z-z_0)^{2}}{2 \sigma^{2}}}
+\end{equation}
+
+
+\subsection{q-Gaussian}
+
+The profile is in the form:
+\begin{equation}
+\lambda_0(z)=\frac{N\sqrt{\beta}}{C_{q}} e_{q}\left(-\beta (z-z_0)^{2}\right)
+\end{equation}
+where $e_q$ is the q-exponential function:
+\begin{equation}
+e_{q}(x)=[1+(1-q) x]_{+}^{\frac{1}{1-q}}
+\end{equation}
+$C_q$ is a normalization factor dependent on $q$ alone:
+\begin{equation}
+C_{q}=\frac{\sqrt{\pi} \Gamma\left(\frac{3-q}{2(q-1)}\right)}{\sqrt{q-1} \Gamma\left(\frac{1}{q-1}\right)}
+\end{equation}
+
+The parameter beta defines the standard deviation of the distribution:
+
+\begin{equation}
+\sigma = \sqrt{\frac{1}{\beta(5-3 q)}} \iff \beta ={\frac{1}{\sigma^2(5-3 q)}}
+\end{equation}
+
+
+
+These expressions are valid for values of the parameter $q$ is   the range of interest:
+\begin{equation}
+1<q<\frac{5}{3}
+\end{equation}
+
+In general the q-Gaussian is defined outside this range, but for smaller values it has a limited support (not of interest) and for larger values has a not defined standard deviation.
+
 \section{FFT Poisson solver}
 
 \subsection{Discrete Fourier Transform}
