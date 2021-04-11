@@ -221,16 +221,23 @@ which means that we can solve a simple 2D problem for each beam slice (identifie
 
 Often the beam distribution can be factorized as:
 \begin{equation}
-\rho_0(x,y,\zeta) = Nq_0\lambda_0(\zeta)\rho_\perp(x,y) 
+\rho_0(x,y,\zeta) = q_0\lambda_0(\zeta)\rho_\perp(x,y) 
 \end{equation}
 where:
-\begin{align}
-&\int \lambda_0(z) \,dz = 1 \label{eq:lamnorm}\\
-&\int \rho_\perp(x,y) \,dx\,dy = 1
-\end{align}
+\begin{equation}
+\int \rho_\perp(x,y) \,dx\,dy = 1
+\end{equation}
+and $\lambda_0(z)$ is therefore the bunch line density.
+
+For a bunched beam:
+\begin{equation}
+\int \lambda_0(z) \,dz = N \label{eq:lamnorm}\\
+\end{equation}
+where $N$ is the bunch population.
+
 In this case the potential can be factorized as:
 \begin{equation}
-\phi(x,y,\zeta) = q_0N\lambda_0(\zeta)\phi_\perp(x,y) 
+\phi(x,y,\zeta) = q_0\lambda(\zeta)\phi_\perp(x,y) 
 \label{eq:factorized2d}
 \end{equation}
 
@@ -401,11 +408,11 @@ If the beam includes particles of different species (tracking of fragments), not
 In the modulated 2D case (see Sec.\,\ref{sec:modulated2d} and in particular Eq.\,\ref{eq:factorized2d}), the kick can be expressed as:
 \begin{align}
 &\boxed{
-\Delta p_x = \frac{m_0}{m}\frac{\Delta P_x} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\,\frac{\partial {\phi_\perp}}{\partial x}\left(x, y\right)}\label{dpx_mod}\\
+\Delta p_x = \frac{m_0}{m}\frac{\Delta P_x} {P_0}= -\frac{qq_0L (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\,\frac{\partial {\phi_\perp}}{\partial x}\left(x, y\right)}\label{dpx_mod}\\
 &\boxed{
-\Delta p_y = \frac{m_0}{m}\frac{\Delta P_y} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\, \frac{\partial{\phi_\perp}}{\partial y}\left(x, y\right)}\label{dpy_mod}\\
+\Delta p_y = \frac{m_0}{m}\frac{\Delta P_y} {P_0}= -\frac{qq_0L (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\lambda_0(\zeta)\, \frac{\partial{\phi_\perp}}{\partial y}\left(x, y\right)}\label{dpy_mod}\\
 &\boxed{
-\Delta \delta \simeq \Delta p_z = \frac{ m_0} {m}\frac{\Delta P_z} {P_0}= -\frac{qq_0NL (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\frac{d\lambda_0}{d\zeta}(\zeta)\,{\phi_\perp}\left(x, y\right)}\label{dpz_mod}
+\Delta \delta \simeq \Delta p_z = \frac{ m_0} {m}\frac{\Delta P_z} {P_0}= -\frac{qq_0L (1-\beta_0^2)}{ m\gamma_0\beta_0^2 c^2} \,\frac{d\lambda_0}{d\zeta}(\zeta)\,{\phi_\perp}\left(x, y\right)}\label{dpz_mod}
 \end{align}
 
 \section{Beam-beam interaction}
@@ -431,10 +438,10 @@ $\zeta_W(t)$ is the position of the test particle within the bunch generating th
 
 In modulated-2D case (Eq.\,\ref{eq:factorized2d}), Eqs.\,\eqref{eq:bbfgenx}\,-\,\eqref{eq:bbfgeny} become:
 \begin{align}
-F_x(x, y, \zeta_W(t)) &=  -q q_{0S} N_S (1+\beta_{0W}  \beta_{0s})
+F_x(x, y, \zeta_W(t)) &=  -q q_{0S} (1+\beta_{0W}  \beta_{0s})
 \lambda_{0S}(\zeta_W(t))
  \frac{\partial \phi_\perp}{\partial x}(x, y ) \\
-F_y(x, y, \zeta_W(t)) &=  -qq_{0S} N_S (1+\beta_{0W}  \beta_{0s})
+F_y(x, y, \zeta_W(t)) &=  -qq_{0S}  (1+\beta_{0W}  \beta_{0s})
 \lambda_{0S}(\zeta_W(t))
  \frac{\partial \phi_\perp}{\partial y}(x, y ) \\
 F_z(x, y, \zeta_W(t)) &=  -qq_{0S}\left(1+\beta_{0W}  \beta_{0S} -\frac{\beta_{0S}(\beta_{0W}+\beta_{0S})}{\gamma_0}\right) \frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \phi_\perp(x, y)
@@ -456,10 +463,10 @@ Therefore:
 Using Eq.\,\eqref{eq:zetaw} and Eq.\,\eqref{eq:lamnorm} we can write:
 \begin{equation}
 \int_{-\infty}^{+\infty}\lambda_{0S}(\zeta_W(t)) \,dt 
-=\frac{1}{(\beta_{0W}+\beta_{0S})c}\int_{-\infty}^{+\infty}\lambda_{0S}(\zeta) \,d\zeta = \frac{1}{(\beta_{0W}+\beta_{0S})c}
+=\frac{1}{(\beta_{0W}+\beta_{0S})c}\int_{-\infty}^{+\infty}\lambda_{0S}(\zeta) \,d\zeta = \frac{N_S}{(\beta_{0W}+\beta_{0S})c}
 \end{equation}
 
-Similarly:
+Similarly, for a bunched beam:
 \begin{equation}
 \int_{-\infty}^{+\infty}
 \frac{d \lambda_{0S}}{d \zeta}(\zeta_W(t)) \,dt 
