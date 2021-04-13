@@ -8,7 +8,7 @@ import xobjects as xo
 
 ctx = xo.ContextCpu()
 ctx = xo.ContextCpu(omp_num_threads=4)
-#ctx = xo.ContextCupy()
+ctx = xo.ContextCupy()
 #ctx = xo.ContextPyopencl()
 
 print(ctx)
@@ -31,7 +31,9 @@ for qq in [0, 0.5, 0.95, 1.05, 1.3]:
             q_parameter=qq)
 
     z = np.linspace(-10., 10., 10000)
-    lden = lprofile.line_density(z)
+    z_dev = ctx.nparray_to_context_array(z)
+    lden_dev = lprofile.line_density(z_dev)
+    lden = ctx.nparray_from_context_array(lden_dev)
 
     area = np.trapz(lden, z)
     z_mean = np.trapz(lden*z/area, z)

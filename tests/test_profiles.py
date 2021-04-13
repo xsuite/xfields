@@ -1,85 +1,38 @@
-import time
-
 import numpy as np
 
 import xobjects as xo
-from xfields.fieldmaps import BiGaussianFieldMap
 
+from xfields import LongitudinalProfileQGaussian
 
-from pysixtrack.be_beamfields.gaussian_fields import get_Ex_Ey_Gx_Gy_gauss
-from pysixtrack.mathlibs import MathlibDefault
+def test_qgauss():
+    for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
+        if CTX not in xo.context.available:
+            continue
 
-ctx = xo.ContextCpu()
-ctx = xo.ContextCpu(omp_num_threads=4)
-ctx = xo.ContextCupy()
-ctx = xo.ContextPyopencl()
+        ctx = CTX()
+        print(repr(ctx))
 
-print(ctx)
+        z0 = 0.1
+        sigma_z = 0.2
+        npart = 1e11
 
-x_test = 0.25 * np.random.randn(1000)
-y_test = 0.25 * np.random.randn(1000)
+        for qq in [0, 0.5, 0.95, 1.05, 1.3]:
+            lprofile = LongitudinalProfileQGaussian(
+                    context=ctx,
+                    number_of_particles=npart,
+                    sigma_z=sigma_z,
+                    z0=z0,
+                    q_parameter=qq)
 
-n_part_time = 1000000
-x_time = 0.25 * np.random.randn(n_part_time)
-y_time = 0.25 * np.random.randn(n_part_time)
+            z = np.linspace(-10., 10., 10000)
+            z_dev = ctx.nparray_to_context_array(z)
+            lden_dev = lprofile.line_density(z_dev)
+            lden = ctx.nparray_from_context_array(lden_dev)
 
-fmap = BiGaussianFieldMap(
-        context=ctx,
-        sigma_x=1., # to be updated later
-        sigma_y=1., # to be updated later
-        )
+            area = np.trapz(lden, z)
+            z_mean = np.trapz(lden*z/area, z)
+            z_std = np.sqrt(np.trapz(lden*(z-z_mean)**2/area, z))
+            assert np.isclose(area, npart)
+            assert np.isclose(z_mean, z0)
+            assert np.isclose(z_std, sigma_z)
 
-for sigma_x, sigma_y in ((0.2, 0.3), (0.3, 0.2), (0.2, 0.2)):
-
-    print(f'{sigma_x=} {sigma_y=}')
-
-    fmap.sigma_x = sigma_x
-    fmap.sigma_y = sigma_y
-
-    x_dev = ctx.nparray_to_context_array(x_test)
-    y_dev = ctx.nparray_to_context_array(y_test)
-    Ex_dev = 0 * x_dev
-    Ey_dev = 0 * y_dev
-
-    dphi_dx_dev, dphi_dy_dev = fmap.get_values_at_points(x_dev, y_dev,
-            return_rho=False, return_phi=False,
-            return_dphi_dx=True, return_dphi_dy=True)
-
-    Ex = ctx.nparray_from_context_array(-dphi_dx_dev)
-    Ey = ctx.nparray_from_context_array(-dphi_dy_dev)
-
-    Ex_pst, Ey_pst, Gx_pst, Gy_pst = get_Ex_Ey_Gx_Gy_gauss(x_test, y_test,
-            sigma_x, sigma_y, min_sigma_diff=1e-5, skip_Gs=False,
-            mathlib=MathlibDefault())
-
-    assert np.allclose(Ex, Ex_pst)
-    assert np.allclose(Ey, Ey_pst)
-
-    # Time
-    x_dev = ctx.nparray_to_context_array(x_time)
-    y_dev = ctx.nparray_to_context_array(y_time)
-    Ex_dev = 0 * x_dev
-    Ey_dev = 0 * y_dev
-    Gx_dev = 0 * x_dev
-    Gy_dev = 0 * y_dev
-
-    n_rep = 3
-
-    for _ in range(n_rep):
-        t1 = time.time()
-        ctx.kernels.get_Ex_Ey_Gx_Gy_gauss(
-            n_points=len(x_dev),
-            x_ptr=x_dev,
-            y_ptr=y_dev,
-            sigma_x=sigma_x,
-            sigma_y=sigma_y,
-            min_sigma_diff=1e-5,
-            skip_Gs=0,
-            Ex_ptr=Ex_dev,
-            Ey_ptr=Ey_dev,
-            Gx_ptr=Gx_dev,
-            Gy_ptr=Gy_dev,
-            )
-        ctx.synchronize()
-        t2 = time.time()
-        print(f'Time: {(t2-t1)*1e3:.2f} ms')
