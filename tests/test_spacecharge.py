@@ -22,10 +22,8 @@ if True:
             sigma_x = 3e-3
             sigma_y = 2e-3
             sigma_z = 30e-2
-            #x0 = 1e-3
-            #y0 = -4e-3
-            x0 = 0.
-            y0 = 0.
+            x0 = 1e-3
+            y0 = -4e-3
             p0c = 25.92e9
             mass = Particles.pmass,
             theta_probes = 30 * np.pi/180
