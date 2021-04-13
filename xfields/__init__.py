@@ -1,6 +1,7 @@
 from . import contexts
 
 from .longitudinal_profiles import LongitudinalProfileCoasting
+from .longitudinal_profiles import LongitudinalProfileQGaussian
 
 from .fieldmaps import TriLinearInterpolatedFieldMap
 from .fieldmaps import BiGaussianFieldMap, mean_and_std
