@@ -3,8 +3,8 @@ import numpy as np
 from pysixtrack.particles import Particles
 import xobjects as xo
 
-def test_spacecharge_gauss():
-    for solver in ['FFTSolver2p5D', 'FFTSolver3D']:
+def test_spacecharge_gauss_coast():
+    for frozen in [True, False]:
         for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
             if CTX not in xo.context.available:
                 continue
@@ -20,6 +20,8 @@ def test_spacecharge_gauss():
             sigma_x = 3e-3
             sigma_y = 2e-3
             sigma_z = 30e-2
+            x0 = 1e-3
+            y0 = -4e-3
             p0c = 25.92e9
             mass = Particles.pmass,
             theta_probes = 30 * np.pi/180
@@ -28,8 +30,8 @@ def test_spacecharge_gauss():
             n_probes = 1000
 
             from xfields.test_support.temp_makepart import generate_particles_object
-            (particles, r_probes, x_probes,
-                    y_probes, z_probes) = generate_particles_object(context,
+            (particles, r_probes, _, _, _) = generate_particles_object(
+                                        context,
                                         n_macroparticles,
                                         bunch_intensity,
                                         sigma_x,
@@ -42,6 +44,9 @@ def test_spacecharge_gauss():
                                         z_probes,
                                         theta_probes)
 
+            particles.x += x0
+            particles.y += y0
+
             ################
             # Space charge #
             ################
@@ -53,16 +58,28 @@ def test_spacecharge_gauss():
                             beam_line_density=beam_line_density)
 
             from xfields import SpaceChargeBiGaussian
+            # Just not to fool myself in the test
+            if frozen:
+                x0_init = x0
+                y0_init = y0
+                sx_init = sigma_x
+                sy_init = sigma_y
+            else:
+                x0_init = None
+                y0_init = None
+                sx_init = None
+                sy_init = None
+
             scgauss = SpaceChargeBiGaussian(
                             context=context,
-                            update_on_track=True,
+                            update_on_track=not(frozen),
                             length=1.,
                             apply_z_kick=False,
                             longitudinal_profile=lprofile,
-                            mean_x=0.,
-                            mean_y=0.,
-                            sigma_x=sigma_x,
-                            sigma_y=sigma_y,
+                            mean_x=x0_init,
+                            mean_y=y0_init,
+                            sigma_x=sx_init,
+                            sigma_y=sy_init,
                             min_sigma_diff=1e-10)
 
             scgauss.track(particles)
@@ -72,6 +89,9 @@ def test_spacecharge_gauss():
             ##############################
 
             p2np = context.nparray_from_context_array
+            x_probes = p2np(particles.x[:n_probes])
+            y_probes = p2np(particles.y[:n_probes])
+            z_probes = p2np(particles.zeta[:n_probes])
 
             from pysixtrack.elements import SCCoasting
             scpyst = SCCoasting(
@@ -80,8 +100,8 @@ def test_spacecharge_gauss():
                     sigma_x=sigma_x,
                     sigma_y=sigma_y,
                     length=scgauss.length,
-                    x_co=0.,
-                    y_co=0.)
+                    x_co=x0,
+                    y_co=y0)
 
             p_pyst = Particles(p0c=p0c,
                     mass=mass,
