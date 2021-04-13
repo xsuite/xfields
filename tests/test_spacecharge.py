@@ -3,8 +3,7 @@ import numpy as np
 from pysixtrack.particles import Particles
 import xobjects as xo
 
-#def test_spacecharge_gauss_qgauss():
-if True:
+def test_spacecharge_gauss_qgauss():
     for frozen in [True, False]:
         for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
             if CTX not in xo.context.available:
@@ -59,7 +58,9 @@ if True:
                     number_of_particles=bunch_intensity,
                     sigma_z=sigma_z,
                     z0=0.,
-                    q_parameter=1.)
+                    q_parameter=1. # there is a bug in pysixtrack, 
+                                   # only q=1 can be tested 
+                    )
 
             from xfields import SpaceChargeBiGaussian
             # Just not to fool myself in the test
@@ -104,6 +105,7 @@ if True:
                     sigma_x=sigma_x,
                     sigma_y=sigma_y,
                     length=scgauss.length,
+                    q_parameter=scgauss.longitudinal_profile.q_parameter,
                     x_co=x0,
                     y_co=y0)
 
