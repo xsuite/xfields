@@ -126,7 +126,9 @@ def test_beambeam():
         bb_b1_pyst.track(p_pyst)
 
         assert np.allclose(p_pyst.px,
-            p2np(particles_b1.px[:n_probes]))
+            p2np(particles_b1.px[:n_probes]),
+            atol=1e-2*np.max(np.abs(p_pyst.px)))
         assert np.allclose(p_pyst.py,
-            p2np(particles_b1.py[:n_probes]))
+            p2np(particles_b1.py[:n_probes]),
+            atol=1e-2*np.max(np.abs(p_pyst.py)))
 
