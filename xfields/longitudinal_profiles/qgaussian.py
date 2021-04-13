@@ -62,12 +62,25 @@ class LongitudinalProfileQGaussian(object):
 
     def line_density(self, z):
         res = context.zeros(len(z), dtype=np.float64)
+        support_min = self.z_min
+        support_max = self.z_max
+
+        # Handle limited support
+        if self.q_parameter < (1. + q_tol):
+            rng = 1./sqrt(self.beta_param*(1-self.q_parameter))
+            allowed_min = z0 - rng
+            allowed_max = z0 + rng
+            if support_min < allowed_min:
+                support_min = allowed_min
+            if support_max > allowed_max:
+                support_max = allowed_max
+
         self.context.kernels.q_gaussian_profile(
                 n=len(z),
                 z=z,
                 z0=self.z0,
-                z_min=self.z_min,
-                z_max=self.z_max,
+                z_min=support_min,
+                z_max=support_max,
                 beta=self._beta_param,
                 q=self.q_parameter,
                 q_tol=self.q_tol,
