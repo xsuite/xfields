@@ -148,7 +148,7 @@ class SpaceChargeBiGaussian(object):
                  context=None,
                  update_on_track=True,
                  length=None,
-                 apply_z_kick=True,
+                 apply_z_kick=False,
                  longitudinal_profile=None,
                  mean_x=0.,
                  mean_y=0.,
@@ -197,7 +197,7 @@ class SpaceChargeBiGaussian(object):
                             x=particles.x, y=particles.y,
                             return_rho=False, return_phi=False)
 
-        lambda_z = self.longitudinal_profile.line_density(z)
+        lambda_z = self.longitudinal_profile.line_density(particles.zeta)
 
         #Build factor
         beta0 = particles.beta0
@@ -206,7 +206,7 @@ class SpaceChargeBiGaussian(object):
                                 /(particles.mass0*particles.echarge/(clight*clight)))
         gamma0 = particles.gamma0
         beta0 = particles.beta0
-        factor = -(charge_mass_ratio*particle.q0*particle.echarge
+        factor = -(charge_mass_ratio*particles.q0*particles.echarge
                    *self.length*(1.-beta0*beta0)
                    /(gamma0*beta0*beta0*clight*clight))
 
