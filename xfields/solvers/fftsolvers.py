@@ -4,7 +4,7 @@ from numpy import pi
 
 from .base import Solver
 
-from xobjects.context import ContextDefault
+from xobjects.context import context_default
 
 class FFTSolver2D(Solver):
 
@@ -33,7 +33,7 @@ class FFTSolver3D(Solver):
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
 
         if context is None:
-            context = ContextDefault()
+            context = context_default
 
         self.context = context
 
@@ -139,7 +139,7 @@ class FFTSolver2p5D(FFTSolver3D):
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
 
         if context is None:
-            context = ContextDefault()
+            context = context_default
         self.context = context
 
         # Prepare arrays

@@ -1,5 +1,5 @@
 import numpy as np
-from xobjects.context import ContextDefault
+from xobjects.context import context_default
 
 from .base import FieldMap
 from ..contexts import add_default_kernels
@@ -53,7 +53,7 @@ class BiGaussianFieldMap(FieldMap):
 
 
         if context is None:
-            context = ContextDefault()
+            context = context_default
 
         add_default_kernels(context)
 

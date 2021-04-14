@@ -1,6 +1,6 @@
 import numpy as np
 
-from xobjects.context import ContextDefault
+from xobjects.context import context_default
 import xobjects as xo
 
 from .base import FieldMap
@@ -74,7 +74,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
 
 
         if context is None:
-            context = ContextDefault()
+            context = context_default
 
         add_default_kernels(context)
 

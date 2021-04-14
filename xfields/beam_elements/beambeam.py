@@ -1,5 +1,5 @@
 from xfields import BiGaussianFieldMap
-from xobjects.context import ContextDefault
+from xobjects.context import context_default
 
 class BeamBeamBiGaussian2D(object):
     """
@@ -39,7 +39,7 @@ class BeamBeamBiGaussian2D(object):
             min_sigma_diff=1e-10):
 
         if context is None:
-            context = ContextDefault()
+            context = context_default
 
         self.context = context
         self.n_particles = n_particles
