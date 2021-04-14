@@ -63,6 +63,21 @@ kernel_descriptions = {
             (('array',  np.float64), 'Gy_ptr'),),
         'num_threads_from_arg': 'n_points'
         },
+    'q_gaussian_profile':{
+        'args':(
+        (('scalar', np.int32  ), 'n'),
+        (('array',  np.float64), 'z'),
+        (('scalar', np.float64), 'z0'),
+        (('scalar', np.float64), 'z_min'),
+        (('scalar', np.float64), 'z_max'),
+        (('scalar', np.float64), 'beta'),
+        (('scalar', np.float64), 'q'),
+        (('scalar', np.float64), 'q_tol'),
+        (('scalar', np.float64), 'factor'),
+        (('array',  np.float64), 'res'),
+            ),
+        'num_threads_from_arg': 'n'
+        },
     }
 
 default_kernels = {
@@ -71,6 +86,7 @@ default_kernels = {
         pkg_root.joinpath('src/linear_interpolators.h'),
         pkg_root.joinpath('src/complex_error_function.h'),
         pkg_root.joinpath('src/constants.h'),
+        pkg_root.joinpath('src/qgaussian.h'),
         pkg_root.joinpath('src/fields_bigaussian.h'),]
     }
 

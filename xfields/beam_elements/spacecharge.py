@@ -1,3 +1,4 @@
+from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
 
 from xobjects.context import context_default
@@ -141,49 +142,133 @@ class SpaceCharge3D(object):
         if self.apply_z_kick:
             particles.delta += factor*res[2]
 
-
-
-class SpaceCharge2D(object):
+class SpaceChargeBiGaussian(object):
 
     def __init__(self,
-                 update_on_track=False, # Decides if frozen or soft-gaussian
-                 apply_z_kick=True,
-                 transverse_field_map=None,
+                 context=None,
+                 update_on_track=True,
+                 length=None,
+                 apply_z_kick=False,
                  longitudinal_profile=None,
-                 context=None,
-                 ):
-        pass
+                 mean_x=0.,
+                 mean_y=0.,
+                 sigma_x=None,
+                 sigma_y=None,
+                 min_sigma_diff=1e-10):
 
-class SpaceCharge2DBiGaussian(SpaceCharge2D):
+        if context is None:
+            context = ContextDefault()
 
-    def __init__(self,
-                 update_on_track=False, # Decides if frozen or soft-gaussian
-                 apply_z_kick=True,
-                 sigma_x=None, sigma_y=None,
-                 longitudinal_mode='Gaussian',
-                 sigma_z=None,
-                 z_grid=None, dz=None,
-                 z_interp_method='linear',
-                 context=None,
-                 ):
-        pass
+        if apply_z_kick:
+            raise NotImplementedError
 
-class SpaceCharge2DInterpMap(SpaceCharge2D):
+        self.context = context
+        self.length = length
+        self.longitudinal_profile = longitudinal_profile
+        self.apply_z_kick = apply_z_kick
+        self._init_update_on_track(update_on_track)
 
-    def __init__(self,
-                 update_on_track=False, # Decides if frozen or kick
-                 apply_z_kick=True,
-                 rho=None, phi=None,
-                 x_grid=None, y_grid=None,
-                 dx=None, dy=None,
-                 x_range=None, y_range=None,
-                 xy_interp_method='linear',
-                 longitudinal_mode='Gaussian',
-                 sigma_z=None,
-                 z_grid=None, dz=None,
-                 z_interp_method='linear',
-                 context=None,
-                 ):
-        pass
+        self.fieldmap = BiGaussianFieldMap(
+                     context=context,
+                     mean_x=mean_x,
+                     mean_y=mean_y,
+                     sigma_x=sigma_x,
+                     sigma_y=sigma_y,
+                     min_sigma_diff=min_sigma_diff,
+                     updatable=True)
+
+    def track(self, particles):
+
+        if self._update_flag:
+            mean_x, sigma_x = mean_and_std(
+                    particles.x, weights=particles.weight)
+            mean_y, sigma_y = mean_and_std(
+                    particles.y, weights=particles.weight)
+            if self.update_mean_x_on_track:
+                self.mean_x = mean_x
+            if self.update_mean_y_on_track:
+                self.mean_y = mean_y
+            if self.update_sigma_x_on_track:
+                self.sigma_x = sigma_x
+            if self.update_sigma_y_on_track:
+                self.sigma_y = sigma_y
+
+        dphi_dx, dphi_dy = self.fieldmap.get_values_at_points(
+                            x=particles.x, y=particles.y,
+                            return_rho=False, return_phi=False)
+
+        lambda_z = self.longitudinal_profile.line_density(particles.zeta)
+
+        #Build factor
+        beta0 = particles.beta0
+        clight = float(particles.clight)
+        charge_mass_ratio = (particles.chi*particles.echarge*particles.q0
+                                /(particles.mass0*particles.echarge/(clight*clight)))
+        gamma0 = particles.gamma0
+        beta0 = particles.beta0
+        factor = -(charge_mass_ratio*particles.q0*particles.echarge
+                   *self.length*(1.-beta0*beta0)
+                   /(gamma0*beta0*beta0*clight*clight))
+
+        # Kick particles
+        particles.px += factor*lambda_z*dphi_dx
+        particles.py += factor*lambda_z*dphi_dy
+
+    def _init_update_on_track(self, update_on_track):
+        self.update_mean_x_on_track = False
+        self.update_mean_y_on_track = False
+        self.update_sigma_x_on_track = False
+        self.update_sigma_y_on_track = False
+        if update_on_track == True:
+            self.update_mean_x_on_track = True
+            self.update_mean_y_on_track = True
+            self.update_sigma_x_on_track = True
+            self.update_sigma_y_on_track = True
+        elif update_on_track == False:
+            pass
+        else:
+            for nn in update_on_track:
+                assert nn in ['mean_x', 'mean_y',
+                              'sigma_x', 'sigma_y']
+                setattr(self, f'update_{nn}_on_track', True)
+
+    @property
+    def _update_flag(self):
+        return (self.update_mean_x_on_track or
+                self.update_mean_y_on_track or
+                self.update_sigma_x_on_track or
+                self.update_sigma_y_on_track)
+
+    @property
+    def mean_x(self):
+        return self.fieldmap.mean_x
+
+    @ mean_x.setter
+    def mean_x(self, value):
+        self.fieldmap.mean_x = value
+
+    @property
+    def mean_y(self):
+        return self.fieldmap.mean_y
+
+    @ mean_y.setter
+    def mean_y(self, value):
+        self.fieldmap.mean_y = value
+
+    @property
+    def sigma_x(self):
+        return self.fieldmap.sigma_x
+
+    @ sigma_x.setter
+    def sigma_x(self, value):
+        self.fieldmap.sigma_x = value
+
+    @property
+    def sigma_y(self):
+        return self.fieldmap.sigma_y
+
+    @ sigma_y.setter
+    def sigma_y(self, value):
+        self.fieldmap.sigma_y = value
 
 
