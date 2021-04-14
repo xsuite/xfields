@@ -140,7 +140,8 @@ double* particle_getp_y(Particle part){
     return &(part.y);
 }
 
-void spacecharge_track_CPU(const Spacecharge* el, Particle part){
+/*gpufun*/
+void spacecharge_track_GPU(Spacecharge const el, /*gpulocmem*/ Particle part){
 
     double x0 = spacecharge_get_fieldmap_x0(el);
     double y0 = spacecharge_get_fieldmap_y0(el);
@@ -169,6 +170,7 @@ void spacecharge_track_CPU(const Spacecharge* el, Particle part){
     //}
 
 }
+
 
 
 
