@@ -13,7 +13,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 #context = ContextCpu(omp_num_threads=1) # omp
 context = ContextCpu(omp_num_threads=48) # omp
 context = ContextCupy(default_block_size=256)
-context = ContextPyopencl('0.0')
+#context = ContextPyopencl('0.0')
 
 print(repr(context))
 
@@ -63,7 +63,7 @@ spcharge = SpaceCharge3D(
         x_range=(-x_lim, x_lim),
         y_range=(-y_lim, y_lim),
         z_range=(-z_lim, z_lim),
-        nx=256, ny=256, nz=50,
+        nx=256, ny=256, nz=100,
         solver='FFTSolver2p5D',
         gamma0=particles.gamma0,
         context=context)
