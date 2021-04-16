@@ -108,12 +108,13 @@ class FFTSolver3D(Solver):
             phi (float64 array): electric potential at the grid points in Volts.
         '''
 
-        #The transforms are done in place
-        self._workspace_dev[:,:,:] = 0. # reset
-        self._workspace_dev[:self.nx, :self.ny, :self.nz] = rho
+        # The transposes make it faster in cupy (C-contigous arrays)
+
+        self._workspace_dev.T[:,:,:] = 0. # reset
+        self._workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(self._workspace_dev) # rho_rep_hat
-        self._workspace_dev[:,:,:] = (self._workspace_dev
-                        * self._gint_rep_transf_dev) # phi_rep_hat
+        self._workspace_dev.T[:,:,:] *= (
+                        self._gint_rep_transf_dev.T) # phi_rep_hat
         self.fftplan.itransform(self._workspace_dev) #phi_rep
         return self._workspace_dev.real[:self.nx, :self.ny, :self.nz]
 
