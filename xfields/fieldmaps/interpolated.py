@@ -273,7 +273,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             self._assert_updatable()
 
         if reset:
-            self._phi_dev[:,:,:] = phi
+            self._phi_dev.T[:,:,:] = phi.T
         else:
             raise ValueError('Not implemented!')
 
@@ -287,12 +287,13 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
                     self._phi_dev[:,:,2:].copy()-self._phi_dev[:,:,:-2].copy())
         else:
-            self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
-                    self._phi_dev[2:,:,:]-self._phi_dev[:-2,:,:])
-            self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
-                    self._phi_dev[:,2:,:]-self._phi_dev[:,:-2,:])
-            self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
-                    self._phi_dev[:,:,2:]-self._phi_dev[:,:,:-2])
+            # The transpose gives some speed-up in cupy (c-contiguous)
+            self._dphi_dx_dev.T[:,:,1:self.nx-1] = 1/(2*self.dx)*(
+                    self._phi_dev.T[:,:,2:]-self._phi_dev.T[:,:,:-2])
+            self._dphi_dy_dev.T[:,1:self.ny-1,:] = 1/(2*self.dy)*(
+                    self._phi_dev.T[:,2:,:]-self._phi_dev.T[:,:-2,:])
+            self._dphi_dz_dev.T[1:self.nz-1,:,:] = 1/(2*self.dz)*(
+                    self._phi_dev.T[2:,:,:]-self._phi_dev.T[:-2,:,:])
 
 
     #@profile
