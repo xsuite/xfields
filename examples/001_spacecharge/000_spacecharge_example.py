@@ -13,7 +13,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 #context = ContextCpu(omp_num_threads=1) # omp
 context = ContextCpu(omp_num_threads=48) # omp
 context = ContextCupy(default_block_size=256)
-context = ContextPyopencl('0.0')
+#context = ContextPyopencl('0.0')
 
 print(repr(context))
 
