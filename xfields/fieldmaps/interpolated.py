@@ -278,23 +278,24 @@ class TriLinearInterpolatedFieldMap(FieldMap):
             raise ValueError('Not implemented!')
 
         # Compute gradient
-        if isinstance(self.context, xo.ContextPyopencl):
-            # Copies are needed only for pyopencl
-            self._dphi_dx_dev[1:self.nx-1,:,:] = 1/(2*self.dx)*(
-                    self._phi_dev[2:,:,:].copy()-self._phi_dev[:-2,:,:].copy())
-            self._dphi_dy_dev[:,1:self.ny-1,:] = 1/(2*self.dy)*(
-                    self._phi_dev[:,2:,:].copy()-self._phi_dev[:,:-2,:].copy())
-            self._dphi_dz_dev[:,:,1:self.nz-1] = 1/(2*self.dz)*(
-                    self._phi_dev[:,:,2:].copy()-self._phi_dev[:,:,:-2].copy())
-        else:
-            # The transpose gives some speed-up in cupy (c-contiguous)
-            self._dphi_dx_dev.T[:,:,1:self.nx-1] = 1/(2*self.dx)*(
-                    self._phi_dev.T[:,:,2:]-self._phi_dev.T[:,:,:-2])
-            self._dphi_dy_dev.T[:,1:self.ny-1,:] = 1/(2*self.dy)*(
-                    self._phi_dev.T[:,2:,:]-self._phi_dev.T[:,:-2,:])
-            self._dphi_dz_dev.T[1:self.nz-1,:,:] = 1/(2*self.dz)*(
-                    self._phi_dev.T[2:,:,:]-self._phi_dev.T[:-2,:,:])
-
+        self.context.kernels.central_diff(
+                nelem = self._phi_dev.size,
+                stride_in_dbl = self._phi_dev.strides[0]/8,
+                factor = 1/(2*self.dx),
+                matrix = self._phi_dev,
+                res = self._dphi_dx_dev)
+        self.context.kernels.central_diff(
+                nelem = self._phi_dev.size,
+                stride_in_dbl = self._phi_dev.strides[1]/8,
+                factor = 1/(2*self.dy),
+                matrix = self._phi_dev,
+                res = self._dphi_dy_dev)
+        self.context.kernels.central_diff(
+                nelem = self._phi_dev.size,
+                stride_in_dbl = self._phi_dev.strides[2]/8,
+                factor = 1/(2*self.dz),
+                matrix = self._phi_dev,
+                res = self._dphi_dz_dev)
 
     #@profile
     def update_phi_from_rho(self, solver=None):

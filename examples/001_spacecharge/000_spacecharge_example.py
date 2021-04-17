@@ -13,7 +13,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 #context = ContextCpu(omp_num_threads=1) # omp
 context = ContextCpu(omp_num_threads=48) # omp
 context = ContextCupy(default_block_size=256)
-#context = ContextPyopencl('0.0')
+context = ContextPyopencl('0.0')
 
 print(repr(context))
 
@@ -99,12 +99,6 @@ scpyst.track(p_pyst)
 mask_inside_grid = ((np.abs(x_probes)<0.9*x_lim) &
                     (np.abs(y_probes)<0.9*y_lim))
 
-assert np.allclose(
-        p2np(particles.px[:n_probes])[mask_inside_grid],
-        p_pyst.px[mask_inside_grid])
-assert np.allclose(
-        p2np(particles.py[:n_probes])[mask_inside_grid],
-        p_pyst.py[mask_inside_grid])
 
 import matplotlib.pyplot as plt
 plt.close('all')
