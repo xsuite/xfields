@@ -8,6 +8,15 @@ pkg_root = thisfolder.parent.absolute()
 so_suffix = sysconfig.get_config_var('EXT_SUFFIX')
 
 kernel_descriptions = {
+    'central_diff':{
+        'args':(
+            (('scalar', np.int32),   'nelem',),
+            (('scalar', np.int32),   'stride_in_dbl',),
+            (('scalar', np.float64), 'factor',),
+            (('array',  np.float64), 'matrix',),
+            (('array',  np.float64), 'res',),),
+        'num_threads_from_arg': 'nelem'
+        },
     'p2m_rectmesh3d':{
         'args':(
             (('scalar', np.int32),   'nparticles',),
@@ -87,6 +96,7 @@ default_kernels = {
         pkg_root.joinpath('src/complex_error_function.h'),
         pkg_root.joinpath('src/constants.h'),
         pkg_root.joinpath('src/qgaussian.h'),
-        pkg_root.joinpath('src/fields_bigaussian.h'),]
+        pkg_root.joinpath('src/fields_bigaussian.h'),
+        pkg_root.joinpath('src/central_diff.h'),]
     }
 

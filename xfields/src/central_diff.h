@@ -14,7 +14,7 @@ void central_diff(
          res[ii] = factor * (matrix[ii+stride_in_dbl]
 			   - matrix[ii-stride_in_dbl]);
       } 
-   } 
+   }//end_vectorize 
 
 }
 
