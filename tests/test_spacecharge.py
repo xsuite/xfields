@@ -260,7 +260,7 @@ def test_spacecharge_pic():
             # Generate particles and probes #
             #################################
 
-            n_macroparticles = int(1e6)
+            n_macroparticles = int(5e6)
             bunch_intensity = 2.5e11
             sigma_x = 3e-3
             sigma_y = 2e-3
