@@ -6,17 +6,17 @@
 inline void atomicAdd(volatile __global double *addr, double val)
 {
 	union {
-		unsigned long u64;
+		long u64;
 		double f64;
 	} next, expected, current;
 	current.f64 = *addr;
 	do {
 		expected.f64 = current.f64;
 		next.f64 = expected.f64 + val;
-		current.u64 = atomic_cmpxchg(
-			(volatile __global unsigned long *)addr,
-		        (unsigned long) expected.u64,
-			(unsigned long) next.u64);
+		current.u64 = atom_cmpxchg(
+			(volatile __global long *)addr,
+		        (long) expected.u64,
+			(long) next.u64);
 	} while( current.u64 != expected.u64 );
 }
 #endif
