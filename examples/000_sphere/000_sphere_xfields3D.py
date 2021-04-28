@@ -9,7 +9,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 from xfields import TriLinearInterpolatedFieldMap
 
 context = ContextCpu()
-context = ContextCupy(default_block_size=256)
+#context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl()
 
 print(repr(context))
@@ -76,7 +76,7 @@ fmap = TriLinearInterpolatedFieldMap(x_range=x_lim, nx=nx,
 
 
 # Compute potential
-n_rep = 10
+n_rep = 4
 for _ in range(n_rep):
     t1 = time.time()
     fmap.update_from_particles(x_p=x_dev, y_p=y_dev, z_p=z_dev,

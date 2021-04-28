@@ -22,6 +22,7 @@ kernel_descriptions = {
     'central_diff': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nelem'),
+            xo.Arg(xo.Int32,   pointer=False, name='row_size'),
             xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
             xo.Arg(xo.Float64, pointer=False, name='factor'),
             xo.Arg(xo.Float64, pointer=True,  name='matrix'),

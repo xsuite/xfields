@@ -280,18 +280,21 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         # Compute gradient
         self.context.kernels.central_diff(
                 nelem = self._phi_dev.size,
+                row_size = self.nx,
                 stride_in_dbl = self._phi_dev.strides[0]/8,
                 factor = 1/(2*self.dx),
                 matrix = self._phi_dev,
                 res = self._dphi_dx_dev)
         self.context.kernels.central_diff(
                 nelem = self._phi_dev.size,
+                row_size = self.ny,
                 stride_in_dbl = self._phi_dev.strides[1]/8,
                 factor = 1/(2*self.dy),
                 matrix = self._phi_dev,
                 res = self._dphi_dy_dev)
         self.context.kernels.central_diff(
                 nelem = self._phi_dev.size,
+                row_size = self.nz,
                 stride_in_dbl = self._phi_dev.strides[2]/8,
                 factor = 1/(2*self.dz),
                 matrix = self._phi_dev,
