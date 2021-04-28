@@ -10,15 +10,6 @@ pkg_root = thisfolder.parent.absolute()
 so_suffix = sysconfig.get_config_var('EXT_SUFFIX')
 
 kernel_descriptions = {
-    # 'central_diff':{
-    #     'args':(
-    #         (('scalar', np.int32),   'nelem'),
-    #         (('scalar', np.int32),   'stride_in_dbl'),
-    #         (('scalar', np.float64), 'factor'),
-    #         (('array',  np.float64), 'matrix'),
-    #         (('array',  np.float64), 'res'),),
-    #     'num_threads_from_arg': 'nelem'
-    #     },
     'central_diff': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nelem'),
@@ -30,25 +21,6 @@ kernel_descriptions = {
             ],
         n_threads='nelem'
         ),
-    #'p2m_rectmesh3d':{
-    #    'args':(
-    #        (('scalar', np.int32),   'nparticles'),
-    #        (('array',  np.float64), 'x'),
-    #        (('array',  np.float64), 'y'),
-    #        (('array',  np.float64), 'z'),
-    #        (('array',  np.float64), 'part_weights'),
-    #        (('scalar', np.float64), 'x0'),
-    #        (('scalar', np.float64), 'y0'),
-    #        (('scalar', np.float64), 'z0'),
-    #        (('scalar', np.float64), 'dx'),
-    #        (('scalar', np.float64), 'dy'),
-    #        (('scalar', np.float64), 'dz'),
-    #        (('scalar', np.int32),   'nx'),
-    #        (('scalar', np.int32),   'ny'),
-    #        (('scalar', np.int32),   'nz'),
-    #        (('array',  np.float64), 'grid1d')),
-    #    'num_threads_from_arg': 'nparticles'
-    #    },
     'p2m_rectmesh3d': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
@@ -69,27 +41,6 @@ kernel_descriptions = {
             ],
         n_threads='nparticles'
         ),
-    #'m2p_rectmesh3d':{
-    #    'args':(
-    #        (('scalar', np.int32),   'nparticles'),
-    #        (('array',  np.float64), 'x'),
-    #        (('array',  np.float64), 'y'),
-    #        (('array',  np.float64), 'z'),
-    #        (('scalar', np.float64), 'x0'),
-    #        (('scalar', np.float64), 'y0'),
-    #        (('scalar', np.float64), 'z0'),
-    #        (('scalar', np.float64), 'dx'),
-    #        (('scalar', np.float64), 'dy'),
-    #        (('scalar', np.float64), 'dz'),
-    #        (('scalar', np.int32),   'nx'),
-    #        (('scalar', np.int32),   'ny'),
-    #        (('scalar', np.int32),   'nz'),
-    #        (('scalar', np.int32),   'n_quantities'),
-    #        (('array',  np.int32), 'offsets_mesh_quantities'),
-    #        (('array',  np.float64), 'mesh_quantity'),
-    #        (('array',  np.float64), 'particles_quantity')),
-    #    'num_threads_from_arg': 'nparticles'
-    #    },
     'm2p_rectmesh3d': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
@@ -112,21 +63,6 @@ kernel_descriptions = {
             ],
         n_threads='nparticles'
         ),
-    # 'get_Ex_Ey_Gx_Gy_gauss':{
-    #     'args':(
-    #         (('scalar', np.int32  ), 'n_points'),
-    #         (('array',  np.float64), 'x_ptr'),
-    #         (('array',  np.float64), 'y_ptr'),
-    #         (('scalar', np.float64), 'sigma_x'),
-    #         (('scalar', np.float64), 'sigma_y'),
-    #         (('scalar', np.float64), 'min_sigma_diff'),
-    #         (('scalar', np.int32  ), 'skip_Gs'),
-    #         (('array',  np.float64), 'Ex_ptr'),
-    #         (('array',  np.float64), 'Ey_ptr'),
-    #         (('array',  np.float64), 'Gx_ptr'),
-    #         (('array',  np.float64), 'Gy_ptr')),
-    #     'num_threads_from_arg': 'n_points'
-    #     },
     'get_Ex_Ey_Gx_Gy_gauss': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='n_points'),
@@ -143,21 +79,6 @@ kernel_descriptions = {
             ],
         n_threads='n_points'
         ),
-    #'q_gaussian_profile':{
-    #    'args':(
-    #    (('scalar', np.int32  ), 'n'),
-    #    (('array',  np.float64), 'z'),
-    #    (('scalar', np.float64), 'z0'),
-    #    (('scalar', np.float64), 'z_min'),
-    #    (('scalar', np.float64), 'z_max'),
-    #    (('scalar', np.float64), 'beta'),
-    #    (('scalar', np.float64), 'q'),
-    #    (('scalar', np.float64), 'q_tol'),
-    #    (('scalar', np.float64), 'factor'),
-    #    (('array',  np.float64), 'res'),
-    #        ),
-    #    'num_threads_from_arg': 'n'
-    #    },
     'q_gaussian_profile': xo.Kernel(
         args=[
             xo.Arg(xo.Int32  , pointer=False, name='n'),
