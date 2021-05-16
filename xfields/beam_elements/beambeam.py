@@ -1,5 +1,15 @@
 from xfields import BiGaussianFieldMap
 from xobjects.context import context_default
+import xobjects as xo
+import xtrack as xt
+from xfields.fieldmaps.bigaussian import BiGaussianFieldMapData
+
+class BeamBeamBiGaussian2DData(xo.Struct):
+    n_particles = xo.Float64
+    q0 = xo.Float64
+    beta0 = xo.Float64
+    fieldmap = BiGaussianFieldMapData
+
 
 class BeamBeamBiGaussian2D(object):
     """
