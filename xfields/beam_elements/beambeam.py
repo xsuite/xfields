@@ -38,7 +38,9 @@ class BeamBeamBiGaussian2D(xt.dress(BeamBeamBiGaussian2DData)):
     """
 
     def __init__(self,
-            context=None,
+            _context=None,
+            _buffer=None,
+            _offset=None,
             n_particles=None,
             q0=None,
             beta0=None,
@@ -48,16 +50,22 @@ class BeamBeamBiGaussian2D(xt.dress(BeamBeamBiGaussian2DData)):
             sigma_y=None,
             min_sigma_diff=1e-10):
 
-        if context is None:
-            context = context_default
+        if _context is None:
+            _context = context_default
 
-        self.context = context
+        self.xoinitialize(
+                 _context=_context,
+                 _buffer=_buffer,
+                 _offset=_offset)
+
         self.n_particles = n_particles
         self.q0 = q0
         self.beta0 = beta0
 
         self.fieldmap = BiGaussianFieldMap(
-                     context=context,
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset,
                      mean_x=mean_x,
                      mean_y=mean_y,
                      sigma_x=sigma_x,

@@ -84,7 +84,7 @@ particles_b2.y += mean_y_b2
 from xfields import BeamBeamBiGaussian2D, mean_and_std
 
 bbeam_b1 = BeamBeamBiGaussian2D(
-            context=context,
+            _context=context,
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
             beta0=particles_b2.beta0,
