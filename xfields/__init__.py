@@ -10,3 +10,7 @@ from .solvers.fftsolvers import FFTSolver3D
 
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam import BeamBeamBiGaussian2D
+
+
+from pathlib import Path
+_pkg_root = Path(__file__).parent.absolute()

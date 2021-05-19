@@ -11,7 +11,7 @@ class BeamBeamBiGaussian2DData(xo.Struct):
     fieldmap = BiGaussianFieldMapData
 
 
-class BeamBeamBiGaussian2D(object):
+class BeamBeamBiGaussian2D(xt.dress(BeamBeamBiGaussian2DData)):
     """
     Simulates the effect of beam-beam on a bunch.
 

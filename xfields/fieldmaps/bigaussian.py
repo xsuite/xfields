@@ -77,66 +77,66 @@ class BiGaussianFieldMap(xt.dress(BiGaussianFieldMapData)):
         self.sigma_y = sigma_y
         self.min_sigma_diff=min_sigma_diff
 
-    def get_values_at_points(self,
-            x, y,
-            return_rho=False,
-            return_phi=False,
-            return_dphi_dx=True,
-            return_dphi_dy=True,
-            ):
-
-        """
-        Returns the derivatives ot the electric potential at the points specified by x, y.
-        The output can be customized (see below).
-
-        Args:
-            x (float64 array): Horizontal coordinates at which the field is evaluated.
-            y (float64 array): Vertical coordinates at which the field is evaluated.
-            return_rho (bool): If ``True``, the charge density at the given points is
-                returned. Default is ``False``.
-            return_phi (bool): If ``True``, the potential at the given points is returned.
-            return_dphi_dx (bool): If ``True``, the horizontal derivative of the potential
-                at the given points is returned. Default is ``True``.
-            return_dphi_dy: If ``True``, the vertical derivative of the potential
-                at the given points is returned. Default is ``True``.
-        Returns:
-            (tuple of float64 array): The required quantities at the provided points.
-        """
-        if self.sigma_x is None:
-            raise ValueError('sigma_x must be set')
-        if self.sigma_y is None:
-            raise ValueError('sigma_y must be set')
-
-        assert len(x) == len(y)
-        tobereturned = []
-
-        if return_rho:
-            raise notimplementederror('not yet implemented :-(')
-        if return_phi:
-            raise notimplementederror('not yet implemented :-(')
-
-        if return_dphi_dx or return_dphi_dy:
-            Ex = self.context.zeros(x.shape, dtype=np.float64)
-            Ey = self.context.zeros(x.shape, dtype=np.float64)
-            self.context.kernels.get_Ex_Ey_Gx_Gy_gauss(
-                n_points=len(x),
-                x_ptr=x-self.mean_x,
-                y_ptr=y-self.mean_y,
-                sigma_x=self.sigma_x,
-                sigma_y=self.sigma_y,
-                min_sigma_diff=self.min_sigma_diff,
-                skip_Gs=1,
-                Ex_ptr=Ex,
-                Ey_ptr=Ey,
-                Gx_ptr=Ex, # untouchd when skip_Gs is zero
-                Gy_ptr=Ex, # untouchd when skip_Gs is zero
-                )
-            if return_dphi_dx:
-                tobereturned.append(-Ex)
-            if return_dphi_dy:
-                tobereturned.append(-Ey)
-
-        return tobereturned
+#    def get_values_at_points(self,
+#            x, y,
+#            return_rho=False,
+#            return_phi=False,
+#            return_dphi_dx=True,
+#            return_dphi_dy=True,
+#            ):
+#
+#        """
+#        Returns the derivatives ot the electric potential at the points specified by x, y.
+#        The output can be customized (see below).
+#
+#        Args:
+#            x (float64 array): Horizontal coordinates at which the field is evaluated.
+#            y (float64 array): Vertical coordinates at which the field is evaluated.
+#            return_rho (bool): If ``True``, the charge density at the given points is
+#                returned. Default is ``False``.
+#            return_phi (bool): If ``True``, the potential at the given points is returned.
+#            return_dphi_dx (bool): If ``True``, the horizontal derivative of the potential
+#                at the given points is returned. Default is ``True``.
+#            return_dphi_dy: If ``True``, the vertical derivative of the potential
+#                at the given points is returned. Default is ``True``.
+#        Returns:
+#            (tuple of float64 array): The required quantities at the provided points.
+#        """
+#        if self.sigma_x is None:
+#            raise ValueError('sigma_x must be set')
+#        if self.sigma_y is None:
+#            raise ValueError('sigma_y must be set')
+#
+#        assert len(x) == len(y)
+#        tobereturned = []
+#
+#        if return_rho:
+#            raise notimplementederror('not yet implemented :-(')
+#        if return_phi:
+#            raise notimplementederror('not yet implemented :-(')
+#
+#        if return_dphi_dx or return_dphi_dy:
+#            Ex = self.context.zeros(x.shape, dtype=np.float64)
+#            Ey = self.context.zeros(x.shape, dtype=np.float64)
+#            self.context.kernels.get_Ex_Ey_Gx_Gy_gauss(
+#                n_points=len(x),
+#                x_ptr=x-self.mean_x,
+#                y_ptr=y-self.mean_y,
+#                sigma_x=self.sigma_x,
+#                sigma_y=self.sigma_y,
+#                min_sigma_diff=self.min_sigma_diff,
+#                skip_Gs=1,
+#                Ex_ptr=Ex,
+#                Ey_ptr=Ey,
+#                Gx_ptr=Ex, # untouchd when skip_Gs is zero
+#                Gy_ptr=Ex, # untouchd when skip_Gs is zero
+#                )
+#            if return_dphi_dx:
+#                tobereturned.append(-Ex)
+#            if return_dphi_dy:
+#                tobereturned.append(-Ey)
+#
+#        return tobereturned
 
     def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
                 reset=True, update_phi=True, solver=None, force=False):
