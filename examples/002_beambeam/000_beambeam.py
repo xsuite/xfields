@@ -12,8 +12,8 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 context = ContextCpu(omp_num_threads=0) # no omp
 #context = ContextCpu(omp_num_threads=1) # omp
 #context = ContextCpu(omp_num_threads=48) # omp
-#context = ContextCupy(default_block_size=256)
-#context = ContextPyopencl('0.0')
+context = ContextCupy(default_block_size=256)
+context = ContextPyopencl('0.0')
 
 print(repr(context))
 
@@ -146,10 +146,10 @@ bb_b1_pyst.track(p_pyst)
 
 assert np.allclose(p_pyst.px,
     p2np(particles_b1.px[:n_probes]),
-    atol=1e-2*np.max(np.abs(p_pyst.px)))
+    atol=2e-2*np.max(np.abs(p_pyst.px)))
 assert np.allclose(p_pyst.py,
     p2np(particles_b1.py[:n_probes]),
-    atol=1e-2*np.max(np.abs(p_pyst.px)))
+    atol=2e-2*np.max(np.abs(p_pyst.px)))
 
 import matplotlib.pyplot as plt
 plt.close('all')
