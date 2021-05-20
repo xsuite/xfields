@@ -1,8 +1,11 @@
-from xfields import BiGaussianFieldMap
+from ..fieldmaps.bigaussian import BiGaussianFieldMap, BiGaussianFieldMapData
+from ..general import _pkg_root
+
 from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
-from xfields.fieldmaps.bigaussian import BiGaussianFieldMapData
+
+api_conf = {'prepointer': ' /*gpuglmem*/ '}
 
 class BeamBeamBiGaussian2DData(xo.Struct):
     n_particles = xo.Float64
@@ -10,8 +13,16 @@ class BeamBeamBiGaussian2DData(xo.Struct):
     beta0 = xo.Float64
     fieldmap = BiGaussianFieldMapData
 
+srcs = []
+srcs.append(_pkg_root.joinpath('src/constants.h'))
+srcs.append(_pkg_root.joinpath('src/complex_error_function.h'))
+srcs.append(_pkg_root.joinpath('src/fields_bigaussian.h'))
+srcs.append(BiGaussianFieldMapData._gen_c_api(api_conf)[0])
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam.h'))
+BeamBeamBiGaussian2DData.track_function_sources = srcs
 
-class BeamBeamBiGaussian2D(xt.dress(BeamBeamBiGaussian2DData)):
+class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
     """
     Simulates the effect of beam-beam on a bunch.
 
@@ -111,31 +122,4 @@ class BeamBeamBiGaussian2D(xt.dress(BeamBeamBiGaussian2DData)):
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
 
-    def track(self, particles):
-        """
-        Computes and applies the beam-beam forces for the provided set of
-        particles.
-
-        Args:
-            particles (Particles Object): Particles to be tracked.
-        """
-
-        dphi_dx, dphi_dy = self.fieldmap.get_values_at_points(
-                            x=particles.x, y=particles.y,
-                            return_rho=False, return_phi=False)
-
-        clight = float(particles.clight)
-        charge_mass_ratio = (particles.chi*particles.echarge*particles.q0
-                    /(particles.mass0*particles.echarge/(clight*clight)))
-
-        factor = -(charge_mass_ratio*self.n_particles*self.q0
-                    * particles.echarge
-                    /(particles.gamma0*particles.beta0*
-                        clight*clight)
-                    *(1+self.beta0*particles.beta0)
-                    /(self.beta0 + particles.beta0))
-
-        # Kick particles
-        particles.px += factor*dphi_dx
-        particles.py += factor*dphi_dy
 
