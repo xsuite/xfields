@@ -1,6 +1,7 @@
 import numpy as np
 
 from pysixtrack.particles import Particles
+import xtrack as xt
 
 from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 
@@ -84,7 +85,7 @@ def generate_particles_object(context,
     else:
         raise ValueError('Unknown context!')
 
-    particles = Particles(
+    pyst_particles = Particles(
             p0c=p0c,
             mass = mass,
             x=x_part_dev,
@@ -94,7 +95,9 @@ def generate_particles_object(context,
             py=py_part_dev,
             ptau=ptau_part_dev,
             **kwargs)
-    particles.weight = weights_part_dev
+    pyst_particles.weight = weights_part_dev
+
+    particles = xt.Particles(pysixtrack_particles=pyst_particles)
 
     return particles, r_probes, x_probes, y_probes, z_probes
 
