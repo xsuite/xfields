@@ -66,38 +66,38 @@ def generate_particles_object(context,
     py_part = 0*x_part
     pt_part = 0*x_part
 
-    # Move to context
-    np2platf = context.nparray_to_context_array
-    x_part_dev = np2platf(x_part)
-    y_part_dev = np2platf(y_part)
-    z_part_dev = np2platf(z_part)
-    px_part_dev = np2platf(px_part)
-    py_part_dev = np2platf(py_part)
-    ptau_part_dev = np2platf(pt_part)
-    weights_part_dev = np2platf(weights_part)
+    # # Move to context
+    # np2platf = context.nparray_to_context_array
+    # x_part_dev = np2platf(x_part)
+    # y_part_dev = np2platf(y_part)
+    # z_part_dev = np2platf(z_part)
+    # px_part_dev = np2platf(px_part)
+    # py_part_dev = np2platf(py_part)
+    # ptau_part_dev = np2platf(pt_part)
+    # weights_part_dev = np2platf(weights_part)
 
-    if isinstance(context, ContextCupy):
-        kwargs = {'mathlib': CupyMathlib()}
-    elif isinstance(context, ContextPyopencl):
-        kwargs = {'mathlib': PyopenclMathlib()}
-    elif isinstance(context, ContextCpu):
-        kwargs = {}
-    else:
-        raise ValueError('Unknown context!')
+    # if isinstance(context, ContextCupy):
+    #     kwargs = {'mathlib': CupyMathlib()}
+    # elif isinstance(context, ContextPyopencl):
+    #     kwargs = {'mathlib': PyopenclMathlib()}
+    # elif isinstance(context, ContextCpu):
+    #     kwargs = {}
+    # else:
+    #     raise ValueError('Unknown context!')
 
     pyst_particles = Particles(
             p0c=p0c,
             mass = mass,
-            x=x_part_dev,
-            y=y_part_dev,
-            zeta=z_part_dev,
-            px=px_part_dev,
-            py=py_part_dev,
-            ptau=ptau_part_dev,
-            **kwargs)
-    pyst_particles.weight = weights_part_dev
+            x=x_part,
+            y=y_part,
+            zeta=z_part,
+            px=px_part,
+            py=py_part,
+            ptau=pt_part)
+    pyst_particles.weight = weights_part
 
-    particles = xt.Particles(pysixtrack_particles=pyst_particles)
+    particles = xt.Particles(_context=context,
+                             pysixtrack_particles=pyst_particles)
 
     return particles, r_probes, x_probes, y_probes, z_probes
 
