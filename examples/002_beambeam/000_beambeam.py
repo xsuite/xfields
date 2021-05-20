@@ -12,7 +12,7 @@ from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 context = ContextCpu(omp_num_threads=0) # no omp
 #context = ContextCpu(omp_num_threads=1) # omp
 #context = ContextCpu(omp_num_threads=48) # omp
-context = ContextCupy(default_block_size=256)
+#context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl('0.0')
 
 print(repr(context))
@@ -21,14 +21,14 @@ print(repr(context))
 # Generate particles and probes #
 #################################
 
-n_macroparticles_b1 = int(1e6)
+n_macroparticles_b1 = 10#int(1e6)
 bunch_intensity_b1 = 2.5e11
 sigma_x_b1 = 3e-3
 sigma_y_b1 = 2e-3
 mean_x_b1 = 1.3e-3
 mean_y_b1 = -1.2e-3
 
-n_macroparticles_b2 = int(10e6)
+n_macroparticles_b2 = 10#int(10e6)
 bunch_intensity_b2 = 3e11
 sigma_x_b2 = 1.7e-3
 sigma_y_b2 = 2.1e-3
@@ -88,6 +88,17 @@ bbeam_b1 = BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
             beta0=particles_b2.beta0,
+            sigma_x=None, # needs to be specified only for weak-strong
+            sigma_y=None, # needs to be specified only for weak-strong
+            mean_x=None, # needs to be specified only for weak-strong
+            mean_y=None, # needs to be specified only for weak-strong
+            min_sigma_diff=1e-10)
+
+bbeam_b2 = BeamBeamBiGaussian2D(
+            _context=context,
+            n_particles=bunch_intensity_b1,
+            q0 = particles_b1.q0,
+            beta0=particles_b1.beta0,
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
