@@ -1,39 +1,8 @@
 import numpy as np
 
 from pysixtrack.particles import Particles
-import xtrack as xt
 
-from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
-
-class CupyMathlib(object):
-
-    try:
-        from cupy import sqrt, exp, sin, cos, abs, pi, tan
-    except:
-        pass
-
-    @classmethod
-    def wfun(cls, z_re, z_im):
-        raise NotImplementedError
-
-class PyopenclMathlib(object):
-
-    from pyopencl.clmath import exp, sin, cos, tan
-    from pyopencl import clmath
-    from numpy import pi
-
-    @classmethod
-    def wfun(cls, z_re, z_im):
-        raise NotImplementedError
-
-    @classmethod
-    def sqrt(cls, a):
-        if np.isscalar(a):
-            return np.sqrt(a)
-        else:
-            return cls.clmath.sqrt(a)
-
-def generate_particles_object(context,
+def generate_particles_object(
                             n_macroparticles,
                             bunch_intensity,
                             sigma_x,
@@ -66,25 +35,6 @@ def generate_particles_object(context,
     py_part = 0*x_part
     pt_part = 0*x_part
 
-    # # Move to context
-    # np2platf = context.nparray_to_context_array
-    # x_part_dev = np2platf(x_part)
-    # y_part_dev = np2platf(y_part)
-    # z_part_dev = np2platf(z_part)
-    # px_part_dev = np2platf(px_part)
-    # py_part_dev = np2platf(py_part)
-    # ptau_part_dev = np2platf(pt_part)
-    # weights_part_dev = np2platf(weights_part)
-
-    # if isinstance(context, ContextCupy):
-    #     kwargs = {'mathlib': CupyMathlib()}
-    # elif isinstance(context, ContextPyopencl):
-    #     kwargs = {'mathlib': PyopenclMathlib()}
-    # elif isinstance(context, ContextCpu):
-    #     kwargs = {}
-    # else:
-    #     raise ValueError('Unknown context!')
-
     pyst_particles = Particles(
             p0c=p0c,
             mass = mass,
@@ -96,8 +46,5 @@ def generate_particles_object(context,
             ptau=pt_part)
     pyst_particles.weight = weights_part
 
-    particles = xt.Particles(_context=context,
-                             pysixtrack_particles=pyst_particles)
-
-    return particles, r_probes, x_probes, y_probes, z_probes
+    return pyst_particles, r_probes, x_probes, y_probes, z_probes
 

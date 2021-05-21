@@ -4,6 +4,7 @@ import numpy as np
 
 from pysixtrack.particles import Particles
 from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
+import xtrack as xt
 
 ###################
 # Choose context #
@@ -45,8 +46,8 @@ n_probes = 1000
 
 from xfields.test_support.temp_makepart import generate_particles_object
 print('Generate particles b1...')
-(particles_b1, r_probes, _, _, _
-        ) =  generate_particles_object(context,
+(particles_b1_pyst, r_probes, _, _, _
+        ) =  generate_particles_object(
                             n_macroparticles_b1,
                             bunch_intensity_b1,
                             sigma_x_b1,
@@ -58,12 +59,15 @@ print('Generate particles b1...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
+particles_b1 = xt.Particles(_context=context,
+        pysixtrack_particles=particles_b1_pyst)
+
 particles_b1.x += mean_x_b1
 particles_b1.y += mean_y_b1
 
 print('Generate particles b2...')
-(particles_b2, r_probes, _, _, _
-        ) =  generate_particles_object(context,
+(particles_b2_pyst, r_probes, _, _, _
+        ) =  generate_particles_object(
                             n_macroparticles_b2,
                             bunch_intensity_b2,
                             sigma_x_b2,
@@ -75,6 +79,8 @@ print('Generate particles b2...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
+particles_b2 = xt.Particles(_context=context,
+        pysixtrack_particles=particles_b2_pyst)
 
 particles_b2.x += mean_x_b2
 particles_b2.y += mean_y_b2
