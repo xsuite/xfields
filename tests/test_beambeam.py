@@ -1,4 +1,4 @@
-
+import xtrack as xt
 import numpy as np
 
 from pysixtrack.particles import Particles
@@ -24,7 +24,7 @@ def test_beambeam():
         mean_x_b1 = 1.3e-3
         mean_y_b1 = -1.2e-3
 
-        n_macroparticles_b2 = int(10e6)
+        n_macroparticles_b2 = int(1e6)
         bunch_intensity_b2 = 3e11
         sigma_x_b2 = 1.7e-3
         sigma_y_b2 = 2.1e-3
@@ -41,7 +41,7 @@ def test_beambeam():
 
         from xfields.test_support.temp_makepart import generate_particles_object
         (particles_b1, r_probes, _, _, _
-                ) =  generate_particles_object(context,
+                ) =  generate_particles_object(
                                     n_macroparticles_b1,
                                     bunch_intensity_b1,
                                     sigma_x_b1,
@@ -53,11 +53,13 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
+        particles_b1 = xt.Particles(_context=context,
+                                    pysixtrack_particles=particles_b1)
         particles_b1.x += mean_x_b1
         particles_b1.y += mean_y_b1
 
         (particles_b2, r_probes, _, _, _
-                ) =  generate_particles_object(context,
+                ) =  generate_particles_object(
                                     n_macroparticles_b2,
                                     bunch_intensity_b2,
                                     sigma_x_b2,
@@ -69,7 +71,8 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-
+        particles_b2 = xt.Particles(_context=context,
+                                    pysixtrack_particles=particles_b2)
         particles_b2.x += mean_x_b2
         particles_b2.y += mean_y_b2
 
@@ -80,7 +83,7 @@ def test_beambeam():
         from xfields import BeamBeamBiGaussian2D, mean_and_std
 
         bbeam_b1 = BeamBeamBiGaussian2D(
-                    context=context,
+                    _context=context,
                     n_particles=bunch_intensity_b2,
                     q0 = particles_b2.q0,
                     beta0=particles_b2.beta0,
@@ -127,8 +130,8 @@ def test_beambeam():
 
         assert np.allclose(p_pyst.px,
             p2np(particles_b1.px[:n_probes]),
-            atol=1e-2*np.max(np.abs(p_pyst.px)))
+            atol=2e-2*np.max(np.abs(p_pyst.px)))
         assert np.allclose(p_pyst.py,
             p2np(particles_b1.py[:n_probes]),
-            atol=1e-2*np.max(np.abs(p_pyst.py)))
+            atol=2e-2*np.max(np.abs(p_pyst.py)))
 
