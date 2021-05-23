@@ -18,7 +18,7 @@ def test_qgauss():
 
         for qq in [0, 0.5, 0.95, 1.05, 1.3]:
             lprofile = LongitudinalProfileQGaussian(
-                    context=ctx,
+                    _context=ctx,
                     number_of_particles=npart,
                     sigma_z=sigma_z,
                     z0=z0,
