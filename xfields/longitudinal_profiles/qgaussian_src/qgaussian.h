@@ -2,7 +2,7 @@
 #define XFIELDS_QGAUSSIAN 
 
 /*gpufun*/
-void line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
+double line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
 
     const double number_of_particles = 
 	    LongitudinalProfileQGaussianData_get_number_of_particles(prof);
@@ -17,13 +17,13 @@ void line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
     const double z_min = LongitudinalProfileQGaussianData_get__support_min(prof);
     const double z_max = LongitudinalProfileQGaussianData_get__support_max(prof);
 
-    const double factor = number_of_particles*sqrt_beta_param/_cq_param; 
+    const double factor = number_of_particles*sqrt_beta_param/cq; 
 
 
     if (fabs(q-1.) < q_tol){
 	if (z<z_max && z>z_min){
 	    double z_m_z0 = z - z0;
-		return factor*exp(-beta*z_m_z0*z_m_z0 );
+		return factor*exp(-beta_param*z_m_z0*z_m_z0 );
 	}
 	else{
 		return 0; 
@@ -33,7 +33,7 @@ void line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
     	double exponent = 1./(1.-q);
 	if (z<z_max && z>z_min){
 	    double z_m_z0 = z - z0;
-    		double q_exp_arg =  -(beta*z_m_z0*z_m_z0 );
+    		double q_exp_arg =  -(beta_param*z_m_z0*z_m_z0 );
     		double q_exp_res = pow(
 	    	 (1.+(1.-q)*q_exp_arg), exponent );
     		return factor*q_exp_res;
@@ -43,4 +43,21 @@ void line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
 	}
     }
 }
+
+
+
+/*gpukern*/
+void line_density(LongitudinalProfileQGaussianData prof,
+		               const int64_t n,
+		  /*gpuglmem*/ const double* z, 
+		  /*gpuglmem*/       double* res){
+
+   #pragma omp parallel for //only_for_context cpu_openmp 
+   for(int ii; ii<n; ii++){ //vectorize_over ii n 
+
+       res[ii] = line_density_scalar(prof, z[ii]);
+  
+   }//end_vectorize
+}
+
 #endif

@@ -6,6 +6,7 @@ from numpy import sqrt, pi
 from scipy.special import gamma
 
 from ..contexts import add_default_kernels
+from ..general import _pkg_root
 
 class LongitudinalProfileQGaussianData(xo.Struct):
     number_of_particles = xo.Float64
@@ -18,6 +19,19 @@ class LongitudinalProfileQGaussianData(xo.Struct):
     _sqrt_beta_param = xo.Float64
     _support_min = xo.Float64
     _support_max = xo.Float64
+
+LongitudinalProfileQGaussianData.extra_sources = [
+    _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
+    ]
+LongitudinalProfileQGaussianData.custom_kernels = {'line_density':
+        xo.Kernel(args=[xo.Arg(LongitudinalProfileQGaussianData, name='prof'),
+                        xo.Arg(xo.Int64, name='n'),
+                        xo.Arg(xo.Float64, pointer=True, name='z'),
+                        xo.Arg(xo.Float64, pointer=True, name='res')],
+                  n_threads='n')}
+
+
+
 
 class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
 
@@ -82,6 +96,19 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
                 support_max = allowed_max
         self._support_min = support_min
         self._support_max = support_max
+
+    def compile_custom_kernels(self):
+        context = self._buffer.context
+
+        api_conf = {'prepointer': ' /*gpuglmem*/ '} # TODO: remove
+        capi_src, _, capi_cdefs = self.XoStruct._gen_c_api(api_conf)
+
+        context.add_kernels(sources=([capi_src]
+                + self.XoStruct.extra_sources),
+            kernels=self.XoStruct.custom_kernels,
+            extra_cdef='\n'.join([capi_cdefs]),
+            save_source_as='temp.c')
+
 
     @property
     def sigma_z(self):

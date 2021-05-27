@@ -4,7 +4,8 @@ import xobjects as xo
 
 from xfields import LongitudinalProfileQGaussian
 
-def test_qgauss():
+#def test_qgauss():
+if True:
     for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
         if CTX not in xo.context.available:
             continue
