@@ -10,7 +10,6 @@ double line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
     const double cq = LongitudinalProfileQGaussianData_get__cq_param(prof);
     const double q_tol = LongitudinalProfileQGaussianData_get__q_tol(prof);
     const double z0 = LongitudinalProfileQGaussianData_get__z0(prof);
-    const double sigma_z = LongitudinalProfileQGaussianData_get__sigma_z(prof);
     const double beta_param = LongitudinalProfileQGaussianData_get__beta_param(prof);
     const double sqrt_beta_param = 
 	    LongitudinalProfileQGaussianData_get__sqrt_beta_param(prof);

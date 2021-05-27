@@ -68,7 +68,7 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
 
         self.xoinitialize(_context=_context, _buffer=_buffer, _offset=_offset)
 
-        add_default_kernels(self._buffer.context)
+        #add_default_kernels(self._buffer.context)
 
         self._z_min = z_min
         self._z_max = z_max
@@ -97,6 +97,7 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
         self._support_min = support_min
         self._support_max = support_max
 
+    # TODO: Move to dress
     def compile_custom_kernels(self):
         context = self._buffer.context
 
@@ -177,18 +178,23 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
         context = self._buffer.context
         res = context.zeros(len(z), dtype=np.float64)
 
-        factor = self.number_of_particles*self._sqrt_beta_param/self._cq_param
-        context.kernels.q_gaussian_profile(
-                n=len(z),
-                z=z,
-                z0=self.z0,
-                z_min=self._support_min,
-                z_max=self._support_max,
-                beta=self.beta_param,
-                q=self.q_parameter,
-                q_tol=self.q_tol,
-                factor=factor,
-                res=res)
+        if 'line_density' not in context.kernels.keys():
+            self.compile_custom_kernels()
+
+        context.kernels.line_density(prof=self._xobject, n=len(z), z=z, res=res)
+
+        #factor = self.number_of_particles*self._sqrt_beta_param/self._cq_param
+        #context.kernels.q_gaussian_profile(
+        #        n=len(z),
+        #        z=z,
+        #        z0=self.z0,
+        #        z_min=self._support_min,
+        #        z_max=self._support_max,
+        #        beta=self.beta_param,
+        #        q=self.q_parameter,
+        #        q_tol=self.q_tol,
+        #        factor=factor,
+        #        res=res)
 
         return res
 
