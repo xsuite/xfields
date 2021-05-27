@@ -2,7 +2,7 @@
 #define XFIELDS_QGAUSSIAN 
 
 /*gpufun*/
-double line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
+double line_density_qgauss_scalar(LongitudinalProfileQGaussianData prof, double z){
 
     const double number_of_particles = 
 	    LongitudinalProfileQGaussianData_get_number_of_particles(prof);
@@ -46,7 +46,7 @@ double line_density_scalar(LongitudinalProfileQGaussianData prof, double z){
 
 
 /*gpukern*/
-void line_density(LongitudinalProfileQGaussianData prof,
+void line_density_qgauss(LongitudinalProfileQGaussianData prof,
 		               const int64_t n,
 		  /*gpuglmem*/ const double* z, 
 		  /*gpuglmem*/       double* res){
@@ -54,7 +54,7 @@ void line_density(LongitudinalProfileQGaussianData prof,
    #pragma omp parallel for //only_for_context cpu_openmp 
    for(int ii; ii<n; ii++){ //vectorize_over ii n 
 
-       res[ii] = line_density_scalar(prof, z[ii]);
+       res[ii] = line_density_qgauss_scalar(prof, z[ii]);
   
    }//end_vectorize
 }

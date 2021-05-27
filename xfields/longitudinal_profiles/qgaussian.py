@@ -23,7 +23,7 @@ class LongitudinalProfileQGaussianData(xo.Struct):
 LongitudinalProfileQGaussianData.extra_sources = [
     _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
     ]
-LongitudinalProfileQGaussianData.custom_kernels = {'line_density':
+LongitudinalProfileQGaussianData.custom_kernels = {'line_density_qgauss':
         xo.Kernel(args=[xo.Arg(LongitudinalProfileQGaussianData, name='prof'),
                         xo.Arg(xo.Int64, name='n'),
                         xo.Arg(xo.Float64, pointer=True, name='z'),
@@ -97,20 +97,6 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
         self._support_min = support_min
         self._support_max = support_max
 
-    # TODO: Move to dress
-    def compile_custom_kernels(self):
-        context = self._buffer.context
-
-        api_conf = {'prepointer': ' /*gpuglmem*/ '} # TODO: remove
-        capi_src, _, capi_cdefs = self.XoStruct._gen_c_api(api_conf)
-
-        context.add_kernels(sources=([capi_src]
-                + self.XoStruct.extra_sources),
-            kernels=self.XoStruct.custom_kernels,
-            extra_cdef='\n'.join([capi_cdefs]),
-            save_source_as='temp.c')
-
-
     @property
     def sigma_z(self):
         return self._sigma_z
@@ -178,23 +164,10 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
         context = self._buffer.context
         res = context.zeros(len(z), dtype=np.float64)
 
-        if 'line_density' not in context.kernels.keys():
+        if 'line_density_q_gauss' not in context.kernels.keys():
             self.compile_custom_kernels()
 
-        context.kernels.line_density(prof=self._xobject, n=len(z), z=z, res=res)
-
-        #factor = self.number_of_particles*self._sqrt_beta_param/self._cq_param
-        #context.kernels.q_gaussian_profile(
-        #        n=len(z),
-        #        z=z,
-        #        z0=self.z0,
-        #        z_min=self._support_min,
-        #        z_max=self._support_max,
-        #        beta=self.beta_param,
-        #        q=self.q_parameter,
-        #        q_tol=self.q_tol,
-        #        factor=factor,
-        #        res=res)
+        context.kernels.line_density_qgauss(prof=self._xobject, n=len(z), z=z, res=res)
 
         return res
 
