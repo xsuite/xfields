@@ -4,8 +4,7 @@ from pysixtrack.particles import Particles
 import xobjects as xo
 import xtrack as xt
 
-#def test_spacecharge_gauss_qgauss():
-if True:
+def test_spacecharge_gauss_qgauss():
     for frozen in [True, False]:
         for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
             if CTX not in xo.context.available:

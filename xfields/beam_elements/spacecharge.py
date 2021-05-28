@@ -223,26 +223,8 @@ class SpaceChargeBiGaussian(xt.dress_element(SpaceChargeBiGaussianData)):
             if self.update_sigma_y_on_track:
                 self.sigma_y = sigma_y
 
-        dphi_dx, dphi_dy = self.fieldmap.get_values_at_points(
-                            x=particles.x, y=particles.y,
-                            return_rho=False, return_phi=False)
+        super().track(particles)
 
-        lambda_z = self.longitudinal_profile.line_density(particles.zeta)
-
-        #Build factor
-        beta0 = particles.beta0
-        clight = float(particles.clight)
-        charge_mass_ratio = (particles.chi*particles.echarge*particles.q0
-                                /(particles.mass0*particles.echarge/(clight*clight)))
-        gamma0 = particles.gamma0
-        beta0 = particles.beta0
-        factor = -(charge_mass_ratio*particles.q0*particles.echarge
-                   *self.length*(1.-beta0*beta0)
-                   /(gamma0*beta0*beta0*clight*clight))
-
-        # Kick particles
-        particles.px += factor*lambda_z*dphi_dx
-        particles.py += factor*lambda_z*dphi_dy
 
     def _init_update_on_track(self, update_on_track):
         self.update_mean_x_on_track = False
