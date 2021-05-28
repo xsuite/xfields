@@ -2,13 +2,32 @@ import numpy as np
 
 from xobjects.context import context_default
 import xobjects as xo
+import xtrack as xt
 
 from .base import FieldMap
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
 from ..contexts import add_default_kernels
 
+class TriLinearInterpolatedFieldMapData(xo.Struct):
+    x_min = xo.Float64
+    y_min = xo.Float64
+    z_min = xo.Float64
+    nx = xo.Int64
+    ny = xo.Int64
+    nz = xo.Int64
+    dx = xo.Float64
+    dy = xo.Float64
+    dz = xo.Float64
+    rho = xo.Float64[:]
+    phi = xo.Float64[:]
+    dphi_dx = xo.Float64[:]
+    dphi_dy = xo.Float64[:]
+    dphi_dz = xo.Float64[:]
 
-class TriLinearInterpolatedFieldMap(FieldMap):
+rename_trilinear = {ff.name:'_'+ff.name for ff in TriLinearInterpolatedFieldMapData._fields}
+
+class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
+                                             rename=rename_trilinear)):
 
     """
     Builds a linear interpolator for a 3D field map. The map can be updated
@@ -61,7 +80,9 @@ class TriLinearInterpolatedFieldMap(FieldMap):
     """
 
     def __init__(self,
-                 context=None,
+                 _context=None,
+                 _buffer=None,
+                 _offset=None,
                  x_range=None, y_range=None, z_range=None,
                  nx=None, ny=None, nz=None,
                  dx=None, dy=None, dz=None,
@@ -73,30 +94,49 @@ class TriLinearInterpolatedFieldMap(FieldMap):
                  ):
 
 
-        if context is None:
-            context = context_default
+        if _context is None:
+            _context = context_default
 
-        add_default_kernels(context)
 
         self.updatable = updatable
-        self.context = context
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
 
         self._x_grid = _configure_grid('x', x_grid, dx, x_range, nx)
         self._y_grid = _configure_grid('y', y_grid, dy, y_range, ny)
         self._z_grid = _configure_grid('z', z_grid, dz, z_range, nz)
 
-        # Prepare arrays (contiguous to use a single pointer in C/GPU)
-        self._maps_buffer_dev = context.nparray_to_context_array(
-                np.zeros((self.nx, self.ny, self.nz, 5),
-                         dtype=np.float64, order='F'))
+        nelem = self.nx*self.ny*self.nz
+        self.xoinitialize(
+                 _context=_context,
+                 _buffer=_buffer,
+                 _offset=_offset,
+                 x_min = self._x_grid[0],
+                 y_min = self._y_grid[0],
+                 z_min = self._z_grid[0],
+                 nx = self.nx,
+                 ny = self.ny,
+                 nz = self.nz,
+                 dx = self.dx,
+                 dy = self.dy,
+                 dz = self.dz,
+                 rho = nelem,
+                 phi = nelem,
+                 dphi_dx = nelem,
+                 dphi_dy = nelem,
+                 dphi_dz = nelem)
+
 
         # These are slices (they are are on the context)
-        self._rho_dev = self._maps_buffer_dev[:, :, :, 0]
-        self._phi_dev = self._maps_buffer_dev[:, :, :, 1]
-        self._dphi_dx_dev = self._maps_buffer_dev[:, :, :, 2]
-        self._dphi_dy_dev = self._maps_buffer_dev[:, :, :, 3]
-        self._dphi_dz_dev = self._maps_buffer_dev[:, :, :, 4]
+        self._rho_dev = self._rho.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+        self._phi_dev = self._phi.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+        self._dphi_dx_dev = self._dphi_dx.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+        self._dphi_dy_dev = self._dphi_dy.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+        self._dphi_dz_dev = self._dphi_dz.reshape(
+                (self.nx, self.ny, self.nz), order='F')
 
 
         if isinstance(solver, str):
@@ -435,6 +475,7 @@ class TriLinearInterpolatedFieldMap(FieldMap):
         Electric potential at the grid points in Volts.
         """
         return self._phi_dev
+
 
 def _configure_grid(vname, v_grid, dv, v_range, nv):
 
