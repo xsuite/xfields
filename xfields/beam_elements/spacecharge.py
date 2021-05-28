@@ -2,10 +2,13 @@ from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
 from ..longitudinal_profiles import LongitudinalProfileQGaussianData
 from ..fieldmaps import BiGaussianFieldMapData
+from ..general import _pkg_root
 
 from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
+
+api_conf = {'prepointer': ' /*gpuglmem*/ '} #TODO: to be removed
 
 class SpaceCharge3D(object):
     """
@@ -151,12 +154,24 @@ class SpaceChargeBiGaussianData(xo.Struct):
     fieldmap = BiGaussianFieldMapData
     length = xo.Float64
 
+srcs = []
+srcs.append(_pkg_root.joinpath('src/constants.h'))
+srcs.append(_pkg_root.joinpath('src/complex_error_function.h'))
+srcs.append(_pkg_root.joinpath('src/fields_bigaussian.h'))
+srcs.append(BiGaussianFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
+srcs.append(LongitudinalProfileQGaussianData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge.h'))
+SpaceChargeBiGaussianData.extra_sources = srcs
 
 
-class SpaceChargeBiGaussian(object):
+class SpaceChargeBiGaussian(xt.dress_element(SpaceChargeBiGaussianData)):
 
     def __init__(self,
-                 context=None,
+                 _context=None,
+                 _buffer=None,
+                 _offset=None,
                  update_on_track=True,
                  length=None,
                  apply_z_kick=False,
@@ -167,20 +182,24 @@ class SpaceChargeBiGaussian(object):
                  sigma_y=None,
                  min_sigma_diff=1e-10):
 
-        if context is None:
-            context = ContextDefault()
+        if _context is None:
+            _context = context_default
+
+        self.xoinitialize(
+                 _context=_context,
+                 _buffer=_buffer,
+                 _offset=_offset)
 
         if apply_z_kick:
             raise NotImplementedError
 
-        self.context = context
         self.length = length
         self.longitudinal_profile = longitudinal_profile
         self.apply_z_kick = apply_z_kick
         self._init_update_on_track(update_on_track)
 
         self.fieldmap = BiGaussianFieldMap(
-                     _context=context,
+                     _context=self._buffer.context,
                      mean_x=mean_x,
                      mean_y=mean_y,
                      sigma_x=sigma_x,

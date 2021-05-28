@@ -4,7 +4,8 @@ from pysixtrack.particles import Particles
 import xobjects as xo
 import xtrack as xt
 
-def test_spacecharge_gauss_qgauss():
+#def test_spacecharge_gauss_qgauss():
+if True:
     for frozen in [True, False]:
         for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
             if CTX not in xo.context.available:
@@ -78,7 +79,7 @@ def test_spacecharge_gauss_qgauss():
                 sy_init = None
 
             scgauss = SpaceChargeBiGaussian(
-                            context=context,
+                            _context=context,
                             update_on_track=not(frozen),
                             length=1.,
                             apply_z_kick=False,
