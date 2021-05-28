@@ -5,6 +5,9 @@ typedef struct{
     int64_t ix;
     int64_t iy;
     int64_t iz;
+    int64_t nx;
+    int64_t ny;
+    int64_t nz;
     double w000;
     double w100;
     double w010;
@@ -29,29 +32,70 @@ IndicesAndWeights TriLinearInterpolatedFieldMap_compute_indeces_and_weights(
 	const double x0 = TriLinearInterpolatedFieldMapData_get_x_min(fmap);
 	const double y0 = TriLinearInterpolatedFieldMapData_get_y_min(fmap);
 	const double z0 = TriLinearInterpolatedFieldMapData_get_z_min(fmap);
+	const int64_t nx = TriLinearInterpolatedFieldMapData_get_nx(fmap);
+	const int64_t ny = TriLinearInterpolatedFieldMapData_get_ny(fmap);
+	const int64_t nz = TriLinearInterpolatedFieldMapData_get_nz(fmap);
+
+    	iw.nx = nx;
+    	iw.ny = ny;
+    	iw.nz = nz;
 
     	// indices
     	iw.ix = floor((x - x0) / dx);
     	iw.iy = floor((y - y0) / dy);
     	iw.iz = floor((z - z0) / dz);
 
-    	// distances
-    	const double dxi = x - (x0 + iw.ix * dx);
-    	const double dyi = y - (y0 + iw.iy * dy);
-    	const double dzi = z - (z0 + iw.iz * dz);
 	
-    	// weights
-    	iw.w000 = (1.-dxi/dx) * (1.-dyi/dy) * (1.-dzi/dz);
-    	iw.w100 = (dxi/dx)    * (1.-dyi/dy) * (1.-dzi/dz);
-    	iw.w010 = (1.-dxi/dx) * (dyi/dy)    * (1.-dzi/dz);
-    	iw.w110 = (dxi/dx)    * (dyi/dy)    * (1.-dzi/dz);
-    	iw.w001 = (1.-dxi/dx) * (1.-dyi/dy) * (dzi/dz);
-    	iw.w101 = (dxi/dx)    * (1.-dyi/dy) * (dzi/dz);
-    	iw.w011 = (1.-dxi/dx) * (dyi/dy)    * (dzi/dz);
-    	iw.w111 = (dxi/dx)    * (dyi/dy)    * (dzi/dz);
+    	if (iw.ix >= 0 && iw.ix < nx - 1 && iw.iy >= 0 && iw.iy < ny - 1
+	    	    && iw.iz >= 0 && iw.iz < nz - 1){
 
+    	    // distances
+    	    const double dxi = x - (x0 + iw.ix * dx);
+    	    const double dyi = y - (y0 + iw.iy * dy);
+    	    const double dzi = z - (z0 + iw.iz * dz);
+	    
+    	    // weights
+    	    iw.w000 = (1.-dxi/dx) * (1.-dyi/dy) * (1.-dzi/dz);
+    	    iw.w100 = (dxi/dx)    * (1.-dyi/dy) * (1.-dzi/dz);
+    	    iw.w010 = (1.-dxi/dx) * (dyi/dy)    * (1.-dzi/dz);
+    	    iw.w110 = (dxi/dx)    * (dyi/dy)    * (1.-dzi/dz);
+    	    iw.w001 = (1.-dxi/dx) * (1.-dyi/dy) * (dzi/dz);
+    	    iw.w101 = (dxi/dx)    * (1.-dyi/dy) * (dzi/dz);
+    	    iw.w011 = (1.-dxi/dx) * (dyi/dy)    * (dzi/dz);
+    	    iw.w111 = (dxi/dx)    * (dyi/dy)    * (dzi/dz);
+	}
+	else{
+            iw.ix = -999; 
+            iw.iy = -999; 
+            iw.iz = -999; 
+	}
 	return iw;
 
 }	
+
+/*gpufun*/
+double interpolate_3d_map_scalar(
+	/*gpuglmem*/ const double* map,
+	   const IndicesAndWeights iw){
+	
+    double val;
+
+    if (iw.ix < 0){
+	 val = 0.;
+    }
+    else{
+	val = 
+    	       iw.w000 * map[iw.ix   + (iw.iy  ) * iw.nx + (iw.iz  ) * iw.nx * iw.ny]
+    	     + iw.w100 * map[iw.ix+1 + (iw.iy  ) * iw.nx + (iw.iz  ) * iw.nx * iw.ny]
+    	     + iw.w010 * map[iw.ix+  + (iw.iy+1) * iw.nx + (iw.iz  ) * iw.nx * iw.ny]
+    	     + iw.w110 * map[iw.ix+1 + (iw.iy+1) * iw.nx + (iw.iz  ) * iw.nx * iw.ny]
+    	     + iw.w001 * map[iw.ix   + (iw.iy  ) * iw.nx + (iw.iz+1) * iw.nx * iw.ny]
+    	     + iw.w101 * map[iw.ix+1 + (iw.iy  ) * iw.nx + (iw.iz+1) * iw.nx * iw.ny]
+    	     + iw.w011 * map[iw.ix+  + (iw.iy+1) * iw.nx + (iw.iz+1) * iw.nx * iw.ny]
+    	     + iw.w111 * map[iw.ix+1 + (iw.iy+1) * iw.nx + (iw.iz+1) * iw.nx * iw.ny];
+    }
+
+    return val;
+}
 
 #endif
