@@ -2,6 +2,7 @@ import numpy as np
 
 from pysixtrack.particles import Particles
 import xobjects as xo
+import xtrack as xt
 
 def test_spacecharge_gauss_qgauss():
     for frozen in [True, False]:
@@ -31,8 +32,7 @@ def test_spacecharge_gauss_qgauss():
             n_probes = 1000
 
             from xfields.test_support.temp_makepart import generate_particles_object
-            (particles, r_probes, _, _, _) = generate_particles_object(
-                                        context,
+            (particles_pyst, r_probes, _, _, _) = generate_particles_object(
                                         n_macroparticles,
                                         bunch_intensity,
                                         sigma_x,
@@ -44,6 +44,8 @@ def test_spacecharge_gauss_qgauss():
                                         r_max_probes,
                                         z_probes,
                                         theta_probes)
+            particles = xt.Particles(
+                    _context=context, pysixtrack_particles=particles_pyst)
 
             particles.x += x0
             particles.y += y0
@@ -54,7 +56,7 @@ def test_spacecharge_gauss_qgauss():
 
             from xfields import LongitudinalProfileQGaussian
             lprofile = LongitudinalProfileQGaussian(
-                    context=context,
+                    _context=context,
                     number_of_particles=bunch_intensity,
                     sigma_z=sigma_z,
                     z0=0.,

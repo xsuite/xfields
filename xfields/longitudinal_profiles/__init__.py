@@ -1,2 +1,3 @@
 from .coasting import LongitudinalProfileCoasting
 from .qgaussian import LongitudinalProfileQGaussian
+from .qgaussian import LongitudinalProfileQGaussianData

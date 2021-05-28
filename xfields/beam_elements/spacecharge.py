@@ -1,7 +1,11 @@
 from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
+from ..longitudinal_profiles import LongitudinalProfileQGaussianData
+from ..fieldmaps import BiGaussianFieldMapData
 
 from xobjects.context import context_default
+import xobjects as xo
+import xtrack as xt
 
 class SpaceCharge3D(object):
     """
@@ -142,6 +146,13 @@ class SpaceCharge3D(object):
         if self.apply_z_kick:
             particles.delta += factor*res[2]
 
+class SpaceChargeBiGaussianData(xo.Struct):
+    longitudinal_profile = LongitudinalProfileQGaussianData # Will become unionref
+    fieldmap = BiGaussianFieldMapData
+    length = xo.Float64
+
+
+
 class SpaceChargeBiGaussian(object):
 
     def __init__(self,
@@ -169,7 +180,7 @@ class SpaceChargeBiGaussian(object):
         self._init_update_on_track(update_on_track)
 
         self.fieldmap = BiGaussianFieldMap(
-                     context=context,
+                     _context=context,
                      mean_x=mean_x,
                      mean_y=mean_y,
                      sigma_x=sigma_x,
