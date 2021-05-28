@@ -4,9 +4,8 @@ from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
-from .base import FieldMap
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
-from ..contexts import add_default_kernels
+from ..general import _pkg_root
 
 class TriLinearInterpolatedFieldMapData(xo.Struct):
     x_min = xo.Float64
@@ -24,8 +23,48 @@ class TriLinearInterpolatedFieldMapData(xo.Struct):
     dphi_dy = xo.Float64[:]
     dphi_dz = xo.Float64[:]
 
-rename_trilinear = {ff.name:'_'+ff.name for ff in TriLinearInterpolatedFieldMapData._fields}
+TriLinearInterpolatedFieldMapData.extra_sources = [
+    _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
+    _pkg_root.joinpath('src/linear_interpolators.h'),
+    ]
 
+TriLinearInterpolatedFieldMapData.custom_kernels = {
+    'central_diff': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nelem'),
+            xo.Arg(xo.Int32,   pointer=False, name='row_size'),
+            xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
+            xo.Arg(xo.Float64, pointer=False, name='factor'),
+            xo.Arg(xo.Float64, pointer=True,  name='matrix'),
+            xo.Arg(xo.Float64, pointer=True,  name='res'),
+            ],
+        n_threads='nelem'
+        ),
+    'p2m_rectmesh3d': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xo.Float64, pointer=True, name='x'),
+            xo.Arg(xo.Float64, pointer=True, name='y'),
+            xo.Arg(xo.Float64, pointer=True, name='z'),
+            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Float64, pointer=True, name='grid1d'),
+            ],
+        n_threads='nparticles'
+        ),
+    }
+
+# I add undescores in front of the names so that I can define custom properties
+rename_trilinear = {ff.name:'_'+ff.name for ff
+                in TriLinearInterpolatedFieldMapData._fields}
 class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                                              rename=rename_trilinear)):
 
@@ -97,7 +136,6 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         if _context is None:
             _context = context_default
 
-
         self.updatable = updatable
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
 
@@ -125,6 +163,9 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                  dphi_dy = nelem,
                  dphi_dz = nelem)
 
+        self.context = self._buffer.context
+
+        self.compile_custom_kernels(only_if_needed=True)
 
         # These are slices (they are are on the context)
         self._rho_dev = self._rho.reshape(
@@ -153,8 +194,11 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         if phi is not None:
             self.update_phi(phi, force=True)
         else:
-            if solver is not None:
+            if solver is not None and rho is not None:
                 self.update_phi_from_rho()
+
+    def _assert_updatable(self):
+        assert self.updatable, 'This FieldMap is not updatable!'
 
     #@profile
     def get_values_at_points(self,

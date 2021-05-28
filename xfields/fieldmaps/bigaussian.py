@@ -3,9 +3,6 @@ import xobjects as xo
 import xtrack as xt
 from xobjects.context import context_default
 
-from .base import FieldMap
-from ..contexts import add_default_kernels
-
 def mean_and_std(a, weights=None):
     if weights is None:
         mean = a.sum()/len(a)
