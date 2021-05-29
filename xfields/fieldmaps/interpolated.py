@@ -249,34 +249,36 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         assert len(x) == len(y) == len(z)
 
         pos_in_buffer_of_maps_to_interp = []
-        mapsize = self.nx*self.ny*self.nz
         if return_rho:
-            pos_in_buffer_of_maps_to_interp.append(0*mapsize)
+            pos_in_buffer_of_maps_to_interp.append(
+                    self._xobject.rho._offset + self._xobject.rho._data_offset)
         if return_phi:
-            pos_in_buffer_of_maps_to_interp.append(1*mapsize)
+            pos_in_buffer_of_maps_to_interp.append(
+                    self._xobject.phi._offset + self._xobject.phi._data_offset)
         if return_dphi_dx:
-            pos_in_buffer_of_maps_to_interp.append(2*mapsize)
+            pos_in_buffer_of_maps_to_interp.append(
+                    self._xobject.dphi_dx._offset + self._xobject.dphi_dx._data_offset)
         if return_dphi_dy:
-            pos_in_buffer_of_maps_to_interp.append(3*mapsize)
+            pos_in_buffer_of_maps_to_interp.append(
+                    self._xobject.dphi_dy._offset + self._xobject.dphi_dy._data_offset)
         if return_dphi_dz:
-            pos_in_buffer_of_maps_to_interp.append(4*mapsize)
+            pos_in_buffer_of_maps_to_interp.append(
+                    self._xobject.dphi_dz._offset + self._xobject.dphi_dz._data_offset)
 
         pos_in_buffer_of_maps_to_interp = self.context.nparray_to_context_array(
-                        np.array(pos_in_buffer_of_maps_to_interp, dtype=np.int32))
+                        np.array(pos_in_buffer_of_maps_to_interp, dtype=np.int64))
         nmaps_to_interp = len(pos_in_buffer_of_maps_to_interp)
         buffer_out = self.context.zeros(
                 shape=(nmaps_to_interp * len(x),), dtype=np.float64)
         if nmaps_to_interp > 0:
-            self.context.kernels.m2p_rectmesh3d(
-                    nparticles=len(x),
+            self.context.kernels.TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
+                    fmap=self._xobject,
+                    n_points=len(x),
                     x=x, y=y, z=z,
-                    x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
-                    dx=self.dx, dy=self.dy, dz=self.dz,
-                    nx=self.nx, ny=self.ny, nz=self.nz,
                     n_quantities=nmaps_to_interp,
+                    buffer_mesh_quantities=self._buffer.buffer,
                     offsets_mesh_quantities=pos_in_buffer_of_maps_to_interp,
-                    mesh_quantity=self._maps_buffer_dev,
-                    particles_quantity=buffer_out)
+                    particles_quantities=buffer_out)
 
         # Split buffer 
         particles_quantities = [buffer_out[ii*len(x):(ii+1)*len(x)]
