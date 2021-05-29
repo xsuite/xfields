@@ -119,7 +119,7 @@ void TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
     	for (int iq=0; iq<n_quantities; iq++){
 	    particles_quantities[iq*n_points + pidx] = 
 		TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(
-	           (double*)(buffer_mesh_quantities + offsets_mesh_quantities[iq]),
+	           (/*gpuglmem*/ double*)(buffer_mesh_quantities + offsets_mesh_quantities[iq]),
 		   iw);
 	}
     }//end_vectorize
