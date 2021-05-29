@@ -13,8 +13,8 @@ import xtrack as xt
 #context = ContextCpu(omp_num_threads=0) # no omp
 context = ContextCpu(omp_num_threads=1) # omp
 #context = ContextCpu(omp_num_threads=48) # omp
-#context = ContextCupy(default_block_size=256)
-#context = ContextPyopencl('0.0')
+context = ContextCupy(default_block_size=256)
+context = ContextPyopencl('0.0')
 
 print(repr(context))
 
@@ -72,7 +72,6 @@ spcharge = SpaceCharge3D(
         solver='FFTSolver2p5D',
         gamma0=particles.gamma0)
 
-import pdb; pdb.set_trace()
 spcharge.track(particles)
 
 
