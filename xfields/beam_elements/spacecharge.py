@@ -145,7 +145,7 @@ class SpaceCharge3D(object):
         factor = -(charge_mass_ratio*self.length*(1.-beta0*beta0)
                     /(gamma0*beta0*beta0*clight*clight))
 
-        # Kick particles
+        ## Kick particles
         particles.px += factor*res[0]
         particles.py += factor*res[1]
         if self.apply_z_kick:
