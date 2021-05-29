@@ -510,6 +510,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         """
         return self.z_grid[1] - self.z_grid[0]
 
+    # TODO: these reshapes can be avoided by allocating 3d arrays directly in the xobject
     @property
     def rho(self):
         return self._rho.reshape(
