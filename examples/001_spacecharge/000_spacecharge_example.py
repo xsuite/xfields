@@ -51,43 +51,6 @@ from xfields.test_support.temp_makepart import generate_particles_object
 particles= xt.Particles(_context=context,
         pysixtrack_particles=particles_pyst)
 
-ttt = context.nparray_to_context_array(
-        np.linspace(0, 1, len(particles.x), dtype=np.float64))
-ttt2 = context.nparray_to_context_array(
-        np.linspace(0, 1, len(particles.x), dtype=np.float64))
-n_rep = 10
-t1=time.time()
-for _ in range(n_rep):
-    particles.px += ttt
-context.synchronize()
-t2=time.time()
-print(f'particles {(t2-t1)/n_rep*1000} ms')
-
-t1=time.time()
-px = particles.px
-for _ in range(n_rep):
-    px += ttt
-context.synchronize()
-t2=time.time()
-print(f'particles2 {(t2-t1)/n_rep*1000} ms')
-
-t1=time.time()
-for _ in range(n_rep):
-    px = particles.px
-    px[:] = px + ttt
-context.synchronize()
-t2=time.time()
-print(f'particle3 {(t2-t1)/n_rep*1000} ms')
-
-t1=time.time()
-for _ in range(n_rep):
-    ttt2 += ttt
-context.synchronize()
-t2=time.time()
-print(f'arrays {(t2-t1)/n_rep*1000} ms')
-prrrrrrrrr
-
-
 
 ######################
 # Space charge (PIC) #
