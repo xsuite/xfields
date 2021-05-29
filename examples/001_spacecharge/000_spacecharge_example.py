@@ -4,6 +4,7 @@ import numpy as np
 
 from pysixtrack.particles import Particles
 from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
+import xtrack as xt
 
 ###################
 # Choose context #
@@ -34,8 +35,8 @@ z_probes = 1.2*sigma_z
 n_probes = 1000
 
 from xfields.test_support.temp_makepart import generate_particles_object
-(particles, r_probes, x_probes,
-        y_probes, z_probes) = generate_particles_object(context,
+(particles_pyst, r_probes, x_probes,
+        y_probes, z_probes) = generate_particles_object(
                             n_macroparticles,
                             bunch_intensity,
                             sigma_x,
@@ -47,6 +48,8 @@ from xfields.test_support.temp_makepart import generate_particles_object
                             r_max_probes,
                             z_probes,
                             theta_probes)
+particles= xt.Particles(_context=context,
+        pysixtrack_particles=particles_pyst)
 
 ######################
 # Space charge (PIC) #

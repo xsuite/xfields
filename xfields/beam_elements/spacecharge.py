@@ -1,3 +1,6 @@
+from scipy.constants import e as qe
+from scipy.constants import c as clight
+
 from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
 from ..longitudinal_profiles import LongitudinalProfileQGaussianData
@@ -96,6 +99,7 @@ class SpaceCharge3D(object):
             scale_coordinates_in_solver=(1.,1.,1.)
 
         fieldmap = TriLinearInterpolatedFieldMap(
+                    _context=context,
                     rho=rho, phi=phi,
                     x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
                     x_range=x_range, y_range=y_range, z_range=z_range,
@@ -103,8 +107,7 @@ class SpaceCharge3D(object):
                     nx=nx, ny=ny, nz=nz,
                     solver=solver,
                     scale_coordinates_in_solver=scale_coordinates_in_solver,
-                    updatable=update_on_track,
-                    context=context)
+                    updatable=update_on_track)
 
         self.fieldmap = fieldmap
 
@@ -124,7 +127,7 @@ class SpaceCharge3D(object):
                     y_p=particles.y,
                     z_p=particles.zeta,
                     ncharges_p=particles.weight,
-                    q0_coulomb=particles.q0*particles.echarge)
+                    q0_coulomb=particles.q0*qe)
 
 
         res = self.fieldmap.get_values_at_points(
@@ -135,9 +138,8 @@ class SpaceCharge3D(object):
 
         #Build factor
         beta0 = particles.beta0
-        clight = float(particles.clight)
-        charge_mass_ratio = (particles.chi*particles.echarge*particles.q0
-                                /(particles.mass0*particles.echarge/(clight*clight)))
+        charge_mass_ratio = (particles.chi*qe*particles.q0
+                                /(particles.mass0*qe/(clight*clight)))
         gamma0 = particles.gamma0
         beta0 = particles.beta0
         factor = -(charge_mass_ratio*self.length*(1.-beta0*beta0)
