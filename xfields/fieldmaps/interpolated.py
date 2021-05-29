@@ -304,7 +304,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
             self._assert_updatable()
 
         if reset:
-            self._rho_dev[:,:,:] = 0.
+            self.rho[:,:,:] = 0.
 
         assert len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
 
@@ -315,7 +315,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                 x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
                 dx=self.dx, dy=self.dy, dz=self.dz,
                 nx=self.nx, ny=self.ny, nz=self.nz,
-                grid1d=self._rho_dev)
+                grid1d=self.rho)
 
         if update_phi:
             self.update_phi_from_rho(solver=solver)
@@ -337,7 +337,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
             self._assert_updatable()
 
         if reset:
-            self._rho_dev[:,:,:] = rho
+            self.rho[:,:,:] = rho
         else:
             raise ValueError('Not implemented!')
 
@@ -361,32 +361,32 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
             self._assert_updatable()
 
         if reset:
-            self._phi_dev.T[:,:,:] = phi.T
+            self.phi.T[:,:,:] = phi.T
         else:
             raise ValueError('Not implemented!')
 
         # Compute gradient
         self.context.kernels.central_diff(
-                nelem = self._phi_dev.size,
+                nelem = self.phi.size,
                 row_size = self.nx,
-                stride_in_dbl = self._phi_dev.strides[0]/8,
+                stride_in_dbl = self.phi.strides[0]/8,
                 factor = 1/(2*self.dx),
-                matrix = self._phi_dev,
-                res = self._dphi_dx_dev)
+                matrix = self.phi,
+                res = self.dphi_dx)
         self.context.kernels.central_diff(
-                nelem = self._phi_dev.size,
+                nelem = self.phi.size,
                 row_size = self.ny,
-                stride_in_dbl = self._phi_dev.strides[1]/8,
+                stride_in_dbl = self.phi.strides[1]/8,
                 factor = 1/(2*self.dy),
-                matrix = self._phi_dev,
-                res = self._dphi_dy_dev)
+                matrix = self.phi,
+                res = self.dphi_dy)
         self.context.kernels.central_diff(
-                nelem = self._phi_dev.size,
+                nelem = self.phi.size,
                 row_size = self.nz,
-                stride_in_dbl = self._phi_dev.strides[2]/8,
+                stride_in_dbl = self.phi.strides[2]/8,
                 factor = 1/(2*self.dz),
-                matrix = self._phi_dev,
-                res = self._dphi_dz_dev)
+                matrix = self.phi,
+                res = self.dphi_dz)
 
     #@profile
     def update_phi_from_rho(self, solver=None):
@@ -410,7 +410,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
             else:
                 raise ValueError('I have no solver to compute phi!')
 
-        new_phi = solver.solve(self._rho_dev)
+        new_phi = solver.solve(self.rho)
         self.update_phi(new_phi)
 
     def generate_solver(self, solver):
@@ -511,43 +511,33 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         return self.z_grid[1] - self.z_grid[0]
 
     @property
-    def _rho_dev(self):
+    def rho(self):
         return self._rho.reshape(
                 (self.nx, self.ny, self.nz), order='F')
-
-    @property
-    def _phi_dev(self):
-        return self._phi.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-
-    @property
-    def _dphi_dx_dev(self):
-        return self._dphi_dx.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-
-    @property
-    def _dphi_dy_dev(self):
-        return self._dphi_dy.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-
-    @property
-    def _dphi_dz_dev(self):
-        return self._dphi_dz.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-
-    @property
-    def rho(self):
-        """
-        Charge density at the grid points in Coulomb/m^3.
-        """
-        return self._rho_dev
 
     @property
     def phi(self):
         """
         Electric potential at the grid points in Volts.
         """
-        return self._phi_dev
+        return self._phi.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def dphi_dx(self):
+        return self._dphi_dx.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def dphi_dy(self):
+        return self._dphi_dy.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def dphi_dz(self):
+        return self._dphi_dz.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
 
 
 def _configure_grid(vname, v_grid, dv, v_range, nv):
