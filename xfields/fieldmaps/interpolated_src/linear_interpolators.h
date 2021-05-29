@@ -106,7 +106,7 @@ void TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
            /*gpuglmem*/ const double*  y,
            /*gpuglmem*/ const double*  z,
                         const int64_t  n_quantities,
-           /*gpuglmem*/ const char*    buffer_mesh_quantities,
+           /*gpuglmem*/ const int8_t*  buffer_mesh_quantities,
            /*gpuglmem*/ const int64_t* offsets_mesh_quantities,
            /*gpuglmem*/       double*  particles_quantities) {
 
@@ -115,7 +115,7 @@ void TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
 
 	const IndicesAndWeights iw = 
 		TriLinearInterpolatedFieldMap_compute_indeces_and_weights(
-	                                      fmap, x[pidx],  y[pidx],  z[pidx]);
+	                                      fmap, x[pidx], y[pidx], z[pidx]);
     	for (int iq=0; iq<n_quantities; iq++){
 	    particles_quantities[iq*n_points + pidx] = 
 		TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(

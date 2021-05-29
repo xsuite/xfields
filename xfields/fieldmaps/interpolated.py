@@ -61,6 +61,20 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
             ],
         n_threads='nparticles'
         ),
+    'TriLinearInterpolatedFieldMap_interpolate_3d_map_vector': xo.Kernel(
+        args=[
+            xo.Arg(TriLinearInterpolatedFieldMapData, pointer=False, name='fmap'),
+            xo.Arg(xo.Int64,   pointer=False, name='n_points'),
+            xo.Arg(xo.Float64, pointer=True,  name='x'),
+            xo.Arg(xo.Float64, pointer=True,  name='y'),
+            xo.Arg(xo.Float64, pointer=True,  name='z'),
+            xo.Arg(xo.Int64,   pointer=False, name='n_quantities'),
+            xo.Arg(xo.Int8,    pointer=True,  name='buffer_mesh_quantities'),
+            xo.Arg(xo.Int64,   pointer=True,  name='offsets_mesh_quantities'),
+            xo.Arg(xo.Float64, pointer=True,  name='particles_quantities'),
+            ],
+        n_threads='n_points'
+        ),
     }
 
 # I add undescores in front of the names so that I can define custom properties
