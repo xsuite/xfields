@@ -5,6 +5,7 @@ from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
 from ..longitudinal_profiles import LongitudinalProfileQGaussianData
 from ..fieldmaps import BiGaussianFieldMapData
+from ..fieldmaps import TriLinearInterpolatedFieldMapData
 from ..general import _pkg_root
 
 from xobjects.context import context_default
@@ -13,7 +14,12 @@ import xtrack as xt
 
 api_conf = {'prepointer': ' /*gpuglmem*/ '} #TODO: to be removed
 
-class SpaceCharge3D(object):
+class SpaceCharge3DData(xo.Struct):
+    fieldmap = TriLinearInterpolatedFieldMapData
+    length = xo.Float64
+
+
+class SpaceCharge3D(xt.dress_element(SpaceCharge3DData)):
     """
     Simulates the effect of space charge on a bunch.
 
@@ -69,7 +75,9 @@ class SpaceCharge3D(object):
     """
 
     def __init__(self,
-                 context=None,
+                 _context=None,
+                 _buffer=None,
+                 _offset=None,
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
@@ -81,13 +89,11 @@ class SpaceCharge3D(object):
                  solver=None,
                  gamma0=None):
 
-        if context is None:
-            context = context_default
+        if _context is None:
+            _context = context_default
 
-        self.length = length
         self.update_on_track = update_on_track
         self.apply_z_kick = apply_z_kick
-        self.context=context
 
         if solver=='FFTSolver3D':
             assert gamma0 is not None, ('To use FFTSolver3D '
@@ -99,7 +105,7 @@ class SpaceCharge3D(object):
             scale_coordinates_in_solver=(1.,1.,1.)
 
         fieldmap = TriLinearInterpolatedFieldMap(
-                    _context=context,
+                    _context=_context,
                     rho=rho, phi=phi,
                     x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
                     x_range=x_range, y_range=y_range, z_range=z_range,
@@ -109,7 +115,14 @@ class SpaceCharge3D(object):
                     scale_coordinates_in_solver=scale_coordinates_in_solver,
                     updatable=update_on_track)
 
-        self.fieldmap = fieldmap
+        self.xoinitialize(
+                 _context=_context,
+                 _buffer=_buffer,
+                 _offset=_offset,
+                 fieldmap=fieldmap,
+                 length=length)
+
+        self.context = self._buffer.context
 
     def track(self, particles):
 

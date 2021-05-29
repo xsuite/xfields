@@ -182,19 +182,6 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
 
         self.compile_custom_kernels(only_if_needed=True)
 
-        # These are slices (they are are on the context)
-        self._rho_dev = self._rho.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-        self._phi_dev = self._phi.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-        self._dphi_dx_dev = self._dphi_dx.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-        self._dphi_dy_dev = self._dphi_dy.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-        self._dphi_dz_dev = self._dphi_dz.reshape(
-                (self.nx, self.ny, self.nz), order='F')
-
-
         if isinstance(solver, str):
             self.solver = self.generate_solver(solver)
         else:
@@ -522,6 +509,31 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         Longitudinal cell size in meters.
         """
         return self.z_grid[1] - self.z_grid[0]
+
+    @property
+    def _rho_dev(self):
+        return self._rho.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def _phi_dev(self):
+        return self._phi.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def _dphi_dx_dev(self):
+        return self._dphi_dx.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def _dphi_dy_dev(self):
+        return self._dphi_dy.reshape(
+                (self.nx, self.ny, self.nz), order='F')
+
+    @property
+    def _dphi_dz_dev(self):
+        return self._dphi_dz.reshape(
+                (self.nx, self.ny, self.nz), order='F')
 
     @property
     def rho(self):

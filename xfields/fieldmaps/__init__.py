@@ -1,3 +1,4 @@
 from .interpolated import TriLinearInterpolatedFieldMap
+from .interpolated import TriLinearInterpolatedFieldMapData
 from .bigaussian import BiGaussianFieldMap, mean_and_std
 from .bigaussian import BiGaussianFieldMapData
