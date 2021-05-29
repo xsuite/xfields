@@ -17,7 +17,12 @@ api_conf = {'prepointer': ' /*gpuglmem*/ '} #TODO: to be removed
 class SpaceCharge3DData(xo.Struct):
     fieldmap = TriLinearInterpolatedFieldMapData
     length = xo.Float64
-
+srcs = []
+srcs.append(_pkg_root.joinpath('src/constants.h'))
+srcs.append(TriLinearInterpolatedFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
+SpaceCharge3DData.extra_sources = srcs
 
 class SpaceCharge3D(xt.dress_element(SpaceCharge3DData)):
     """
@@ -177,7 +182,7 @@ srcs.append(BiGaussianFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when 
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(LongitudinalProfileQGaussianData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
 SpaceChargeBiGaussianData.extra_sources = srcs
 
 
