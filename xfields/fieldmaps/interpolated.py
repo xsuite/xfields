@@ -26,7 +26,7 @@ class TriLinearInterpolatedFieldMapData(xo.Struct):
 TriLinearInterpolatedFieldMapData.extra_sources = [
     _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
     _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
-    _pkg_root.joinpath('src/linear_interpolators.h'),
+    _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
     ]
 
 TriLinearInterpolatedFieldMapData.custom_kernels = {

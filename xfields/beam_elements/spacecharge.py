@@ -157,8 +157,7 @@ class SpaceChargeBiGaussianData(xo.Struct):
 
 srcs = []
 srcs.append(_pkg_root.joinpath('src/constants.h'))
-srcs.append(_pkg_root.joinpath('src/complex_error_function.h'))
-srcs.append(_pkg_root.joinpath('src/fields_bigaussian.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append(BiGaussianFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(LongitudinalProfileQGaussianData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
