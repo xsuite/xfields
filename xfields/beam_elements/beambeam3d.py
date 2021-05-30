@@ -8,16 +8,16 @@ class BoostParameters(xo.Struct):
     calpha = xo.Float64
 
 class Sigmas(xo.Struct):
-    Sig_11_0 = xo.Float64
-    Sig_12_0 = xo.Float64
-    Sig_13_0 = xo.Float64
-    Sig_14_0 = xo.Float64
-    Sig_22_0 = xo.Float64
-    Sig_23_0 = xo.Float64
-    Sig_24_0 = xo.Float64
-    Sig_33_0 = xo.Float64
-    Sig_34_0 = xo.Float64
-    Sig_44_0 = xo.Float64
+    Sig_11 = xo.Float64
+    Sig_12 = xo.Float64
+    Sig_13 = xo.Float64
+    Sig_14 = xo.Float64
+    Sig_22 = xo.Float64
+    Sig_23 = xo.Float64
+    Sig_24 = xo.Float64
+    Sig_33 = xo.Float64
+    Sig_34 = xo.Float64
+    Sig_44 = xo.Float64
 
 class BeamBeamBiGaussian3DData(xo.Struct):
     q0 = xo.Float64
