@@ -18,7 +18,7 @@ class SpaceCharge3DData(xo.Struct):
     fieldmap = TriLinearInterpolatedFieldMapData
     length = xo.Float64
 srcs = []
-srcs.append(_pkg_root.joinpath('src/constants.h'))
+srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(TriLinearInterpolatedFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
@@ -156,7 +156,7 @@ class SpaceChargeBiGaussianData(xo.Struct):
     length = xo.Float64
 
 srcs = []
-srcs.append(_pkg_root.joinpath('src/constants.h'))
+srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append(BiGaussianFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))

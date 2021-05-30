@@ -14,7 +14,7 @@ class BeamBeamBiGaussian2DData(xo.Struct):
     fieldmap = BiGaussianFieldMapData
 
 srcs = []
-srcs.append(_pkg_root.joinpath('src/constants.h'))
+srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append(BiGaussianFieldMapData._gen_c_api(api_conf)[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
