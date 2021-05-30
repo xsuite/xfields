@@ -5,7 +5,6 @@ import numpy as np
 from numpy import sqrt, pi
 from scipy.special import gamma
 
-from ..contexts import add_default_kernels
 from ..general import _pkg_root
 
 class LongitudinalProfileQGaussianData(xo.Struct):
@@ -67,8 +66,6 @@ class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
         assert sigma_z is not None
 
         self.xoinitialize(_context=_context, _buffer=_buffer, _offset=_offset)
-
-        #add_default_kernels(self._buffer.context)
 
         self._z_min = z_min
         self._z_max = z_max
