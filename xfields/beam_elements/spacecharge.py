@@ -147,27 +147,29 @@ class SpaceCharge3D(xt.dress_element(SpaceCharge3DData)):
                     ncharges_p=particles.weight,
                     q0_coulomb=particles.q0*qe)
 
+        # call C tracking kernel
+        super().track(particles)
 
-        res = self.fieldmap.get_values_at_points(
-                            x=particles.x, y=particles.y, z=particles.zeta,
-                            return_rho=False, return_phi=False,
-                            return_dphi_dz=self.apply_z_kick)
-        # res = [dphi_dx, dphi_dy, (dphi_z)]
+        #res = self.fieldmap.get_values_at_points(
+        #                    x=particles.x, y=particles.y, z=particles.zeta,
+        #                    return_rho=False, return_phi=False,
+        #                    return_dphi_dz=self.apply_z_kick)
+        ## res = [dphi_dx, dphi_dy, (dphi_z)]
 
-        #Build factor
-        beta0 = particles.beta0
-        charge_mass_ratio = (particles.chi*qe*particles.q0
-                                /(particles.mass0*qe/(clight*clight)))
-        gamma0 = particles.gamma0
-        beta0 = particles.beta0
-        factor = -(charge_mass_ratio*self.length*(1.-beta0*beta0)
-                    /(gamma0*beta0*beta0*clight*clight))
+        ##Build factor
+        #beta0 = particles.beta0
+        #charge_mass_ratio = (particles.chi*qe*particles.q0
+        #                        /(particles.mass0*qe/(clight*clight)))
+        #gamma0 = particles.gamma0
+        #beta0 = particles.beta0
+        #factor = -(charge_mass_ratio*self.length*(1.-beta0*beta0)
+        #            /(gamma0*beta0*beta0*clight*clight))
 
-        ## Kick particles
-        particles.px += factor*res[0]
-        particles.py += factor*res[1]
-        if self.apply_z_kick:
-            particles.delta += factor*res[2]
+        ### Kick particles
+        #particles.px += factor*res[0]
+        #particles.py += factor*res[1]
+        #if self.apply_z_kick:
+        #    particles.delta += factor*res[2]
 
 class SpaceChargeBiGaussianData(xo.Struct):
     longitudinal_profile = LongitudinalProfileQGaussianData # Will become unionref

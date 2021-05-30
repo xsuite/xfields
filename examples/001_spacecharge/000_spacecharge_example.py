@@ -22,7 +22,7 @@ print(repr(context))
 # Generate particles and probes #
 #################################
 
-n_macroparticles = 100 #int(1e6)
+n_macroparticles = int(1e6)
 bunch_intensity = 2.5e11
 sigma_x = 3e-3
 sigma_y = 2e-3
