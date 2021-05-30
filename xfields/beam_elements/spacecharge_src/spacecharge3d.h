@@ -10,7 +10,7 @@ void SpaceCharge3D_track_local_particle(
     const double length = SpaceCharge3DData_get_length(el);
     /*gpuglmem*/ double* dphi_dx_map = SpaceCharge3DData_getp1_fieldmap_dphi_dx(el, 0);
     /*gpuglmem*/ double* dphi_dy_map = SpaceCharge3DData_getp1_fieldmap_dphi_dy(el, 0);
-    TriLinearInterpolatedFieldMapData fmap = SpaceCharge3DData_get_fieldmap(el);
+    TriLinearInterpolatedFieldMapData fmap = SpaceCharge3DData_getp_fieldmap(el);
 
     double const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
@@ -45,3 +45,5 @@ void SpaceCharge3D_track_local_particle(
 
     } //only_for_context cpu_serial cpu_openmp
 }
+
+#endif
