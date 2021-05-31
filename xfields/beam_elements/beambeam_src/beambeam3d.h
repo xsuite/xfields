@@ -326,7 +326,8 @@ void BoostParameters_boost_coordinates_inv(
 /*gpufun*/
 void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el, 
 		 	   LocalParticle part){
-
+	
+    // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
     const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_paramters(el);
     const Sigmas Sigmas_0_star = BeamBeamBiGaussian3DData_getp_Sigmas_0_star(el);
@@ -342,20 +343,12 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     const double py_CO = BeamBeamBiGaussian3DData_get_py_CO(el);
     const double sigma_CO = BeamBeamBiGaussian3DData_get_sigma_CO(el);
     const double delta_CO = BeamBeamBiGaussian3DData_get_delta_CO(el);
-
-
-
-    Dx_sub = xo.Float64
-    Dpx_sub = xo.Float64
-    Dy_sub = xo.Float64
-    Dpy_sub = xo.Float64
-    Dsigma_sub = xo.Float64
-    Ddelta_sub = xo.Float64
-
-
-
-
-
+    const double Dx_sub = BeamBeamBiGaussian3DData_get_Dx_sub(el); 
+    const double Dpx_sub = BeamBeamBiGaussian3DData_get_Dpx_sub(el);
+    const double Dy_sub =BeamBeamBiGaussian3DData_get_Dy_sub(el);
+    const double Dpy_sub =BeamBeamBiGaussian3DData_get_Dpy_sub(el);
+    const double Dsigma_sub =BeamBeamBiGaussian3DData_get_Dsigma_sub(el);
+    const double Ddelta_sub =BeamBeamBiGaussian3DData_get_Ddelta_sub(el);
     const double* N_part_per_slice_arr = 
 	    BeamBeamBiGaussian3DData_getp1_y_N_part_per_slice(el, 0);
     const double* x_slices_star_arr = 
@@ -482,12 +475,13 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     	delta = delta_star + delta_CO         - Ddelta_sub;
 
 
-    	NS(Particles_set_x_value)( particles, ii, x );
-    	NS(Particles_set_px_value)( particles, ii, px );
-    	NS(Particles_set_y_value)( particles, ii, y );
-    	NS(Particles_set_py_value)( particles, ii, py );
-    	NS(Particles_set_zeta_value)( particles, ii, zeta );
-    	NS(Particles_update_delta_value)( particles, ii, delta );
+    	LocalParticle_set_x_value(part, x);
+    	LocalParticle_set_px(part, px);
+    	LocalParticle_set_y(part, y);
+    	LocalParticle_set_py(part, ii, py);
+    	LocalParticle_set_zeta(part, zeta);
+    	//LocalParticle_update_delta(part, delta); //TODO Implement method
+	
 
     }
 }
