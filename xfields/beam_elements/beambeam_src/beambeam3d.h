@@ -219,7 +219,7 @@ void BoostParameters_boost_coordinates(
 }
 
 /*gpufun*/
-void BoostParameters_boost_coordinates(
+void BoostParameters_boost_coordinates_inv(
     	const BoostParameters bp,
     	double* x,
     	double* px,
@@ -291,5 +291,206 @@ void BoostParameters_boost_coordinates(
     *delta = delta_i;
 
 }
+
+/*gpufun*/ void compute_Gx_Gy(
+             const double  x, 
+             const double  y,
+             const double  sigma_x, 
+             const double  sigma_y,
+             const double  min_sigma_diff, 
+	     const double  Ex
+	     const double  Ey
+                   double* Gx_ptr,
+                   double* Gy_ptr){
+
+    if (fabs(sigma_x-sigma_y)i < min_sigma_diff){
+
+        double sigma = 0.5*(sigma_x+sigma_y);
+        Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
+                            *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+        Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
+                            *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+    }
+    else{
+
+        double Sig_11 = sigma_x*sigma_x;
+        double Sig_33 = sigma_y*sigma_y;
+
+        Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
+                    (sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
+        Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
+                      (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
+    }
+}
+
+/*gpufun*/
+void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el, 
+		 	   LocalParticle part){
+
+    const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
+    const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_paramters(el);
+    const Sigmas Sigmas_0_star = BeamBeamBiGaussian3DData_getp_Sigmas_0_star(el);
+    const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
+    const double threshold_singular = 
+	    BeamBeamBiGaussian3DData_get_threshold_singular(el);
+    const int N_slices = BeamBeamBiGaussian3DData_get_num_slices(el);
+    const double delta_x = BeamBeamBiGaussian3DData_get_delta_x(el);
+    const double delta_y = BeamBeamBiGaussian3DData_get_delta_y(el);
+    const double x_CO  = BeamBeamBiGaussian3DData_get_x_CO(el);     
+    const double px_CO = BeamBeamBiGaussian3DData_get_px_CO(el);
+    const double y_CO = BeamBeamBiGaussian3DData_get_y_CO(el);
+    const double py_CO = BeamBeamBiGaussian3DData_get_py_CO(el);
+    const double sigma_CO = BeamBeamBiGaussian3DData_get_sigma_CO(el);
+    const double delta_CO = BeamBeamBiGaussian3DData_get_delta_CO(el);
+
+
+
+    Dx_sub = xo.Float64
+    Dpx_sub = xo.Float64
+    Dy_sub = xo.Float64
+    Dpy_sub = xo.Float64
+    Dsigma_sub = xo.Float64
+    Ddelta_sub = xo.Float64
+
+
+
+
+
+    const double* N_part_per_slice_arr = 
+	    BeamBeamBiGaussian3DData_getp1_y_N_part_per_slice(el, 0);
+    const double* x_slices_star_arr = 
+	    BeamBeamBiGaussian3DData_getp1_x_slices_star(el, 0);
+    const double* y_slices_star_arr = 
+	    BeamBeamBiGaussian3DData_getp1_y_slices_star(el, 0);
+    const double* sigma_slices_star_arr = 
+	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
+
+    double const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
+    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
+        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
+
+    	double x = LocalParticle_get_x(part);
+    	double px = LocalParticle_get_px(part);
+    	double y = LocalParticle_get_y(part);
+    	double py = LocalParticle_get_py(part);
+    	double zeta = LocalParticle_get_zeta(part);
+    	double delta = LocalParticle_get_delta(part);
+
+    	const double q0 = QELEM*LocalParticle_get_q0(part); // Coulomb
+    	const double p0c = LocalParticle_get_p0c(part); // eV
+
+    	const double P0 = p0c/C_LIGHT*QELEM;
+
+    	// Change reference frame
+    	double x_star =     x     - x_CO    - delta_x;
+    	double px_star =    px    - px_CO;
+    	double y_star =     y     - y_CO    - delta_y;
+    	double py_star =    py    - py_CO;
+    	double sigma_star = zeta  - sigma_CO;
+    	double delta_star = delta - delta_CO;
+
+    	// Boost coordinates of the weak beam
+	BoostParameters_boost_coordinates(bpar,
+    	    &x_star, &px_star, &y_star, &py_star,
+    	    &sigma_star, &delta_star);
+
+
+    	// Synchro beam
+    	for (int i_slice=0; i_slice<N_slices; i_slice++)
+    	{
+    	    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
+    	    const double x_slice_star = x_slices_star_arr[i_slice];
+    	    const double y_slice_star = y_slices_star_arr[i_slice];
+
+    	    //Compute force scaling factor
+    	    const double Ksl = N_part_per_slice_arr[i_slice]*q0_bb*q0/(P0* SIXTRL_C_LIGHT);
+
+    	    //Identify the Collision Point (CP)
+    	    const double S = 0.5*(sigma_star - sigma_slice_star);
+
+    	    // Propagate sigma matrix
+    	    double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
+    	    double dS_Sig_11_hat_star, dS_Sig_33_hat_star, dS_costheta, dS_sintheta;
+
+    	    // Get strong beam shape at the CP
+	    Sigmas_propagate(Sigmas_0_star, threshold_singular, 1
+    	        &Sig_11_hat_star, &Sig_33_hat_star,
+    	        &costheta, &sintheta,
+    	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
+    	        &dS_costheta, &dS_sintheta);
+
+    	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
+    	    const double x_bar_star = x_star + px_star*S - x_slice_star;
+    	    const double y_bar_star = y_star + py_star*S - y_slice_star;
+
+    	    // Move to the uncoupled reference frame
+    	    const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
+    	    const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
+
+    	    // Compute derivatives of the transformation
+    	    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
+    	    const double dS_y_bar_hat_star = -x_bar_star*dS_sintheta +y_bar_star*dS_costheta;
+
+    	    // Get transverse fieds
+    	    double Ex, Ey;
+    	    get_Ex_Ey_gauss(x_bar_hat_star, y_bar_hat_star,
+    	        sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
+    	        &Ex, &Ey);
+	
+	    //compute Gs
+	    double Gx, Gy;
+	    compute_Gx_Gy(x, y, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
+                min_sigma_diff, Ex, Ey, &Gx, &Gy);
+
+    	    // Compute kicks
+    	    double Fx_hat_star = Ksl*Ex;
+    	    double Fy_hat_star = Ksl*Ey;
+    	    double Gx_hat_star = Ksl*Gx;
+    	    double Gy_hat_star = Ksl*Gy;
+
+    	    // Move kisks to coupled reference frame
+    	    double Fx_star = Fx_hat_star*costheta - Fy_hat_star*sintheta;
+    	    double Fy_star = Fx_hat_star*sintheta + Fy_hat_star*costheta;
+
+    	    // Compute longitudinal kick
+    	    double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
+    	                   Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
+
+    	    // Apply the kicks (Hirata's synchro-beam)
+    	    delta_star = delta_star + Fz_star+0.5*(
+    	                Fx_star*(px_star+0.5*Fx_star)+
+    	                Fy_star*(py_star+0.5*Fy_star));
+    	    x_star = x_star - S*Fx_star;
+    	    px_star = px_star + Fx_star;
+    	    y_star = y_star - S*Fy_star;
+    	    py_star = py_star + Fy_star;
+
+    	}
+
+    	// Inverse boost on the coordinates of the weak beam
+	BoostParameters_boost_coordinates_inv(bpar,
+    	    &x_star, &px_star, &y_star, &py_star,
+    	    &sigma_star, &delta_star);
+
+
+    	// Go back to original reference frame and remove dipolar effect
+    	x =     x_star     + x_CO   + delta_x - Dx_sub;
+    	px =    px_star    + px_CO            - Dpx_sub;
+    	y =     y_star     + y_CO   + delta_y - Dy_sub;
+    	py =    py_star    + py_CO            - Dpy_sub;
+    	zeta =  sigma_star + sigma_CO         - Dsigma_sub;
+    	delta = delta_star + delta_CO         - Ddelta_sub;
+
+
+    	NS(Particles_set_x_value)( particles, ii, x );
+    	NS(Particles_set_px_value)( particles, ii, px );
+    	NS(Particles_set_y_value)( particles, ii, y );
+    	NS(Particles_set_py_value)( particles, ii, py );
+    	NS(Particles_set_zeta_value)( particles, ii, zeta );
+    	NS(Particles_update_delta_value)( particles, ii, delta );
+
+    }
+}
+
 
 #endif
