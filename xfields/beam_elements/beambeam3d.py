@@ -1,4 +1,9 @@
 import xobjects as xo
+import xtrack as xt
+
+from ..general import _pkg_root
+
+api_conf = {'prepointer': ' /*gpuglmem*/ '}
 
 class BoostParameters(xo.Struct):
     sphi = xo.Float64
@@ -40,8 +45,20 @@ class BeamBeamBiGaussian3DData(xo.Struct):
     Dpy_sub = xo.Float64
     Dsigma_sub = xo.Float64
     Ddelta_sub = xo.Float64
-    N_part_per_slice = xo.float64[:]
-    x_slices_star = xo.float64[:]
-    y_slices_star = xo.float64[:]
-    sigma_slices_star = xo.float64[:]
+    N_part_per_slice = xo.Float64[:]
+    x_slices_star = xo.Float64[:]
+    y_slices_star = xo.Float64[:]
+    sigma_slices_star = xo.Float64[:]
 
+srcs = []
+srcs.append(_pkg_root.joinpath('headers/constants.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
+srcs.append('#define NOFIELDMAP') #TODO Remove this workaound
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
+srcs.append(Sigmas._gen_c_api(api_conf)[0]) #TODO This shouldnt be needed
+srcs.append(BoostParameters._gen_c_api(api_conf)[0]) #TODO This shouldnt be needed
+srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'))
+BeamBeamBiGaussian3DData.extra_sources = srcs
+
+class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
+        pass

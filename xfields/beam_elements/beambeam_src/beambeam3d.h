@@ -20,16 +20,16 @@ void Sigmas_propagate(
         double* dS_costheta_ptr,
         double* dS_sintheta_ptr)
 {
-    double const Sig_11_0 = Sigmas_get_Sig_11(sigmas);
-    double const Sig_12_0 = Sigmas_get_Sig_12(sigmas);
-    double const Sig_13_0 = Sigmas_get_Sig_13(sigmas);
-    double const Sig_14_0 = Sigmas_get_Sig_14(sigmas);
-    double const Sig_22_0 = Sigmas_get_Sig_22(sigmas);
-    double const Sig_23_0 = Sigmas_get_Sig_23(sigmas);
-    double const Sig_24_0 = Sigmas_get_Sig_24(sigmas);
-    double const Sig_33_0 = Sigmas_get_Sig_33(sigmas);
-    double const Sig_34_0 = Sigmas_get_Sig_34(sigmas);
-    double const Sig_44_0 = Sigmas_get_Sig_44(sigmas);
+    double const Sig_11_0 = Sigmas_get_Sig_11(sigmas_0);
+    double const Sig_12_0 = Sigmas_get_Sig_12(sigmas_0);
+    double const Sig_13_0 = Sigmas_get_Sig_13(sigmas_0);
+    double const Sig_14_0 = Sigmas_get_Sig_14(sigmas_0);
+    double const Sig_22_0 = Sigmas_get_Sig_22(sigmas_0);
+    double const Sig_23_0 = Sigmas_get_Sig_23(sigmas_0);
+    double const Sig_24_0 = Sigmas_get_Sig_24(sigmas_0);
+    double const Sig_33_0 = Sigmas_get_Sig_33(sigmas_0);
+    double const Sig_34_0 = Sigmas_get_Sig_34(sigmas_0);
+    double const Sig_44_0 = Sigmas_get_Sig_44(sigmas_0);
 
     // Propagate sigma matrix
     double const Sig_11 = Sig_11_0 + 2.*Sig_12_0*S+Sig_22_0*S*S;
@@ -298,14 +298,16 @@ void BoostParameters_boost_coordinates_inv(
              const double  sigma_x, 
              const double  sigma_y,
              const double  min_sigma_diff, 
-	     const double  Ex
-	     const double  Ey
+	     const double  Ex,
+	     const double  Ey,
                    double* Gx_ptr,
                    double* Gy_ptr){
 
-    if (fabs(sigma_x-sigma_y)i < min_sigma_diff){
+    double Gx, Gy;
 
-        double sigma = 0.5*(sigma_x+sigma_y);
+    if (fabs(sigma_x-sigma_y) < min_sigma_diff){
+
+        const double sigma = 0.5*(sigma_x+sigma_y);
         Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
                             *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
         Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
@@ -313,23 +315,26 @@ void BoostParameters_boost_coordinates_inv(
     }
     else{
 
-        double Sig_11 = sigma_x*sigma_x;
-        double Sig_33 = sigma_y*sigma_y;
+        const double Sig_11 = sigma_x*sigma_x;
+        const double Sig_33 = sigma_y*sigma_y;
 
         Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
                     (sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
         Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
                       (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
     }
+
+    *Gx_ptr = Gx;
+    *Gy_ptr = Gy;
 }
 
 /*gpufun*/
-void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el, 
-		 	   LocalParticle part){
+void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, 
+		 	   LocalParticle* part){
 	
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
-    const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_paramters(el);
+    const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
     const Sigmas Sigmas_0_star = BeamBeamBiGaussian3DData_getp_Sigmas_0_star(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = 
@@ -350,7 +355,7 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     const double Dsigma_sub =BeamBeamBiGaussian3DData_get_Dsigma_sub(el);
     const double Ddelta_sub =BeamBeamBiGaussian3DData_get_Ddelta_sub(el);
     const double* N_part_per_slice_arr = 
-	    BeamBeamBiGaussian3DData_getp1_y_N_part_per_slice(el, 0);
+	    BeamBeamBiGaussian3DData_getp1_N_part_per_slice(el, 0);
     const double* x_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_x_slices_star(el, 0);
     const double* y_slices_star_arr = 
@@ -396,7 +401,7 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     	    const double y_slice_star = y_slices_star_arr[i_slice];
 
     	    //Compute force scaling factor
-    	    const double Ksl = N_part_per_slice_arr[i_slice]*q0_bb*q0/(P0* SIXTRL_C_LIGHT);
+    	    const double Ksl = N_part_per_slice_arr[i_slice]*q0_bb*q0/(P0 * C_LIGHT);
 
     	    //Identify the Collision Point (CP)
     	    const double S = 0.5*(sigma_star - sigma_slice_star);
@@ -406,7 +411,7 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     	    double dS_Sig_11_hat_star, dS_Sig_33_hat_star, dS_costheta, dS_sintheta;
 
     	    // Get strong beam shape at the CP
-	    Sigmas_propagate(Sigmas_0_star, threshold_singular, 1
+	    Sigmas_propagate(Sigmas_0_star, S, threshold_singular, 1,
     	        &Sig_11_hat_star, &Sig_33_hat_star,
     	        &costheta, &sintheta,
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
@@ -428,6 +433,7 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     	    double Ex, Ey;
     	    get_Ex_Ey_gauss(x_bar_hat_star, y_bar_hat_star,
     	        sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
+		min_sigma_diff,
     	        &Ex, &Ey);
 	
 	    //compute Gs
@@ -475,10 +481,10 @@ void BeamBeamBiGaussian3D(BeamBeamBiGaussian3DData el,
     	delta = delta_star + delta_CO         - Ddelta_sub;
 
 
-    	LocalParticle_set_x_value(part, x);
+    	LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
     	LocalParticle_set_y(part, y);
-    	LocalParticle_set_py(part, ii, py);
+    	LocalParticle_set_py(part, py);
     	LocalParticle_set_zeta(part, zeta);
     	//LocalParticle_update_delta(part, delta); //TODO Implement method
 	
