@@ -392,6 +392,12 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    &x_star, &px_star, &y_star, &py_star,
     	    &sigma_star, &delta_star);
 
+    	printf("x_star=%.10e\n", x_star);
+	printf("px_star=%.10e\n", px_star);
+	printf("y_star=%.10e\n", y_star);
+	printf("py_star=%.10e\n", py_star);
+    	printf("sigma_star=%.10e\n", sigma_star);
+	printf("delta_star=%.10e\n", delta_star);
 
     	// Synchro beam
     	for (int i_slice=0; i_slice<N_slices; i_slice++)
@@ -417,6 +423,15 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
     	        &dS_costheta, &dS_sintheta);
 
+    	    printf("Sig_11_hat_star=%.5e\n",Sig_11_hat_star);
+	    printf("Sig_33_hat_star=%.5e\n",Sig_33_hat_star);
+    	    printf("costheta=%.5e\n",costheta);
+            printf("sintheta=%.5e\n",sintheta);
+    	    printf("dS_Sig_11_hat_star=%.5e\n",dS_Sig_11_hat_star);
+	    printf("dS_Sig_33_hat_star=%.5e\n",dS_Sig_33_hat_star);
+    	    printf("dS_costheta=%.5e\n",dS_costheta);
+            printf("dS_sintheta=%.5e\n",dS_sintheta);
+
     	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
     	    const double x_bar_star = x_star + px_star*S - x_slice_star;
     	    const double y_bar_star = y_star + py_star*S - y_slice_star;
@@ -435,6 +450,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	        sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
 		min_sigma_diff,
     	        &Ex, &Ey);
+
+	    printf("Ex=%.5f\n", Ex);
+	    printf("Ey=%.5fi\n", Ey);
 	
 	    //compute Gs
 	    double Gx, Gy;
@@ -459,6 +477,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    delta_star = delta_star + Fz_star+0.5*(
     	                Fx_star*(px_star+0.5*Fx_star)+
     	                Fy_star*(py_star+0.5*Fy_star));
+	    printf("delta_star=%.10f\n", delta_star);
     	    x_star = x_star - S*Fx_star;
     	    px_star = px_star + Fx_star;
     	    y_star = y_star - S*Fy_star;
@@ -471,6 +490,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    &x_star, &px_star, &y_star, &py_star,
     	    &sigma_star, &delta_star);
 
+	printf("delta_ret=%.10e\n", delta_star);
 
     	// Go back to original reference frame and remove dipolar effect
     	x =     x_star     + x_CO   + delta_x - Dx_sub;

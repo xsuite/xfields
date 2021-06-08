@@ -15,8 +15,8 @@ phi = 0.8
 # separations
 x_bb_co=5e-3
 y_bb_co=-4e-3
-charge_slices=np.array([1e18, 2e18, 5e18])
-z_slices=np.array([-60., 2., 55.])
+charge_slices=np.array([1e18, 2e18, 5e18])[:1]
+z_slices=np.array([-60., 2., 55.])[:1]
 
 # Single particle properties
 q_part = qe
@@ -45,13 +45,13 @@ Sig_24_0, Sig_33_0, Sig_34_0, Sig_44_0) = (
 0., 0., 0.,
 0., 20e-6, 0., 0.)
 
-## strong beam shape at the IP (coupled beam)
-#(Sig_11_0, Sig_12_0, Sig_13_0,
-#Sig_14_0, Sig_22_0, Sig_23_0,
-#Sig_24_0, Sig_33_0, Sig_34_0, Sig_44_0) = (
-#  8.4282060230000004e-06,  1.8590458800000001e-07,  -3.5512334410000001e-06,
-# -3.8254462239999997e-08, 4.101510281e-09, -7.5517657920000006e-08,
-# -8.1134615060000002e-10, 1.031446898e-05, 1.177863077e-07, 1.3458251810000001e-09)
+# strong beam shape at the IP (coupled beam)
+(Sig_11_0, Sig_12_0, Sig_13_0,
+Sig_14_0, Sig_22_0, Sig_23_0,
+Sig_24_0, Sig_33_0, Sig_34_0, Sig_44_0) = (
+  8.4282060230000004e-06,  1.8590458800000001e-07,  -3.5512334410000001e-06,
+ -3.8254462239999997e-08, 4.101510281e-09, -7.5517657920000006e-08,
+ -8.1134615060000002e-10, 1.031446898e-05, 1.177863077e-07, 1.3458251810000001e-09)
 
 
 x_co = 2e-3
@@ -66,7 +66,7 @@ d_px=1.6e-6
 d_y=-1.7e-3
 d_py=-1.8e-6
 d_zeta=0.019
-d_delta=2e-4
+d_delta=3e-4
 
 bb_pyst = pysixtrack.elements.BeamBeam6D(
         phi=phi, alpha=alpha,
@@ -84,18 +84,18 @@ bb_pyst = pysixtrack.elements.BeamBeam6D(
         sigma_33=Sig_33_0,
         sigma_34=Sig_34_0,
         sigma_44=Sig_44_0,
-        x_co=x_co,
-        px_co=px_co,
-        y_co=y_co,
-        py_co=py_co,
-        zeta_co=zeta_co,
-        delta_co=delta_co,
-        d_x=d_x,
-        d_px=d_px,
-        d_y=d_y,
-        d_py=d_py,
-        d_zeta=d_zeta,
-        d_delta=d_delta
+        #x_co=x_co,
+        #px_co=px_co,
+        #y_co=y_co,
+        #py_co=py_co,
+        #zeta_co=zeta_co,
+        #delta_co=delta_co,
+        #d_x=d_x,
+        #d_px=d_px,
+        #d_y=d_y,
+        #d_py=d_py,
+        #d_zeta=d_zeta,
+        #d_delta=d_delta
         )
 
 bb = xf.BeamBeamBiGaussian3D.from_pysixtrack(bb_pyst)
@@ -120,5 +120,5 @@ for cc in 'x px y py zeta delta'.split():
     print('\n')
     print(f'pysixtrack: {cc} = {val_ref:.12e}')
     print(f'xsuite:     {cc} = {val_test:.12e}')
-    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=1e-12)
+    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=1e-8)
 
