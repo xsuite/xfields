@@ -486,7 +486,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	LocalParticle_set_y(part, y);
     	LocalParticle_set_py(part, py);
     	LocalParticle_set_zeta(part, zeta);
-    	//LocalParticle_update_delta(part, delta); //TODO Implement method
+    	LocalParticle_update_delta(part, delta);
 	
 
     }
