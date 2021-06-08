@@ -9,6 +9,8 @@ void BeamBeamBiGaussian2D_track_local_particle(
     double const bb_q0 = BeamBeamBiGaussian2DData_get_q0(el);
     double const bb_n_particles = BeamBeamBiGaussian2DData_get_n_particles(el);
     double const bb_beta0 = BeamBeamBiGaussian2DData_get_beta0(el); 
+    double const bb_d_px = BeamBeamBiGaussian2DData_get_d_px(el);
+    double const bb_d_py = BeamBeamBiGaussian2DData_get_d_py(el);
  
     double const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
@@ -33,8 +35,8 @@ void BeamBeamBiGaussian2D_track_local_particle(
                     /(part_gamma0*part_beta0*C_LIGHT*C_LIGHT)
                     *(1+bb_beta0*part_beta0)/(bb_beta0 + part_beta0));
 
-	LocalParticle_add_to_px(part, factor*dphi_dx);
-	LocalParticle_add_to_py(part, factor*dphi_dy);
+	LocalParticle_add_to_px(part, factor*dphi_dx-bb_d_px);
+	LocalParticle_add_to_py(part, factor*dphi_dy-bb_d_py);
 
     } //only_for_context cpu_serial cpu_openmp
 

@@ -114,6 +114,9 @@ class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
             len(bb6d_data.sigma_slices_star))
 
         bb = cls(
+            _context=_context,
+            _buffer=_buffer,
+            _offset=_offset,
             q0 = bb6d_data.q_part,
             boost_parameters = {
                 'sphi': bb6d_data.parboost.sphi,
