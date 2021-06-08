@@ -59,18 +59,18 @@ bb_pyst = pysixtrack.elements.BeamBeam6D(
         sigma_33=Sig_33_0,
         sigma_34=Sig_34_0,
         sigma_44=Sig_44_0,
-        #x_co=x_co,
-        #px_co=px_co,
-        #y_co=y_co,
-        #py_co=py_co,
-        #zeta_co=zeta_co,
-        #delta_co=delta_co,
-        #d_x=d_x,
-        #d_px=d_px,
-        #d_y=d_y,
-        #d_py=d_py,
-        #d_zeta=d_zeta,
-        #d_delta=d_delta
+        x_co=x_co,
+        px_co=px_co,
+        y_co=y_co,
+        py_co=py_co,
+        zeta_co=zeta_co,
+        delta_co=delta_co,
+        d_x=d_x,
+        d_px=d_px,
+        d_y=d_y,
+        d_py=d_py,
+        d_zeta=d_zeta,
+        d_delta=d_delta
         )
 
 params = bb_pyst.to_dict(keepextra=True)
