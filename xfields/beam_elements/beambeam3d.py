@@ -1,3 +1,4 @@
+from scipy.constants import e as qe
 import xobjects as xo
 import xtrack as xt
 
@@ -61,4 +62,97 @@ srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'))
 BeamBeamBiGaussian3DData.extra_sources = srcs
 
 class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
-        pass
+
+    @classmethod
+    def from_pysixtrack(cls, pysixtrack_beambeam=None,
+            _context=None, _buffer=None, _offset=None):
+
+        import pysixtrack
+        assert isinstance(pysixtrack_beambeam,
+                          pysixtrack.elements.BeamBeam6D)
+
+        params = pysixtrack_beambeam.to_dict(keepextra=True)
+        bb6d_data = pysixtrack.BB6Ddata.BB6D_init(
+                q_part=qe, # the pysixtrack input has the charge
+                           # of the slices in elementary charges 
+                phi=params["phi"],
+                alpha=params["alpha"],
+                delta_x=params["x_bb_co"],
+                delta_y=params["y_bb_co"],
+                N_part_per_slice=params["charge_slices"],
+                z_slices=params["zeta_slices"],
+                Sig_11_0=params["sigma_11"],
+                Sig_12_0=params["sigma_12"],
+                Sig_13_0=params["sigma_13"],
+                Sig_14_0=params["sigma_14"],
+                Sig_22_0=params["sigma_22"],
+                Sig_23_0=params["sigma_23"],
+                Sig_24_0=params["sigma_24"],
+                Sig_33_0=params["sigma_33"],
+                Sig_34_0=params["sigma_34"],
+                Sig_44_0=params["sigma_44"],
+                x_CO=params["x_co"],
+                px_CO=params["px_co"],
+                y_CO=params["y_co"],
+                py_CO=params["py_co"],
+                sigma_CO=params["zeta_co"],
+                delta_CO=params["delta_co"],
+                min_sigma_diff=params["min_sigma_diff"],
+                threshold_singular=params["threshold_singular"],
+                Dx_sub=params["d_x"],
+                Dpx_sub=params["d_px"],
+                Dy_sub=params["d_y"],
+                Dpy_sub=params["d_py"],
+                Dsigma_sub=params["d_zeta"],
+                Ddelta_sub=params["d_delta"],
+                enabled=params["enabled"],
+            )
+        assert(
+            len(bb6d_data.N_part_per_slice) ==
+            len(bb6d_data.x_slices_star) ==
+            len(bb6d_data.y_slices_star) ==
+            len(bb6d_data.sigma_slices_star))
+
+        bb = cls(
+            q0 = bb6d_data.q_part,
+            boost_parameters = {
+                'sphi': bb6d_data.parboost.sphi,
+                'cphi': bb6d_data.parboost.cphi,
+                'tphi': bb6d_data.parboost.tphi,
+                'salpha': bb6d_data.parboost.salpha,
+                'calpha': bb6d_data.parboost.calpha},
+            Sigmas_0_star = {
+                'Sig_11': bb6d_data.Sigmas_0_star.Sig_11_0,
+                'Sig_12': bb6d_data.Sigmas_0_star.Sig_12_0,
+                'Sig_13': bb6d_data.Sigmas_0_star.Sig_13_0,
+                'Sig_14': bb6d_data.Sigmas_0_star.Sig_14_0,
+                'Sig_22': bb6d_data.Sigmas_0_star.Sig_22_0,
+                'Sig_23': bb6d_data.Sigmas_0_star.Sig_23_0,
+                'Sig_24': bb6d_data.Sigmas_0_star.Sig_24_0,
+                'Sig_33': bb6d_data.Sigmas_0_star.Sig_33_0,
+                'Sig_34': bb6d_data.Sigmas_0_star.Sig_34_0,
+                'Sig_44': bb6d_data.Sigmas_0_star.Sig_44_0},
+            min_sigma_diff = bb6d_data.min_sigma_diff,
+            threshold_singular = bb6d_data.threshold_singular,
+            delta_x = bb6d_data.delta_x,
+            delta_y = bb6d_data.delta_y,
+            x_CO = bb6d_data.x_CO,
+            px_CO = bb6d_data.px_CO,
+            y_CO = bb6d_data.y_CO,
+            py_CO = bb6d_data.py_CO,
+            sigma_CO = bb6d_data.sigma_CO,
+            delta_CO = bb6d_data.delta_CO,
+            Dx_sub = bb6d_data.Dx_sub,
+            Dpx_sub = bb6d_data.Dpx_sub,
+            Dy_sub = bb6d_data.Dy_sub,
+            Dpy_sub = bb6d_data.Dpy_sub,
+            Dsigma_sub = bb6d_data.Dsigma_sub,
+            Ddelta_sub = bb6d_data.Ddelta_sub,
+            num_slices = len(bb6d_data.N_part_per_slice),
+            N_part_per_slice = bb6d_data.N_part_per_slice,
+            x_slices_star = bb6d_data.x_slices_star,
+            y_slices_star = bb6d_data.y_slices_star,
+            sigma_slices_star = bb6d_data.sigma_slices_star,
+            )
+
+        return bb
