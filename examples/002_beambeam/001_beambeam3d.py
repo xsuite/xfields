@@ -107,8 +107,50 @@ bb6d_data = pysixtrack.BB6Ddata.BB6D_init(
                 Ddelta_sub=params["d_delta"],
                 enabled=params["enabled"],
             )
+assert(
+    len(bb6d_data.N_part_per_slice) ==
+    len(bb6d_data.x_slices_star) ==
+    len(bb6d_data.y_slices_star) ==
+    len(bb6d_data.sigma_slices_star))
 
 bb = xf.BeamBeamBiGaussian3D(
-        N_part_per_slice=5, x_slices_star=5,
-        y_slices_star=5, sigma_slices_star=5)
-
+    q0 = bb6d_data.q_part,
+    boost_parameters = {
+        'sphi': bb6d_data.parboost.sphi,
+        'cphi': bb6d_data.parboost.cphi,
+        'tphi': bb6d_data.parboost.tphi,
+        'salpha': bb6d_data.parboost.salpha,
+        'calpha': bb6d_data.parboost.calpha},
+    Sigmas_0_star = {
+        'Sig_11': bb6d_data.Sigmas_0_star.Sig_11_0,
+        'Sig_12': bb6d_data.Sigmas_0_star.Sig_12_0,
+        'Sig_13': bb6d_data.Sigmas_0_star.Sig_13_0,
+        'Sig_14': bb6d_data.Sigmas_0_star.Sig_14_0,
+        'Sig_22': bb6d_data.Sigmas_0_star.Sig_22_0,
+        'Sig_23': bb6d_data.Sigmas_0_star.Sig_23_0,
+        'Sig_24': bb6d_data.Sigmas_0_star.Sig_24_0,
+        'Sig_33': bb6d_data.Sigmas_0_star.Sig_33_0,
+        'Sig_34': bb6d_data.Sigmas_0_star.Sig_34_0,
+        'Sig_44': bb6d_data.Sigmas_0_star.Sig_44_0},
+    min_sigma_diff = bb6d_data.min_sigma_diff,
+    threshold_singular = bb6d_data.threshold_singular,
+    delta_x = bb6d_data.delta_x,
+    delta_y = bb6d_data.delta_y,
+    x_CO = bb6d_data.x_CO,
+    px_CO = bb6d_data.px_CO,
+    y_CO = bb6d_data.y_CO,
+    py_CO = bb6d_data.py_CO,
+    sigma_CO = bb6d_data.sigma_CO,
+    delta_CO = bb6d_data.delta_CO,
+    Dx_sub = bb6d_data.Dx_sub,
+    Dpx_sub = bb6d_data.Dpx_sub,
+    Dy_sub = bb6d_data.Dy_sub,
+    Dpy_sub = bb6d_data.Dpy_sub,
+    Dsigma_sub = bb6d_data.Dsigma_sub,
+    Ddelta_sub = bb6d_data.Ddelta_sub,
+    num_slices = len(bb6d_data.N_part_per_slice),
+    N_part_per_slice = bb6d_data.N_part_per_slice,
+    x_slices_star = bb6d_data.x_slices_star,
+    y_slices_star = bb6d_data.y_slices_star,
+    sigma_slices_star = bb6d_data.sigma_slices_star,
+    )
