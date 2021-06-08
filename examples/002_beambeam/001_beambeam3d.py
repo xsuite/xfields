@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.constants import e as qe
 import xfields as xf
+import xtrack as xt
 import pysixtrack
 
 # TODO: change q0 from Coulomb to elementary charges
@@ -14,7 +15,7 @@ phi = 0.8
 # separations
 x_bb_co=5e-3
 y_bb_co=-4e-3
-charge_slices=np.array([1e-14, 2e-14, 5e-14])
+charge_slices=np.array([1e18, 2e18, 5e18])
 z_slices=np.array([-60., 2., 55.])
 
 # Single particle properties
@@ -58,18 +59,19 @@ bb_pyst = pysixtrack.elements.BeamBeam6D(
         sigma_33=Sig_33_0,
         sigma_34=Sig_34_0,
         sigma_44=Sig_44_0,
-        x_co=x_co,
-        px_co=px_co,
-        y_co=y_co,
-        py_co=py_co,
-        zeta_co=zeta_co,
-        delta_co=delta_co,
-        d_x=d_x,
-        d_px=d_px,
-        d_y=d_y,
-        d_py=d_py,
-        d_zeta=d_zeta,
-        d_delta=d_delta)
+        #x_co=x_co,
+        #px_co=px_co,
+        #y_co=y_co,
+        #py_co=py_co,
+        #zeta_co=zeta_co,
+        #delta_co=delta_co,
+        #d_x=d_x,
+        #d_px=d_px,
+        #d_y=d_y,
+        #d_py=d_py,
+        #d_zeta=d_zeta,
+        #d_delta=d_delta
+        )
 
 params = bb_pyst.to_dict(keepextra=True)
 bb6d_data = pysixtrack.BB6Ddata.BB6D_init(
@@ -154,3 +156,26 @@ bb = xf.BeamBeamBiGaussian3D(
     y_slices_star = bb6d_data.y_slices_star,
     sigma_slices_star = bb6d_data.sigma_slices_star,
     )
+
+pyst_part = pysixtrack.Particles(
+        p0c=6500e9,
+        x=-1.23e-3,
+        px = 50e-3,
+        y = 2e-3,
+        py = 27e-3,
+        sigma = 3.,
+        delta = 2e-4)
+
+part = xt.Particles(pysixtrack_particles=pyst_part)
+
+bb.track(part)
+bb_pyst.track(pyst_part)
+
+for cc in 'x px y py zeta delta'.split():
+    val_test = getattr(part, cc)[0]
+    val_ref = getattr(pyst_part, cc)
+    print('\n')
+    print(f'pysixtrack: {cc} = {val_ref:.12e}')
+    print(f'xsuite:     {cc} = {val_test:.12e}')
+    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=1e-12)
+    
