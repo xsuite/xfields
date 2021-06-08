@@ -71,7 +71,42 @@ bb_pyst = pysixtrack.elements.BeamBeam6D(
         d_zeta=d_zeta,
         d_delta=d_delta)
 
-
+params = bb_pyst.to_dict(keepextra=True)
+bb6d_data = pysixtrack.BB6Ddata.BB6D_init(
+                q_part=qe, # the pysixtrack input has the charge
+                           # of the slices in elementary charges 
+                phi=params["phi"],
+                alpha=params["alpha"],
+                delta_x=params["x_bb_co"],
+                delta_y=params["y_bb_co"],
+                N_part_per_slice=params["charge_slices"],
+                z_slices=params["zeta_slices"],
+                Sig_11_0=params["sigma_11"],
+                Sig_12_0=params["sigma_12"],
+                Sig_13_0=params["sigma_13"],
+                Sig_14_0=params["sigma_14"],
+                Sig_22_0=params["sigma_22"],
+                Sig_23_0=params["sigma_23"],
+                Sig_24_0=params["sigma_24"],
+                Sig_33_0=params["sigma_33"],
+                Sig_34_0=params["sigma_34"],
+                Sig_44_0=params["sigma_44"],
+                x_CO=params["x_co"],
+                px_CO=params["px_co"],
+                y_CO=params["y_co"],
+                py_CO=params["py_co"],
+                sigma_CO=params["zeta_co"],
+                delta_CO=params["delta_co"],
+                min_sigma_diff=params["min_sigma_diff"],
+                threshold_singular=params["threshold_singular"],
+                Dx_sub=params["d_x"],
+                Dpx_sub=params["d_px"],
+                Dy_sub=params["d_y"],
+                Dpy_sub=params["d_py"],
+                Dsigma_sub=params["d_zeta"],
+                Ddelta_sub=params["d_delta"],
+                enabled=params["enabled"],
+            )
 
 bb = xf.BeamBeamBiGaussian3D(
         N_part_per_slice=5, x_slices_star=5,
