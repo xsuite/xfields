@@ -112,6 +112,8 @@ pyst_part = pysixtrack.Particles(
 part = xt.Particles(pysixtrack_particles=pyst_part)
 
 bb.track(part)
+print('------------------------')
+
 bb_pyst.track(pyst_part)
 
 for cc in 'x px y py zeta delta'.split():
@@ -120,5 +122,5 @@ for cc in 'x px y py zeta delta'.split():
     print('\n')
     print(f'pysixtrack: {cc} = {val_ref:.12e}')
     print(f'xsuite:     {cc} = {val_test:.12e}')
-    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=1e-8)
+    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=1e-12)
 

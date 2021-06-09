@@ -318,10 +318,16 @@ void BoostParameters_boost_coordinates_inv(
         const double Sig_11 = sigma_x*sigma_x;
         const double Sig_33 = sigma_y*sigma_y;
 
-        Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
-                    (sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-        Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*\
+	printf("Inside Sig_11=%.10e\n", Sig_11);
+	printf("Inside Sig_33=%.10e\n", Sig_33);
+
+        Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)   
+                   *(sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
+        Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*
                       (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
+
+	printf("Inside Gx=%.10e\n", Gx);
+	printf("Inside Gy=%.10e\n", Gy);
     }
 
     *Gx_ptr = Gx;
@@ -423,14 +429,14 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
     	        &dS_costheta, &dS_sintheta);
 
-    	    printf("Sig_11_hat_star=%.5e\n",Sig_11_hat_star);
-	    printf("Sig_33_hat_star=%.5e\n",Sig_33_hat_star);
-    	    printf("costheta=%.5e\n",costheta);
-            printf("sintheta=%.5e\n",sintheta);
-    	    printf("dS_Sig_11_hat_star=%.5e\n",dS_Sig_11_hat_star);
-	    printf("dS_Sig_33_hat_star=%.5e\n",dS_Sig_33_hat_star);
-    	    printf("dS_costheta=%.5e\n",dS_costheta);
-            printf("dS_sintheta=%.5e\n",dS_sintheta);
+    	    printf("Sig_11_hat_star=%.10e\n",Sig_11_hat_star);
+	    printf("Sig_33_hat_star=%.10e\n",Sig_33_hat_star);
+    	    printf("costheta=%.10e\n",costheta);
+            printf("sintheta=%.10e\n",sintheta);
+    	    printf("dS_Sig_11_hat_star=%.10e\n",dS_Sig_11_hat_star);
+	    printf("dS_Sig_33_hat_star=%.10e\n",dS_Sig_33_hat_star);
+    	    printf("dS_costheta=%.10e\n",dS_costheta);
+            printf("dS_sintheta=%.10e\n",dS_sintheta);
 
     	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
     	    const double x_bar_star = x_star + px_star*S - x_slice_star;
@@ -451,13 +457,17 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 		min_sigma_diff,
     	        &Ex, &Ey);
 
-	    printf("Ex=%.5f\n", Ex);
-	    printf("Ey=%.5fi\n", Ey);
+	    printf("Ex=%.10e\n", Ex);
+	    printf("Ey=%.10e\n", Ey);
 	
 	    //compute Gs
 	    double Gx, Gy;
-	    compute_Gx_Gy(x, y, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
-                min_sigma_diff, Ex, Ey, &Gx, &Gy);
+	    compute_Gx_Gy(x_bar_hat_star, y_bar_hat_star,
+			  sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
+                          min_sigma_diff, Ex, Ey, &Gx, &Gy);
+	    
+	    printf("Gx=%.10e\n", Gx);
+	    printf("Gy=%.10e\n", Gy);
 
     	    // Compute kicks
     	    double Fx_hat_star = Ksl*Ex;
