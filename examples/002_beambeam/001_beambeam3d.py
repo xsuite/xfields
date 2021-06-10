@@ -20,8 +20,8 @@ phi = 0.8
 # separations
 x_bb_co=5e-3
 y_bb_co=-4e-3
-charge_slices=np.array([1e18, 2e18, 5e18])[:1]
-z_slices=np.array([-60., 2., 55.])[:1]
+charge_slices=np.array([1e16, 2e16, 5e16])
+z_slices=np.array([-60., 2., 55.])
 
 # Single particle properties
 q_part = qe
