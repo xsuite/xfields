@@ -360,13 +360,13 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const double Dpy_sub =BeamBeamBiGaussian3DData_get_Dpy_sub(el);
     const double Dsigma_sub =BeamBeamBiGaussian3DData_get_Dsigma_sub(el);
     const double Ddelta_sub =BeamBeamBiGaussian3DData_get_Ddelta_sub(el);
-    const double* N_part_per_slice_arr = 
+    /*gpuglmem*/ const double* N_part_per_slice_arr = 
 	    BeamBeamBiGaussian3DData_getp1_N_part_per_slice(el, 0);
-    const double* x_slices_star_arr = 
+    /*gpuglmem*/ const double* x_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_x_slices_star(el, 0);
-    const double* y_slices_star_arr = 
+    /*gpuglmem*/ const double* y_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_y_slices_star(el, 0);
-    const double* sigma_slices_star_arr = 
+    /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
     double const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
