@@ -380,7 +380,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	double zeta = LocalParticle_get_zeta(part);
     	double delta = LocalParticle_get_delta(part);
 
-    	const double q0 = QELEM*LocalParticle_get_q0(part); // Coulomb
+    	const double q0 = LocalParticle_get_q0(part); 
     	const double p0c = LocalParticle_get_p0c(part); // eV
 
     	const double P0 = p0c/C_LIGHT*QELEM;
@@ -413,7 +413,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    const double y_slice_star = y_slices_star_arr[i_slice];
 
     	    //Compute force scaling factor
-    	    const double Ksl = N_part_per_slice_arr[i_slice]*q0_bb*q0/(P0 * C_LIGHT);
+    	    const double Ksl = N_part_per_slice_arr[i_slice]*QELEM*q0_bb
+		               *QELEM*q0/(P0 * C_LIGHT);
 
     	    //Identify the Collision Point (CP)
     	    const double S = 0.5*(sigma_star - sigma_slice_star);

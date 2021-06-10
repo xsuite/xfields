@@ -122,7 +122,7 @@ class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
             _context=_context,
             _buffer=_buffer,
             _offset=_offset,
-            q0 = bb6d_data.q_part,
+            q0 = bb6d_data.q_part/qe, # pysixtrack uses coulomb
             boost_parameters = {
                 'sphi': bb6d_data.parboost.sphi,
                 'cphi': bb6d_data.parboost.cphi,

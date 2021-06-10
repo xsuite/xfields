@@ -127,5 +127,5 @@ for cc in 'x px y py zeta delta'.split():
     print('\n')
     print(f'pysixtrack: {cc} = {val_ref:.12e}')
     print(f'xsuite:     {cc} = {val_test:.12e}')
-    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=1e-12)
+    assert np.isclose(val_test, val_ref, rtol=1e-12, atol=5e-12)
 
