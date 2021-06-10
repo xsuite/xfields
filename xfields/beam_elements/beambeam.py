@@ -1,3 +1,5 @@
+from scipy.constants import e as qe
+
 from ..fieldmaps.bigaussian import BiGaussianFieldMap, BiGaussianFieldMapData
 from ..general import _pkg_root
 
@@ -60,6 +62,8 @@ class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
             mean_y=0.,
             sigma_x=None,
             sigma_y=None,
+            d_px=0.,
+            d_py=0.,
             min_sigma_diff=1e-10):
 
         if _context is None:
@@ -73,6 +77,8 @@ class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
         self.n_particles = n_particles
         self.q0 = q0
         self.beta0 = beta0
+        self.d_px = d_px
+        self.d_py = d_py
 
         self.fieldmap = BiGaussianFieldMap(
                      _context=_context,
@@ -135,7 +141,7 @@ class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
             _context=_context,
             _buffer=_buffer,
             _offset=_offset,
-            n_particles=pysixtrack_beambeam.charge,
+            n_particles=pysixtrack_beambeam.charge/qe, # pysixtrak has it in coulumb
             q0=qe,
             beta0=pysixtrack_beambeam.beta_r,
             mean_x=pysixtrack_beambeam.x_bb,

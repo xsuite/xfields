@@ -519,7 +519,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	LocalParticle_update_delta(part, delta);
 	
 
-    }
+    } //only_for_context cpu_serial cpu_openmp
 }
 
 

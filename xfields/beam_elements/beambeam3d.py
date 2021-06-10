@@ -113,6 +113,11 @@ class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
             len(bb6d_data.y_slices_star) ==
             len(bb6d_data.sigma_slices_star))
 
+        if _buffer is not None:
+            ctx = _buffer.context
+        elif _context is not None:
+            ctx = _context
+
         bb = cls(
             _context=_context,
             _buffer=_buffer,
@@ -152,10 +157,12 @@ class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
             Dsigma_sub = bb6d_data.Dsigma_sub,
             Ddelta_sub = bb6d_data.Ddelta_sub,
             num_slices = len(bb6d_data.N_part_per_slice),
-            N_part_per_slice = bb6d_data.N_part_per_slice,
-            x_slices_star = bb6d_data.x_slices_star,
-            y_slices_star = bb6d_data.y_slices_star,
-            sigma_slices_star = bb6d_data.sigma_slices_star,
+            N_part_per_slice = ctx.nparray_to_context_array(
+                                          bb6d_data.N_part_per_slice),
+            x_slices_star = ctx.nparray_to_context_array(bb6d_data.x_slices_star),
+            y_slices_star = ctx.nparray_to_context_array(bb6d_data.y_slices_star),
+            sigma_slices_star = ctx.nparray_to_context_array(
+                                          bb6d_data.sigma_slices_star),
             )
 
         return bb

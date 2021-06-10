@@ -1,8 +1,13 @@
 import numpy as np
 from scipy.constants import e as qe
-import xfields as xf
+
+import xobjects as xo
 import xtrack as xt
+import xfields as xf
+
 import pysixtrack
+
+context = xo.ContextCpu()
 
 # TODO: change q0 from Coulomb to elementary charges
 
@@ -84,21 +89,21 @@ bb_pyst = pysixtrack.elements.BeamBeam6D(
         sigma_33=Sig_33_0,
         sigma_34=Sig_34_0,
         sigma_44=Sig_44_0,
-        #x_co=x_co,
-        #px_co=px_co,
-        #y_co=y_co,
-        #py_co=py_co,
-        #zeta_co=zeta_co,
-        #delta_co=delta_co,
-        #d_x=d_x,
-        #d_px=d_px,
-        #d_y=d_y,
-        #d_py=d_py,
-        #d_zeta=d_zeta,
-        #d_delta=d_delta
+        x_co=x_co,
+        px_co=px_co,
+        y_co=y_co,
+        py_co=py_co,
+        zeta_co=zeta_co,
+        delta_co=delta_co,
+        d_x=d_x,
+        d_px=d_px,
+        d_y=d_y,
+        d_py=d_py,
+        d_zeta=d_zeta,
+        d_delta=d_delta
         )
 
-bb = xf.BeamBeamBiGaussian3D.from_pysixtrack(bb_pyst)
+bb = xf.BeamBeamBiGaussian3D.from_pysixtrack(bb_pyst, _context=context)
 
 pyst_part = pysixtrack.Particles(
         p0c=6500e9,
@@ -109,7 +114,7 @@ pyst_part = pysixtrack.Particles(
         sigma = 3.,
         delta = 2e-4)
 
-part = xt.Particles(pysixtrack_particles=pyst_part)
+part = xt.Particles(pysixtrack_particles=pyst_part, _context=context)
 
 bb.track(part)
 print('------------------------')
