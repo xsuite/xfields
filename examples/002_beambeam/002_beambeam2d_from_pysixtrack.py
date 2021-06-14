@@ -1,7 +1,9 @@
 import numpy as np
 from scipy.constants import e as qe
+
 import xfields as xf
 import xtrack as xt
+
 import pysixtrack
 
 # TODO: change q0 from Coulomb to elementary charges

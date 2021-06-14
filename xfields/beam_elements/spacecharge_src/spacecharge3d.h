@@ -12,7 +12,7 @@ void SpaceCharge3D_track_local_particle(
     /*gpuglmem*/ double* dphi_dy_map = SpaceCharge3DData_getp1_fieldmap_dphi_dy(el, 0);
     TriLinearInterpolatedFieldMapData fmap = SpaceCharge3DData_getp_fieldmap(el);
 
-    double const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
+    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
         part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
 

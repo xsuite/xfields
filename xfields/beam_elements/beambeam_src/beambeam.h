@@ -12,7 +12,7 @@ void BeamBeamBiGaussian2D_track_local_particle(
     double const bb_d_px = BeamBeamBiGaussian2DData_get_d_px(el);
     double const bb_d_py = BeamBeamBiGaussian2DData_get_d_py(el);
  
-    double const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
+    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
         part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
 
