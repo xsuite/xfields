@@ -1,5 +1,3 @@
-from . import contexts
-
 from .longitudinal_profiles import LongitudinalProfileCoasting
 from .longitudinal_profiles import LongitudinalProfileQGaussian
 
