@@ -13,15 +13,11 @@ sources.append(xfields._pkg_root.joinpath('src/constants.h'))
 sources.append(xfields._pkg_root.joinpath('src/complex_error_function.h'))
 sources.append(xfields._pkg_root.joinpath('src/fields_bigaussian.h'))
 
-api_conf = {'prepointer': ' /*gpuglmem*/ '}
-
 sources.append(Particles.XoStruct._gen_c_api()[0])
 sources.append(gen_local_particle_api())
-source_bb, kernels_bb, cdefs_bb = BeamBeamBiGaussian2DData._gen_c_api(
-        conf=api_conf)
+source_bb, kernels_bb, cdefs_bb = BeamBeamBiGaussian2DData._gen_c_api()
 sources.append(source_bb)
-source_fm, kernels_fm, cdefs_fm = BiGaussianFieldMapData._gen_c_api(
-        conf=api_conf)
+source_fm, kernels_fm, cdefs_fm = BiGaussianFieldMapData._gen_c_api()
 sources.append(source_fm)
 sources.append(xfields._pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 sources.append(xfields._pkg_root.joinpath('beam_elements/beambeam_src/beambeam.h'))

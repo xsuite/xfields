@@ -4,8 +4,6 @@ import xtrack as xt
 
 from ..general import _pkg_root
 
-api_conf = {'prepointer': ' /*gpuglmem*/ '}
-
 class BoostParameters(xo.Struct):
     sphi = xo.Float64
     cphi = xo.Float64
@@ -56,8 +54,8 @@ srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append('#define NOFIELDMAP') #TODO Remove this workaound
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(Sigmas._gen_c_api(api_conf)[0]) #TODO This shouldnt be needed
-srcs.append(BoostParameters._gen_c_api(api_conf)[0]) #TODO This shouldnt be needed
+srcs.append(Sigmas._gen_c_api()[0]) #TODO This shouldnt be needed
+srcs.append(BoostParameters._gen_c_api()[0]) #TODO This shouldnt be needed
 srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'))
 BeamBeamBiGaussian3DData.extra_sources = srcs
 
