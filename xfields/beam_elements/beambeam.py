@@ -129,25 +129,22 @@ class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
 
 
     @classmethod
-    def from_pysixtrack(cls, pysixtrack_beambeam=None,
+    def from_xline(cls, xline_beambeam=None,
             _context=None, _buffer=None, _offset=None):
 
-        import pysixtrack
-        assert isinstance(pysixtrack_beambeam,
-                          pysixtrack.elements.BeamBeam4D)
         bb = cls(
             _context=_context,
             _buffer=_buffer,
             _offset=_offset,
-            n_particles=pysixtrack_beambeam.charge/qe, # pysixtrak has it in coulumb
+            n_particles=xline_beambeam.charge/qe, # pysixtrak has it in coulumb
             q0=qe,
-            beta0=pysixtrack_beambeam.beta_r,
-            mean_x=pysixtrack_beambeam.x_bb,
-            mean_y=pysixtrack_beambeam.y_bb,
-            sigma_x=pysixtrack_beambeam.sigma_x,
-            sigma_y=pysixtrack_beambeam.sigma_y,
-            d_px=pysixtrack_beambeam.d_px,
-            d_py=pysixtrack_beambeam.d_py,
-            min_sigma_diff=pysixtrack_beambeam.min_sigma_diff)
+            beta0=xline_beambeam.beta_r,
+            mean_x=xline_beambeam.x_bb,
+            mean_y=xline_beambeam.y_bb,
+            sigma_x=xline_beambeam.sigma_x,
+            sigma_y=xline_beambeam.sigma_y,
+            d_px=xline_beambeam.d_px,
+            d_py=xline_beambeam.d_py,
+            min_sigma_diff=xline_beambeam.min_sigma_diff)
 
         return bb

@@ -62,16 +62,13 @@ BeamBeamBiGaussian3DData.extra_sources = srcs
 class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
 
     @classmethod
-    def from_pysixtrack(cls, pysixtrack_beambeam=None,
+    def from_xline(cls, xline_beambeam=None,
             _context=None, _buffer=None, _offset=None):
 
-        import pysixtrack
-        assert isinstance(pysixtrack_beambeam,
-                          pysixtrack.elements.BeamBeam6D)
-
-        params = pysixtrack_beambeam.to_dict(keepextra=True)
-        bb6d_data = pysixtrack.BB6Ddata.BB6D_init(
-                q_part=qe, # the pysixtrack input has the charge
+        params = xline_beambeam.to_dict(keepextra=True)
+        import xline
+        bb6d_data = xline.BB6Ddata.BB6D_init(
+                q_part=qe, # the xline input has the charge
                            # of the slices in elementary charges 
                 phi=params["phi"],
                 alpha=params["alpha"],
@@ -120,7 +117,7 @@ class BeamBeamBiGaussian3D(xt.dress_element(BeamBeamBiGaussian3DData)):
             _context=_context,
             _buffer=_buffer,
             _offset=_offset,
-            q0 = bb6d_data.q_part/qe, # pysixtrack uses coulomb
+            q0 = bb6d_data.q_part/qe, # xline uses coulomb
             boost_parameters = {
                 'sphi': bb6d_data.parboost.sphi,
                 'cphi': bb6d_data.parboost.cphi,
