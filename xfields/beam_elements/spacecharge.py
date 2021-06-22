@@ -12,17 +12,9 @@ from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
-class SpaceCharge3DData(xo.Struct):
-    fieldmap = TriLinearInterpolatedFieldMapData
-    length = xo.Float64
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(TriLinearInterpolatedFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
-SpaceCharge3DData.extra_sources = srcs
 
-class SpaceCharge3D(xt.dress_element(SpaceCharge3DData)):
+class SpaceCharge3D(xt.BeamElement):
+
     """
     Simulates the effect of space charge on a bunch.
 
@@ -76,6 +68,10 @@ class SpaceCharge3D(xt.dress_element(SpaceCharge3DData)):
     Returns:
         (SpaceCharge3D): A space-charge 3D beam element.
     """
+    _xofields = {
+        'fieldmap': TriLinearInterpolatedFieldMapData,
+        'length': xo.Float64,
+        }
 
     def __init__(self,
                  _context=None,
@@ -148,23 +144,23 @@ class SpaceCharge3D(xt.dress_element(SpaceCharge3DData)):
         # call C tracking kernel
         super().track(particles)
 
-class SpaceChargeBiGaussianData(xo.Struct):
-    longitudinal_profile = LongitudinalProfileQGaussianData # Will become unionref
-    fieldmap = BiGaussianFieldMapData
-    length = xo.Float64
-
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(LongitudinalProfileQGaussianData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
-srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
-SpaceChargeBiGaussianData.extra_sources = srcs
+srcs.append(TriLinearInterpolatedFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
+
+SpaceCharge3D.XoStruct.extra_sources = srcs
 
 
-class SpaceChargeBiGaussian(xt.dress_element(SpaceChargeBiGaussianData)):
+
+class SpaceChargeBiGaussian(xt.BeamElement):
+
+    _xofields = {
+        'longitudinal_profile': LongitudinalProfileQGaussianData, # Will become unionref
+        'fieldmap': BiGaussianFieldMapData,
+        'length': xo.Float64,
+        }
 
     def __init__(self,
                  _context=None,
@@ -282,3 +278,13 @@ class SpaceChargeBiGaussian(xt.dress_element(SpaceChargeBiGaussianData)):
         self.fieldmap.sigma_y = value
 
 
+srcs = []
+srcs.append(_pkg_root.joinpath('headers/constants.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
+srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
+srcs.append(LongitudinalProfileQGaussianData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
+
+SpaceChargeBiGaussian.XoStruct.extra_sources = srcs
