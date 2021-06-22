@@ -7,23 +7,8 @@ from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
-class BeamBeamBiGaussian2DData(xo.Struct):
-    n_particles = xo.Float64
-    q0 = xo.Float64
-    beta0 = xo.Float64
-    fieldmap = BiGaussianFieldMapData
-    d_px = xo.Float64
-    d_py = xo.Float64
 
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam.h'))
-BeamBeamBiGaussian2DData.extra_sources = srcs
-
-class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
+class BeamBeamBiGaussian2D(xt.BeamElement):
     """
     Simulates the effect of beam-beam on a bunch.
 
@@ -48,6 +33,14 @@ class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
     Returns:
         (BeamBeamBiGaussian2D): A beam-beam element.
     """
+    _xofields={
+        'n_particles': xo.Float64,
+        'q0': xo.Float64,
+        'beta0': xo.Float64,
+        'fieldmap': BiGaussianFieldMapData,
+        'd_px': xo.Float64,
+        'd_py': xo.Float64,
+        }
 
     def __init__(self,
             _context=None,
@@ -148,3 +141,12 @@ class BeamBeamBiGaussian2D(xt.dress_element(BeamBeamBiGaussian2DData)):
             min_sigma_diff=xline_beambeam.min_sigma_diff)
 
         return bb
+
+srcs = []
+srcs.append(_pkg_root.joinpath('headers/constants.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
+srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
+srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam.h'))
+
+BeamBeamBiGaussian2D.XoStruct.extra_sources = srcs
