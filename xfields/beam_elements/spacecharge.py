@@ -169,7 +169,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  _context=None,
                  _buffer=None,
                  _offset=None,
-                 update_on_track=True,
+                 update_on_track=False,
                  length=None,
                  apply_z_kick=False,
                  longitudinal_profile=None,
