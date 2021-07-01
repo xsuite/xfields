@@ -12,3 +12,4 @@ from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 
 from .general import _pkg_root
 from .config_tools import replace_spaceharge_with_quasi_frozen
+from .config_tools import replace_spaceharge_with_PIC
