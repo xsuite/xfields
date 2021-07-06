@@ -1,6 +1,6 @@
 import numpy as np
 
-from pysixtrack.particles import Particles
+from xline.particles import Particles
 
 def generate_particles_object(
                             n_macroparticles,

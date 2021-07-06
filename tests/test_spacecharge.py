@@ -1,6 +1,6 @@
 import numpy as np
 
-from pysixtrack.particles import Particles
+from xline.particles import Particles
 import xobjects as xo
 import xtrack as xt
 
@@ -61,7 +61,7 @@ def test_spacecharge_gauss_qgauss():
                     number_of_particles=bunch_intensity,
                     sigma_z=sigma_z,
                     z0=0.,
-                    q_parameter=1. # there is a bug in pysixtrack, 
+                    q_parameter=1. # there is a bug in xline, 
                                    # only q=1 can be tested 
                     )
 
@@ -93,7 +93,7 @@ def test_spacecharge_gauss_qgauss():
             scgauss.track(particles)
 
             ##############################
-            # Compare against pysixtrack #
+            # Compare against xline #
             ##############################
 
             p2np = context.nparray_from_context_array
@@ -101,7 +101,7 @@ def test_spacecharge_gauss_qgauss():
             y_probes = p2np(particles.y[:n_probes])
             z_probes = p2np(particles.zeta[:n_probes])
 
-            from pysixtrack.elements import SCQGaussProfile
+            from xline.elements import SCQGaussProfile
             scpyst = SCQGaussProfile(
                     number_of_particles = bunch_intensity,
                     bunchlength_rms=sigma_z,
@@ -214,7 +214,7 @@ def test_spacecharge_gauss_qgauss():
 #            scgauss.track(particles)
 #
 #            ##############################
-#            # Compare against pysixtrack #
+#            # Compare against xline #
 #            ##############################
 #
 #            p2np = context.nparray_from_context_array
@@ -222,7 +222,7 @@ def test_spacecharge_gauss_qgauss():
 #            y_probes = p2np(particles.y[:n_probes])
 #            z_probes = p2np(particles.zeta[:n_probes])
 #
-#            from pysixtrack.elements import SCCoasting
+#            from xline.elements import SCCoasting
 #            scpyst = SCCoasting(
 #                    number_of_particles = beam_line_density,
 #                    circumference = 1.,
@@ -317,12 +317,12 @@ def test_spacecharge_pic():
             spcharge.track(particles)
 
             ##############################
-            # Compare against pysixtrack #
+            # Compare against xline #
             ##############################
 
             p2np = context.nparray_from_context_array
 
-            from pysixtrack.elements import SCQGaussProfile
+            from xline.elements import SCQGaussProfile
             scpyst = SCQGaussProfile(
                     number_of_particles = bunch_intensity,
                     bunchlength_rms=sigma_z,

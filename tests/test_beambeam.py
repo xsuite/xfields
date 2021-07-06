@@ -1,7 +1,7 @@
 import xtrack as xt
 import numpy as np
 
-from pysixtrack.particles import Particles
+from xline.particles import Particles
 import xobjects as xo
 
 
@@ -104,16 +104,16 @@ def test_beambeam():
         #Track
         bbeam_b1.track(particles_b1)
 
-        ##############################
-        # Compare against pysixtrack #
-        ##############################
+        #########################
+        # Compare against xline #
+        #########################
 
         p2np = context.nparray_from_context_array
         x_probes = p2np(particles_b1.x[:n_probes])
         y_probes = p2np(particles_b1.y[:n_probes])
         z_probes = p2np(particles_b1.zeta[:n_probes])
 
-        from pysixtrack.elements import BeamBeam4D
+        from xline.elements import BeamBeam4D
         bb_b1_pyst= BeamBeam4D(
                 charge = bunch_intensity_b2,
                 sigma_x=sigma_x_b2,
