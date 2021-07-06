@@ -5,7 +5,7 @@ import xobjects as xo
 import xtrack as xt
 import xfields as xf
 
-import pysixtrack
+import xline
 
 context = xo.ContextCpu()
 
@@ -73,7 +73,7 @@ d_py=-1.8e-6
 d_zeta=0.019
 d_delta=3e-4
 
-bb_pyst = pysixtrack.elements.BeamBeam6D(
+bb_pyst = xline.elements.BeamBeam6D(
         phi=phi, alpha=alpha,
         x_bb_co=x_bb_co,
         y_bb_co=y_bb_co,
@@ -103,9 +103,9 @@ bb_pyst = pysixtrack.elements.BeamBeam6D(
         d_delta=d_delta
         )
 
-bb = xf.BeamBeamBiGaussian3D.from_pysixtrack(bb_pyst, _context=context)
+bb = xf.BeamBeamBiGaussian3D.from_xline(bb_pyst, _context=context)
 
-pyst_part = pysixtrack.Particles(
+pyst_part = xline.Particles(
         p0c=6500e9,
         x=-1.23e-3,
         px = 50e-3,
@@ -114,7 +114,8 @@ pyst_part = pysixtrack.Particles(
         sigma = 3.,
         delta = 2e-4)
 
-part = xt.Particles(pysixtrack_particles=pyst_part, _context=context)
+part_dict = xt.pyparticles_to_xtrack_dict(pyst_part )
+part= xt.Particles(_context=context, **part_dict)
 
 bb.track(part)
 print('------------------------')
@@ -125,7 +126,7 @@ for cc in 'x px y py zeta delta'.split():
     val_test = getattr(part, cc)[0]
     val_ref = getattr(pyst_part, cc)
     print('\n')
-    print(f'pysixtrack: {cc} = {val_ref:.12e}')
+    print(f'xline: {cc} = {val_ref:.12e}')
     print(f'xsuite:     {cc} = {val_test:.12e}')
     assert np.isclose(val_test, val_ref, rtol=1e-12, atol=5e-12)
 

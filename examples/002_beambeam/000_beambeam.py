@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from pysixtrack.particles import Particles
+from xline.particles import Particles
 from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 
@@ -59,8 +59,8 @@ print('Generate particles b1...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles_b1 = xt.Particles(_context=context,
-        pysixtrack_particles=particles_b1_pyst)
+part_dict_b1 = xt.pyparticles_to_xtrack_dict(particles_b1_pyst)
+particles_b1 = xt.Particles(_context=context, **part_dict_b1)
 
 particles_b1.x += mean_x_b1
 particles_b1.y += mean_y_b1
@@ -79,8 +79,8 @@ print('Generate particles b2...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles_b2 = xt.Particles(_context=context,
-        pysixtrack_particles=particles_b2_pyst)
+part_dict_b2 = xt.pyparticles_to_xtrack_dict(particles_b2_pyst)
+particles_b2 = xt.Particles(_context=context, **part_dict_b2)
 
 particles_b2.x += mean_x_b2
 particles_b2.y += mean_y_b2
@@ -123,17 +123,17 @@ bbeam_b1.update(sigma_x=sigma_x_meas, mean_x=mean_x_meas,
 print('Track...')
 bbeam_b1.track(particles_b1)
 
-##############################
-# Compare against pysixtrack #
-##############################
+#########################
+# Compare against xline #
+#########################
 
-print('Check against pysixtrack...')
+print('Check against xline...')
 p2np = context.nparray_from_context_array
 x_probes = p2np(particles_b1.x[:n_probes])
 y_probes = p2np(particles_b1.y[:n_probes])
 z_probes = p2np(particles_b1.zeta[:n_probes])
 
-from pysixtrack.elements import BeamBeam4D
+from xline.elements import BeamBeam4D
 bb_b1_pyst= BeamBeam4D(
         charge = bunch_intensity_b2,
         sigma_x=sigma_x_b2,

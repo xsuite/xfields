@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from pysixtrack.particles import Particles
+from xline.particles import Particles
 from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 
@@ -48,8 +48,9 @@ from xfields.test_support.temp_makepart import generate_particles_object
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles= xt.Particles(_context=context,
-        pysixtrack_particles=particles_pyst)
+part_dict = xt.pyparticles_to_xtrack_dict(particles_pyst)
+particles = xt.Particles(
+        _context=context, **part_dict)
 
 
 ######################
@@ -75,14 +76,14 @@ spcharge = SpaceCharge3D(
 spcharge.track(particles)
 
 
-##############################
-# Compare against pysixtrack #
-##############################
+#########################
+# Compare against xline #
+#########################
 
 
 p2np = context.nparray_from_context_array
 
-from pysixtrack.elements import SCQGaussProfile
+from xline.elements import SCQGaussProfile
 scpyst = SCQGaussProfile(
         number_of_particles = bunch_intensity,
         bunchlength_rms=sigma_z,
