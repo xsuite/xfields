@@ -60,8 +60,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         params = xline_beambeam.to_dict(keepextra=True)
         import xline
         bb6d_data = xline.BB6Ddata.BB6D_init(
-                q_part=qe, # the xline input has the charge
-                           # of the slices in elementary charges 
+                q_part=qe*float(params['enabled']), # the xline input has the charge
+                                                    # of the slices in elementary charges 
                 phi=params["phi"],
                 alpha=params["alpha"],
                 delta_x=params["x_bb_co"],

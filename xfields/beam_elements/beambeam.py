@@ -130,7 +130,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             _buffer=_buffer,
             _offset=_offset,
             n_particles=xline_beambeam.charge/qe, # pysixtrak has it in coulumb
-            q0=qe,
+            q0=qe*float(xline_beambeam.enabled), # I implement the enable flag like this
             beta0=xline_beambeam.beta_r,
             mean_x=xline_beambeam.x_bb,
             mean_y=xline_beambeam.y_bb,
