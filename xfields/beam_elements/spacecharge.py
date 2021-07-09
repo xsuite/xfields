@@ -174,9 +174,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  sigma_y=None,
                  min_sigma_diff=1e-10):
 
-        if _context is None:
-            _context = context_default
-
         self.xoinitialize(
                  _context=_context,
                  _buffer=_buffer,
