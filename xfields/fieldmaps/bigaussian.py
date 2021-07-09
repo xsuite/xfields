@@ -1,7 +1,7 @@
 import numpy as np
 import xobjects as xo
 import xtrack as xt
-from xobjects.context import context_default
+from xobjects import context_default
 
 def mean_and_std(a, weights=None):
     if weights is None:

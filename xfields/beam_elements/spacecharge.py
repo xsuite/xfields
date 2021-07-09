@@ -10,7 +10,6 @@ from ..fieldmaps import BiGaussianFieldMapData
 from ..fieldmaps import TriLinearInterpolatedFieldMapData
 from ..general import _pkg_root
 
-from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
@@ -90,9 +89,6 @@ class SpaceCharge3D(xt.BeamElement):
                  solver=None,
                  gamma0=None):
 
-        if _context is None:
-            _context = context_default
-
         self.update_on_track = update_on_track
         self.apply_z_kick = apply_z_kick
 
@@ -149,7 +145,6 @@ class SpaceCharge3D(xt.BeamElement):
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(TriLinearInterpolatedFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
 
@@ -315,9 +310,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(LongitudinalProfileQGaussianData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
 

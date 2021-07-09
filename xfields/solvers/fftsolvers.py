@@ -4,7 +4,7 @@ from numpy import pi
 
 from .base import Solver
 
-from xobjects.context import context_default
+from xobjects import context_default
 
 class FFTSolver2D(Solver):
 
