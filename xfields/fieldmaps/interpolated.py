@@ -1,6 +1,5 @@
 import numpy as np
 
-from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
@@ -147,9 +146,6 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                  updatable=True,
                  ):
 
-
-        if _context is None:
-            _context = context_default
 
         self.updatable = updatable
         self.scale_coordinates_in_solver = scale_coordinates_in_solver

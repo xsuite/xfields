@@ -159,8 +159,6 @@ srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append('#define NOFIELDMAP') #TODO Remove this workaound
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(Sigmas._gen_c_api()[0]) #TODO This shouldnt be needed
-srcs.append(BoostParameters._gen_c_api()[0]) #TODO This shouldnt be needed
 srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'))
 
 BeamBeamBiGaussian3D.XoStruct.extra_sources = srcs
