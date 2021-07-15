@@ -118,7 +118,7 @@ def replace_spaceharge_with_PIC(_buffer, sequence,
     y_lim_min = np.min(all_sigma_y) * (n_sigmas_range_pic_y - 0.5)
     y_lim_max = np.max(all_sigma_y) * (n_sigmas_range_pic_y + 0.5)
 
-    pic_collection = PICCollection(_buffer,
+    pic_collection = PICCollection(_buffer=_buffer,
         nx_grid=nx_grid, ny_grid=ny_grid, nz_grid=nz_grid,
         x_lim_min=x_lim_min, x_lim_max=x_lim_max, n_lims_x=n_lims_x,
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,
