@@ -103,6 +103,7 @@ class SpaceCharge3D(xt.BeamElement):
 
         fieldmap = TriLinearInterpolatedFieldMap(
                     _context=_context,
+                    _buffer=_buffer,
                     rho=rho, phi=phi,
                     x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
                     x_range=x_range, y_range=y_range, z_range=z_range,
