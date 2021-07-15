@@ -119,7 +119,6 @@ class SpaceCharge3D(xt.BeamElement):
                  fieldmap=fieldmap,
                  length=length)
 
-        self.context = self._buffer.context
 
     def track(self, particles):
 
