@@ -110,13 +110,15 @@ class FFTSolver3D(Solver):
 
         # The transposes make it faster in cupy (C-contigous arrays)
 
-        self._workspace_dev.T[:,:,:] = 0. # reset
-        self._workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
-        self.fftplan.transform(self._workspace_dev) # rho_rep_hat
-        self._workspace_dev.T[:,:,:] *= (
+        _workspace_dev = self.context.zeros(
+                (2*self.nx, 2*self.ny, self.nz), dtype=np.complex128, order='F')
+        #self._workspace_dev.T[:,:,:] = 0. # reset
+        _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
+        self.fftplan.transform(_workspace_dev) # rho_rep_hat
+        _workspace_dev.T[:,:,:] *= (
                         self._gint_rep_transf_dev.T) # phi_rep_hat
-        self.fftplan.itransform(self._workspace_dev) #phi_rep
-        return self._workspace_dev.real[:self.nx, :self.ny, :self.nz]
+        self.fftplan.itransform(_workspace_dev) #phi_rep
+        return _workspace_dev.real[:self.nx, :self.ny, :self.nz]
 
 class FFTSolver2p5D(FFTSolver3D):
 
