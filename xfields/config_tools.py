@@ -56,6 +56,7 @@ class PICCollection:
         self.y_lims = np.linspace(y_lim_min, y_lim_max, n_lims_y)
 
         self._existing_pics = {}
+        self._fftplan = None
 
 
     def get_pic(self, x_lim, y_lim):
@@ -80,7 +81,10 @@ class PICCollection:
                 y_range=(-ylim_pic, ylim_pic),
                 z_range=self.z_range,
                 nx=self.nx_grid, ny=self.ny_grid, nz=self.nz_grid,
-                solver=self.solver)
+                solver=self.solver,
+                fftplan=self._fftplan)
+            if self._fftplan is None:
+                self._fftplan = new_pic.fieldmap.solver.fftplan
             self._existing_pics[ix, iy] = new_pic
 
         return self._existing_pics[ix, iy]
@@ -134,4 +138,4 @@ def replace_spaceharge_with_PIC(_buffer, sequence,
         sequence.elements[ii] = sc
         all_pics.append(sc)
 
-    return all_pics
+    return pic_collection, all_pics

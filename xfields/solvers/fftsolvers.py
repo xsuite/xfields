@@ -30,7 +30,7 @@ class FFTSolver3D(Solver):
         (FFTSolver3D): Poisson solver object.
     '''
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
             context = context_default
@@ -80,7 +80,8 @@ class FFTSolver3D(Solver):
         gint_rep_dev = context.nparray_to_context_array(gint_rep)
 
         # Prepare fft plan
-        fftplan = context.plan_FFT(workspace_dev, axes=(0,1,2))
+        if fftplan is None:
+            fftplan = context.plan_FFT(workspace_dev, axes=(0,1,2))
 
         # Transform the green function (in place)
         fftplan.transform(gint_rep_dev)
@@ -148,7 +149,7 @@ class FFTSolver2p5D(FFTSolver3D):
         (FFTSolver3D): Poisson solver object.
     '''
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
             context = context_default
@@ -179,10 +180,11 @@ class FFTSolver2p5D(FFTSolver3D):
 
 
         # Prepare fft plan
-        temp_dev = context.zeros((2*nx, 2*ny, nz),
-                                dtype=np.complex128, order='F')
-        fftplan = context.plan_FFT(temp_dev, axes=(0,1))
-        del(temp_dev)
+        if fftplan is None:
+            temp_dev = context.zeros((2*nx, 2*ny, nz),
+                                    dtype=np.complex128, order='F')
+            fftplan = context.plan_FFT(temp_dev, axes=(0,1))
+            del(temp_dev)
 
         # Transform the green function
         gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))

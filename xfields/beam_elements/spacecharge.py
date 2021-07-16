@@ -87,7 +87,8 @@ class SpaceCharge3D(xt.BeamElement):
                  x_grid=None, y_grid=None, z_grid=None,
                  rho=None, phi=None,
                  solver=None,
-                 gamma0=None):
+                 gamma0=None,
+                 fftplan=None):
 
         self.update_on_track = update_on_track
         self.apply_z_kick = apply_z_kick
@@ -111,7 +112,8 @@ class SpaceCharge3D(xt.BeamElement):
                     nx=nx, ny=ny, nz=nz,
                     solver=solver,
                     scale_coordinates_in_solver=scale_coordinates_in_solver,
-                    updatable=update_on_track)
+                    updatable=update_on_track,
+                    fftplan=fftplan)
 
         self.xoinitialize(
                  _context=_context,

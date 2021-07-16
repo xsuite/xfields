@@ -144,6 +144,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                  solver=None,
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
+                 fftplan=None
                  ):
 
 
@@ -177,7 +178,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         self.compile_custom_kernels(only_if_needed=True)
 
         if isinstance(solver, str):
-            self.solver = self.generate_solver(solver)
+            self.solver = self.generate_solver(solver, fftplan)
         else:
             #TODO: consistency check to be added
             self.solver = solver
@@ -413,7 +414,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         new_phi = solver.solve(self.rho)
         self.update_phi(new_phi)
 
-    def generate_solver(self, solver):
+    def generate_solver(self, solver, fftplan):
 
         """
         Generates a Poisson solver associated to the defined grid.
@@ -434,14 +435,16 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    context=self._buffer.context)
+                    context=self._buffer.context,
+                    fftplan=fftplan)
         elif solver == 'FFTSolver2p5D':
             solver = FFTSolver2p5D(
                     dx=self.dx*scale_dx,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    context=self._buffer.context)
+                    context=self._buffer.context,
+                    fftplan=fftplan)
         else:
             raise ValueError(f'solver name {solver} not recognized')
 
