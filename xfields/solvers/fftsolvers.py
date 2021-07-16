@@ -145,10 +145,6 @@ class FFTSolver2p5D(FFTSolver3D):
             context = context_default
         self.context = context
 
-        # Prepare arrays
-        workspace_dev = context.nparray_to_context_array(
-                    np.zeros((2*nx, 2*ny, nz), dtype=np.complex128, order='F'))
-
         # Build grid for primitive function
         xg_F = np.arange(0, nx+2) * dx - dx/2
         yg_F = np.arange(0, ny+2) * dy - dy/2
@@ -173,15 +169,17 @@ class FFTSolver2p5D(FFTSolver3D):
         gint_rep[nx+1:, ny+1:] = gint_rep[nx-1:0:-1, ny-1:0:-1]
 
 
+        # Prepare green matrix space 
+        gint_rep_transf_3D = np.zeros((2*nx, 2*ny, nz),
+                                dtype=np.complex128, order='F')
         # Prepare fft plan
-        fftplan = context.plan_FFT(workspace_dev, axes=(0,1))
+        fftplan = context.plan_FFT(gint_rep_transf_3D, axes=(0,1))
+        gint_rep_transf_3D[:] = 0.
 
         # Transform the green function
         gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
 
         # Replicate for all z
-        gint_rep_transf_3D = np.zeros((2*nx, 2*ny, nz),
-                                dtype=np.complex128, order='F')
         for iz in range(nz):
             gint_rep_transf_3D[:,:,iz] = gint_rep_transf
 
@@ -194,7 +192,6 @@ class FFTSolver2p5D(FFTSolver3D):
         self.nx = nx
         self.ny = ny
         self.nz = nz
-        self._workspace_dev = workspace_dev
         self._gint_rep_transf_dev = gint_rep_transf_dev
         self.fftplan = fftplan
 
