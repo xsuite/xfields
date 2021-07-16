@@ -108,20 +108,23 @@ class FFTSolver3D(Solver):
             phi (float64 array): electric potential at the grid points in Volts.
         '''
 
-        # The transposes make it faster in cupy (C-contigous arrays)
-
+        nz_alloc = self.nz
+        if self._gint_rep_transf_dev.shape[2] > 1:
+            nz_alloc = self._gint_rep_transf_dev.shape[2]
         _workspace_dev = self.context.zeros(
-                (2*self.nx, 2*self.ny, self.nz), dtype=np.complex128, order='F')
-        #self._workspace_dev.T[:,:,:] = 0. # reset
+                (2*self.nx, 2*self.ny, nz_alloc), dtype=np.complex128, order='F')
+
+        # The transposes make it faster in cupy (C-contigous arrays)
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
+
         try:
             _workspace_dev.T[:,:,:] *= (
                         self._gint_rep_transf_dev.T) # phi_rep_hat
         except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
             for ii in range(self.nz):
                 _workspace_dev.T[ii,:,:] *= (
-                        self._gint_rep_transf_dev.T[:, :]) # phi_rep_hat
+                        self._gint_rep_transf_dev.T[0, :, :]) # phi_rep_hat
 
         self.fftplan.itransform(_workspace_dev) #phi_rep
         return _workspace_dev.real[:self.nx, :self.ny, :self.nz]
@@ -185,7 +188,8 @@ class FFTSolver2p5D(FFTSolver3D):
         gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
 
         # Transfer to GPU (if needed)
-        gint_rep_transf_dev = context.nparray_to_context_array(gint_rep_transf)
+        gint_rep_transf_dev = context.nparray_to_context_array(
+                                       np.atleast_3d(gint_rep_transf))
 
         self.dx = dx
         self.dy = dy
