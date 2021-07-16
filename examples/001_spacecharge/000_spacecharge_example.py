@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 from xline.particles import Particles
-from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
+from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 
 ###################
