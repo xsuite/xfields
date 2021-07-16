@@ -115,8 +115,14 @@ class FFTSolver3D(Solver):
         #self._workspace_dev.T[:,:,:] = 0. # reset
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
-        _workspace_dev.T[:,:,:] *= (
+        try:
+            _workspace_dev.T[:,:,:] *= (
                         self._gint_rep_transf_dev.T) # phi_rep_hat
+        except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+            for ii in range(self.nz):
+                _workspace_dev.T[ii,:,:] *= (
+                        self._gint_rep_transf_dev.T[:, :]) # phi_rep_hat
+
         self.fftplan.itransform(_workspace_dev) #phi_rep
         return _workspace_dev.real[:self.nx, :self.ny, :self.nz]
 
@@ -169,22 +175,17 @@ class FFTSolver2p5D(FFTSolver3D):
         gint_rep[nx+1:, ny+1:] = gint_rep[nx-1:0:-1, ny-1:0:-1]
 
 
-        # Prepare green matrix space 
-        gint_rep_transf_3D = np.zeros((2*nx, 2*ny, nz),
-                                dtype=np.complex128, order='F')
         # Prepare fft plan
-        fftplan = context.plan_FFT(gint_rep_transf_3D, axes=(0,1))
-        gint_rep_transf_3D[:] = 0.
+        temp_dev = context.zeros((2*nx, 2*ny, nz),
+                                dtype=np.complex128, order='F')
+        fftplan = context.plan_FFT(temp_dev, axes=(0,1))
+        del(temp_dev)
 
         # Transform the green function
         gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
 
-        # Replicate for all z
-        for iz in range(nz):
-            gint_rep_transf_3D[:,:,iz] = gint_rep_transf
-
         # Transfer to GPU (if needed)
-        gint_rep_transf_dev = context.nparray_to_context_array(gint_rep_transf_3D)
+        gint_rep_transf_dev = context.nparray_to_context_array(gint_rep_transf)
 
         self.dx = dx
         self.dy = dy
