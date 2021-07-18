@@ -27,7 +27,7 @@ def replace_spaceharge_with_quasi_frozen(
 
 class PICCollection:
 
-    def __init__(self, _buffer,
+    def __init__(self,
                  nx_grid,
                  ny_grid,
                  nz_grid,
@@ -40,8 +40,11 @@ class PICCollection:
                  n_lims_y,
                  solver='FFTSolver2p5D',
                  apply_z_kick=False,
+                 _context=None,
+                 _buffer=None,
                      ):
 
+        self._context = _context
         self._buffer = _buffer
 
         self.nx_grid = nx_grid
@@ -74,6 +77,7 @@ class PICCollection:
             xlim_pic = self.x_lims[ix]
             ylim_pic = self.y_lims[iy]
             new_pic = SpaceCharge3D(
+                _context=self._context,
                 _buffer=self._buffer,
                 length=0.,
                 apply_z_kick=self.apply_z_kick,
@@ -102,9 +106,12 @@ class DerivedElement:
         self.base_element.track(particles)
 
 
-def replace_spaceharge_with_PIC(_buffer, sequence,
+def replace_spaceharge_with_PIC(
+        sequence,
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
-        nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range):
+        nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
+        _context=None,
+        _buffer=None):
 
     all_sc_elems = []
     ind_sc_elems = []
@@ -122,7 +129,9 @@ def replace_spaceharge_with_PIC(_buffer, sequence,
     y_lim_min = np.min(all_sigma_y) * (n_sigmas_range_pic_y - 0.5)
     y_lim_max = np.max(all_sigma_y) * (n_sigmas_range_pic_y + 0.5)
 
-    pic_collection = PICCollection(_buffer=_buffer,
+    pic_collection = PICCollection(
+        _context=_context,
+        _buffer=_buffer,
         nx_grid=nx_grid, ny_grid=ny_grid, nz_grid=nz_grid,
         x_lim_min=x_lim_min, x_lim_max=x_lim_max, n_lims_x=n_lims_x,
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,

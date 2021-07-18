@@ -102,9 +102,12 @@ class SpaceCharge3D(xt.BeamElement):
         else:
             scale_coordinates_in_solver=(1.,1.,1.)
 
+        if _buffer is not None:
+            _context = _buffer.context
+        # I build the fieldmap on a temporary buffer
+        temp_buff = _context.new_buffer()
         fieldmap = TriLinearInterpolatedFieldMap(
-                    _context=_context,
-                    _buffer=_buffer,
+                    _buffer=temp_buff,
                     rho=rho, phi=phi,
                     x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
                     x_range=x_range, y_range=y_range, z_range=z_range,
@@ -121,6 +124,8 @@ class SpaceCharge3D(xt.BeamElement):
                  _offset=_offset,
                  fieldmap=fieldmap,
                  length=length)
+
+        # temp_buff is deallocate here
 
 
     def track(self, particles):
