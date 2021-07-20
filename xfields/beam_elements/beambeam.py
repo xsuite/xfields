@@ -3,7 +3,6 @@ from scipy.constants import e as qe
 from ..fieldmaps.bigaussian import BiGaussianFieldMap, BiGaussianFieldMapData
 from ..general import _pkg_root
 
-from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
@@ -56,9 +55,6 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             d_px=0.,
             d_py=0.,
             min_sigma_diff=1e-10):
-
-        if _context is None:
-            _context = context_default
 
         self.xoinitialize(
                  _context=_context,
@@ -130,7 +126,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             _buffer=_buffer,
             _offset=_offset,
             n_particles=xline_beambeam.charge/qe, # pysixtrak has it in coulumb
-            q0=qe,
+            q0=qe*float(xline_beambeam.enabled), # I implement the enable flag like this
             beta0=xline_beambeam.beta_r,
             mean_x=xline_beambeam.x_bb,
             mean_y=xline_beambeam.y_bb,
@@ -145,7 +141,6 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam.h'))
 

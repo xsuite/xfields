@@ -10,7 +10,6 @@ from ..fieldmaps import BiGaussianFieldMapData
 from ..fieldmaps import TriLinearInterpolatedFieldMapData
 from ..general import _pkg_root
 
-from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
@@ -88,10 +87,8 @@ class SpaceCharge3D(xt.BeamElement):
                  x_grid=None, y_grid=None, z_grid=None,
                  rho=None, phi=None,
                  solver=None,
-                 gamma0=None):
-
-        if _context is None:
-            _context = context_default
+                 gamma0=None,
+                 fftplan=None):
 
         self.update_on_track = update_on_track
         self.apply_z_kick = apply_z_kick
@@ -105,8 +102,14 @@ class SpaceCharge3D(xt.BeamElement):
         else:
             scale_coordinates_in_solver=(1.,1.,1.)
 
+        if _buffer is not None:
+            _context = _buffer.context
+        if _context is None:
+            _context = xo.context_default
+        # I build the fieldmap on a temporary buffer
+        temp_buff = _context.new_buffer()
         fieldmap = TriLinearInterpolatedFieldMap(
-                    _context=_context,
+                    _buffer=temp_buff,
                     rho=rho, phi=phi,
                     x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
                     x_range=x_range, y_range=y_range, z_range=z_range,
@@ -114,7 +117,8 @@ class SpaceCharge3D(xt.BeamElement):
                     nx=nx, ny=ny, nz=nz,
                     solver=solver,
                     scale_coordinates_in_solver=scale_coordinates_in_solver,
-                    updatable=update_on_track)
+                    updatable=update_on_track,
+                    fftplan=fftplan)
 
         self.xoinitialize(
                  _context=_context,
@@ -123,7 +127,8 @@ class SpaceCharge3D(xt.BeamElement):
                  fieldmap=fieldmap,
                  length=length)
 
-        self.context = self._buffer.context
+        # temp_buff is deallocate here
+
 
     def track(self, particles):
 
@@ -149,7 +154,6 @@ class SpaceCharge3D(xt.BeamElement):
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(TriLinearInterpolatedFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
 
@@ -178,9 +182,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  sigma_x=None,
                  sigma_y=None,
                  min_sigma_diff=1e-10):
-
-        if _context is None:
-            _context = context_default
 
         self.xoinitialize(
                  _context=_context,
@@ -315,9 +316,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(BiGaussianFieldMapData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(LongitudinalProfileQGaussianData._gen_c_api()[0]) # TODO: Remove when bug in xobject is fixed
 srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
 

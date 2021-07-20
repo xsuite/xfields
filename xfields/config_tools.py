@@ -27,7 +27,7 @@ def replace_spaceharge_with_quasi_frozen(
 
 class PICCollection:
 
-    def __init__(self, _buffer,
+    def __init__(self,
                  nx_grid,
                  ny_grid,
                  nz_grid,
@@ -40,8 +40,11 @@ class PICCollection:
                  n_lims_y,
                  solver='FFTSolver2p5D',
                  apply_z_kick=False,
+                 _context=None,
+                 _buffer=None,
                      ):
 
+        self._context = _context
         self._buffer = _buffer
 
         self.nx_grid = nx_grid
@@ -56,6 +59,7 @@ class PICCollection:
         self.y_lims = np.linspace(y_lim_min, y_lim_max, n_lims_y)
 
         self._existing_pics = {}
+        self._fftplan = None
 
 
     def get_pic(self, x_lim, y_lim):
@@ -73,6 +77,7 @@ class PICCollection:
             xlim_pic = self.x_lims[ix]
             ylim_pic = self.y_lims[iy]
             new_pic = SpaceCharge3D(
+                _context=self._context,
                 _buffer=self._buffer,
                 length=0.,
                 apply_z_kick=self.apply_z_kick,
@@ -80,7 +85,10 @@ class PICCollection:
                 y_range=(-ylim_pic, ylim_pic),
                 z_range=self.z_range,
                 nx=self.nx_grid, ny=self.ny_grid, nz=self.nz_grid,
-                solver=self.solver)
+                solver=self.solver,
+                fftplan=self._fftplan)
+            if self._fftplan is None:
+                self._fftplan = new_pic.fieldmap.solver.fftplan
             self._existing_pics[ix, iy] = new_pic
 
         return self._existing_pics[ix, iy]
@@ -98,9 +106,12 @@ class DerivedElement:
         self.base_element.track(particles)
 
 
-def replace_spaceharge_with_PIC(_buffer, sequence,
+def replace_spaceharge_with_PIC(
+        sequence,
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
-        nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range):
+        nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
+        _context=None,
+        _buffer=None):
 
     all_sc_elems = []
     ind_sc_elems = []
@@ -118,7 +129,9 @@ def replace_spaceharge_with_PIC(_buffer, sequence,
     y_lim_min = np.min(all_sigma_y) * (n_sigmas_range_pic_y - 0.5)
     y_lim_max = np.max(all_sigma_y) * (n_sigmas_range_pic_y + 0.5)
 
-    pic_collection = PICCollection(_buffer,
+    pic_collection = PICCollection(
+        _context=_context,
+        _buffer=_buffer,
         nx_grid=nx_grid, ny_grid=ny_grid, nz_grid=nz_grid,
         x_lim_min=x_lim_min, x_lim_max=x_lim_max, n_lims_x=n_lims_x,
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,
@@ -134,4 +147,4 @@ def replace_spaceharge_with_PIC(_buffer, sequence,
         sequence.elements[ii] = sc
         all_pics.append(sc)
 
-    return all_pics
+    return pic_collection, all_pics

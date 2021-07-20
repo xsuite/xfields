@@ -4,7 +4,7 @@ from numpy import pi
 
 from .base import Solver
 
-from xobjects.context import context_default
+from xobjects import context_default
 
 class FFTSolver2D(Solver):
 
@@ -30,7 +30,7 @@ class FFTSolver3D(Solver):
         (FFTSolver3D): Poisson solver object.
     '''
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
             context = context_default
@@ -80,7 +80,8 @@ class FFTSolver3D(Solver):
         gint_rep_dev = context.nparray_to_context_array(gint_rep)
 
         # Prepare fft plan
-        fftplan = context.plan_FFT(workspace_dev, axes=(0,1,2))
+        if fftplan is None:
+            fftplan = context.plan_FFT(workspace_dev, axes=(0,1,2))
 
         # Transform the green function (in place)
         fftplan.transform(gint_rep_dev)
@@ -108,15 +109,26 @@ class FFTSolver3D(Solver):
             phi (float64 array): electric potential at the grid points in Volts.
         '''
 
-        # The transposes make it faster in cupy (C-contigous arrays)
+        nz_alloc = self.nz
+        if self._gint_rep_transf_dev.shape[2] > 1:
+            nz_alloc = self._gint_rep_transf_dev.shape[2]
+        _workspace_dev = self.context.zeros(
+                (2*self.nx, 2*self.ny, nz_alloc), dtype=np.complex128, order='F')
 
-        self._workspace_dev.T[:,:,:] = 0. # reset
-        self._workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
-        self.fftplan.transform(self._workspace_dev) # rho_rep_hat
-        self._workspace_dev.T[:,:,:] *= (
+        # The transposes make it faster in cupy (C-contigous arrays)
+        _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
+        self.fftplan.transform(_workspace_dev) # rho_rep_hat
+
+        try:
+            _workspace_dev.T[:,:,:] *= (
                         self._gint_rep_transf_dev.T) # phi_rep_hat
-        self.fftplan.itransform(self._workspace_dev) #phi_rep
-        return self._workspace_dev.real[:self.nx, :self.ny, :self.nz]
+        except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+            for ii in range(self.nz):
+                _workspace_dev.T[ii,:,:] *= (
+                        self._gint_rep_transf_dev.T[0, :, :]) # phi_rep_hat
+
+        self.fftplan.itransform(_workspace_dev) #phi_rep
+        return _workspace_dev.real[:self.nx, :self.ny, :self.nz]
 
 class FFTSolver2p5D(FFTSolver3D):
 
@@ -137,15 +149,11 @@ class FFTSolver2p5D(FFTSolver3D):
         (FFTSolver3D): Poisson solver object.
     '''
 
-    def __init__(self, dx, dy, dz, nx, ny, nz, context=None):
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
             context = context_default
         self.context = context
-
-        # Prepare arrays
-        workspace_dev = context.nparray_to_context_array(
-                    np.zeros((2*nx, 2*ny, nz), dtype=np.complex128, order='F'))
 
         # Build grid for primitive function
         xg_F = np.arange(0, nx+2) * dx - dx/2
@@ -172,19 +180,18 @@ class FFTSolver2p5D(FFTSolver3D):
 
 
         # Prepare fft plan
-        fftplan = context.plan_FFT(workspace_dev, axes=(0,1))
+        if fftplan is None:
+            temp_dev = context.zeros((2*nx, 2*ny, nz),
+                                    dtype=np.complex128, order='F')
+            fftplan = context.plan_FFT(temp_dev, axes=(0,1))
+            del(temp_dev)
 
         # Transform the green function
         gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
 
-        # Replicate for all z
-        gint_rep_transf_3D = np.zeros((2*nx, 2*ny, nz),
-                                dtype=np.complex128, order='F')
-        for iz in range(nz):
-            gint_rep_transf_3D[:,:,iz] = gint_rep_transf
-
         # Transfer to GPU (if needed)
-        gint_rep_transf_dev = context.nparray_to_context_array(gint_rep_transf_3D)
+        gint_rep_transf_dev = context.nparray_to_context_array(
+                                       np.atleast_3d(gint_rep_transf))
 
         self.dx = dx
         self.dy = dy
@@ -192,7 +199,6 @@ class FFTSolver2p5D(FFTSolver3D):
         self.nx = nx
         self.ny = ny
         self.nz = nz
-        self._workspace_dev = workspace_dev
         self._gint_rep_transf_dev = gint_rep_transf_dev
         self.fftplan = fftplan
 

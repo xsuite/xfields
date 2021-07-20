@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 from xline.particles import Particles
-from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
+from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 
 ###################
@@ -14,7 +14,7 @@ import xtrack as xt
 context = ContextCpu(omp_num_threads=1) # omp
 #context = ContextCpu(omp_num_threads=48) # omp
 context = ContextCupy(default_block_size=256)
-context = ContextPyopencl('0.0')
+#context = ContextPyopencl('0.0')
 
 print(repr(context))
 
@@ -62,7 +62,6 @@ y_lim = 5.*sigma_y
 z_lim = 5.*sigma_z
 
 from xfields import SpaceCharge3D
-
 spcharge = SpaceCharge3D(
         _context=context,
         length=1, update_on_track=True, apply_z_kick=False,
@@ -72,6 +71,7 @@ spcharge = SpaceCharge3D(
         nx=256, ny=256, nz=100,
         solver='FFTSolver2p5D',
         gamma0=particles.gamma0)
+
 
 spcharge.track(particles)
 

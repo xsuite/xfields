@@ -1,6 +1,5 @@
 import numpy as np
 
-from xobjects.context import context_default
 import xobjects as xo
 import xtrack as xt
 
@@ -145,11 +144,9 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                  solver=None,
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
+                 fftplan=None
                  ):
 
-
-        if _context is None:
-            _context = context_default
 
         self.updatable = updatable
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
@@ -178,12 +175,10 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                  dphi_dy = nelem,
                  dphi_dz = nelem)
 
-        self.context = self._buffer.context
-
         self.compile_custom_kernels(only_if_needed=True)
 
         if isinstance(solver, str):
-            self.solver = self.generate_solver(solver)
+            self.solver = self.generate_solver(solver, fftplan)
         else:
             #TODO: consistency check to be added
             self.solver = solver
@@ -252,13 +247,15 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
             pos_in_buffer_of_maps_to_interp.append(
                     self._xobject.dphi_dz._offset + self._xobject.dphi_dz._data_offset)
 
-        pos_in_buffer_of_maps_to_interp = self.context.nparray_to_context_array(
+        context = self._buffer.context
+
+        pos_in_buffer_of_maps_to_interp = context.nparray_to_context_array(
                         np.array(pos_in_buffer_of_maps_to_interp, dtype=np.int64))
         nmaps_to_interp = len(pos_in_buffer_of_maps_to_interp)
-        buffer_out = self.context.zeros(
+        buffer_out = context.zeros(
                 shape=(nmaps_to_interp * len(x),), dtype=np.float64)
         if nmaps_to_interp > 0:
-            self.context.kernels.TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
+            context.kernels.TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
                     fmap=self._xobject,
                     n_points=len(x),
                     x=x, y=y, z=z,
@@ -308,7 +305,9 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
 
         assert len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
 
-        self.context.kernels.p2m_rectmesh3d(
+        context = self._buffer.context
+
+        context.kernels.p2m_rectmesh3d(
                 nparticles=len(x_p),
                 x=x_p, y=y_p, z=z_p,
                 part_weights=q0_coulomb*ncharges_p,
@@ -365,22 +364,24 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         else:
             raise ValueError('Not implemented!')
 
+        context = self._buffer.context
+
         # Compute gradient
-        self.context.kernels.central_diff(
+        context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.nx,
                 stride_in_dbl = self.phi.strides[0]/8,
                 factor = 1/(2*self.dx),
                 matrix = self.phi,
                 res = self.dphi_dx)
-        self.context.kernels.central_diff(
+        context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.ny,
                 stride_in_dbl = self.phi.strides[1]/8,
                 factor = 1/(2*self.dy),
                 matrix = self.phi,
                 res = self.dphi_dy)
-        self.context.kernels.central_diff(
+        context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.nz,
                 stride_in_dbl = self.phi.strides[2]/8,
@@ -413,7 +414,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         new_phi = solver.solve(self.rho)
         self.update_phi(new_phi)
 
-    def generate_solver(self, solver):
+    def generate_solver(self, solver, fftplan):
 
         """
         Generates a Poisson solver associated to the defined grid.
@@ -434,14 +435,16 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    context=self.context)
+                    context=self._buffer.context,
+                    fftplan=fftplan)
         elif solver == 'FFTSolver2p5D':
             solver = FFTSolver2p5D(
                     dx=self.dx*scale_dx,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    context=self.context)
+                    context=self._buffer.context,
+                    fftplan=fftplan)
         else:
             raise ValueError(f'solver name {solver} not recognized')
 
