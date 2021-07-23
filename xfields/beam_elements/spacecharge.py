@@ -164,7 +164,7 @@ SpaceCharge3D.XoStruct.extra_sources = srcs
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {
-        'longitudinal_profile': LongitudinalProfileQGaussianData, # Will become unionref
+        'longitudinal_profile': LongitudinalProfileQGaussianData, # TODO: Will become unionref
         'fieldmap': BiGaussianFieldMapData,
         'length': xo.Float64,
         }
@@ -190,6 +190,9 @@ class SpaceChargeBiGaussian(xt.BeamElement):
 
         if apply_z_kick:
             raise NotImplementedError
+
+        assert longitudinal_profile is not None, (
+            'Longitudinal profile must be provided')
 
         self.length = length
         self.longitudinal_profile = longitudinal_profile
