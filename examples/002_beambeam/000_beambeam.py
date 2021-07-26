@@ -3,7 +3,7 @@ import time
 import numpy as np
 
 from xline.particles import Particles
-from xobjects.context import ContextCpu, ContextCupy, ContextPyopencl
+from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 
 ###################
@@ -95,7 +95,7 @@ bbeam_b1 = BeamBeamBiGaussian2D(
             _context=context,
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
-            beta0=particles_b2.beta0,
+            beta0=particles_b2_pyst.beta0,
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
@@ -106,7 +106,7 @@ bbeam_b2 = BeamBeamBiGaussian2D(
             _context=context,
             n_particles=bunch_intensity_b1,
             q0 = particles_b1.q0,
-            beta0=particles_b1.beta0,
+            beta0=particles_b1_pyst.beta0,
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
@@ -140,7 +140,7 @@ bb_b1_pyst= BeamBeam4D(
         sigma_y=sigma_y_b2,
         x_bb=mean_x_b2,
         y_bb=mean_y_b2,
-        beta_r=np.float64(particles_b2.beta0))
+        beta_r=np.float64(particles_b2_pyst.beta0))
 
 p_pyst = Particles(p0c=p0c,
         mass=mass,
