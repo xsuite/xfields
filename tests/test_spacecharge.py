@@ -311,7 +311,7 @@ def test_spacecharge_pic():
                     z_range=(-z_lim, z_lim),
                     nx=128, ny=128, nz=25,
                     solver=solver,
-                    gamma0=particles.gamma0,
+                    gamma0=particles_pyst.gamma0,
                     )
 
             spcharge.track(particles)

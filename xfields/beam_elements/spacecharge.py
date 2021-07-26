@@ -98,6 +98,8 @@ class SpaceCharge3D(xt.BeamElement):
                                         'gamma0 must be provided')
 
         if gamma0 is not None:
+            if not np.isscalar(gamma0):
+                raise ValueError('gamma0 needs to be a scalar')
             scale_coordinates_in_solver=(1.,1., float(gamma0))
         else:
             scale_coordinates_in_solver=(1.,1.,1.)
@@ -208,6 +210,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                      min_sigma_diff=min_sigma_diff,
                      updatable=True)
 
+        self.iscollective = None # Inferred from _update_flag
+
     def track(self, particles):
 
         if self._update_flag:
@@ -253,6 +257,17 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                 self.update_sigma_y_on_track)
 
     @property
+    def iscollective(self):
+        if self._iscollective is not None:
+            return self._iscollective
+        else:
+            return self._update_flag
+
+    @iscollective.setter
+    def iscollective(self, value):
+        self._iscollective = value
+
+    @property
     def mean_x(self):
         return self.fieldmap.mean_x
 
@@ -283,7 +298,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
-
 
     @classmethod
     def from_xline(cls, xline_spacecharge=None,
