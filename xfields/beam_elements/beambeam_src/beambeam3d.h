@@ -336,7 +336,7 @@ void BoostParameters_boost_coordinates_inv(
 
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, 
-		 	   LocalParticle* part){
+		 	   LocalParticle* part0){
 	
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
@@ -369,10 +369,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
-    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
-    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
-        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
-
+    //start_per_particle_block (part0->part)
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
     	double y = LocalParticle_get_y(part);
@@ -519,8 +516,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	LocalParticle_set_zeta(part, zeta);
     	LocalParticle_update_delta(part, delta);
 	
+    //end_per_particle_block
 
-    } //only_for_context cpu_serial cpu_openmp
 }
 
 
