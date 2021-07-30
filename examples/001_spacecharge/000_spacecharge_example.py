@@ -48,9 +48,8 @@ from xfields.test_support.temp_makepart import generate_particles_object
                             r_max_probes,
                             z_probes,
                             theta_probes)
-part_dict = xt.pyparticles_to_xtrack_dict(particles_pyst)
 particles = xt.Particles(
-        _context=context, **part_dict)
+        _context=context, **particles_pyst.to_dict())
 
 
 ######################

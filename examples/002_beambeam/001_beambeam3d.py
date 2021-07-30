@@ -114,8 +114,7 @@ pyst_part = xline.Particles(
         sigma = 3.,
         delta = 2e-4)
 
-part_dict = xt.pyparticles_to_xtrack_dict(pyst_part )
-part= xt.Particles(_context=context, **part_dict)
+part= xt.Particles(_context=context, **pyst_part.to_dict())
 
 bb.track(part)
 print('------------------------')
