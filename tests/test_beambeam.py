@@ -53,9 +53,8 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-        part_dict_b1 = xt.pyparticles_to_xtrack_dict(particles_b1_pyst)
         particles_b1 = xt.Particles(_context=context,
-                                    **part_dict_b1)
+                                    **particles_b1_pyst.to_dict())
         particles_b1.x += mean_x_b1
         particles_b1.y += mean_y_b1
 
@@ -72,9 +71,8 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-        part_dict_b2 = xt.pyparticles_to_xtrack_dict(particles_b2_pyst)
         particles_b2 = xt.Particles(_context=context,
-                                    **part_dict_b2)
+                                    **particles_b2_pyst.to_dict())
         particles_b2.x += mean_x_b2
         particles_b2.y += mean_y_b2
 

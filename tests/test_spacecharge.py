@@ -44,9 +44,8 @@ def test_spacecharge_gauss_qgauss():
                                         r_max_probes,
                                         z_probes,
                                         theta_probes)
-            part_dict = xt.pyparticles_to_xtrack_dict(particles_pyst)
             particles = xt.Particles(
-                    _context=context, **part_dict)
+                    _context=context, **particles_pyst.to_dict())
 
             particles.x += x0
             particles.y += y0
@@ -289,9 +288,8 @@ def test_spacecharge_pic():
                                         r_max_probes,
                                         z_probes,
                                         theta_probes)
-            part_dict = xt.pyparticles_to_xtrack_dict(particles_pyst)
             particles = xt.Particles(
-                    _context=context, **part_dict)
+                    _context=context, **particles_pyst.to_dict())
 
             ######################
             # Space charge (PIC) #
