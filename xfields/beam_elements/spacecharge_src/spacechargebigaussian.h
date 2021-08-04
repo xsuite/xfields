@@ -3,17 +3,14 @@
 
 /*gpufun*/
 void SpaceChargeBiGaussian_track_local_particle(
-		 SpaceChargeBiGaussianData el, LocalParticle* part){
+		 SpaceChargeBiGaussianData el, LocalParticle* part0){
 
     const double length = SpaceChargeBiGaussianData_get_length(el);
     BiGaussianFieldMapData fmap = SpaceChargeBiGaussianData_getp_fieldmap(el);
     LongitudinalProfileQGaussianData prof = 
 	    SpaceChargeBiGaussianData_getp_longitudinal_profile(el);
 
-    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
-    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
-        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
-
+    //start_per_particle_block (part0->part)
 	double const x = LocalParticle_get_x(part);
 	double const y = LocalParticle_get_y(part);
 	double const z = LocalParticle_get_zeta(part);
@@ -40,7 +37,7 @@ void SpaceChargeBiGaussian_track_local_particle(
 	LocalParticle_add_to_px(part, factor*lambda_z*dphi_dx);
 	LocalParticle_add_to_py(part, factor*lambda_z*dphi_dy);
 
-    } //only_for_context cpu_serial cpu_openmp
+    //end_per_particle_block
 }
 
 
