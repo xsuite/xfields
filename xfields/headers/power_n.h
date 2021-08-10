@@ -1,25 +1,23 @@
-#ifndef XFIELDS_HELPER_FUNCTIONS_H__
-#define XFIELDS_HELPER_FUNCTIONS_H__
+#ifndef XFIELDS_HEADERS_POWER_H_H__
+#define XFIELDS_HEADERS_POWER_H_H__
 
-#include "constants.h"
+/** \file power_n.h
+ *  \note always include constants first!!! */
 
-/*gpufun*/
-double power_n( double x, unsigned int n )
+/*gpufun*/ double power_n( double x, unsigned int n )
 {
     #if defined( __OPENCL_VERSION__ )
     return pown( x, n );
     #else
 
-    typedef double real_type;
-
-    real_type x_n = x;
+    double x_n = x;
 
     unsigned int const n_div_16 = n >> 4u;
     unsigned int const n_mod_16 = n - ( n_div_16 << 4u );
 
     switch( n_mod_16 )
     {
-        case  0u: { x_n = ( real_type )1.0; break; }
+        case  0u: { x_n = ( double )1.0; break; }
         case  1u: { break; }
         case  2u: { x_n *= x;                                       break; }
         case  3u: { x_n *= x * x;                                   break; }
@@ -35,19 +33,14 @@ double power_n( double x, unsigned int n )
         case 13u: { x_n *= x * x; x_n *= x_n;     x_n *= x_n * x;   break; }
         case 14u: { x_n *= x * x; x_n *= x_n * x; x_n *= x_n;       break; }
         case 15u: { x_n *= x;     x_n *= x_n * x; x_n *= x_n * x_n; break; }
-
-        default:
-        {
-            CERRF_ASSERT( n > 15u );
-            x_n = ( real_type )0.0;
-        }
+        default:  { x_n = ( double )0.0; }
     };
 
     if( n_div_16 > 0u ){ x *= x; x *= x; x *= x; x *= x; }
 
     switch( n_div_16 )
     {
-        case  0u: { x_n  = ( n_mod_16 != 0u ) ? x_n : ( real_type )1.0; break; }
+        case  0u: { x_n  = ( n_mod_16 != 0u ) ? x_n : ( double )1.0; break; }
         case  1u: { x_n *= x;                                           break; }
         case  2u: { x   *= x; x_n *= x;                                 break; }
         case  3u: { x_n *= x * x * x;                                   break; }
@@ -61,10 +54,10 @@ double power_n( double x, unsigned int n )
         case 11u: { x_n *= x * x; x *= x * x; x *= x * x; x_n *= x;     break; }
         case 12u: { x *= x; x *= x; x_n *= x; x *= x; x_n *= x;         break; }
         case 13u: { x_n *= x; x *= x; x *= x; x_n *= x; x *= x;
-                   x_n *= x; break; }
+                    x_n *= x; break; }
 
         case 14u: { x_n *= x * x; x *= x; x *= x; x_n *= x; x *= x;
-                   x_n *= x; break; }
+                    x_n *= x; break; }
 
         case 15u: { x *= x * x; x_n *= x * x; x *= x * x; x_n *= x;    break; }
 
@@ -72,7 +65,6 @@ double power_n( double x, unsigned int n )
         {
             unsigned int ii = 0u;
             unsigned int nn = n_div_16 % 16u;
-
 
             for( ; ii < nn ; ++ii ) x_n *= x;
 
@@ -87,4 +79,4 @@ double power_n( double x, unsigned int n )
     #endif /* defined( __OPENCL_VERSION__ ) */
 }
 
-#endif /* XFIELDS_HELPER_FUNCTIONS_H__ */
+#endif /* XFIELDS_HEADERS_POWER_H_H__ */
