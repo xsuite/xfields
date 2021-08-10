@@ -26,7 +26,7 @@ void get_transv_field_gauss_round(
 void get_transv_field_gauss_ellip(
         double sigma_x,  double sigma_y,
         double Delta_x,  double Delta_y,
-        const double x, 
+        const double x,
 	const double y,
         double* Ex_out,
         double* Ey_out)
@@ -58,9 +58,9 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = aby;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    cerrf_q1(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    cerrf_q1(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-abx*abx/(2*sigmax*sigmax)-aby*aby/(2*sigmay*sigmay));
 
@@ -78,9 +78,9 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = abx;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    cerrf_q1(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    cerrf_q1(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-aby*aby/(2*sigmay*sigmay)-abx*abx/(2*sigmax*sigmax));
 
@@ -102,11 +102,11 @@ void get_transv_field_gauss_ellip(
 
 /*gpufun*/
 void get_Ex_Ey_gauss(
-             const double  x, 
+             const double  x,
              const double  y,
-             const double  sigma_x, 
+             const double  sigma_x,
              const double  sigma_y,
-             const double  min_sigma_diff, 
+             const double  min_sigma_diff,
              double* Ex_ptr,
              double* Ey_ptr){
 
@@ -137,13 +137,13 @@ void BiGaussianFieldMap_get_dphi_dx_dphi_dy(
     const double mean_y = BiGaussianFieldMapData_get_mean_y(fmap);
     const double min_sigma_diff = BiGaussianFieldMapData_get_min_sigma_diff(fmap);
 
-    double Ex, Ey; 
+    double Ex, Ey;
     get_Ex_Ey_gauss(
-             x-mean_x, 
+             x-mean_x,
              y-mean_y,
-             sigma_x, 
+             sigma_x,
              sigma_y,
-             min_sigma_diff, 
+             min_sigma_diff,
              &Ex,
              &Ey);
 
