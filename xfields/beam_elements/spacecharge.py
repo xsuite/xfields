@@ -98,6 +98,8 @@ class SpaceCharge3D(xt.BeamElement):
                                         'gamma0 must be provided')
 
         if gamma0 is not None:
+            if not np.isscalar(gamma0):
+                raise ValueError('gamma0 needs to be a scalar')
             scale_coordinates_in_solver=(1.,1., float(gamma0))
         else:
             scale_coordinates_in_solver=(1.,1.,1.)
@@ -164,7 +166,7 @@ SpaceCharge3D.XoStruct.extra_sources = srcs
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {
-        'longitudinal_profile': LongitudinalProfileQGaussianData, # Will become unionref
+        'longitudinal_profile': LongitudinalProfileQGaussianData, # TODO: Will become unionref
         'fieldmap': BiGaussianFieldMapData,
         'length': xo.Float64,
         }
@@ -191,6 +193,9 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         if apply_z_kick:
             raise NotImplementedError
 
+        assert longitudinal_profile is not None, (
+            'Longitudinal profile must be provided')
+
         self.length = length
         self.longitudinal_profile = longitudinal_profile
         self.apply_z_kick = apply_z_kick
@@ -204,6 +209,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                      sigma_y=sigma_y,
                      min_sigma_diff=min_sigma_diff,
                      updatable=True)
+
+        self.iscollective = None # Inferred from _update_flag
 
     def track(self, particles):
 
@@ -250,6 +257,17 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                 self.update_sigma_y_on_track)
 
     @property
+    def iscollective(self):
+        if self._iscollective is not None:
+            return self._iscollective
+        else:
+            return self._update_flag
+
+    @iscollective.setter
+    def iscollective(self, value):
+        self._iscollective = value
+
+    @property
     def mean_x(self):
         return self.fieldmap.mean_x
 
@@ -280,7 +298,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
-
 
     @classmethod
     def from_xline(cls, xline_spacecharge=None,

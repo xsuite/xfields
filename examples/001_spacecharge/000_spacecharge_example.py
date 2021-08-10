@@ -48,9 +48,8 @@ from xfields.test_support.temp_makepart import generate_particles_object
                             r_max_probes,
                             z_probes,
                             theta_probes)
-part_dict = xt.pyparticles_to_xtrack_dict(particles_pyst)
 particles = xt.Particles(
-        _context=context, **part_dict)
+        _context=context, **particles_pyst.to_dict())
 
 
 ######################
@@ -70,7 +69,7 @@ spcharge = SpaceCharge3D(
         z_range=(-z_lim, z_lim),
         nx=256, ny=256, nz=100,
         solver='FFTSolver2p5D',
-        gamma0=particles.gamma0)
+        gamma0=particles_pyst.gamma0)
 
 
 spcharge.track(particles)

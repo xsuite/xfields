@@ -3,7 +3,7 @@
 
 /*gpufun*/
 void SpaceCharge3D_track_local_particle(
-		 SpaceCharge3DData el, LocalParticle* part){
+		 SpaceCharge3DData el, LocalParticle* part0){
 
     //TODO: kick_z flag needs to be inserted in xobject
 
@@ -12,10 +12,7 @@ void SpaceCharge3D_track_local_particle(
     /*gpuglmem*/ double* dphi_dy_map = SpaceCharge3DData_getp1_fieldmap_dphi_dy(el, 0);
     TriLinearInterpolatedFieldMapData fmap = SpaceCharge3DData_getp_fieldmap(el);
 
-    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
-    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
-        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
-
+    //start_per_particle_block (part0->part)
 	double const x = LocalParticle_get_x(part);
 	double const y = LocalParticle_get_y(part);
 	double const z = LocalParticle_get_zeta(part);
@@ -43,7 +40,7 @@ void SpaceCharge3D_track_local_particle(
 	LocalParticle_add_to_px(part, factor*dphi_dx);
 	LocalParticle_add_to_py(part, factor*dphi_dy);
 
-    } //only_for_context cpu_serial cpu_openmp
+    //end_per_particle_block
 }
 
 #endif

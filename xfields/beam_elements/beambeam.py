@@ -1,3 +1,4 @@
+import numpy as np
 from scipy.constants import e as qe
 
 from ..fieldmaps.bigaussian import BiGaussianFieldMap, BiGaussianFieldMapData
@@ -60,6 +61,9 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                  _context=_context,
                  _buffer=_buffer,
                  _offset=_offset)
+
+        if not np.isscalar(beta0):
+            raise ValueError('beta0 needs to be ascalar')
 
         self.n_particles = n_particles
         self.q0 = q0
