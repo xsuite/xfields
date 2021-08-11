@@ -58,9 +58,9 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = aby;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf_q1(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf_q1(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-abx*abx/(2*sigmax*sigmax)-aby*aby/(2*sigmay*sigmay));
 
@@ -78,9 +78,9 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = abx;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf_q1(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf_q1(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-aby*aby/(2*sigmay*sigmay)-abx*abx/(2*sigmax*sigmax));
 
