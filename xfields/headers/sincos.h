@@ -33,4 +33,5 @@
     *sin_result = sin( arg );
     *cos_result = cos( arg ); }
 
+#endif /* XSUITE_NO_SINCOS */
 #endif /* XFIELDS_SINCOS_H__ */
