@@ -112,8 +112,8 @@
         #if !defined( FADDEEVA_NO_GZ_WEIGHT_FN )
         /* calculate g(z) = sqrt( 1 - (x/x0)^2 ) * ( 1 - y/y0 ) */
         temp  = x * ( ( double )1. / ( double )FADDEEVA_X_LIMIT );
-        temp *= temp;
-        temp  = sqrt( ( double )1. - temp * temp );
+        temp  = ( ( double )1.0 +  temp ) * ( ( double )1.0 - temp );
+        temp  = sqrt( temp );
         temp *= ( double )1. - y * ( ( double )1. / ( double )FADDEEVA_Y_LIMIT );
         /*now: temp = g(z) */
         #else /* !defined( FADDEEVA_NO_GZ_WEIGHT_FN ) */
