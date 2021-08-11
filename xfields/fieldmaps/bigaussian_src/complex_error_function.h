@@ -75,8 +75,6 @@
     double* /*restrict*/ out_x,
     double* /*restrict*/ out_y )
 {
-    typedef double double;
-
     /* This implementation corresponds closely to the previously used
      * "CERNLib C" version, translated from the FORTRAN function written at
      * CERN by K. Koelbig, Program C335, 1970. The main difference to
@@ -222,11 +220,11 @@
     if( sign_y < ( double )0.0 )  /* Quadrants Q3 and Q4 */
     {
         double const exp_arg  = ( y - x ) * ( y + x );
-        double const trig_arg = ( real_type )2. * x * y;
+        double const trig_arg = ( double )2. * x * y;
         double const exp_factor = exp( exp_arg );
         double sin_arg, cos_arg;
 
-        xsuite_sincos( arg, &sin_arg, &cos_arg );
+        xsuite_sincos( trig_arg, &sin_arg, &cos_arg );
         Wx = exp_factor * cos_arg - Wx;
         Wy = exp_factor * sin_arg + Wy;
     }
