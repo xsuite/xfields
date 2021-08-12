@@ -221,7 +221,7 @@
     {
         double const exp_arg  = ( y - x ) * ( y + x );
         double const trig_arg = ( double )2. * x * y;
-        double const exp_factor = exp( exp_arg );
+        double const exp_factor = ( double )2. * exp( exp_arg );
         double sin_arg, cos_arg;
 
         xsuite_sincos( trig_arg, &sin_arg, &cos_arg );
