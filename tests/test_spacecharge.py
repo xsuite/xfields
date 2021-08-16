@@ -6,12 +6,8 @@ import xtrack as xt
 
 def test_spacecharge_gauss_qgauss():
     for frozen in [True, False]:
-        for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
-            if CTX not in xo.context.available:
-                continue
-
-            context = CTX()
-            print(context)
+        for context in xo.context.get_test_contexts():
+            print(f"Test {context.__class__}")
 
             #################################
             # Generate particles and probes #
@@ -250,11 +246,8 @@ def test_spacecharge_gauss_qgauss():
 
 def test_spacecharge_pic():
     for solver in ['FFTSolver2p5D', 'FFTSolver3D']:
-        for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
-            if CTX not in xo.context.available:
-                continue
-
-            context = CTX()
+        for context in xo.context.get_test_contexts():
+            print(f"Test {context.__class__}")
 
             print(repr(context))
 
