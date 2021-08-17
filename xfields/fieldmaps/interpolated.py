@@ -335,8 +335,12 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         context = self._buffer.context
 
         if particles is None:
-            assert (len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
-                     == len(state_p))
+            assert (len(x_p) == len(y_p) == len(z_p) == len(ncharges_p))
+            if state_p is None:
+                state_p = context.zeros(shape=x_p.shape, dtype=np.int64) + 1
+            else:
+                assert len(state_p) == len(x_p)
+
             context.kernels.p2m_rectmesh3d(
                     nparticles=len(x_p),
                     x=x_p, y=y_p, z=z_p,
@@ -345,7 +349,9 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                     x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
                     dx=self.dx, dy=self.dy, dz=self.dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
-                    grid1d=self.rho)
+                    grid1d_buffer=self._xobject.rho._buffer.buffer,
+                    grid1d_offset=self._xobject.rho._offset
+                                 +self._xobject.rho._data_offset)
         else:
             assert (x_p is None and y_p is None and z_p is None
                     and ncharges_p is None and state_p is None)
