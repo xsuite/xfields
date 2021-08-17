@@ -62,21 +62,6 @@
 }
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 /*gpukern*/ void p2m_rectmesh3d(
         // INPUTS:
           // length of x, y, z arrays
@@ -111,27 +96,37 @@
     }//end_vectorize
 }
 
-//  /*gpukern*/ void p2m_rectmesh3d_xparticles(
-//          // INPUTS:
-//            // length of x, y, z arrays
-//          const int nparticles,
-//  	ParticlesData particles,
-//            // mesh origin
-//          const double x0, const double y0, const double z0,
-//            // mesh distances per cell
-//          const double dx, const double dy, const double dz,
-//            // mesh dimension (number of cells)
-//          const int nx, const int ny, const int nz,
-//          // OUTPUTS:
-//          /*gpuglmem*/ double *grid1d
-//  ) {
-//          /*gpuglmem*/ const double* x = ParticlesData_get_p1_x(particles, 0); 
-//  	/*gpuglmem*/ const double* y = ParticlesData_get_p1_y(particles, 0); 
-//  	/*gpuglmem*/ const double* z = ParticlesData_get_p1_zeta(particles, 0);
-//  	/*gpuglmem*/ const double* part_weights = ParticlesData_get_p1_weight(
-//  			                                             particles, 0);
-//  	/*gpuglmem*/ const int64_t* part_state = ParticlesData_get_p1_state(
-//  			                                             particles, 0);
-//  
-//     }
+/*gpukern*/ void p2m_rectmesh3d_xparticles(
+        // INPUTS:
+          // length of x, y, z arrays
+        const int nparticles,
+	ParticlesData particles,
+          // mesh origin
+        const double x0, const double y0, const double z0,
+          // mesh distances per cell
+        const double dx, const double dy, const double dz,
+          // mesh dimension (number of cells)
+        const int nx, const int ny, const int nz,
+        // OUTPUTS:
+        /*gpuglmem*/ double *grid1d
+) {
+        /*gpuglmem*/ const double* x = ParticlesData_getp1_x(particles, 0); 
+	/*gpuglmem*/ const double* y = ParticlesData_getp1_y(particles, 0); 
+	/*gpuglmem*/ const double* z = ParticlesData_getp1_zeta(particles, 0);
+	/*gpuglmem*/ const double* part_weights = ParticlesData_getp1_weight(
+			                                             particles, 0);
+	/*gpuglmem*/ const int64_t* part_state = ParticlesData_getp1_state(
+			                                             particles, 0);
+
+    #pragma omp parallel for //only_for_context cpu_openmp 
+    for (int pidx=0; pidx<nparticles; pidx++){ //vectorize_over pidx nparticles
+        if (part_state[pidx] > 0){
+    	    double pwei = part_weights[pidx];
+            p2m_rectmesh3d_one_particle(x[pidx], y[pidx], z[pidx], pwei,
+                                        x0, y0, z0, dx, dy, dz, nx, ny, nz,
+                                        grid1d);
+	}
+    }//end_vectorize
+
+}
 #endif

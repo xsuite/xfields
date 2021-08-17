@@ -40,6 +40,23 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
             ],
         n_threads='nelem'
         ),
+    'p2m_rectmesh3d_xparticles': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xt.Particles.XoStruct, pointer=False, name='particles'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Float64, pointer=True, name='grid1d'),
+            ],
+        n_threads='nparticles'
+        ),
     'p2m_rectmesh3d': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
