@@ -148,6 +148,7 @@ class SpaceCharge3D(xt.BeamElement):
                     y_p=particles.y,
                     z_p=particles.zeta,
                     ncharges_p=particles.weight,
+                    state_p=particles.state,
                     q0_coulomb=particles.q0*qe)
 
         # call C tracking kernel

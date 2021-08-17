@@ -47,6 +47,7 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
             xo.Arg(xo.Float64, pointer=True, name='y'),
             xo.Arg(xo.Float64, pointer=True, name='z'),
             xo.Arg(xo.Float64, pointer=True, name='part_weights'),
+            xo.Arg(xo.Int64,   pointer=True, name='part_state'),
             xo.Arg(xo.Float64, pointer=False, name='x0'),
             xo.Arg(xo.Float64, pointer=False, name='y0'),
             xo.Arg(xo.Float64, pointer=False, name='z0'),
@@ -271,7 +272,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         return particles_quantities
 
     #@profile
-    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
+    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, state_p, q0_coulomb,
                         reset=True, update_phi=True, solver=None, force=False):
 
         """
@@ -311,6 +312,7 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                 nparticles=len(x_p),
                 x=x_p, y=y_p, z=z_p,
                 part_weights=q0_coulomb*ncharges_p,
+                part_state=state_p,
                 x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
                 dx=self.dx, dy=self.dy, dz=self.dz,
                 nx=self.nx, ny=self.ny, nz=self.nz,
