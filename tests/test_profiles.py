@@ -5,11 +5,7 @@ import xobjects as xo
 from xfields import LongitudinalProfileQGaussian
 
 def test_qgauss():
-    for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
-        if CTX not in xo.context.available:
-            continue
-
-        ctx = CTX()
+    for ctx in xo.context.get_test_contexts():
         print(repr(ctx))
 
         z0 = 0.1

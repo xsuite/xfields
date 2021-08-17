@@ -6,11 +6,7 @@ import xobjects as xo
 
 
 def test_beambeam():
-    for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
-        if CTX not in xo.context.available:
-            continue
-
-        context = CTX()
+    for context in xo.context.get_test_contexts():
         print(repr(context))
 
         #################################
