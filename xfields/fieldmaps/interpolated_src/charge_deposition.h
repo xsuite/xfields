@@ -80,10 +80,12 @@
           // mesh dimension (number of cells)
         const int nx, const int ny, const int nz,
         // OUTPUTS:
-        /*gpuglmem*/ double *grid1d
-) {
+        /*gpuglmem*/ int8_t*  grid1d_buffer,
+	             int64_t  grid1d_offset){
 
-    
+    /*gpuglmem*/ double* grid1d = 
+		(/*gpuglmem*/ double*)(grid1d_buffer + grid1d_offset);
+
     #pragma omp parallel for //only_for_context cpu_openmp 
     for (int pidx=0; pidx<nparticles; pidx++){ //vectorize_over pidx nparticles
         if (part_state[pidx] > 0){
@@ -108,20 +110,27 @@
           // mesh dimension (number of cells)
         const int nx, const int ny, const int nz,
         // OUTPUTS:
-        /*gpuglmem*/ double *grid1d
-) {
-        /*gpuglmem*/ const double* x = ParticlesData_getp1_x(particles, 0); 
-	/*gpuglmem*/ const double* y = ParticlesData_getp1_y(particles, 0); 
-	/*gpuglmem*/ const double* z = ParticlesData_getp1_zeta(particles, 0);
-	/*gpuglmem*/ const double* part_weights = ParticlesData_getp1_weight(
-			                                             particles, 0);
-	/*gpuglmem*/ const int64_t* part_state = ParticlesData_getp1_state(
-			                                             particles, 0);
+        /*gpuglmem*/ int8_t*  grid1d_buffer,
+	             int64_t  grid1d_offset){
+
+    /*gpuglmem*/ double* grid1d = 
+    	(/*gpuglmem*/ double*)(grid1d_buffer + grid1d_offset);
+    
+    /*gpuglmem*/ const double* x = ParticlesData_getp1_x(particles, 0); 
+    /*gpuglmem*/ const double* y = ParticlesData_getp1_y(particles, 0); 
+    /*gpuglmem*/ const double* z = ParticlesData_getp1_zeta(particles, 0);
+    /*gpuglmem*/ const double* part_weights = ParticlesData_getp1_weight(
+    		                                             particles, 0);
+    /*gpuglmem*/ const int64_t* part_state = ParticlesData_getp1_state(
+    		                                             particles, 0);
+    // TODO I am forgetting about charge_ratio and mass_ratio
+    const double q0_coulomb = QELEM * ParticlesData_get_q0(particles);
 
     #pragma omp parallel for //only_for_context cpu_openmp 
     for (int pidx=0; pidx<nparticles; pidx++){ //vectorize_over pidx nparticles
         if (part_state[pidx] > 0){
-    	    double pwei = part_weights[pidx];
+    	    double pwei = part_weights[pidx] * q0_coulomb;
+
             p2m_rectmesh3d_one_particle(x[pidx], y[pidx], z[pidx], pwei,
                                         x0, y0, z0, dx, dy, dz, nx, ny, nz,
                                         grid1d);

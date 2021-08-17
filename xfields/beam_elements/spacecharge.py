@@ -144,12 +144,7 @@ class SpaceCharge3D(xt.BeamElement):
 
         if self.update_on_track:
             self.fieldmap.update_from_particles(
-                    x_p=particles.x,
-                    y_p=particles.y,
-                    z_p=particles.zeta,
-                    ncharges_p=particles.weight,
-                    state_p=particles.state,
-                    q0_coulomb=particles.q0*qe)
+                particles=particles)
 
         # call C tracking kernel
         super().track(particles)
