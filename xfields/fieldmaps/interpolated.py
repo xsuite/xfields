@@ -356,7 +356,8 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                     dx=self.dx, dy=self.dy, dz=self.dz,
                     nx=self.nx, ny=self.ny, nz=self.nz,
                     grid1d_buffer=self._xobject.rho._buffer.buffer,
-                    grid1d_offset=self._xobject.rho._offset)
+                    grid1d_offset=self._xobject.rho._offset
+                                 +self._xobject.rho._data_offset)
 
         if update_phi:
             self.update_phi_from_rho(solver=solver)
@@ -415,27 +416,33 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                 stride_in_dbl = self.phi.strides[0]/8,
                 factor = 1/(2*self.dx),
                 matrix_buffer = self._xobject.phi._buffer.buffer,
-                matrix_offset = self._xobject.phi._offset,
+                matrix_offset = self._xobject.phi._offset
+                               +self._xobject.phi._data_offset,
                 res_buffer = self._xobject.dphi_dx._buffer.buffer,
-                res_offset = self._xobject.dphi_dx._offset)
+                res_offset = self._xobject.dphi_dx._offset
+                            +self._xobject.dphi_dx._data_offset)
         context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.ny,
                 stride_in_dbl = self.phi.strides[1]/8,
                 factor = 1/(2*self.dy),
                 matrix_buffer = self._xobject.phi._buffer.buffer,
-                matrix_offset = self._xobject.phi._offset,
+                matrix_offset = self._xobject.phi._offset
+                               +self._xobject.phi._data_offset,
                 res_buffer = self._xobject.dphi_dy._buffer.buffer,
-                res_offset = self._xobject.dphi_dy._offset)
+                res_offset = self._xobject.dphi_dy._offset
+                            +self._xobject.dphi_dy._data_offset)
         context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.nz,
                 stride_in_dbl = self.phi.strides[2]/8,
                 factor = 1/(2*self.dz),
                 matrix_buffer = self._xobject.phi._buffer.buffer,
-                matrix_offset = self._xobject.phi._offset,
+                matrix_offset = self._xobject.phi._offset
+                               +self._xobject.phi._data_offset,
                 res_buffer = self._xobject.dphi_dz._buffer.buffer,
-                res_offset = self._xobject.dphi_dz._offset)
+                res_offset = self._xobject.dphi_dz._offset
+                            +self._xobject.dphi_dz._data_offset)
 
     #@profile
     def update_phi_from_rho(self, solver=None):
