@@ -6,8 +6,6 @@ from xfields.general import _pkg_root
 
 
 def test_cerrf_q1():
-    if xo.ContextCpu not in available:
-        return
 
     ctx = xo.ContextCpu(omp_num_threads=2)
 
