@@ -144,6 +144,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
+srcs.append(_pkg_root.joinpath('headers/sincos.h'))
+srcs.append(_pkg_root.joinpath('headers/power_n.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam.h'))
