@@ -44,6 +44,20 @@ void Sigmas_propagate(
     double const Sig_34 = Sig_34_0 + Sig_44_0*S;
     double const Sig_44 = Sig_44_0 + 0.*S;
 
+/*
+    printf("sigma at cp:\n");
+    printf("Sig_11: %.30f\n", Sig_11);
+    printf("Sig_12: %.30f\n", Sig_12);
+    printf("Sig_13: %.30f\n", Sig_13);
+    printf("Sig_14: %.30f\n", Sig_14);
+    printf("Sig_22: %.30f\n", Sig_22);
+    printf("Sig_23: %.30f\n", Sig_23);
+    printf("Sig_24: %.30f\n", Sig_24);
+    printf("Sig_33: %.30f\n", Sig_33);
+    printf("Sig_34: %.30f\n", Sig_34);
+    printf("Sig_44: %.30f\n", Sig_44);
+*/
+
     double const R = Sig_11-Sig_33;
     double const W = Sig_11+Sig_33;
     double const T = R*R+4*Sig_13*Sig_13;
@@ -336,7 +350,7 @@ void BoostParameters_boost_coordinates_inv(
 
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, 
-		 	   LocalParticle* part0){
+		 	   LocalParticle* part){
 	
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
@@ -371,7 +385,10 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
-    //start_per_particle_block (part0->part)
+    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
+    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
+        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
+
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
     	double y = LocalParticle_get_y(part);
@@ -383,12 +400,20 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	const double p0c = LocalParticle_get_p0c(part); // eV
 
     	const double P0 = p0c/C_LIGHT*QELEM;
-
+/*
+        printf("step 1: init\n");
+        printf("Macropart %d: x:     %.10f\n", ii, x);
+        printf("Macropart %d: px:    %.10f\n", ii, px);
+        printf("Macropart %d: y:     %.10f\n", ii, y);
+        printf("Macropart %d: py:    %.10f\n", ii, py);
+        printf("Macropart %d: z:     %.10f\n", ii, zeta);
+        printf("Macropart %d: delta: %.10f\n", ii, delta);
+*/
     	// Change reference frame
     	double x_star =     x     - x_CO    - delta_x;
-    	double px_star =    px    - px_CO   - delta_px;
+    	double px_star =    px    - px_CO;
     	double y_star =     y     - y_CO    - delta_y;
-    	double py_star =    py    - py_CO   - delta_py;
+    	double py_star =    py    - py_CO;
     	double sigma_star = zeta  - sigma_CO;
     	double delta_star = delta - delta_CO;
 
@@ -396,27 +421,37 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	BoostParameters_boost_coordinates(bpar,
     	    &x_star, &px_star, &y_star, &py_star,
     	    &sigma_star, &delta_star);
+/*
+        printf("step 2: after boost\n");
+        printf("Macropart %d: x:     %.10f\n", ii, x_star);
+        printf("Macropart %d: px:    %.10f\n", ii, px_star);
+        printf("Macropart %d: y:     %.10f\n", ii, y_star);
+        printf("Macropart %d: py:    %.10f\n", ii, py_star);
+        printf("Macropart %d: z:     %.10f\n", ii, sigma_star);
+        printf("Macropart %d: delta: %.10f\n", ii, delta_star);
+*/
 
-    	//printf("x_star=%.10e\n", x_star);
-	//printf("px_star=%.10e\n", px_star);
-	//printf("y_star=%.10e\n", y_star);
-	//printf("py_star=%.10e\n", py_star);
-    	//printf("sigma_star=%.10e\n", sigma_star);
-	//printf("delta_star=%.10e\n", delta_star);
-
+        double S;
     	// Synchro beam
     	for (int i_slice=0; i_slice<N_slices; i_slice++)
     	{
-    	    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
-    	    const double x_slice_star = x_slices_star_arr[i_slice];
-    	    const double y_slice_star = y_slices_star_arr[i_slice];
-
-    	    //Compute force scaling factor
+//iptocp
+            // centroids boosted from outside
+    	    const double sigma_slice_star = sigma_slices_star_arr[i_slice]; // at IP
+    	    const double x_slice_star = x_slices_star_arr[i_slice]; // IP but should be at CP?
+    	    const double y_slice_star = y_slices_star_arr[i_slice]; // IP but should be at CP?
+/*   
+            printf("slice: [%d/%d]\nCentroids boosed at IP:\n", i_slice, N_slices);
+            printf("x slice star: %.10f\n", x_slice_star);
+            printf("y slice star: %.10f\n", y_slice_star);
+            printf("Sigma slice star: %.10f\n", sigma_slice_star); // beam 2 boosted slice z centroids
+*/ 
+   	    //Compute force scaling factor
     	    const double Ksl = N_part_per_slice_arr[i_slice]*QELEM*q0_bb
 		               *QELEM*q0/(P0 * C_LIGHT);
 
     	    //Identify the Collision Point (CP)
-    	    const double S = 0.5*(sigma_star - sigma_slice_star);
+    	    S = 0.5*(sigma_star - sigma_slice_star);
 
     	    // Propagate sigma matrix
     	    double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
@@ -429,22 +464,29 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
     	        &dS_costheta, &dS_sintheta);
 
-    	    //printf("Sig_11_hat_star=%.10e\n",Sig_11_hat_star);
-	    //printf("Sig_33_hat_star=%.10e\n",Sig_33_hat_star);
-    	    //printf("costheta=%.10e\n",costheta);
-            //printf("sintheta=%.10e\n",sintheta);
-    	    //printf("dS_Sig_11_hat_star=%.10e\n",dS_Sig_11_hat_star);
-	    //printf("dS_Sig_33_hat_star=%.10e\n",dS_Sig_33_hat_star);
-    	    //printf("dS_costheta=%.10e\n",dS_costheta);
-            //printf("dS_sintheta=%.10e\n",dS_sintheta);
-
-    	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
+   	    // transport x,y to CP: evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
     	    const double x_bar_star = x_star + px_star*S - x_slice_star;
     	    const double y_bar_star = y_star + py_star*S - y_slice_star;
+/*
+            printf("step 3: at CP\n");
+            printf("Macropart %d: x: %.10f\n", ii, x_bar_star);
+            printf("Macropart %d: y: %.10f\n", ii, y_bar_star);
+            printf("Macropart %d: z: %.10f\n", ii, S);
+            printf("Macropart %d: sintheta: %.10f\n", ii, sintheta);
+            printf("Macropart %d: costheta: %.10f\n", ii, costheta);
+            printf("Macropart %d: other beam centroid x_slice_star: %.10f\n", ii, x_slice_star);
+            printf("Macropart %d: other_beam_centroid y_slice_star: %.10f\n", ii, y_slice_star);
+*/
 
+//strongstrong3d 
     	    // Move to the uncoupled reference frame
     	    const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
     	    const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
+/*
+            printf("step 4: uncoupled\n");
+            printf("Macropart %d: x: %.10f\n", ii, x_bar_hat_star);
+            printf("Macropart %d: y: %.10f\n", ii, y_bar_hat_star);
+*/
 
     	    // Compute derivatives of the transformation
     	    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
@@ -493,14 +535,26 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    y_star = y_star - S*Fy_star;
     	    py_star = py_star + Fy_star;
 
+//            printf("Macropart %d: Fx:     %.10f\n", ii, Fx_star);
+//            printf("Macropart %d: Fy:    %.10f\n", ii, Fy_star);
+//            printf("Macropart %d: Fz:     %.10f\n", ii, Fz_star);
+            
+
     	}
+/*
+        printf("step 5: after kick\n");
+        printf("Macropart %d: x:     %.10f\n", ii, x_star);
+        printf("Macropart %d: px:    %.10f\n", ii, px_star);
+        printf("Macropart %d: y:     %.10f\n", ii, y_star);
+        printf("Macropart %d: py:    %.10f\n", ii, py_star);
+        printf("Macropart %d: z:     %.10f\n", ii, sigma_star); // not S!! _star are boosted coords at IP and these are updated with the kick not the S
+        printf("Macropart %d: delta: %.10f\n", ii, delta_star);
+*/
 
     	// Inverse boost on the coordinates of the weak beam
 	BoostParameters_boost_coordinates_inv(bpar,
     	    &x_star, &px_star, &y_star, &py_star,
     	    &sigma_star, &delta_star);
-
-	//printf("delta_ret=%.10e\n", delta_star);
 
     	// Go back to original reference frame and remove dipolar effect
     	x =     x_star     + x_CO   + delta_x - Dx_sub;
@@ -509,7 +563,15 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	py =    py_star    + py_CO  + delta_py- Dpy_sub;
     	zeta =  sigma_star + sigma_CO         - Dsigma_sub;
     	delta = delta_star + delta_CO         - Ddelta_sub;
-
+/*
+        printf("step 6: after inverse boost\n");
+        printf("Macropart %d: x:     %.10f\n", ii, x);
+        printf("Macropart %d: px:    %.10f\n", ii, px);
+        printf("Macropart %d: y:     %.10f\n", ii, y);
+        printf("Macropart %d: py:    %.10f\n", ii, py);
+        printf("Macropart %d: z:     %.10f\n", ii, zeta);
+        printf("Macropart %d: delta: %.10f\n", ii, delta);
+*/
 
     	LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
@@ -518,8 +580,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	LocalParticle_set_zeta(part, zeta);
     	LocalParticle_update_delta(part, delta);
 	
-    //end_per_particle_block
 
+    } //only_for_context cpu_serial cpu_openmp
 }
 
 

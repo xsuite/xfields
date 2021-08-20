@@ -4,6 +4,10 @@ import xtrack as xt
 
 from ..general import _pkg_root
 
+"""
+15/8/21: add delta_px, delta_py
+"""
+
 class BoostParameters(xo.Struct):
     sphi = xo.Float64
     cphi = xo.Float64
@@ -35,6 +39,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'num_slices': xo.Int64,
         'delta_x': xo.Float64,
         'delta_y': xo.Float64,
+        'delta_px': xo.Float64,
+        'delta_py': xo.Float64,
         'x_CO': xo.Float64,
         'px_CO': xo.Float64,
         'y_CO': xo.Float64,
@@ -66,6 +72,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 alpha=params["alpha"],
                 delta_x=params["x_bb_co"],
                 delta_y=params["y_bb_co"],
+                delta_px=params["px_bb_co"],
+                delta_py=params["py_bb_co"],
                 N_part_per_slice=params["charge_slices"],
                 z_slices=params["zeta_slices"],
                 Sig_11_0=params["sigma_11"],
@@ -98,8 +106,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             len(bb6d_data.N_part_per_slice) ==
             len(bb6d_data.x_slices_star) ==
             len(bb6d_data.y_slices_star) ==
-            len(bb6d_data.sigma_slices_star))
-
+            len(bb6d_data.sigma_slices_star))  # boosted already but at IP
+        #print(bb6d_data.sigma_slices_star)
         if _buffer is not None:
             ctx = _buffer.context
         elif _context is not None:
@@ -116,7 +124,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 'tphi': bb6d_data.parboost.tphi,
                 'salpha': bb6d_data.parboost.salpha,
                 'calpha': bb6d_data.parboost.calpha},
-            Sigmas_0_star = {
+            Sigmas_0_star = { # at CP
                 'Sig_11': bb6d_data.Sigmas_0_star.Sig_11_0,
                 'Sig_12': bb6d_data.Sigmas_0_star.Sig_12_0,
                 'Sig_13': bb6d_data.Sigmas_0_star.Sig_13_0,
@@ -131,6 +139,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             threshold_singular = bb6d_data.threshold_singular,
             delta_x = bb6d_data.delta_x,
             delta_y = bb6d_data.delta_y,
+            delta_px = bb6d_data.delta_px,
+            delta_py = bb6d_data.delta_py,
             x_CO = bb6d_data.x_CO,
             px_CO = bb6d_data.px_CO,
             y_CO = bb6d_data.y_CO,

@@ -110,10 +110,13 @@ void get_Ex_Ey_gauss(
              double* Ex_ptr,
              double* Ey_ptr){
 
+        // round beam
 	if (fabs(sigma_x-sigma_y)< min_sigma_diff){
 	    double sigma = 0.5*(sigma_x+sigma_y);
 	    	get_transv_field_gauss_round(sigma, 0., 0., x, y, Ex_ptr, Ey_ptr);
 	}
+       
+        // elliptical beam
 	else{
 	    get_transv_field_gauss_ellip(
 	            sigma_x, sigma_y, 0., 0., x, y, Ex_ptr, Ey_ptr);
