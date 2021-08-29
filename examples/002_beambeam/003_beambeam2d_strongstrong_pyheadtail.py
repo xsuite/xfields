@@ -192,9 +192,9 @@ plt.figure(1)
 freqs = np.fft.fftshift(np.fft.fftfreq(nTurn))
 mask = freqs > 0
 myFFT = np.fft.fftshift(np.fft.fft(positions_x_b1))
-plt.plot(freqs[mask],np.log10(np.abs(myFFT[mask])))
+plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
 myFFT = np.fft.fftshift(np.fft.fft(positions_y_b1))
-plt.plot(freqs[mask],np.log10(np.abs(myFFT[mask])))
+plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
 plt.show()
 
 

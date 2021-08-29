@@ -131,6 +131,10 @@ class SpaceCharge3D(xt.BeamElement):
 
         # temp_buff is deallocate here
 
+    @property
+    def iscollective(self):
+        return self.update_on_track
+
 
     def track(self, particles):
 
