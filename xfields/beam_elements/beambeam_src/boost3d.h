@@ -105,13 +105,14 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part){
         // Optionally change reference frame
         double x_star, px_star, y_star, py_star, z_star, delta_star;
         if(change_to_CO == 1){
-
+//            printf("px in own frame: %.10f\n", px);
             x_star     = x     - x_CO    - delta_x;
             px_star    = px    - px_CO   - delta_px;
             y_star     = y     - y_CO    - delta_y;
             py_star    = py    - py_CO   - delta_py;
             z_star     = z     - z_CO;
             delta_star = delta - delta_CO;
+//            printf("px in other beams frame: %.10f\n", px_star);
         }else{
 
             x_star     = x;

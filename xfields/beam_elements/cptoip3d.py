@@ -6,15 +6,17 @@ from ..general import _pkg_root
 
 """
 18/08/21: add slicing by index
+02/09/21: add z_centroid and z_bb_centroid (COMBI)
 """
 
 class CPToIP3D(xt.BeamElement):
 
     _xofields = {
-        'x_centroid': xo.Float64,
-        'px_centroid': xo.Float64,
-        'y_centroid': xo.Float64,
-        'py_centroid': xo.Float64,
+        'x_bb_centroid': xo.Float64,
+        'px_bb_centroid': xo.Float64,
+        'y_bb_centroid': xo.Float64,
+        'py_bb_centroid': xo.Float64,
+        'z_bb_centroid': xo.Float64,
         'z_centroid': xo.Float64,
         'is_sliced': xo.Int64,
         'slice_id': xo.Int64,

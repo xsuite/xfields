@@ -7,7 +7,7 @@
 
 void MacropartToCP(double x,
                    double y,
-                   double z,
+                   const double z,
                    double px,
                    double py,
                    const double x_c, // compute boosted centroids at IP of other slice in advance
@@ -21,16 +21,18 @@ void MacropartToCP(double x,
     // for this slice 2 is collapsed onto the Z of the centroid as a thin lens
     // each macropart of slice 1 will interact with this thin le§ns at a different CP
     (*Sz_i) = 0.5*(z - z_c); // CP for macropart
-    (*Sx_i) = (x + px*(*Sz_i)) - (x_c - px_c*(*Sz_i)); // transversal coordinates w.r.t slice 2 centroid
-    (*Sy_i) = (y + py*(*Sz_i)) - (y_c - py_c*(*Sz_i));
+    
+    // x_w^cp - x_s^ip + x_s^cp = Sx_i w.r.t. strong slice centroid at CP
+    (*Sx_i) = (x + px*(*Sz_i)) + px_c*(*Sz_i); //- (x_c - px_c*(*Sz_i)); 
+    (*Sy_i) = (y + py*(*Sz_i)) + py_c*(*Sz_i); //- (y_c - py_c*(*Sz_i));
 
     // all 0 unless specified outside
+//    printf("x_c: %.12f\n",   x_c);
+//    printf("y_c: %.12f\n",   y_c);
+//    printf("z_c: %.12f\n",   z_c);
+//    printf("px_c: %.12f\n", px_c);
+//    printf("py_c: %.12f\n", py_c);
 
-    printf("x_c: %.10f",x_c);
-    printf("y_c: %.10f",y_c);
-    printf("z_c: %.10f",z_c);
-    printf("px_c: %.10f",px_c);
-    printf("py_c: %.10f",py_c);
 
 }
 
@@ -39,16 +41,24 @@ void IPToCP3D_track_local_particle(IPToCP3DData el,
 		 	   LocalParticle* part){
 	
     // boosted centroid of other beam at IP
-    /*gpuglmem*/ const double* x_centroid  = IPToCP3DData_getp_x_centroid(el);
-    /*gpuglmem*/ const double* y_centroid  = IPToCP3DData_getp_y_centroid(el);
-    /*gpuglmem*/ const double* z_centroid  = IPToCP3DData_getp_z_centroid(el);
-    /*gpuglmem*/ const double* px_centroid = IPToCP3DData_getp_px_centroid(el);
-    /*gpuglmem*/ const double* py_centroid = IPToCP3DData_getp_py_centroid(el);
+    /*gpuglmem*/ const double* x_bb_centroid  = IPToCP3DData_getp_x_bb_centroid(el);
+    /*gpuglmem*/ const double* y_bb_centroid  = IPToCP3DData_getp_y_bb_centroid(el);
+    /*gpuglmem*/ const double* z_bb_centroid  = IPToCP3DData_getp_z_bb_centroid(el);
+    /*gpuglmem*/ const double* px_bb_centroid = IPToCP3DData_getp_px_bb_centroid(el);
+    /*gpuglmem*/ const double* py_bb_centroid = IPToCP3DData_getp_py_bb_centroid(el);
+    /*gpuglmem*/ const double* z_centroid     = IPToCP3DData_getp_z_centroid(el); 
     const int64_t slice_id                 = IPToCP3DData_get_slice_id(el);
     const int64_t is_sliced                = IPToCP3DData_get_is_sliced(el);
     
     int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
-    
+//    int64_t counter = 0;
+ 
+//    printf("slice %d: x_c:  %.20f\n",  slice_id, *x_bb_centroid);
+//    printf("slice %d: y_c:  %.20f\n",  slice_id, *y_bb_centroid);
+//    printf("slice %d: z_c:  %.20f\n",  slice_id, *z_bb_centroid);
+//    printf("slice %d: px_c: %.20f\n", slice_id, *px_bb_centroid);
+//    printf("slice %d: py_c: %.20f\n", slice_id, *py_bb_centroid);
+
     // loop over macroparticles
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
         part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
@@ -64,14 +74,16 @@ void IPToCP3D_track_local_particle(IPToCP3DData el,
         // macropart state: 0=dead, 1=alive, 100X: part of slice X
         int64_t state = LocalParticle_get_state(part);
         state -= 1000;
+//        printf("part %d: sliceid, state: %d, %d\n", ii, slice_id, state);
 
         // code is executed only if macropart is in correct slice or if there are no slices
         if(state == slice_id || is_sliced == 0){
 
-            // move slice 1 macroparts to CP nusing slice 2 centroid
+//           counter++;
+           // move slice 1 macroparts to CP nusing slice 2 centroid
             double Sx_i, Sy_i, Sz_i; // slice 1 macropart coords at CP
-            MacropartToCP(x, y, z, px, py,
-                      *x_centroid, *y_centroid, *z_centroid, *px_centroid, *py_centroid,
+            MacropartToCP(x, y, *z_centroid, px, py,
+                      *x_bb_centroid, *y_bb_centroid, *z_bb_centroid, *px_bb_centroid, *py_bb_centroid,
                       &Sx_i, &Sy_i, &Sz_i);
  
             // variables at CP (only x,y,z changes; x,y are w.r.t to the centroid of the other slice)
@@ -82,7 +94,9 @@ void IPToCP3D_track_local_particle(IPToCP3DData el,
     	    LocalParticle_set_zeta(part, Sz_i);
     	    LocalParticle_update_delta(part, delta);
 	}
-    } //only_for_context cpu_serial cpu_openmp
+   } //only_for_context cpu_serial cpu_openmp
+//   printf("counter: %d\n", counter);
+ 
 }
 
 

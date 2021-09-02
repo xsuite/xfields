@@ -7,6 +7,7 @@ from ..general import _pkg_root
 
 """
 18/08/21: add slicing by index
+25/08/21: add beamstrahlung flag
 """
 
 # covariance matrix is symmetric
@@ -35,6 +36,8 @@ class StrongStrong3D(xt.BeamElement):
         'sigma_matrix_cp': Sigmas,
         'is_sliced': xo.Int64,
         'slice_id': xo.Int64,
+        'do_beamstrahlung': xo.Int64,
+        'verbose_info': xo.Int64,
      }
 
     def update(self, **kwargs):

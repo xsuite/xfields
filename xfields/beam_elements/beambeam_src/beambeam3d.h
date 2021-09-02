@@ -35,7 +35,6 @@ void Sigmas_propagate(
     double const Sig_11 = Sig_11_0 + 2.*Sig_12_0*S+Sig_22_0*S*S;
     double const Sig_33 = Sig_33_0 + 2.*Sig_34_0*S+Sig_44_0*S*S;
     double const Sig_13 = Sig_13_0 + (Sig_14_0+Sig_23_0)*S+Sig_24_0*S*S;
-
     double const Sig_12 = Sig_12_0 + Sig_22_0*S;
     double const Sig_14 = Sig_14_0 + Sig_24_0*S;
     double const Sig_22 = Sig_22_0 + 0.*S;
@@ -44,9 +43,22 @@ void Sigmas_propagate(
     double const Sig_34 = Sig_34_0 + Sig_44_0*S;
     double const Sig_44 = Sig_44_0 + 0.*S;
 
-    double const R = Sig_11-Sig_33;
-    double const W = Sig_11+Sig_33;
-    double const T = R*R+4*Sig_13*Sig_13;
+/*   
+    printf("sigma_xx at CP: %.20f\n",   Sig_11);
+    printf("sigma_xpx at CP: %.20f\n",  Sig_12);
+    printf("sigma_xy at CP: %.20f\n",   Sig_13);
+    printf("sigma_xpy at CP: %.20f\n",  Sig_14);
+    printf("sigma_pxpx at CP: %.20f\n", Sig_22);
+    printf("sigma_pxy at CP: %.20f\n",  Sig_23);
+    printf("sigma_pxpy at CP: %.20f\n", Sig_24);
+    printf("sigma_yy at CP: %.20f\n",   Sig_33);
+    printf("sigma_ypy at CP: %.20f\n",  Sig_34);
+    printf("sigma_pypy at CP: %.20f\n", Sig_44);
+*/ 
+
+    double const R = Sig_11 - Sig_33;
+    double const W = Sig_11 + Sig_33;
+    double const T = R*R + 4*Sig_13*Sig_13;
 
     //evaluate derivatives
     double const dS_R = 2.*(Sig_12_0-Sig_34_0)+2*S*(Sig_22_0-Sig_44_0);
@@ -59,9 +71,17 @@ void Sigmas_propagate(
 
     double const signR = mysign(R);
 
+/*
+    printf("sigma R: %.20f\n", R);
+    printf("sigma W: %.20f\n", W);
+    printf("sigma T: %.20f\n", T);
+    printf("sigma sig_xx_cp: %.20f\n", Sig_11);
+    printf("sigma sig_yy_cp: %.20f\n", Sig_33);
+    printf("sigma sig_xy_cp: %.20f\n", Sig_13);
+*/
 
     if (T<threshold_singular && handle_singularities){
-
+         
         double const a = Sig_12-Sig_34;
         double const b = Sig_22-Sig_44;
         double const c = Sig_14+Sig_23;
@@ -124,6 +144,14 @@ void Sigmas_propagate(
         costheta = sqrt(0.5*(1.+cos2theta));
         sintheta = signR*mysign(Sig_13)*sqrt(0.5*(1.-cos2theta));
 
+/*
+        printf("R: %.20f\n", R);
+        printf("signR: %.20f\n", signR);
+        printf("sqrtT: %.20f\n", sqrtT);
+        printf("cos2theta: %.20f\n", cos2theta);
+        printf("sintheta: %.20f\n", sintheta);
+        printf("dS_cos2theta: %.20f\n", dS_cos2theta);
+*/
         //in sixtrack this line seems to be different different
         // sintheta = -mysign((Sig_11-Sig_33))*np.sqrt(0.5*(1.-cos2theta))
 
@@ -135,16 +163,17 @@ void Sigmas_propagate(
 
         if (fabs(sintheta)<threshold_singular && handle_singularities){
         //equivalent to to np.abs(Sig_13)<threshold_singular
+           // printf("this");
             dS_sintheta = (Sig_14+Sig_23)/R;
         }
         else{
+           // printf("that");
             dS_sintheta = -1./(4.*sintheta)*dS_cos2theta;
         }
 
         dS_Sig_11_hat = 0.5*(dS_W + signR*0.5/sqrtT*dS_T);
         dS_Sig_33_hat = 0.5*(dS_W - signR*0.5/sqrtT*dS_T);
     }
-
     *Sig_11_hat_ptr = Sig_11_hat;
     *Sig_33_hat_ptr = Sig_33_hat;
     *costheta_ptr = costheta;
@@ -371,7 +400,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
+    int counter = 0;
     //start_per_particle_block (part0->part)
+        counter++;
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
     	double y = LocalParticle_get_y(part);
@@ -393,16 +424,17 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	double delta_star = delta - delta_CO;
 
     	// Boost coordinates of the weak beam
-	BoostParameters_boost_coordinates(bpar,
-    	    &x_star, &px_star, &y_star, &py_star,
-    	    &sigma_star, &delta_star);
+	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &delta_star);
 
-    	//printf("x_star=%.10e\n", x_star);
-	//printf("px_star=%.10e\n", px_star);
-	//printf("y_star=%.10e\n", y_star);
-	//printf("py_star=%.10e\n", py_star);
-    	//printf("sigma_star=%.10e\n", sigma_star);
-	//printf("delta_star=%.10e\n", delta_star);
+/*
+        printf("after boost:\n");
+    	printf("x_star=%.10e\n", x_star);
+	printf("px_star=%.10e\n", px_star);
+	printf("y_star=%.10e\n", y_star);
+	printf("py_star=%.10e\n", py_star);
+    	printf("sigma_star=%.10e\n", sigma_star);
+	printf("delta_star=%.10e\n", delta_star);
+*/
 
     	// Synchro beam
     	for (int i_slice=0; i_slice<N_slices; i_slice++)
@@ -410,18 +442,17 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
     	    const double x_slice_star = x_slices_star_arr[i_slice];
     	    const double y_slice_star = y_slices_star_arr[i_slice];
-
+//            printf("slice star xyz: %.12f, %.12f, %.12f", x_slice_star, y_slice_star, sigma_slice_star);
     	    //Compute force scaling factor
     	    const double Ksl = N_part_per_slice_arr[i_slice]*QELEM*q0_bb
 		               *QELEM*q0/(P0 * C_LIGHT);
 
     	    //Identify the Collision Point (CP)
     	    const double S = 0.5*(sigma_star - sigma_slice_star);
-
-    	    // Propagate sigma matrix
+    	    
+            // Propagate sigma matrix
     	    double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
     	    double dS_Sig_11_hat_star, dS_Sig_33_hat_star, dS_costheta, dS_sintheta;
-
     	    // Get strong beam shape at the CP
 	    Sigmas_propagate(Sigmas_0_star, S, threshold_singular, 1,
     	        &Sig_11_hat_star, &Sig_33_hat_star,
@@ -429,7 +460,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
     	        &dS_costheta, &dS_sintheta);
 
-    	    //printf("Sig_11_hat_star=%.10e\n",Sig_11_hat_star);
+      	    //printf("Sig_11_hat_star=%.10e\n",Sig_11_hat_star);
 	    //printf("Sig_33_hat_star=%.10e\n",Sig_33_hat_star);
     	    //printf("costheta=%.10e\n",costheta);
             //printf("sintheta=%.10e\n",sintheta);
@@ -438,13 +469,21 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    //printf("dS_costheta=%.10e\n",dS_costheta);
             //printf("dS_sintheta=%.10e\n",dS_sintheta);
 
-    	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
+    	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid at the CP
     	    const double x_bar_star = x_star + px_star*S - x_slice_star;
     	    const double y_bar_star = y_star + py_star*S - y_slice_star;
 
     	    // Move to the uncoupled reference frame
     	    const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
     	    const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
+
+/*
+            printf("uncoupled:\n");
+    	    printf("x_star=%.10e\n", x_bar_hat_star);
+	    printf("y_star=%.10e\n", y_bar_hat_star);
+    	    printf("sigma_star=%.10e\n", S);
+            printf("k=%.10e\n", Ksl);
+*/
 
     	    // Compute derivatives of the transformation
     	    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
@@ -493,12 +532,21 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    y_star = y_star - S*Fy_star;
     	    py_star = py_star + Fy_star;
 
+/*
+            printf("after kick:\n");
+    	    printf("x_star=%.10e\n", x_star);
+	    printf("px_star=%.10e\n", px_star);
+	    printf("y_star=%.10e\n", y_star);
+ 	    printf("py_star=%.10e\n", py_star);
+    	    printf("sigma_star=%.10e\n", sigma_star);
+   	    printf("delta_star=%.10e\n", delta_star);
+*/
+
+
     	}
 
     	// Inverse boost on the coordinates of the weak beam
-	BoostParameters_boost_coordinates_inv(bpar,
-    	    &x_star, &px_star, &y_star, &py_star,
-    	    &sigma_star, &delta_star);
+	BoostParameters_boost_coordinates_inv(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &delta_star);
 
 	//printf("delta_ret=%.10e\n", delta_star);
 
@@ -510,6 +558,15 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	zeta =  sigma_star + sigma_CO         - Dsigma_sub;
     	delta = delta_star + delta_CO         - Ddelta_sub;
 
+/*
+        printf("after inverse boost:\n");
+    	printf("x_star=%.10e\n", x);
+	printf("px_star=%.10e\n", px);
+	printf("y_star=%.10e\n", y);
+	printf("py_star=%.10e\n", py);
+    	printf("sigma_star=%.10e\n", zeta);
+	printf("delta_star=%.10e\n\n", delta);
+*/
 
     	LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
