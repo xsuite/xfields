@@ -154,6 +154,49 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         return bb
 
+    def get_backtrack_element(self, _context=None, _buffer=None, _offset=None):
+        return self.__class__(
+            q0 = self.q0,
+            boost_parameters = {
+                'sphi': self.boost_parameters.sphi,
+                'cphi': self.boost_parameters.cphi,
+                'tphi': self.boost_parameters.tphi,
+                'salpha': self.boost_parameters.salpha,
+                'calpha': self.boost_parameters.calpha},
+            Sigmas_0_star = {
+                'Sig_11': self.Sigmas_0_star.Sig_11,
+                'Sig_12': self.Sigmas_0_star.Sig_12,
+                'Sig_13': self.Sigmas_0_star.Sig_13,
+                'Sig_14': self.Sigmas_0_star.Sig_14,
+                'Sig_22': self.Sigmas_0_star.Sig_22,
+                'Sig_23': self.Sigmas_0_star.Sig_23,
+                'Sig_24': self.Sigmas_0_star.Sig_24,
+                'Sig_33': self.Sigmas_0_star.Sig_33,
+                'Sig_34': self.Sigmas_0_star.Sig_34,
+                'Sig_44': self.Sigmas_0_star.Sig_44},
+            min_sigma_diff = self.min_sigma_diff,
+            threshold_singular = self.threshold_singular,
+            delta_x = self.delta_x,
+            delta_y = self.delta_y,
+            x_CO = self.x_CO,
+            px_CO = self.px_CO,
+            y_CO = self.y_CO,
+            py_CO = self.py_CO,
+            sigma_CO = self.sigma_CO,
+            delta_CO = self.delta_CO,
+            Dx_sub = -self.Dx_sub,
+            Dpx_sub = -self.Dpx_sub,
+            Dy_sub = -self.Dy_sub,
+            Dpy_sub = -self.Dpy_sub,
+            Dsigma_sub = -self.Dsigma_sub,
+            Ddelta_sub = -self.Ddelta_sub,
+            num_slices = self.num_slices,
+            N_part_per_slice = [-nn for nn in self.N_part_per_slice],
+            x_slices_star = [xx for xx in self.x_slices_star],
+            y_slices_star = [yy for yy in self.y_slices_star],
+            sigma_slices_star = [ss for ss in self.sigma_slices_star],
+                              _context=_context, _buffer=_buffer, _offset=_offset)
+
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('headers/sincos.h'))

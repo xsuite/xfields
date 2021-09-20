@@ -156,7 +156,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                               sigma_y=self.sigma_y,
                               d_px=-self.d_px,
                               d_py=-self.d_py,
-                              min_sigma_diff=self.min_sigma_diff):
+                              min_sigma_diff=self.min_sigma_diff,
                               _context=_context, _buffer=_buffer, _offset=_offset)
 
 srcs = []
