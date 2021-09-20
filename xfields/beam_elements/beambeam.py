@@ -120,6 +120,9 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
 
+    @property
+    def min_sigma_diff(self):
+        return self.fieldmap.min_sigma_diff
 
     @classmethod
     def from_xline(cls, xline_beambeam=None,
@@ -141,6 +144,20 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             min_sigma_diff=xline_beambeam.min_sigma_diff)
 
         return bb
+
+    def get_backtrack_element(self, _context=None, _buffer=None, _offset=None):
+        return self.__class__(
+                              n_particles=-self.n_particles,
+                              q0=self.q0,
+                              beta0=self.beta0,
+                              mean_x=self.mean_x,
+                              mean_y=self.mean_y,
+                              sigma_x=self.sigma_x,
+                              sigma_y=self.sigma_y,
+                              d_px=-self.d_px,
+                              d_py=-self.d_py,
+                              min_sigma_diff=self.min_sigma_diff):
+                              _context=_context, _buffer=_buffer, _offset=_offset)
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
