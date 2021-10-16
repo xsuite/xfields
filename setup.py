@@ -19,6 +19,7 @@ setup(
     author='Giovanni Iadarola',
     packages=find_packages(),
     ext_modules = extensions,
+    include_package_data=True,
     install_requires=[
         'numpy>=1.0',
         'scipy',
