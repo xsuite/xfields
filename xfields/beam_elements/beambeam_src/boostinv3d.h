@@ -74,23 +74,17 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part){
     // el= beambeam element (other beam)	
     // Get data from memory
     const BoostParameters bpar      = BoostInv3DData_getp_boost_parameters(el);
-    const double delta_x            = BoostInv3DData_get_delta_x(el);
-    const double delta_y            = BoostInv3DData_get_delta_y(el);
-    const double delta_px            = BoostInv3DData_get_delta_px(el);
-    const double delta_py            = BoostInv3DData_get_delta_py(el);
-    const double x_CO               = BoostInv3DData_get_x_CO(el);     
-    const double px_CO              = BoostInv3DData_get_px_CO(el);
-    const double y_CO               = BoostInv3DData_get_y_CO(el);
-    const double py_CO              = BoostInv3DData_get_py_CO(el);
-    const double z_CO               = BoostInv3DData_get_z_CO(el);
-    const double delta_CO           = BoostInv3DData_get_delta_CO(el);
+    const double x2_bc              = BoostInv3DData_get_x2_bc(el);
+    const double y2_bc              = BoostInv3DData_get_y2_bc(el);
+    const double px2_bc             = BoostInv3DData_get_px2_bc(el);
+    const double py2_bc             = BoostInv3DData_get_py2_bc(el);
     const double Dx_sub             = BoostInv3DData_get_Dx_sub(el); 
     const double Dpx_sub            = BoostInv3DData_get_Dpx_sub(el);
     const double Dy_sub             = BoostInv3DData_get_Dy_sub(el);
     const double Dpy_sub            = BoostInv3DData_get_Dpy_sub(el);
     const double Dz_sub             = BoostInv3DData_get_Dz_sub(el);
     const double Ddelta_sub         = BoostInv3DData_get_Ddelta_sub(el);
-    const unsigned int change_to_CO = BoostInv3DData_get_change_to_CO(el);
+    const unsigned int use_strongstrong = BoostInv3DData_get_use_strongstrong(el);
 
     int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
     
@@ -112,14 +106,14 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part){
 
         // Go back to original reference frame and remove dipolar effect
         double x, px, y, py, z, delta;
-        if(change_to_CO == 1){
+        if(use_strongstrong == 0){
     
-    	    x     = x_star     + x_CO     + delta_x  - Dx_sub;
-            px    = px_star    + px_CO    + delta_px - Dpx_sub;
-    	    y     = y_star     + y_CO     + delta_y  - Dy_sub;
-      	    py    = py_star    + py_CO    + delta_py - Dpy_sub;
-    	    z     = z_star     + z_CO                - Dz_sub;
-    	    delta = delta_star + delta_CO            - Ddelta_sub;
+    	    x     = x_star       + x2_bc    - Dx_sub;
+            px    = px_star      + px2_bc   - Dpx_sub;
+    	    y     = y_star       + y2_bc    - Dy_sub;
+      	    py    = py_star      + py2_bc   - Dpy_sub;
+    	    z     = z_star                  - Dz_sub;
+    	    delta = delta_star              - Ddelta_sub;
         }else{
 
             x     = x_star;

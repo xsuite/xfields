@@ -53,7 +53,7 @@ void BoostParameters_boost_coordinates(const BoostParameters bp,
     double const L31 = hz_st*calpha*sphi;
     double const L32 = hz_st*salpha*sphi;
     double const L33 = 1./cphi;
-
+    
     double const x_st = L11*x + L12*y + L13*z;
     double const y_st = L21*x + L22*y + L23*z;
     double const z_st = L31*x + L32*y + L33*z;
@@ -75,17 +75,11 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part){
     // el= beambeam element (other beam)	
     // Get data from memory
     const BoostParameters bpar      = Boost3DData_getp_boost_parameters(el);
-    const double delta_x            = Boost3DData_get_delta_x(el);
-    const double delta_y            = Boost3DData_get_delta_y(el);
-    const double delta_px           = Boost3DData_get_delta_px(el);
-    const double delta_py           = Boost3DData_get_delta_py(el);
-    const double x_CO               = Boost3DData_get_x_CO(el);     
-    const double px_CO              = Boost3DData_get_px_CO(el);
-    const double y_CO               = Boost3DData_get_y_CO(el);
-    const double py_CO              = Boost3DData_get_py_CO(el);
-    const double z_CO               = Boost3DData_get_z_CO(el);
-    const double delta_CO           = Boost3DData_get_delta_CO(el);
-    const unsigned int change_to_CO = Boost3DData_get_change_to_CO(el);
+    const double x2_bc              = Boost3DData_get_x2_bc(el);
+    const double y2_bc              = Boost3DData_get_y2_bc(el);
+    const double px2_bc             = Boost3DData_get_px2_bc(el);
+    const double py2_bc             = Boost3DData_get_py2_bc(el);
+    const unsigned int use_strongstrong = Boost3DData_get_use_strongstrong(el);
 
     int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
 
@@ -102,18 +96,16 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part){
     	double z     = LocalParticle_get_zeta(part);
     	double delta = LocalParticle_get_delta(part);
         
-        // Optionally change reference frame
+        // Optionally change reference frame into centered at other full beam's centroid (ref. frames never have a separation by definition of the IP)
         double x_star, px_star, y_star, py_star, z_star, delta_star;
-        if(change_to_CO == 1){
-//            printf("px in own frame: %.10f\n", px);
-            x_star     = x     - x_CO    - delta_x;
-            px_star    = px    - px_CO   - delta_px;
-            y_star     = y     - y_CO    - delta_y;
-            py_star    = py    - py_CO   - delta_py;
-            z_star     = z     - z_CO;
-            delta_star = delta - delta_CO;
-//            printf("px in other beams frame: %.10f\n", px_star);
-        }else{
+        if(use_strongstrong == 0){  // weakstrong case, other beam has no coords just a disk, so this beam needs to know the other beam coords by moving to its reference frame
+            x_star     = x     - x2_bc;
+            px_star    = px    - px2_bc;
+            y_star     = y     - y2_bc;
+            py_star    = py    - py2_bc;
+            z_star     = z;
+            delta_star = delta;
+        }else{  // strongstrong case, CO is inplicitely in the particle coordinates
 
             x_star     = x;
   	    px_star    = px;

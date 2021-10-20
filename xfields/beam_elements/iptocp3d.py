@@ -7,6 +7,7 @@ from ..general import _pkg_root
 """
 18/08/21: add slicing by index
 02/09/21: add z_centroid and z_bb_centroid (COMBI)
+06/09/2021: add xy_full_bb_centroid (since slice and beam centroids are different)
 """
 
 class IPToCP3D(xt.BeamElement):
@@ -18,8 +19,11 @@ class IPToCP3D(xt.BeamElement):
         'py_bb_centroid': xo.Float64,
         'z_bb_centroid': xo.Float64,
         'z_centroid': xo.Float64,
+        'x_full_bb_centroid': xo.Float64,
+        'y_full_bb_centroid': xo.Float64,
         'is_sliced': xo.Int64,
         'slice_id': xo.Int64,
+        'use_strongstrong': xo.UInt8, 
     }
 
     def update(self, **kwargs):

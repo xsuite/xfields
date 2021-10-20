@@ -5,6 +5,11 @@ import numpy as np
 
 from ..general import _pkg_root
 
+"""
+14/10/2021: add x2_bc for ws case. Remove x_CO and delta_x as closed orbit is not explicit here. "x2_bc = x_CO+delta_x"
+"""
+
+
 class BoostParameters(xo.Struct):
     sphi = xo.Float64
     cphi = xo.Float64
@@ -18,23 +23,17 @@ class BoostInv3D(xt.BeamElement):
         'boost_parameters': BoostParameters,
        	'alpha': xo.Float64,
 	'phi': xo.Float64,
-        'delta_x': xo.Float64,
-        'delta_y': xo.Float64,
-        'delta_px': xo.Float64,
-        'delta_py': xo.Float64,
-        'x_CO': xo.Float64,
-        'px_CO': xo.Float64,
-        'y_CO': xo.Float64,
-        'py_CO': xo.Float64,
-        'z_CO': xo.Float64,
-        'delta_CO': xo.Float64,
+        'x2_bc': xo.Float64,
+        'y2_bc': xo.Float64,
+        'px2_bc': xo.Float64,
+        'py2_bc': xo.Float64,
         'Dx_sub': xo.Float64,
         'Dpx_sub': xo.Float64,
         'Dy_sub': xo.Float64,
         'Dpy_sub': xo.Float64,
         'Dz_sub': xo.Float64,
         'Ddelta_sub': xo.Float64,
-	'change_to_CO': xo.UInt8
+	'use_strongstrong': xo.UInt8
  
     }
 
@@ -44,23 +43,17 @@ class BoostInv3D(xt.BeamElement):
             _offset=None,
        	    alpha=0.,
             phi=0., 
-            delta_x=0.,
-            delta_y=0.,
-            delta_px=0.,
-            delta_py=0.,
-            x_CO=0.,
-            px_CO=0.,
-            y_CO=0.,
-            py_CO=0.,
-            z_CO=0.,
-            delta_CO=0.,
+            x2_bc=0.,
+            y2_bc=0.,
+            px2_bc=0.,
+            py2_bc=0.,
             Dx_sub=0.,
             Dpx_sub=0.,
             Dy_sub=0.,
             Dpy_sub=0.,
             Dz_sub=0.,
             Ddelta_sub=0.,
-	    change_to_CO=0):
+	    use_strongstrong=0):
  
         if _context is None:
             _context = context_default
@@ -70,23 +63,19 @@ class BoostInv3D(xt.BeamElement):
                  _buffer=_buffer,
                  _offset=_offset)
 
-        self.delta_x = delta_x
-        self.delta_y = delta_y
-        self.delta_px = delta_px
-        self.delta_py = delta_py
-        self.x_CO = x_CO
-        self.px_CO = px_CO
-        self.y_CO = y_CO
-        self.py_CO = py_CO
-        self.z_CO = z_CO
-        self.delta_CO = delta_CO
+        self.x2_bc = x2_bc
+        self.y2_bc = y2_bc
+        self.px2_bc = px2_bc
+        self.py2_bc = py2_bc
         self.Dx_sub = Dx_sub
         self.Dpx_sub = Dpx_sub
         self.Dy_sub = Dy_sub
         self.Dpy_sub= Dpy_sub
         self.Dz_sub = Dz_sub
         self.Ddelta_sub = self.Ddelta_sub
-        self.change_to_CO = change_to_CO
+        self.use_strongstrong = use_strongstrong
+        self.phi = phi,
+        self.alpha = alpha,
         self.boost_parameters = {
                 'sphi': np.sin(phi),
                 'cphi': np.cos(phi),

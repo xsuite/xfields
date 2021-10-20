@@ -1,9 +1,11 @@
-#ifndef XFIELDS_STRONGSTRONG3D_H
+#ifndef XFIELDS_STRONGSTRONG3D_H
 #define XFIELDS_STRONGSTRONG3D_H
 
 #if !defined(mysign)
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
+
+#define rndm_synrad() rndm7()
 
 /*gpufun*/
 void uncouple_xy_plane(
@@ -258,6 +260,133 @@ void uncouple_xy_plane(
     *Gy_ptr = Gy;
 }
 
+
+/*gpufun*/
+int synrad_0(double e_macropart,
+             double dz,
+             double rho_inv,  // [1/m] changes after each photon emission
+             double* e_photon){ 
+
+
+    /*
+    return 0: no photon
+    return 1: emit 1 photon, energy stored in photon_energy
+    */
+
+    // constants for approximating synrad spectrum
+    const double g1_a[5] = {1.0, -0.8432885317, 0.1835132767, -0.0527949659, 0.0156489316};
+    const double g2_a[5] = {0.4999456517, -0.5853467515, 0.3657833336, -0.0695055284, 0.019180386};
+    const double g1_b[7] = {2.066603927, -0.5718025331, 0.04243170587, -0.9691386396, 5.651947051, -0.6903991322, 1.0};
+    const double g2_b[7] = {1.8852203645, -0.5176616313, 0.03812218492, -0.49158806, 6.1800441958, -0.6524469236, 1.0};
+    const double g1_c[4] = {1.0174394594, 0.5831679349, 0.9949036186, 1.0};
+    const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
+
+    double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEVPERC, 3) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3 
+    double xcrit = c1 * pow(e_macropart, 2) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit(C)=ξ(doc)=upsbar(C++)
+    double ecrit = xcrit * e_macropart;  // [GeV]
+    double omega_crit = ecrit/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
+    double upsilon = 2/3 * ecrit / e_macropart;  // [1] beamstrahlung parameter for single macropart
+
+
+    double p0 = 25.4 * e_macropart * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
+
+    // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
+    if (rndm_synrad() > p0){return 0;}
+    
+    // 2 random numbers to calculate g(v, xcrit)
+    double p = rndm_synrad();  // if this is 1, then it corresponds to p0 on original p0*g-v plane
+    double v;
+    while((v=rndm_synrad())==0.0) ; // draw a nonzero random number, variable of the beamstrahlung spectrum
+    
+    double v2 = v*v;
+    double v3 = v2*v;
+    double y = v3 / (1.0 - v3);
+    double denom = 1 - ( 1 - xcrit ) * v3;
+    
+    // calculate synrad spectrum coefficients, depending the value of y
+    double g1, g2;
+    if (y <= 1.54){
+        g1 = pow(y, -2/3) * (g1_a[0] + g1_a[1]*pow(y, 2/3) + g1_a[2]*pow(y, 2) + g1_a[3]*pow(y, 10/3) + g1_a[4]*pow(y, 4));
+        g2 = pow(y, -2/3) * (g2_a[0] + g2_a[1]*pow(y, 4/3) + g2_a[2]*pow(y, 2) + g2_a[3]*pow(y, 10/3) + g2_a[4]*pow(y, 4));
+    }else if (y <= 4.48){
+        g1 = ( g1_b[0] + g1_b[1]*y + g1_b[2]*pow(y, 2) ) / ( g1_b[3] + g1_b[4]*y + g1_b[5]*pow(y, 2) + g1_b[6]*pow(y, 3) );
+        g2 = ( g2_b[0] + g2_b[1]*y + g2_b[2]*pow(y, 2) ) / ( g2_b[3] + g2_b[4]*y + g2_b[5]*pow(y, 2) + g2_b[6]*pow(y, 3) );
+    }else if (y <= 165){
+        g1 = exp(-y)/sqrt(y) * ( g1_c[0] + g1_c[1]*y ) / ( g1_c[2] + g1_c[3]*y );
+        g2 = exp(-y)/sqrt(y) * ( g2_c[0] + g2_c[1]*y ) / ( g2_c[2] + g2_c[3]*y );
+    }else{
+        // no radiation, y too high
+        return 0;
+    }
+        
+    // g normalized (g(v=0, xcrit)=1=p0), g(v, xcrit) gives the no. of emitted photons in a fiven delta v interval
+    double g = v2 / pow(denom, 2) * ( g1 + ( pow(xcrit, 2) * pow(y, 2) ) / ( 1 + xcrit * y ) * g2 );  // g (w.o. normalization above) splits the unit rectangle p0*g-v to A,B,C regions
+    
+    // region C (emit photon) if p<p0*g, region B (no photon) if p>=p0*g, p0=1 bc. of normalization above
+    if (p<g){
+        *e_photon = ecrit * v3 / denom;
+        return 1;
+    }else{
+        *e_photon = 0.0;
+        return 0;
+    }
+}
+
+
+
+/*gpufun*/
+void synrad(double e_macropart, // [GeV]
+            double gamma,  // [1] 
+       	    double Fx_boosted,  // [1] (px' - px)/Dt, Dt=1
+            double Fy_boosted,  // [1] (py' - py)/Dt, Dt=1
+	    double dz,  // [m] z step between 2 slices ((z_max - z_min) / 2)
+	    double* e_photon_array // [GeV] array to store energy of emitted photons
+){
+
+    double r = pow(QELEM, 2)/(4* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2));  // [m] electron radius
+    
+    double ax = dz/(e_macropart) * Fx_boosted;
+    double ay = dz/(e_macropart) * Fy_boosted;
+    double rho_inv = sqrt(ax*ax + ay*ay) / dz;  // [m] (Fr/E) macropart bending radius from bb kick: dz/rho = dz/E*sqrt((px' - px)**2 + (py' - py)**2) = Fr * dz / E
+
+    double tmp = 25.4 * e_macropart * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
+    int max_photons = (int)(tmp*10.0)+1;
+
+    // photons are emitted uniformly in space along dz (between 2 slice interactions)
+    dz /= max_photons;
+    
+    int j = 0;
+    // emit photons in a loop
+    for (int i=0; i<max_photons; i++){
+    
+        // see if photon emitted
+
+        double e_photon;
+        if (synrad_0(e_macropart, dz, rho_inv, &e_photon)){
+            e_photon_array[j] = e_photon;
+            
+            // update bending radius
+            rho_inv *= e_macropart/(e_macropart - e_photon);
+
+            // update macropart energy
+            e_macropart -= e_photon;
+
+            // one more photon
+            j++;
+           
+            // some error handling
+            if (e_photon_array[j]<=0.0){
+		printf("photon emitted with negative energy: E_photon=%g, E_macropart=%g, photon ID: %d, limit: %d\n", e_photon, e_macropart, j, max_photons);
+       	    }
+       	    if (j>=1000){
+		printf("too many photons produced by one particle (photon ID: %d)\n", j);
+		exit(-1);
+	    }
+
+        }
+    }
+}
+
 /*gpufun*/
 void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* part){
 
@@ -303,11 +432,11 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
         // code is executed only if macropart is in correct slice or if there are no slices
         if(state == slice_id || is_sliced == 0){
 
-       	    const double q0  = LocalParticle_get_q0(part); // charge of single macropart
-    	    const double p0c = LocalParticle_get_p0c(part); // eV
-    	    const double P0  = p0c/C_LIGHT*QELEM;
+       	    const double q0  = LocalParticle_get_q0(part); // charge of single macropart [elementary charge]
+    	    const double p0c = LocalParticle_get_p0c(part); // [eV]
+    	    const double P0  = p0c/C_LIGHT*QELEM;  // [C]
 
-            //Compute force scaling factor: Q_bb * Q_macropart / pc
+            //Compute force scaling factor: Q_bb * Q_macropart / pc [C^2 C-1 m s-1]
     	    const double Ksl = n_macroparts_bb*QELEM*q0_bb * QELEM*q0 / (P0 * C_LIGHT);
 
             // get thetas from the sigma matrix
@@ -392,7 +521,7 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
             // emit beamstrahlung photons from single macropart
          //   if (do_beamstrahlung){
 
-	//	synrad_0();
+	//	synrad(e_macropart, gamma, Fx_boosted, Fy_boosted, dz, &e_photon_array);
 
 
           //  }
@@ -407,22 +536,6 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
 	
         }
     } //only_for_context cpu_serial cpu_openmp
-}
-
-/*gpufun*/ void synrad_0(double macropart_e, double r_inv, double dz, double* photon_energies){
-
-    // constants for approximating synrad spectrum
-    const double g1_a[5] = {1.0, -0.8432885317, 0.1835132767, -0.0527949659, 0.0156489316};
-    const double g2_a[5] = {0.4999456517, -0.5853467515, 0.3657833336, -0.0695055284, 0.019180386};
-    const double g1_b[7] = {2.066603927, -0.5718025331, 0.04243170587, -0.9691386396, 5.651947051, -0.6903991322, 1.0};
-    const double g2_b[7] = {1.8852203645, -0.5176616313, 0.03812218492, -0.49158806, 6.1800441958, -0.6524469236, 1.0};
-    const double g1_c[4] = {1.0174394594, 0.5831679349, 0.9949036186, 1.0};
-    const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
-
-    const double alpha = 7.29735257e-3;  // [1] fine structure constant (1/137)
-    const double e0 = 0.511e-3;  // [GeV]
-    const double hbar = 6.582119569e-25;  // [GeV s]
-
 }
 
 
