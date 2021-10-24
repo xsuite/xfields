@@ -81,6 +81,7 @@ class SpaceCharge3D(xt.BeamElement):
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
+                 fieldmap=None,
                  x_range=None, y_range=None, z_range=None,
                  nx=None, ny=None, nz=None,
                  dx=None, dy=None, dz=None,
@@ -108,19 +109,21 @@ class SpaceCharge3D(xt.BeamElement):
             _context = _buffer.context
         if _context is None:
             _context = xo.context_default
-        # I build the fieldmap on a temporary buffer
-        temp_buff = _context.new_buffer()
-        fieldmap = TriLinearInterpolatedFieldMap(
-                    _buffer=temp_buff,
-                    rho=rho, phi=phi,
-                    x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
-                    x_range=x_range, y_range=y_range, z_range=z_range,
-                    dx=dx, dy=dy, dz=dz,
-                    nx=nx, ny=ny, nz=nz,
-                    solver=solver,
-                    scale_coordinates_in_solver=scale_coordinates_in_solver,
-                    updatable=update_on_track,
-                    fftplan=fftplan)
+
+        if fieldmap is None:
+            # I build the fieldmap on a temporary buffer
+            temp_buff = _context.new_buffer()
+            fieldmap = TriLinearInterpolatedFieldMap(
+                        _buffer=temp_buff,
+                        rho=rho, phi=phi,
+                        x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
+                        x_range=x_range, y_range=y_range, z_range=z_range,
+                        dx=dx, dy=dy, dz=dz,
+                        nx=nx, ny=ny, nz=nz,
+                        solver=solver,
+                        scale_coordinates_in_solver=scale_coordinates_in_solver,
+                        updatable=update_on_track,
+                        fftplan=fftplan)
 
         self.xoinitialize(
                  _context=_context,
