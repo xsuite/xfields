@@ -76,6 +76,9 @@ spcharge= SpaceCharge3D(
         length=1, update_on_track=True, apply_z_kick=False,
         fieldmap=spcharge_parent.fieldmap)
 
+spcharge.fieldmap.rho[0,0,0] = 100.
+assert np.isclose(spcharge_parent.fieldmap.rho[0,0,0], 100.)
+
 spcharge.track(particles)
 
 
