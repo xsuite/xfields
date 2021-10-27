@@ -87,24 +87,12 @@ class PICCollection:
                 nx=self.nx_grid, ny=self.ny_grid, nz=self.nz_grid,
                 solver=self.solver,
                 fftplan=self._fftplan)
+            new_pic._buffer.grow(10*1024**2) # Add 10 MB for sc copies
             if self._fftplan is None:
                 self._fftplan = new_pic.fieldmap.solver.fftplan
             self._existing_pics[ix, iy] = new_pic
 
         return self._existing_pics[ix, iy]
-
-class DerivedElement:
-
-    def __init__(self, base_element, changes=None,
-                 restore_base=False):
-        self.base_element = base_element
-        self.changes = changes
-
-    def track(self, particles):
-        for nn, vv in self.changes.items():
-            setattr(self.base_element, nn, vv)
-        self.base_element.track(particles)
-
 
 def replace_spaceharge_with_PIC(
         sequence,
@@ -142,8 +130,8 @@ def replace_spaceharge_with_PIC(
         xlim = n_sigmas_range_pic_x*ee.sigma_x
         ylim = n_sigmas_range_pic_y*ee.sigma_y
         base_sc = pic_collection.get_pic(xlim, ylim)
-        sc = DerivedElement(base_sc, changes={'length': ee.length})
-        sc.iscollective = True
+        sc = base_sc.copy(_buffer=base_sc._buffer)
+        sc.length = ee.length
         sequence.elements[ii] = sc
         all_pics.append(sc)
 
