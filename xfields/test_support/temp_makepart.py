@@ -1,6 +1,6 @@
 import numpy as np
 
-from xline.particles import Particles
+from xpart import Particles
 
 def generate_particles_object(
                             n_macroparticles,
