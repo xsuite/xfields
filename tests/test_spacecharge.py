@@ -1,8 +1,14 @@
 import numpy as np
+from scipy.constants import m_p as pmass_kg
+from scipy.constants import e as qe
+from scipy.constants import c as clight
 
-from xline.particles import Particles
 import xobjects as xo
 import xtrack as xt
+import xline as xl
+import xpart as xp
+
+pmass = pmass_kg*clight**2/qe
 
 def test_spacecharge_gauss_qgauss():
     for frozen in [True, False]:
@@ -21,7 +27,7 @@ def test_spacecharge_gauss_qgauss():
             x0 = 1e-3
             y0 = -4e-3
             p0c = 25.92e9
-            mass = Particles.pmass,
+            mass = pmass,
             theta_probes = 30 * np.pi/180
             r_max_probes = 2e-2
             z_probes = 1.2*sigma_z
@@ -40,7 +46,7 @@ def test_spacecharge_gauss_qgauss():
                                         r_max_probes,
                                         z_probes,
                                         theta_probes)
-            particles = xt.Particles(
+            particles = xp.Particles(
                     _context=context, **particles_pyst.to_dict())
 
             particles.x += x0
@@ -107,7 +113,7 @@ def test_spacecharge_gauss_qgauss():
                     x_co=x0,
                     y_co=y0)
 
-            p_pyst = Particles(p0c=p0c,
+            p_pyst = xl.XlineTestParticles(p0c=p0c,
                     mass=mass,
                     x=x_probes.copy(),
                     y=y_probes.copy(),
@@ -261,7 +267,7 @@ def test_spacecharge_pic():
             sigma_y = 2e-3
             sigma_z = 30e-2
             p0c = 25.92e9
-            mass = Particles.pmass,
+            mass = pmass,
             theta_probes = 30 * np.pi/180
             r_max_probes = 2e-2
             z_probes = 1.2*sigma_z
@@ -281,7 +287,7 @@ def test_spacecharge_pic():
                                         r_max_probes,
                                         z_probes,
                                         theta_probes)
-            particles = xt.Particles(
+            particles = xp.Particles(
                     _context=context, **particles_pyst.to_dict())
 
             ######################
@@ -302,7 +308,7 @@ def test_spacecharge_pic():
                     z_range=(-z_lim, z_lim),
                     nx=128, ny=128, nz=25,
                     solver=solver,
-                    gamma0=particles_pyst.gamma0,
+                    gamma0=particles_pyst.gamma0[0],
                     )
 
             spcharge.track(particles)
@@ -323,7 +329,7 @@ def test_spacecharge_pic():
                     x_co=0.,
                     y_co=0.)
 
-            p_pyst = Particles(p0c=p0c,
+            p_pyst = xl.XlineTestParticles(p0c=p0c,
                     mass=mass,
                     x=x_probes.copy(),
                     y=y_probes.copy(),
