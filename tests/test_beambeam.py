@@ -1,9 +1,14 @@
-import xtrack as xt
 import numpy as np
 
-from xline.particles import Particles
 import xobjects as xo
+import xtrack as xt
+import xline as xl
+import xpart as xp
 
+from scipy.constants import m_p as pmass_kg
+from scipy.constants import e as qe
+from scipy.constants import c as clight
+pmass = pmass_kg*clight**2/qe
 
 def test_beambeam():
     for context in xo.context.get_test_contexts():
@@ -29,7 +34,7 @@ def test_beambeam():
 
         sigma_z = 30e-2
         p0c = 25.92e9
-        mass = Particles.pmass,
+        mass = pmass,
         theta_probes = 30 * np.pi/180
         r_max_probes = 2e-2
         z_probes = 1.2*sigma_z
@@ -49,7 +54,7 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-        particles_b1 = xt.Particles(_context=context,
+        particles_b1 = xp.Particles(_context=context,
                                     **particles_b1_pyst.to_dict())
         particles_b1.x += mean_x_b1
         particles_b1.y += mean_y_b1
@@ -67,7 +72,7 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-        particles_b2 = xt.Particles(_context=context,
+        particles_b2 = xp.Particles(_context=context,
                                     **particles_b2_pyst.to_dict())
         particles_b2.x += mean_x_b2
         particles_b2.y += mean_y_b2
@@ -120,7 +125,7 @@ def test_beambeam():
                 y_bb=mean_y_b2,
                 beta_r=np.float64(beta0_b2))
 
-        p_pyst = Particles(p0c=p0c,
+        p_pyst = xl.XlineTestParticles(p0c=p0c,
                 mass=mass,
                 x=x_probes.copy(),
                 y=y_probes.copy(),
