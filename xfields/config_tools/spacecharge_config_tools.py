@@ -1,7 +1,7 @@
 import numpy as np
 
-from .beam_elements.spacecharge import SpaceChargeBiGaussian
-from .beam_elements.spacecharge import SpaceCharge3D
+from ..beam_elements.spacecharge import SpaceChargeBiGaussian
+from ..beam_elements.spacecharge import SpaceCharge3D
 
 def replace_spaceharge_with_quasi_frozen(
                         line, _buffer,
