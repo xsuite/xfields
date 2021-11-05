@@ -13,3 +13,11 @@ from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 from .general import _pkg_root
 from .config_tools import replace_spaceharge_with_quasi_frozen
 from .config_tools import replace_spaceharge_with_PIC
+
+import xtrack as _xt
+
+element_classes = tuple(
+    v for v in globals().values()
+    if isinstance(v, type) and issubclass(v, _xt.BeamElement)
+)
+del _xt
