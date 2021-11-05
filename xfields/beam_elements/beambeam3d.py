@@ -66,7 +66,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 sigma_slices_star=n_slices)
             self._from_oldinterface(params)
         else:
-            super().__init__(self, **kwargs)
+            super().__init__(**kwargs)
 
     def _from_oldinterface(self, params):
         import xslowtrack

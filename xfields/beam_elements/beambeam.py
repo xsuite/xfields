@@ -55,7 +55,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             sigma_y=None,
             d_px=0.,
             d_py=0.,
-            min_sigma_diff=1e-10):
+            min_sigma_diff=1e-28,
+            fieldmap=None):
 
         self.xoinitialize(
                  _context=_context,
@@ -71,7 +72,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         self.d_px = d_px
         self.d_py = d_py
 
-        self.fieldmap = BiGaussianFieldMap(
+        if fieldmap is None:
+            fieldmap = BiGaussianFieldMap(
                      _context=_context,
                      _buffer=_buffer,
                      _offset=_offset,
@@ -81,6 +83,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                      sigma_y=sigma_y,
                      min_sigma_diff=min_sigma_diff,
                      updatable=True)
+
+        self.fieldmap=fieldmap
 
     def update(self, **kwargs):
         for kk in kwargs.keys():

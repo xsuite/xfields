@@ -22,8 +22,11 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co, xline=N
 
               ee.track(temp_particles)
 
-              ee.d_px = temp_particles.px - px_0
-              ee.d_py = temp_particles.py - py_0
+              ee.d_px = temp_particles.px[0] - px_0
+              ee.d_py = temp_particles.py[0] - py_0
+              print(ii,temp_particles.x[0], temp_particles.y[0],
+                      ee.mean_x, ee.mean_y,
+                    ee.d_px, ee.d_py)
               if xline is not None:
                   xline.elements[ii].x_bb = ee.mean_x
                   xline.elements[ii].y_bb = ee.mean_y
