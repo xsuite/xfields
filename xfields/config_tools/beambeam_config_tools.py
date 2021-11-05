@@ -8,7 +8,7 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co, xline=N
     bb lenses.
     """
 
-    temp_particles = xt.Particles(**particle_on_co.to_dict())
+    temp_particles = particle_on_co.copy()
     for ii, ee in enumerate(tracker.line.elements):
         if ee.__class__.__name__ == 'BeamBeamBiGaussian2D':
               px_0 = temp_particles.px[0]
@@ -19,14 +19,14 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co, xline=N
               # Here we set the right quantities (coordinates of the strong beam)
               ee.mean_x += temp_particles.x[0]
               ee.mean_y += temp_particles.y[0]
-              line.elements[ii].x_bb = ee.mean_x
-              line.elements[ii].y_bb = ee.mean_y
 
               ee.track(temp_particles)
 
               ee.d_px = temp_particles.px - px_0
               ee.d_py = temp_particles.py - py_0
               if xline is not None:
+                  xline.elements[ii].x_bb = ee.mean_x
+                  xline.elements[ii].y_bb = ee.mean_y
                   xline.elements[ii].d_px = ee.d_px
                   xline.elements[ii].d_py = ee.d_py
 
@@ -58,18 +58,18 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co, xline=N
             temp_particles.delta[0] = ee.delta_CO
 
             if xline is not None:
-                line.elements[ii].x_co = ee.x_CO
-                line.elements[ii].px_co = ee.px_CO
-                line.elements[ii].y_co = ee.y_CO
-                line.elements[ii].py_co = ee.py_CO
-                line.elements[ii].zeta_co = ee.sigma_CO
-                line.elements[ii].delta_co = ee.delta_CO
+                xline.elements[ii].x_co = ee.x_CO
+                xline.elements[ii].px_co = ee.px_CO
+                xline.elements[ii].y_co = ee.y_CO
+                xline.elements[ii].py_co = ee.py_CO
+                xline.elements[ii].zeta_co = ee.sigma_CO
+                xline.elements[ii].delta_co = ee.delta_CO
 
-                line.elements[ii].d_x = ee.Dx_sub
-                line.elements[ii].d_px = ee.Dpx_sub
-                line.elements[ii].d_y = ee.Dy_sub
-                line.elements[ii].d_py = ee.Dpy_sub
-                line.elements[ii].d_zeta = ee.Dsigma_sub
-                line.elements[ii].d_delta = ee.Ddelta_sub
+                xline.elements[ii].d_x = ee.Dx_sub
+                xline.elements[ii].d_px = ee.Dpx_sub
+                xline.elements[ii].d_y = ee.Dy_sub
+                xline.elements[ii].d_py = ee.Dpy_sub
+                xline.elements[ii].d_zeta = ee.Dsigma_sub
+                xline.elements[ii].d_delta = ee.Ddelta_sub
         else:
             ee.track(temp_particles)
