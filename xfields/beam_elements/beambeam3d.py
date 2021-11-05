@@ -53,20 +53,32 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'sigma_slices_star': xo.Float64[:],
     }
 
-    @classmethod
-    def from_xline(cls, xline_beambeam=None,
-            _context=None, _buffer=None, _offset=None):
 
-        params = xline_beambeam.to_dict(keepextra=True)
-        import xline
-        bb6d_data = xline.BB6Ddata.BB6D_init(
-                q_part=qe*float(params['enabled']), # the xline input has the charge
-                                                    # of the slices in elementary charges 
+    def __init__(self, **kwargs):
+
+        if 'old_interface' in kwargs:
+            params=kwargs['old_interface']
+            n_slices=len(params["charge_slices"])
+            super().__init__(
+                N_part_per_slice=n_slices,
+                x_slices_star=n_slices,
+                y_slices_star=n_slices,
+                sigma_slices_star=n_slices)
+            self._from_oldinterface(params)
+        else:
+            super().__init__(self, **kwargs)
+
+    def _from_oldinterface(self, params):
+        import xslowtrack
+
+        from scipy.constants import e as qe
+        bb6d_data = xslowtrack.BB6Ddata.BB6D_init(
+                q_part=qe, # the xline input has the charge
                 phi=params["phi"],
                 alpha=params["alpha"],
                 delta_x=params["x_bb_co"],
                 delta_y=params["y_bb_co"],
-                N_part_per_slice=params["charge_slices"],
+                N_part_per_slice=params["charge_slices"], #
                 z_slices=params["zeta_slices"],
                 Sig_11_0=params["sigma_11"],
                 Sig_12_0=params["sigma_12"],
@@ -84,15 +96,15 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 py_CO=params["py_co"],
                 sigma_CO=params["zeta_co"],
                 delta_CO=params["delta_co"],
-                min_sigma_diff=params["min_sigma_diff"],
-                threshold_singular=params["threshold_singular"],
+                min_sigma_diff=1e-10,
+                threshold_singular=1e-28,
                 Dx_sub=params["d_x"],
                 Dpx_sub=params["d_px"],
                 Dy_sub=params["d_y"],
                 Dpy_sub=params["d_py"],
                 Dsigma_sub=params["d_zeta"],
                 Ddelta_sub=params["d_delta"],
-                enabled=params["enabled"],
+                enabled=1,
             )
         assert(
             len(bb6d_data.N_part_per_slice) ==
@@ -100,59 +112,45 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             len(bb6d_data.y_slices_star) ==
             len(bb6d_data.sigma_slices_star))
 
-        if _buffer is not None:
-            ctx = _buffer.context
-        elif _context is not None:
-            ctx = _context
-
-        bb = cls(
-            _context=_context,
-            _buffer=_buffer,
-            _offset=_offset,
-            q0 = bb6d_data.q_part/qe, # xline uses coulomb
-            boost_parameters = {
-                'sphi': bb6d_data.parboost.sphi,
-                'cphi': bb6d_data.parboost.cphi,
-                'tphi': bb6d_data.parboost.tphi,
-                'salpha': bb6d_data.parboost.salpha,
-                'calpha': bb6d_data.parboost.calpha},
-            Sigmas_0_star = {
-                'Sig_11': bb6d_data.Sigmas_0_star.Sig_11_0,
-                'Sig_12': bb6d_data.Sigmas_0_star.Sig_12_0,
-                'Sig_13': bb6d_data.Sigmas_0_star.Sig_13_0,
-                'Sig_14': bb6d_data.Sigmas_0_star.Sig_14_0,
-                'Sig_22': bb6d_data.Sigmas_0_star.Sig_22_0,
-                'Sig_23': bb6d_data.Sigmas_0_star.Sig_23_0,
-                'Sig_24': bb6d_data.Sigmas_0_star.Sig_24_0,
-                'Sig_33': bb6d_data.Sigmas_0_star.Sig_33_0,
-                'Sig_34': bb6d_data.Sigmas_0_star.Sig_34_0,
-                'Sig_44': bb6d_data.Sigmas_0_star.Sig_44_0},
-            min_sigma_diff = bb6d_data.min_sigma_diff,
-            threshold_singular = bb6d_data.threshold_singular,
-            delta_x = bb6d_data.delta_x,
-            delta_y = bb6d_data.delta_y,
-            x_CO = bb6d_data.x_CO,
-            px_CO = bb6d_data.px_CO,
-            y_CO = bb6d_data.y_CO,
-            py_CO = bb6d_data.py_CO,
-            sigma_CO = bb6d_data.sigma_CO,
-            delta_CO = bb6d_data.delta_CO,
-            Dx_sub = bb6d_data.Dx_sub,
-            Dpx_sub = bb6d_data.Dpx_sub,
-            Dy_sub = bb6d_data.Dy_sub,
-            Dpy_sub = bb6d_data.Dpy_sub,
-            Dsigma_sub = bb6d_data.Dsigma_sub,
-            Ddelta_sub = bb6d_data.Ddelta_sub,
-            num_slices = len(bb6d_data.N_part_per_slice),
-            N_part_per_slice = ctx.nparray_to_context_array(
-                                          bb6d_data.N_part_per_slice),
-            x_slices_star = ctx.nparray_to_context_array(bb6d_data.x_slices_star),
-            y_slices_star = ctx.nparray_to_context_array(bb6d_data.y_slices_star),
-            sigma_slices_star = ctx.nparray_to_context_array(
-                                          bb6d_data.sigma_slices_star),
-            )
-
-        return bb
+        self.q0 = bb6d_data.q_part/qe, # xline uses coulomb
+        self.boost_parameters = {
+                 'sphi': bb6d_data.parboost.sphi,
+                 'cphi': bb6d_data.parboost.cphi,
+                 'tphi': bb6d_data.parboost.tphi,
+                 'salpha': bb6d_data.parboost.salpha,
+                 'calpha': bb6d_data.parboost.calpha}
+        self.Sigmas_0_star = {
+                 'Sig_11': bb6d_data.Sigmas_0_star.Sig_11_0,
+                 'Sig_12': bb6d_data.Sigmas_0_star.Sig_12_0,
+                 'Sig_13': bb6d_data.Sigmas_0_star.Sig_13_0,
+                 'Sig_14': bb6d_data.Sigmas_0_star.Sig_14_0,
+                 'Sig_22': bb6d_data.Sigmas_0_star.Sig_22_0,
+                 'Sig_23': bb6d_data.Sigmas_0_star.Sig_23_0,
+                 'Sig_24': bb6d_data.Sigmas_0_star.Sig_24_0,
+                 'Sig_33': bb6d_data.Sigmas_0_star.Sig_33_0,
+                 'Sig_34': bb6d_data.Sigmas_0_star.Sig_34_0,
+                 'Sig_44': bb6d_data.Sigmas_0_star.Sig_44_0}
+        self.min_sigma_diff = bb6d_data.min_sigma_diff
+        self.threshold_singular = bb6d_data.threshold_singular
+        self.delta_x = bb6d_data.delta_x
+        self.delta_y = bb6d_data.delta_y
+        self.x_CO = bb6d_data.x_CO
+        self.px_CO = bb6d_data.px_CO
+        self.y_CO = bb6d_data.y_CO
+        self.py_CO = bb6d_data.py_CO
+        self.sigma_CO = bb6d_data.sigma_CO
+        self.delta_CO = bb6d_data.delta_CO
+        self.Dx_sub = bb6d_data.Dx_sub
+        self.Dpx_sub = bb6d_data.Dpx_sub
+        self.Dy_sub = bb6d_data.Dy_sub
+        self.Dpy_sub = bb6d_data.Dpy_sub
+        self.Dsigma_sub = bb6d_data.Dsigma_sub
+        self.Ddelta_sub = bb6d_data.Ddelta_sub
+        self.num_slices = len(bb6d_data.N_part_per_slice)
+        self.N_part_per_slice = bb6d_data.N_part_per_slice
+        self.x_slices_star = bb6d_data.x_slices_star
+        self.y_slices_star = bb6d_data.y_slices_star
+        self.sigma_slices_star = bb6d_data.sigma_slices_star
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
