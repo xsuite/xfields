@@ -53,6 +53,22 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'sigma_slices_star': xo.Float64[:],
     }
 
+    _input_param_names = [
+        'phi',
+        'alpha',
+        'zeta_slices',
+        'Sig_11_0',
+        'Sig_12_0',
+        'Sig_13_0',
+        'Sig_14_0',
+        'Sig_22_0',
+        'Sig_23_0',
+        'Sig_24_0',
+        'Sig_33_0',
+        'Sig_34_0',
+        'Sig_44_0',
+        ]
+
 
     def __init__(self, **kwargs):
 
@@ -151,6 +167,21 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.x_slices_star = bb6d_data.x_slices_star
         self.y_slices_star = bb6d_data.y_slices_star
         self.sigma_slices_star = bb6d_data.sigma_slices_star
+
+        # input_params
+        self.phi = params['phi']
+        self.alpha = params['alpha']
+        self.zeta_slices = params['zeta_slices']
+        self.Sig_11_0 = params["sigma_11"],
+        self.Sig_12_0 = params["sigma_12"],
+        self.Sig_13_0 = params["sigma_13"],
+        self.Sig_14_0 = params["sigma_14"],
+        self.Sig_22_0 = params["sigma_22"],
+        self.Sig_23_0 = params["sigma_23"],
+        self.Sig_24_0 = params["sigma_24"],
+        self.Sig_33_0 = params["sigma_33"],
+        self.Sig_34_0 = params["sigma_34"],
+        self.Sig_44_0 = params["sigma_44"],
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
