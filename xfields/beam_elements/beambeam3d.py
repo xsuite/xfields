@@ -83,6 +83,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self._from_oldinterface(params)
         else:
             super().__init__(**kwargs)
+            for nn in self._input_param_names:
+                if nn in kwargs.keys():
+                    setattr(self, nn, kwargs[nn])
+
+    def to_dict(self):
+        dct = super().to_dict()
+        dct.update({kk:getattr(self, kk) for kk in self._input_param_names})
+        return dct
 
     def _from_oldinterface(self, params):
         import xslowtrack
@@ -172,16 +180,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.phi = params['phi']
         self.alpha = params['alpha']
         self.zeta_slices = params['zeta_slices']
-        self.Sig_11_0 = params["sigma_11"],
-        self.Sig_12_0 = params["sigma_12"],
-        self.Sig_13_0 = params["sigma_13"],
-        self.Sig_14_0 = params["sigma_14"],
-        self.Sig_22_0 = params["sigma_22"],
-        self.Sig_23_0 = params["sigma_23"],
-        self.Sig_24_0 = params["sigma_24"],
-        self.Sig_33_0 = params["sigma_33"],
-        self.Sig_34_0 = params["sigma_34"],
-        self.Sig_44_0 = params["sigma_44"],
+        self.Sig_11_0 = params["sigma_11"]
+        self.Sig_12_0 = params["sigma_12"]
+        self.Sig_13_0 = params["sigma_13"]
+        self.Sig_14_0 = params["sigma_14"]
+        self.Sig_22_0 = params["sigma_22"]
+        self.Sig_23_0 = params["sigma_23"]
+        self.Sig_24_0 = params["sigma_24"]
+        self.Sig_33_0 = params["sigma_33"]
+        self.Sig_34_0 = params["sigma_34"]
+        self.Sig_44_0 = params["sigma_44"]
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
