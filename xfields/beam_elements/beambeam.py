@@ -46,6 +46,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             _context=None,
             _buffer=None,
             _offset=None,
+            _xobject=None,
             n_particles=None,
             q0=None,
             beta0=None,
@@ -58,33 +59,42 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             min_sigma_diff=1e-28,
             fieldmap=None):
 
-        self.xoinitialize(
-                 _context=_context,
-                 _buffer=_buffer,
-                 _offset=_offset)
+        if _xobject is not None:
 
-        if not np.isscalar(beta0):
-            raise ValueError('beta0 needs to be ascalar')
-
-        self.n_particles = n_particles
-        self.q0 = q0
-        self.beta0 = beta0
-        self.d_px = d_px
-        self.d_py = d_py
-
-        if fieldmap is None:
-            fieldmap = BiGaussianFieldMap(
+            self.xoinitialize(
                      _context=_context,
                      _buffer=_buffer,
                      _offset=_offset,
-                     mean_x=mean_x,
-                     mean_y=mean_y,
-                     sigma_x=sigma_x,
-                     sigma_y=sigma_y,
-                     min_sigma_diff=min_sigma_diff,
-                     updatable=True)
+                     _xobject=_xobject)
+        else:
 
-        self.fieldmap=fieldmap
+            self.xoinitialize(
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset)
+
+            if not np.isscalar(beta0):
+                raise ValueError('beta0 needs to be ascalar')
+
+            self.n_particles = n_particles
+            self.q0 = q0
+            self.beta0 = beta0
+            self.d_px = d_px
+            self.d_py = d_py
+
+            if fieldmap is None:
+                fieldmap = BiGaussianFieldMap(
+                         _context=_context,
+                         _buffer=_buffer,
+                         _offset=_offset,
+                         mean_x=mean_x,
+                         mean_y=mean_y,
+                         sigma_x=sigma_x,
+                         sigma_y=sigma_y,
+                         min_sigma_diff=min_sigma_diff,
+                         updatable=True)
+
+            self.fieldmap=fieldmap
 
     def update(self, **kwargs):
         for kk in kwargs.keys():
