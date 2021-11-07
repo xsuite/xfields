@@ -42,6 +42,16 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         'd_py': xo.Float64,
         }
 
+    def to_dict(self):
+        dct = super().to_dict()
+        dct['charge'] = self.q0*self.n_particles
+        dct['sigma_x'] = self.sigma_x
+        dct['sigma_y'] = self.sigma_y
+        dct['beta_r'] = self.beta0
+        dct['x_bb'] = self.mean_x
+        dct['y_bb'] = self.mean_y
+        return dct
+
     def __init__(self,
             _context=None,
             _buffer=None,
