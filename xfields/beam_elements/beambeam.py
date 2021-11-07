@@ -67,7 +67,9 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             d_px=0.,
             d_py=0.,
             min_sigma_diff=1e-28,
-            fieldmap=None):
+            fieldmap=None,
+            **kwargs # TODO: to be removed, needed to avoid problems in from_dict
+            ):
 
         if _xobject is not None:
 
