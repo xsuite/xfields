@@ -183,6 +183,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  mean_y=0.,
                  sigma_x=None,
                  sigma_y=None,
+                 fieldmap=None,
                  min_sigma_diff=1e-10):
 
         self.xoinitialize(
@@ -201,7 +202,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         self.apply_z_kick = apply_z_kick
         self._init_update_on_track(update_on_track)
 
-        self.fieldmap = BiGaussianFieldMap(
+        if fieldmap is None:
+            self.fieldmap = BiGaussianFieldMap(
                      _context=self._buffer.context,
                      mean_x=mean_x,
                      mean_y=mean_y,
@@ -209,6 +211,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                      sigma_y=sigma_y,
                      min_sigma_diff=min_sigma_diff,
                      updatable=True)
+        else:
+            self.fieldmap=fieldmap
 
         self.iscollective = None # Inferred from _update_flag
 

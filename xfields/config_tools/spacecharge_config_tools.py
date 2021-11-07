@@ -12,14 +12,12 @@ def replace_spaceharge_with_quasi_frozen(
 
     spch_elements = []
     for ii, ee in enumerate(line.elements):
-        if ee.__class__.__name__ == 'SCQGaussProfile':
-            newee = SpaceChargeBiGaussian.from_xline(ee, _buffer=_buffer)
-            newee.update_mean_x_on_track = update_mean_x_on_track
-            newee.update_mean_y_on_track = update_mean_y_on_track
-            newee.update_sigma_x_on_track = update_sigma_x_on_track
-            newee.update_sigma_y_on_track = update_sigma_y_on_track
-            newee.iscollective = True
-            line.elements[ii] = newee
+        if isinstance(ee, SpaceChargeBiGaussian):
+            ee.update_mean_x_on_track = update_mean_x_on_track
+            ee.update_mean_y_on_track = update_mean_y_on_track
+            ee.update_sigma_x_on_track = update_sigma_x_on_track
+            ee.update_sigma_y_on_track = update_sigma_y_on_track
+            ee.iscollective = True
             spch_elements.append(newee)
 
     return spch_elements
@@ -118,7 +116,7 @@ def replace_spaceharge_with_PIC(
     all_sigma_x = []
     all_sigma_y = []
     for ii, ee in enumerate(sequence.elements):
-        if ee.__class__.__name__ == 'SCQGaussProfile':
+        if isinstance(ee, SpaceChargeBiGaussian):
             all_sc_elems.append(ee)
             ind_sc_elems.append(ii)
             all_sigma_x.append(ee.sigma_x)
