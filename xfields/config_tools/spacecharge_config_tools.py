@@ -19,6 +19,7 @@ def replace_spaceharge_with_quasi_frozen(
             ee.update_sigma_x_on_track = update_sigma_x_on_track
             ee.update_sigma_y_on_track = update_sigma_y_on_track
             ee.iscollective = True
+            spch_elements.append(ee)
 
     return spch_elements
 

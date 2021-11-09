@@ -171,6 +171,17 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'length': xo.Float64,
         }
 
+    def to_dict(self):
+        dct = super().to_dict()
+        # To be loaded by xslowtrack:
+        dct['number_of_particles'] = self.longitudinal_profile.number_of_particles
+        dct['bunchlength_rms'] = self.longitudinal_profile.sigma_z
+        dct['sigma_x'] = self.fieldmap.sigma_x
+        dct['sigma_y'] = self.fieldmap.sigma_y
+        dct['x_co'] = self.fieldmap.mean_x
+        dct['y_co'] = self.fieldmap.mean_y
+        return dct
+
     def __init__(self,
                  _context=None,
                  _buffer=None,
@@ -184,7 +195,9 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  sigma_x=None,
                  sigma_y=None,
                  fieldmap=None,
-                 min_sigma_diff=1e-10):
+                 min_sigma_diff=1e-10,
+                 **kwargs # to avoid issues when building form dict
+                 ):
 
         self.xoinitialize(
                  _context=_context,
