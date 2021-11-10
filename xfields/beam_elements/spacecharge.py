@@ -173,7 +173,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
 
     def to_dict(self):
         dct = super().to_dict()
-        # To be loaded by xslowtrack:
+        # To be loaded by ducktrack:
         dct['number_of_particles'] = self.longitudinal_profile.number_of_particles
         dct['bunchlength_rms'] = self.longitudinal_profile.sigma_z
         dct['sigma_x'] = self.fieldmap.sigma_x

@@ -74,7 +74,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         dct = super().to_dict()
         for nn in self._input_param_names:
             dct[nn] = getattr(self, nn)
-        # For compatibility with xslowtrack:
+        # For compatibility with ducktrack:
         dct['x_bb_co'] = self.delta_x
         dct['y_bb_co'] = self.delta_y
         dct['x_co'] = self.x_CO
@@ -121,10 +121,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     setattr(self, nn, kwargs[nn])
 
     def _from_oldinterface(self, params):
-        import xslowtrack
+        import ducktrack
 
         from scipy.constants import e as qe
-        bb6d_data = xslowtrack.BB6Ddata.BB6D_init(
+        bb6d_data = ducktrack.BB6Ddata.BB6D_init(
                 q_part=qe, # the xline input has the charge
                 phi=params["phi"],
                 alpha=params["alpha"],
