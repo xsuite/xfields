@@ -5,8 +5,9 @@ from scipy.constants import c as clight
 
 import xobjects as xo
 import xtrack as xt
-import xline as xl
 import xpart as xp
+
+import xslowtrack as xst
 
 pmass = pmass_kg*clight**2/qe
 
@@ -102,8 +103,7 @@ def test_spacecharge_gauss_qgauss():
             y_probes = p2np(particles.y[:n_probes])
             z_probes = p2np(particles.zeta[:n_probes])
 
-            from xline.elements import SCQGaussProfile
-            scpyst = SCQGaussProfile(
+            scpyst = xst.SCQGaussProfile(
                     number_of_particles = bunch_intensity,
                     bunchlength_rms=sigma_z,
                     sigma_x=sigma_x,
@@ -113,7 +113,7 @@ def test_spacecharge_gauss_qgauss():
                     x_co=x0,
                     y_co=y0)
 
-            p_pyst = xl.XlineTestParticles(p0c=p0c,
+            p_pyst = xst.TestParticles(p0c=p0c,
                     mass=mass,
                     x=x_probes.copy(),
                     y=y_probes.copy(),
@@ -319,8 +319,7 @@ def test_spacecharge_pic():
 
             p2np = context.nparray_from_context_array
 
-            from xline.elements import SCQGaussProfile
-            scpyst = SCQGaussProfile(
+            scpyst = xst.SCQGaussProfile(
                     number_of_particles = bunch_intensity,
                     bunchlength_rms=sigma_z,
                     sigma_x=sigma_x,
@@ -329,7 +328,7 @@ def test_spacecharge_pic():
                     x_co=0.,
                     y_co=0.)
 
-            p_pyst = xl.XlineTestParticles(p0c=p0c,
+            p_pyst = xst.TestParticles(p0c=p0c,
                     mass=mass,
                     x=x_probes.copy(),
                     y=y_probes.copy(),
