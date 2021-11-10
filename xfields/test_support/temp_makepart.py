@@ -35,7 +35,7 @@ def generate_particles_object(
     py_part = 0*x_part
     pt_part = 0*x_part
 
-    pyst_particles = Particles(
+    particles = Particles(
             p0c=p0c,
             mass = mass,
             x=x_part,
@@ -44,7 +44,7 @@ def generate_particles_object(
             px=px_part,
             py=py_part,
             ptau=pt_part)
-    pyst_particles.weight = weights_part
+    particles.weight = weights_part
 
-    return pyst_particles, r_probes, x_probes, y_probes, z_probes
+    return particles, r_probes, x_probes, y_probes, z_probes
 

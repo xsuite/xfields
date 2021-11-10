@@ -316,36 +316,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
 
-    @classmethod
-    def from_xline(cls, xline_spacecharge=None,
-            _context=None, _buffer=None, _offset=None):
-
-        assert xline_spacecharge.__class__.__name__ == 'SCQGaussProfile'
-        xlsc = xline_spacecharge
-        assert np.isclose(xlsc.q_parameter, 1, atol=1e-13) # TODO Bug to be sorted out in pysixtrack (see issue), for now gaussian only!
-
-        lprofile = LongitudinalProfileQGaussian(
-                _context=_context,
-                _buffer=_buffer,
-                number_of_particles=xlsc.number_of_particles,
-                sigma_z=xlsc.bunchlength_rms,
-                z0=0.,
-                q_parameter=xlsc.q_parameter)
-
-        sc = cls(
-            _context=_context,
-            _buffer=_buffer,
-            _offset=_offset,
-            length=xlsc.length,
-            apply_z_kick=False,
-            longitudinal_profile=lprofile,
-            mean_x=xlsc.x_co,
-            mean_y=xlsc.y_co,
-            sigma_x=xlsc.sigma_x,
-            sigma_y=xlsc.sigma_y,
-            min_sigma_diff=xlsc.min_sigma_diff)
-
-        return sc
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))

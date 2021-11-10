@@ -125,7 +125,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         from scipy.constants import e as qe
         bb6d_data = ducktrack.BB6Ddata.BB6D_init(
-                q_part=qe, # the xline input has the charge
+                q_part=qe, # the ducktrack input has the charge
                 phi=params["phi"],
                 alpha=params["alpha"],
                 delta_x=params["x_bb_co"],
@@ -164,7 +164,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             len(bb6d_data.y_slices_star) ==
             len(bb6d_data.sigma_slices_star))
 
-        self.q0 = bb6d_data.q_part/qe, # xline uses coulomb
+        self.q0 = bb6d_data.q_part/qe, # ducktrack uses coulomb
         self.boost_parameters = {
                  'sphi': bb6d_data.parboost.sphi,
                  'cphi': bb6d_data.parboost.cphi,
