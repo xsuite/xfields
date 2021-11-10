@@ -2,9 +2,11 @@ import time
 
 import numpy as np
 
-from xline.particles import Particles
 from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
+import xpart as xp
+
+import xslowtrack as xst
 
 ###################
 # Choose context #
@@ -38,7 +40,7 @@ mean_y_b2 = 1.4e-3
 
 sigma_z = 30e-2
 p0c = 25.92e9
-mass = Particles.pmass,
+mass = xp.pmass,
 theta_probes = 30 * np.pi/180
 r_max_probes = 2e-2
 z_probes = 1.2*sigma_z
@@ -59,7 +61,7 @@ print('Generate particles b1...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles_b1 = xt.Particles(_context=context, **particles_b1_pyst.to_dict())
+particles_b1 = xp.Particles(_context=context, **particles_b1_pyst.to_dict())
 
 particles_b1.x += mean_x_b1
 particles_b1.y += mean_y_b1
@@ -78,7 +80,7 @@ print('Generate particles b2...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles_b2 = xt.Particles(_context=context, **particles_b2_pyst.to_dict())
+particles_b2 = xp.Particles(_context=context, **particles_b2_pyst.to_dict())
 
 particles_b2.x += mean_x_b2
 particles_b2.y += mean_y_b2
@@ -93,7 +95,7 @@ bbeam_b1 = BeamBeamBiGaussian2D(
             _context=context,
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
-            beta0=particles_b2_pyst.beta0,
+            beta0=particles_b2_pyst.beta0[0],
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
@@ -104,7 +106,7 @@ bbeam_b2 = BeamBeamBiGaussian2D(
             _context=context,
             n_particles=bunch_intensity_b1,
             q0 = particles_b1.q0,
-            beta0=particles_b1_pyst.beta0,
+            beta0=particles_b1_pyst.beta0[0],
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
@@ -131,16 +133,15 @@ x_probes = p2np(particles_b1.x[:n_probes])
 y_probes = p2np(particles_b1.y[:n_probes])
 z_probes = p2np(particles_b1.zeta[:n_probes])
 
-from xline.elements import BeamBeam4D
-bb_b1_pyst= BeamBeam4D(
+bb_b1_pyst= xst.BeamBeam4D(
         charge = bunch_intensity_b2,
         sigma_x=sigma_x_b2,
         sigma_y=sigma_y_b2,
         x_bb=mean_x_b2,
         y_bb=mean_y_b2,
-        beta_r=np.float64(particles_b2_pyst.beta0))
+        beta_r=np.float64(particles_b2_pyst.beta0)[0])
 
-p_pyst = Particles(p0c=p0c,
+p_pyst = xst.TestParticles(p0c=p0c,
         mass=mass,
         x=x_probes.copy(),
         y=y_probes.copy(),
