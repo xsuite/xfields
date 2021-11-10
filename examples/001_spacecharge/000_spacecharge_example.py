@@ -2,9 +2,9 @@ import time
 
 import numpy as np
 
-from xline.particles import Particles
 from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
+import xpart as xp
 
 ###################
 # Choose context #
@@ -28,7 +28,7 @@ sigma_x = 3e-3
 sigma_y = 2e-3
 sigma_z = 30e-2
 p0c = 25.92e9
-mass = Particles.pmass,
+mass = xp.pmass,
 theta_probes = 30 * np.pi/180
 r_max_probes = 2e-2
 z_probes = 1.2*sigma_z
@@ -48,7 +48,7 @@ from xfields.test_support.temp_makepart import generate_particles_object
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles = xt.Particles(
+particles = xp.Particles(
         _context=context, **particles_pyst.to_dict())
 
 
@@ -69,7 +69,7 @@ spcharge = SpaceCharge3D(
         z_range=(-z_lim, z_lim),
         nx=256, ny=256, nz=100,
         solver='FFTSolver2p5D',
-        gamma0=particles_pyst.gamma0)
+        gamma0=particles_pyst.gamma0[0])
 
 
 spcharge.track(particles)
@@ -82,7 +82,7 @@ spcharge.track(particles)
 
 p2np = context.nparray_from_context_array
 
-from xline.elements import SCQGaussProfile
+from xslowtrack import SCQGaussProfile, TestParticles
 scpyst = SCQGaussProfile(
         number_of_particles = bunch_intensity,
         bunchlength_rms=sigma_z,
@@ -92,7 +92,7 @@ scpyst = SCQGaussProfile(
         x_co=0.,
         y_co=0.)
 
-p_pyst = Particles(p0c=p0c,
+p_pyst = TestParticles(p0c=p0c,
         mass=mass,
         x=x_probes.copy(),
         y=y_probes.copy(),
