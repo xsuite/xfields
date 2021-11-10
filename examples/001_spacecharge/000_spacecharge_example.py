@@ -35,7 +35,7 @@ z_probes = 1.2*sigma_z
 n_probes = 1000
 
 from xfields.test_support.temp_makepart import generate_particles_object
-(particles_pyst, r_probes, x_probes,
+(particles_dtk, r_probes, x_probes,
         y_probes, z_probes) = generate_particles_object(
                             n_macroparticles,
                             bunch_intensity,
@@ -49,7 +49,7 @@ from xfields.test_support.temp_makepart import generate_particles_object
                             z_probes,
                             theta_probes)
 particles = xp.Particles(
-        _context=context, **particles_pyst.to_dict())
+        _context=context, **particles_dtk.to_dict())
 
 
 ######################
@@ -69,21 +69,21 @@ spcharge = SpaceCharge3D(
         z_range=(-z_lim, z_lim),
         nx=256, ny=256, nz=100,
         solver='FFTSolver2p5D',
-        gamma0=particles_pyst.gamma0[0])
+        gamma0=particles_dtk.gamma0[0])
 
 
 spcharge.track(particles)
 
 
-#########################
-# Compare against xline #
-#########################
+#############################
+# Compare against ducktrack #
+#############################
 
 
 p2np = context.nparray_from_context_array
 
-from xslowtrack import SCQGaussProfile, TestParticles
-scpyst = SCQGaussProfile(
+from ducktrack import SCQGaussProfile, TestParticles
+scdtk = SCQGaussProfile(
         number_of_particles = bunch_intensity,
         bunchlength_rms=sigma_z,
         sigma_x=sigma_x,
@@ -92,13 +92,13 @@ scpyst = SCQGaussProfile(
         x_co=0.,
         y_co=0.)
 
-p_pyst = TestParticles(p0c=p0c,
+p_dtk = TestParticles(p0c=p0c,
         mass=mass,
         x=x_probes.copy(),
         y=y_probes.copy(),
         zeta=z_probes.copy())
 
-scpyst.track(p_pyst)
+scdtk.track(p_dtk)
 
 mask_inside_grid = ((np.abs(x_probes)<0.9*x_lim) &
                     (np.abs(y_probes)<0.9*y_lim))
@@ -108,11 +108,11 @@ import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure()
 plt.subplot(211)
-plt.plot(r_probes, p_pyst.px, color='red')
+plt.plot(r_probes, p_dtk.px, color='red')
 plt.plot(r_probes, p2np(particles.px[:n_probes]), color='blue',
         linestyle='--')
 plt.subplot(212)
-plt.plot(r_probes, p_pyst.py, color='red')
+plt.plot(r_probes, p_dtk.py, color='red')
 plt.plot(r_probes, p2np(particles.py[:n_probes]), color='blue',
         linestyle='--')
 
