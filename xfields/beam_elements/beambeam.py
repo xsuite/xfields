@@ -86,7 +86,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                      _offset=_offset)
 
             if not np.isscalar(beta0):
-                raise ValueError('beta0 needs to be ascalar')
+                raise ValueError('beta0 needs to be a scalar')
 
             self.n_particles = n_particles
             self.q0 = q0
@@ -145,28 +145,6 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
     @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
-
-
-    @classmethod
-    def from_xline(cls, xline_beambeam=None,
-            _context=None, _buffer=None, _offset=None):
-
-        bb = cls(
-            _context=_context,
-            _buffer=_buffer,
-            _offset=_offset,
-            n_particles=xline_beambeam.charge/qe, # pysixtrak has it in coulumb
-            q0=qe*float(xline_beambeam.enabled), # I implement the enable flag like this
-            beta0=xline_beambeam.beta_r,
-            mean_x=xline_beambeam.x_bb,
-            mean_y=xline_beambeam.y_bb,
-            sigma_x=xline_beambeam.sigma_x,
-            sigma_y=xline_beambeam.sigma_y,
-            d_px=xline_beambeam.d_px,
-            d_py=xline_beambeam.d_py,
-            min_sigma_diff=xline_beambeam.min_sigma_diff)
-
-        return bb
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
