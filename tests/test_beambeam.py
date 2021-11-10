@@ -2,8 +2,9 @@ import numpy as np
 
 import xobjects as xo
 import xtrack as xt
-import xline as xl
 import xpart as xp
+
+import xslowtrack as xst
 
 from scipy.constants import m_p as pmass_kg
 from scipy.constants import e as qe
@@ -116,7 +117,7 @@ def test_beambeam():
         y_probes = p2np(particles_b1.y[:n_probes])
         z_probes = p2np(particles_b1.zeta[:n_probes])
 
-        from xline.elements import BeamBeam4D
+        from xslowtrack.elements import BeamBeam4D
         bb_b1_pyst= BeamBeam4D(
                 charge = bunch_intensity_b2,
                 sigma_x=sigma_x_b2,
@@ -125,7 +126,7 @@ def test_beambeam():
                 y_bb=mean_y_b2,
                 beta_r=np.float64(beta0_b2))
 
-        p_pyst = xl.XlineTestParticles(p0c=p0c,
+        p_pyst = xst.TestParticles(p0c=p0c,
                 mass=mass,
                 x=x_probes.copy(),
                 y=y_probes.copy(),
