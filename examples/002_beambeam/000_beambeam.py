@@ -6,7 +6,7 @@ from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 import xpart as xp
 
-import xslowtrack as xst
+import ducktrack as dtk
 
 ###################
 # Choose context #
@@ -48,7 +48,7 @@ n_probes = 1000
 
 from xfields.test_support.temp_makepart import generate_particles_object
 print('Generate particles b1...')
-(particles_b1_pyst, r_probes, _, _, _
+(particles_b1_gen, r_probes, _, _, _
         ) =  generate_particles_object(
                             n_macroparticles_b1,
                             bunch_intensity_b1,
@@ -61,13 +61,14 @@ print('Generate particles b1...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles_b1 = xp.Particles(_context=context, **particles_b1_pyst.to_dict())
+# Move to context
+particles_b1 = xp.Particles(_context=context, **particles_b1_gen.to_dict())
 
 particles_b1.x += mean_x_b1
 particles_b1.y += mean_y_b1
 
 print('Generate particles b2...')
-(particles_b2_pyst, r_probes, _, _, _
+(particles_b2_gen, r_probes, _, _, _
         ) =  generate_particles_object(
                             n_macroparticles_b2,
                             bunch_intensity_b2,
@@ -80,7 +81,8 @@ print('Generate particles b2...')
                             r_max_probes,
                             z_probes,
                             theta_probes)
-particles_b2 = xp.Particles(_context=context, **particles_b2_pyst.to_dict())
+# Move to context
+particles_b2 = xp.Particles(_context=context, **particles_b2_gen.to_dict())
 
 particles_b2.x += mean_x_b2
 particles_b2.y += mean_y_b2
@@ -95,7 +97,7 @@ bbeam_b1 = BeamBeamBiGaussian2D(
             _context=context,
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
-            beta0=particles_b2_pyst.beta0[0],
+            beta0=particles_b2_gen.beta0[0],
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
@@ -106,7 +108,7 @@ bbeam_b2 = BeamBeamBiGaussian2D(
             _context=context,
             n_particles=bunch_intensity_b1,
             q0 = particles_b1.q0,
-            beta0=particles_b1_pyst.beta0[0],
+            beta0=particles_b1_gen.beta0[0],
             sigma_x=None, # needs to be specified only for weak-strong
             sigma_y=None, # needs to be specified only for weak-strong
             mean_x=None, # needs to be specified only for weak-strong
@@ -123,48 +125,48 @@ bbeam_b1.update(sigma_x=sigma_x_meas, mean_x=mean_x_meas,
 print('Track...')
 bbeam_b1.track(particles_b1)
 
-#########################
-# Compare against xline #
-#########################
+#############################
+# Compare against ducktrack #
+#############################
 
-print('Check against xline...')
+print('Check against ducktrack...')
 p2np = context.nparray_from_context_array
 x_probes = p2np(particles_b1.x[:n_probes])
 y_probes = p2np(particles_b1.y[:n_probes])
 z_probes = p2np(particles_b1.zeta[:n_probes])
 
-bb_b1_pyst= xst.BeamBeam4D(
+bb_b1_dtk= dtk.BeamBeam4D(
         charge = bunch_intensity_b2,
         sigma_x=sigma_x_b2,
         sigma_y=sigma_y_b2,
         x_bb=mean_x_b2,
         y_bb=mean_y_b2,
-        beta_r=np.float64(particles_b2_pyst.beta0)[0])
+        beta_r=np.float64(particles_b2_gen.beta0)[0])
 
-p_pyst = xst.TestParticles(p0c=p0c,
+p_dtk = dtk.TestParticles(p0c=p0c,
         mass=mass,
         x=x_probes.copy(),
         y=y_probes.copy(),
         zeta=z_probes.copy())
 
-bb_b1_pyst.track(p_pyst)
+bb_b1_dtk.track(p_dtk)
 
-assert np.allclose(p_pyst.px,
+assert np.allclose(p_dtk.px,
     p2np(particles_b1.px[:n_probes]),
-    atol=2e-2*np.max(np.abs(p_pyst.px)))
-assert np.allclose(p_pyst.py,
+    atol=2e-2*np.max(np.abs(p_dtk.px)))
+assert np.allclose(p_dtk.py,
     p2np(particles_b1.py[:n_probes]),
-    atol=2e-2*np.max(np.abs(p_pyst.px)))
+    atol=2e-2*np.max(np.abs(p_dtk.px)))
 
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure()
 plt.subplot(211)
-plt.plot(r_probes, p_pyst.px, color='red')
+plt.plot(r_probes, p_dtk.px, color='red')
 plt.plot(r_probes, p2np(particles_b1.px[:n_probes]), color='blue',
         linestyle='--')
 plt.subplot(212)
-plt.plot(r_probes, p_pyst.py, color='red')
+plt.plot(r_probes, p_dtk.py, color='red')
 plt.plot(r_probes, p2np(particles_b1.py[:n_probes]), color='blue',
         linestyle='--')
 
