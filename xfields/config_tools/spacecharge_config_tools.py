@@ -106,7 +106,7 @@ class DerivedElement:
 
 
 def replace_spaceharge_with_PIC(
-        sequence,
+        line,
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
         _context=None,
@@ -116,7 +116,7 @@ def replace_spaceharge_with_PIC(
     ind_sc_elems = []
     all_sigma_x = []
     all_sigma_y = []
-    for ii, ee in enumerate(sequence.elements):
+    for ii, ee in enumerate(line.elements):
         if isinstance(ee, SpaceChargeBiGaussian):
             all_sc_elems.append(ee)
             ind_sc_elems.append(ii)
@@ -143,7 +143,7 @@ def replace_spaceharge_with_PIC(
         base_sc = pic_collection.get_pic(xlim, ylim)
         sc = DerivedElement(base_sc, changes={'length': ee.length})
         sc.iscollective = True
-        sequence.elements[ii] = sc
+        line.elements[ii] = sc
         all_pics.append(sc)
 
     return pic_collection, all_pics
