@@ -3,7 +3,7 @@ import numpy as np
 from ..beam_elements.spacecharge import SpaceChargeBiGaussian
 from ..beam_elements.spacecharge import SpaceCharge3D
 
-def replace_spaceharge_with_quasi_frozen(
+def replace_spacecharge_with_quasi_frozen(
                         line, _buffer,
                         update_mean_x_on_track=True,
                         update_mean_y_on_track=True,
@@ -105,7 +105,7 @@ class DerivedElement:
         self.base_element.track(particles)
 
 
-def replace_spaceharge_with_PIC(
+def replace_spacecharge_with_PIC(
         line,
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
