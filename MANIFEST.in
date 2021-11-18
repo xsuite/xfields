@@ -7,3 +7,4 @@ include *.md
 include LICENSE.txt
 
 recursive-include xfields *.h
+recursive-include xfields *.clh

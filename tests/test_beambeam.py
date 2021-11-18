@@ -1,9 +1,15 @@
-import xtrack as xt
 import numpy as np
 
-from xline.particles import Particles
 import xobjects as xo
+import xtrack as xt
+import xpart as xp
 
+import ducktrack as dtk
+
+from scipy.constants import m_p as pmass_kg
+from scipy.constants import e as qe
+from scipy.constants import c as clight
+pmass = pmass_kg*clight**2/qe
 
 def test_beambeam():
     for context in xo.context.get_test_contexts():
@@ -29,14 +35,14 @@ def test_beambeam():
 
         sigma_z = 30e-2
         p0c = 25.92e9
-        mass = Particles.pmass,
+        mass = pmass,
         theta_probes = 30 * np.pi/180
         r_max_probes = 2e-2
         z_probes = 1.2*sigma_z
         n_probes = 1000
 
         from xfields.test_support.temp_makepart import generate_particles_object
-        (particles_b1_pyst, r_probes, _, _, _
+        (particles_b1, r_probes, _, _, _
                 ) =  generate_particles_object(
                                     n_macroparticles_b1,
                                     bunch_intensity_b1,
@@ -49,12 +55,13 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-        particles_b1 = xt.Particles(_context=context,
-                                    **particles_b1_pyst.to_dict())
+        # Move to right context
+        particles_b1 = xp.Particles(_context=context,
+                                    **particles_b1.to_dict())
         particles_b1.x += mean_x_b1
         particles_b1.y += mean_y_b1
 
-        (particles_b2_pyst, r_probes, _, _, _
+        (particles_b2, r_probes, _, _, _
                 ) =  generate_particles_object(
                                     n_macroparticles_b2,
                                     bunch_intensity_b2,
@@ -67,8 +74,8 @@ def test_beambeam():
                                     r_max_probes,
                                     z_probes,
                                     theta_probes)
-        particles_b2 = xt.Particles(_context=context,
-                                    **particles_b2_pyst.to_dict())
+        particles_b2 = xp.Particles(_context=context,
+                                    **particles_b2.to_dict())
         particles_b2.x += mean_x_b2
         particles_b2.y += mean_y_b2
 
@@ -79,8 +86,8 @@ def test_beambeam():
         from xfields import BeamBeamBiGaussian2D, mean_and_std
 
         # if beta0 is array I just take the first
-        beta0_b2 = float(np.atleast_1d(particles_b2_pyst.beta0)[0])
-        beta0_b1 = float(np.atleast_1d(particles_b1_pyst.beta0)[0])
+        beta0_b2 = context.nparray_from_context_array(particles_b2.beta0)[0]
+        beta0_b1 = context.nparray_from_context_array(particles_b1.beta0)[0]
 
         bbeam_b1 = BeamBeamBiGaussian2D(
                     _context=context,
@@ -102,17 +109,17 @@ def test_beambeam():
         #Track
         bbeam_b1.track(particles_b1)
 
-        #########################
-        # Compare against xline #
-        #########################
+        #############################
+        # Compare against ducktrack #
+        #############################
 
         p2np = context.nparray_from_context_array
         x_probes = p2np(particles_b1.x[:n_probes])
         y_probes = p2np(particles_b1.y[:n_probes])
         z_probes = p2np(particles_b1.zeta[:n_probes])
 
-        from xline.elements import BeamBeam4D
-        bb_b1_pyst= BeamBeam4D(
+        from ducktrack.elements import BeamBeam4D
+        bb_b1_dtk= BeamBeam4D(
                 charge = bunch_intensity_b2,
                 sigma_x=sigma_x_b2,
                 sigma_y=sigma_y_b2,
@@ -120,18 +127,18 @@ def test_beambeam():
                 y_bb=mean_y_b2,
                 beta_r=np.float64(beta0_b2))
 
-        p_pyst = Particles(p0c=p0c,
+        p_dtk = dtk.TestParticles(p0c=p0c,
                 mass=mass,
                 x=x_probes.copy(),
                 y=y_probes.copy(),
                 zeta=z_probes.copy())
 
-        bb_b1_pyst.track(p_pyst)
+        bb_b1_dtk.track(p_dtk)
 
-        assert np.allclose(p_pyst.px,
+        assert np.allclose(p_dtk.px,
             p2np(particles_b1.px[:n_probes]),
-            atol=2e-2*np.max(np.abs(p_pyst.px)))
-        assert np.allclose(p_pyst.py,
+            atol=2e-2*np.max(np.abs(p_dtk.px)))
+        assert np.allclose(p_dtk.py,
             p2np(particles_b1.py[:n_probes]),
-            atol=2e-2*np.max(np.abs(p_pyst.py)))
+            atol=2e-2*np.max(np.abs(p_dtk.py)))
 

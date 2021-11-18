@@ -1,9 +1,9 @@
 import numpy as np
 
-from .beam_elements.spacecharge import SpaceChargeBiGaussian
-from .beam_elements.spacecharge import SpaceCharge3D
+from ..beam_elements.spacecharge import SpaceChargeBiGaussian
+from ..beam_elements.spacecharge import SpaceCharge3D
 
-def replace_spaceharge_with_quasi_frozen(
+def replace_spacecharge_with_quasi_frozen(
                         line, _buffer,
                         update_mean_x_on_track=True,
                         update_mean_y_on_track=True,
@@ -12,15 +12,14 @@ def replace_spaceharge_with_quasi_frozen(
 
     spch_elements = []
     for ii, ee in enumerate(line.elements):
-        if ee.__class__.__name__ == 'SCQGaussProfile':
-            newee = SpaceChargeBiGaussian.from_xline(ee, _buffer=_buffer)
-            newee.update_mean_x_on_track = update_mean_x_on_track
-            newee.update_mean_y_on_track = update_mean_y_on_track
-            newee.update_sigma_x_on_track = update_sigma_x_on_track
-            newee.update_sigma_y_on_track = update_sigma_y_on_track
-            newee.iscollective = True
-            line.elements[ii] = newee
-            spch_elements.append(newee)
+        if isinstance(ee, SpaceChargeBiGaussian):
+            ee._move_to(_buffer=_buffer)
+            ee.update_mean_x_on_track = update_mean_x_on_track
+            ee.update_mean_y_on_track = update_mean_y_on_track
+            ee.update_sigma_x_on_track = update_sigma_x_on_track
+            ee.update_sigma_y_on_track = update_sigma_y_on_track
+            ee.iscollective = True
+            spch_elements.append(ee)
 
     return spch_elements
 
@@ -94,8 +93,9 @@ class PICCollection:
 
         return self._existing_pics[ix, iy]
 
-def replace_spaceharge_with_PIC(
-        sequence,
+
+def replace_spacecharge_with_PIC(
+        line,
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
         _context=None,
@@ -105,8 +105,8 @@ def replace_spaceharge_with_PIC(
     ind_sc_elems = []
     all_sigma_x = []
     all_sigma_y = []
-    for ii, ee in enumerate(sequence.elements):
-        if ee.__class__.__name__ == 'SCQGaussProfile':
+    for ii, ee in enumerate(line.elements):
+        if isinstance(ee, SpaceChargeBiGaussian):
             all_sc_elems.append(ee)
             ind_sc_elems.append(ii)
             all_sigma_x.append(ee.sigma_x)
@@ -132,7 +132,7 @@ def replace_spaceharge_with_PIC(
         base_sc = pic_collection.get_pic(xlim, ylim)
         sc = base_sc.copy(_buffer=base_sc._buffer)
         sc.length = ee.length
-        sequence.elements[ii] = sc
+        line.elements[ii] = sc
         all_pics.append(sc)
 
     return pic_collection, all_pics

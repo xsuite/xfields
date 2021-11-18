@@ -32,7 +32,7 @@ LongitudinalProfileQGaussianData.custom_kernels = {'line_density_qgauss':
 
 
 
-class LongitudinalProfileQGaussian(xt.dress(LongitudinalProfileQGaussianData)):
+class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
 
     @staticmethod
     def cq_from_q(q, q_tol):

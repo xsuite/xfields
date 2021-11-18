@@ -42,10 +42,21 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         'd_py': xo.Float64,
         }
 
+    def to_dict(self):
+        dct = super().to_dict()
+        dct['charge'] = self.q0*self.n_particles
+        dct['sigma_x'] = self.sigma_x
+        dct['sigma_y'] = self.sigma_y
+        dct['beta_r'] = self.beta0
+        dct['x_bb'] = self.mean_x
+        dct['y_bb'] = self.mean_y
+        return dct
+
     def __init__(self,
             _context=None,
             _buffer=None,
             _offset=None,
+            _xobject=None,
             n_particles=None,
             q0=None,
             beta0=None,
@@ -55,32 +66,47 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             sigma_y=None,
             d_px=0.,
             d_py=0.,
-            min_sigma_diff=1e-10):
+            min_sigma_diff=1e-28,
+            fieldmap=None,
+            **kwargs # TODO: to be removed, needed to avoid problems in from_dict
+            ):
 
-        self.xoinitialize(
-                 _context=_context,
-                 _buffer=_buffer,
-                 _offset=_offset)
+        if _xobject is not None:
 
-        if not np.isscalar(beta0):
-            raise ValueError('beta0 needs to be ascalar')
-
-        self.n_particles = n_particles
-        self.q0 = q0
-        self.beta0 = beta0
-        self.d_px = d_px
-        self.d_py = d_py
-
-        self.fieldmap = BiGaussianFieldMap(
+            self.xoinitialize(
                      _context=_context,
                      _buffer=_buffer,
                      _offset=_offset,
-                     mean_x=mean_x,
-                     mean_y=mean_y,
-                     sigma_x=sigma_x,
-                     sigma_y=sigma_y,
-                     min_sigma_diff=min_sigma_diff,
-                     updatable=True)
+                     _xobject=_xobject)
+        else:
+
+            self.xoinitialize(
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset)
+
+            if not np.isscalar(beta0):
+                raise ValueError('beta0 needs to be a scalar')
+
+            self.n_particles = n_particles
+            self.q0 = q0
+            self.beta0 = beta0
+            self.d_px = d_px
+            self.d_py = d_py
+
+            if fieldmap is None:
+                fieldmap = BiGaussianFieldMap(
+                         _context=_context,
+                         _buffer=_buffer,
+                         _offset=_offset,
+                         mean_x=mean_x,
+                         mean_y=mean_y,
+                         sigma_x=sigma_x,
+                         sigma_y=sigma_y,
+                         min_sigma_diff=min_sigma_diff,
+                         updatable=True)
+
+            self.fieldmap=fieldmap
 
     def update(self, **kwargs):
         for kk in kwargs.keys():
@@ -119,28 +145,6 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
     @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
-
-
-    @classmethod
-    def from_xline(cls, xline_beambeam=None,
-            _context=None, _buffer=None, _offset=None):
-
-        bb = cls(
-            _context=_context,
-            _buffer=_buffer,
-            _offset=_offset,
-            n_particles=xline_beambeam.charge/qe, # pysixtrak has it in coulumb
-            q0=qe*float(xline_beambeam.enabled), # I implement the enable flag like this
-            beta0=xline_beambeam.beta_r,
-            mean_x=xline_beambeam.x_bb,
-            mean_y=xline_beambeam.y_bb,
-            sigma_x=xline_beambeam.sigma_x,
-            sigma_y=xline_beambeam.sigma_y,
-            d_px=xline_beambeam.d_px,
-            d_py=xline_beambeam.d_py,
-            min_sigma_diff=xline_beambeam.min_sigma_diff)
-
-        return bb
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))

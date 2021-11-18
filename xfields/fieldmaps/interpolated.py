@@ -1,6 +1,7 @@
 import numpy as np
 
 import xobjects as xo
+import xpart as xp
 import xtrack as xt
 
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
@@ -46,7 +47,7 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
     'p2m_rectmesh3d_xparticles': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xt.Particles.XoStruct, pointer=False, name='particles'),
+            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
             xo.Arg(xo.Float64, pointer=False, name='x0'),
             xo.Arg(xo.Float64, pointer=False, name='y0'),
             xo.Arg(xo.Float64, pointer=False, name='z0'),
@@ -102,7 +103,7 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
 # I add undescores in front of the names so that I can define custom properties
 rename_trilinear = {ff.name:'_'+ff.name for ff
                 in TriLinearInterpolatedFieldMapData._fields}
-class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
+class TriLinearInterpolatedFieldMap(xo.dress(TriLinearInterpolatedFieldMapData,
                                              rename=rename_trilinear)):
 
     """

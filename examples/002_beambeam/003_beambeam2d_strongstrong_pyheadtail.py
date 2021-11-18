@@ -6,10 +6,11 @@ from matplotlib import pyplot as plt
 import xobjects as xo
 import xtrack as xt
 import xfields as xf
+import xpart as xp
 from PyHEADTAIL.trackers.transverse_tracking import TransverseSegmentMap
 
 context = xo.ContextCpu(omp_num_threads=0)
-xt.enable_pyheadtail_interface()
+xp.enable_pyheadtail_interface()
 
 #################################
 # Generate particles            #
@@ -36,25 +37,25 @@ mean_y_b2 = 0.0
 p0c = 7000e9
 
 print('Initialising particles')
-particles_b1 = xt.Particles(_context=context,
-                         p0c=p0c,
-                         x=np.sqrt(physemit_x*betastar_x)*(np.random.randn(n_macroparticles)+mean_x_b1),
-                         px=np.sqrt(physemit_x/betastar_x)*np.random.randn(n_macroparticles),
-                         y=np.sqrt(physemit_y*betastar_y)*(np.random.randn(n_macroparticles)+mean_y_b1),
-                         py=np.sqrt(physemit_y/betastar_y)*np.random.randn(n_macroparticles),
-                         zeta=sigma_z*np.random.randn(n_macroparticles),
-                         delta=sigma_delta*np.random.randn(n_macroparticles),
-                         )
+particles_b1 = xp.Particles(_context=context,
+    p0c=p0c,
+    x=np.sqrt(physemit_x*betastar_x)*(np.random.randn(n_macroparticles)+mean_x_b1),
+    px=np.sqrt(physemit_x/betastar_x)*np.random.randn(n_macroparticles),
+    y=np.sqrt(physemit_y*betastar_y)*(np.random.randn(n_macroparticles)+mean_y_b1),
+    py=np.sqrt(physemit_y/betastar_y)*np.random.randn(n_macroparticles),
+    zeta=sigma_z*np.random.randn(n_macroparticles),
+    delta=sigma_delta*np.random.randn(n_macroparticles),
+)
 
-particles_b2 = xt.Particles(_context=context,
-                         p0c=p0c,
-                         x=np.sqrt(physemit_x*betastar_x)*(np.random.randn(n_macroparticles)+mean_x_b2),
-                         px=np.sqrt(physemit_x/betastar_x)*np.random.randn(n_macroparticles),
-                         y=np.sqrt(physemit_y*betastar_y)*(np.random.randn(n_macroparticles)+mean_y_b2),
-                         py=np.sqrt(physemit_y/betastar_y)*np.random.randn(n_macroparticles),
-                         zeta=sigma_z*np.random.randn(n_macroparticles),
-                         delta=sigma_delta*np.random.randn(n_macroparticles),
-                         )
+particles_b2 = xp.Particles(_context=context,
+    p0c=p0c,
+    x=np.sqrt(physemit_x*betastar_x)*(np.random.randn(n_macroparticles)+mean_x_b2),
+    px=np.sqrt(physemit_x/betastar_x)*np.random.randn(n_macroparticles),
+    y=np.sqrt(physemit_y*betastar_y)*(np.random.randn(n_macroparticles)+mean_y_b2),
+    py=np.sqrt(physemit_y/betastar_y)*np.random.randn(n_macroparticles),
+    zeta=sigma_z*np.random.randn(n_macroparticles),
+    delta=sigma_delta*np.random.randn(n_macroparticles),
+)
 
 #############
 # Beam-beam #

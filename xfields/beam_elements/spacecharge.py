@@ -184,6 +184,17 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'length': xo.Float64,
         }
 
+    def to_dict(self):
+        dct = super().to_dict()
+        # To be loaded by ducktrack:
+        dct['number_of_particles'] = self.longitudinal_profile.number_of_particles
+        dct['bunchlength_rms'] = self.longitudinal_profile.sigma_z
+        dct['sigma_x'] = self.fieldmap.sigma_x
+        dct['sigma_y'] = self.fieldmap.sigma_y
+        dct['x_co'] = self.fieldmap.mean_x
+        dct['y_co'] = self.fieldmap.mean_y
+        return dct
+
     def __init__(self,
                  _context=None,
                  _buffer=None,
@@ -196,7 +207,10 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  mean_y=0.,
                  sigma_x=None,
                  sigma_y=None,
-                 min_sigma_diff=1e-10):
+                 fieldmap=None,
+                 min_sigma_diff=1e-10,
+                 **kwargs # to avoid issues when building form dict
+                 ):
 
         self.xoinitialize(
                  _context=_context,
@@ -214,7 +228,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         self.apply_z_kick = apply_z_kick
         self._init_update_on_track(update_on_track)
 
-        self.fieldmap = BiGaussianFieldMap(
+        if fieldmap is None:
+            self.fieldmap = BiGaussianFieldMap(
                      _context=self._buffer.context,
                      mean_x=mean_x,
                      mean_y=mean_y,
@@ -222,6 +237,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                      sigma_y=sigma_y,
                      min_sigma_diff=min_sigma_diff,
                      updatable=True)
+        else:
+            self.fieldmap=fieldmap
 
         self.iscollective = None # Inferred from _update_flag
 
@@ -312,36 +329,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
 
-    @classmethod
-    def from_xline(cls, xline_spacecharge=None,
-            _context=None, _buffer=None, _offset=None):
-
-        assert xline_spacecharge.__class__.__name__ == 'SCQGaussProfile'
-        xlsc = xline_spacecharge
-        assert np.isclose(xlsc.q_parameter, 1, atol=1e-13) # TODO Bug to be sorted out in pysixtrack (see issue), for now gaussian only!
-
-        lprofile = LongitudinalProfileQGaussian(
-                _context=_context,
-                _buffer=_buffer,
-                number_of_particles=xlsc.number_of_particles,
-                sigma_z=xlsc.bunchlength_rms,
-                z0=0.,
-                q_parameter=xlsc.q_parameter)
-
-        sc = cls(
-            _context=_context,
-            _buffer=_buffer,
-            _offset=_offset,
-            length=xlsc.length,
-            apply_z_kick=False,
-            longitudinal_profile=lprofile,
-            mean_x=xlsc.x_co,
-            mean_y=xlsc.y_co,
-            sigma_x=xlsc.sigma_x,
-            sigma_y=xlsc.sigma_y,
-            min_sigma_diff=xlsc.min_sigma_diff)
-
-        return sc
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
