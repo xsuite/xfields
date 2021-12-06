@@ -199,6 +199,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  _context=None,
                  _buffer=None,
                  _offset=None,
+                 _xobject=None,
                  update_on_track=False,
                  length=None,
                  apply_z_kick=False,
@@ -212,33 +213,40 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  **kwargs # to avoid issues when building form dict
                  ):
 
-        self.xoinitialize(
-                 _context=_context,
-                 _buffer=_buffer,
-                 _offset=_offset)
-
-        if apply_z_kick:
-            raise NotImplementedError
-
-        assert longitudinal_profile is not None, (
-            'Longitudinal profile must be provided')
-
-        self.length = length
-        self.longitudinal_profile = longitudinal_profile
-        self.apply_z_kick = apply_z_kick
-        self._init_update_on_track(update_on_track)
-
-        if fieldmap is None:
-            self.fieldmap = BiGaussianFieldMap(
-                     _context=self._buffer.context,
-                     mean_x=mean_x,
-                     mean_y=mean_y,
-                     sigma_x=sigma_x,
-                     sigma_y=sigma_y,
-                     min_sigma_diff=min_sigma_diff,
-                     updatable=True)
+        if _xobject is not None:
+            self.xoinitialize(
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset,
+                     _xobject=_xobject)
         else:
-            self.fieldmap=fieldmap
+            self.xoinitialize(
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset)
+
+            if apply_z_kick:
+                raise NotImplementedError
+
+            assert longitudinal_profile is not None, (
+                'Longitudinal profile must be provided')
+
+            self.length = length
+            self.longitudinal_profile = longitudinal_profile
+            self.apply_z_kick = apply_z_kick
+            self._init_update_on_track(update_on_track)
+
+            if fieldmap is None:
+                self.fieldmap = BiGaussianFieldMap(
+                         _context=self._buffer.context,
+                         mean_x=mean_x,
+                         mean_y=mean_y,
+                         sigma_x=sigma_x,
+                         sigma_y=sigma_y,
+                         min_sigma_diff=min_sigma_diff,
+                         updatable=True)
+            else:
+                self.fieldmap=fieldmap
 
         self.iscollective = None # Inferred from _update_flag
 
