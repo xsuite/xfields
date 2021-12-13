@@ -427,7 +427,7 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
     	double delta_boosted = LocalParticle_get_delta(part);
         // macropart state: 0=dead, 1=alive, 100X: part of slice X
         int64_t state = LocalParticle_get_state(part);
-        state -= 1000;
+        // state -= 1000;
 
         // code is executed only if macropart is in correct slice or if there are no slices
         if(state == slice_id || is_sliced == 0){
