@@ -15,6 +15,69 @@ def mean_and_std(a, weights=None):
 
     return float(mean), float(std)
 
+def get_mean(xtrack_particles, mask=[], test_particles=False):
+
+    if test_particles:
+        if len(mask) == 0 or len(mask) == len(xtrack_particles.x):
+            mean = np.mean(np.array([xtrack_particles.x[xtrack_particles.test==0], xtrack_particles.px[xtrack_particles.test==0],
+                                     xtrack_particles.y[xtrack_particles.test==0], xtrack_particles.py[xtrack_particles.test==0],
+                                     xtrack_particles.zeta[xtrack_particles.test==0]]), axis=-1)
+        else:
+            mean = np.mean(np.array([xtrack_particles.x[mask][xtrack_particles.test[mask]==0], xtrack_particles.px[mask][xtrack_particles.test[mask]==0],
+                                     xtrack_particles.y[mask][xtrack_particles.test[mask]==0], xtrack_particles.py[mask][xtrack_particles.test[mask]==0],
+                                     xtrack_particles.zeta[mask][xtrack_particles.test[mask]==0]]), axis=-1)
+    else:
+        if len(mask) == 0 or len(mask) == len(xtrack_particles.x):
+            mean = np.mean(np.array([xtrack_particles.x, xtrack_particles.px,
+                                     xtrack_particles.y, xtrack_particles.py,
+                                     xtrack_particles.zeta]), axis=-1)
+        else:
+            mean = np.mean(np.array([xtrack_particles.x[mask], xtrack_particles.px[mask],
+                                     xtrack_particles.y[mask], xtrack_particles.py[mask],
+                                     xtrack_particles.zeta[mask]]), axis=-1)
+
+
+    return {
+            "x": mean[0],
+           "px": mean[1],
+            "y": mean[2],
+           "py": mean[3],
+            "z": mean[4],
+           }
+
+
+def get_cov(xtrack_particles, mask=[], test_particles=False):
+
+    if test_particles:
+        if len(mask) == 0 or len(mask) == len(xtrack_particles.x):
+            cov_matrix = np.cov(np.array([xtrack_particles.x[xtrack_particles.test==0], xtrack_particles.px[xtrack_particles.test==0],
+                                          xtrack_particles.y[xtrack_particles.test==0], xtrack_particles.py[xtrack_particles.test==0]]), bias=True)
+        else:
+            cov_matrix = np.cov(np.array([xtrack_particles.x[mask][xtrack_particles.test[mask]==0], xtrack_particles.px[mask][xtrack_particles.test[mask]==0],
+                                          xtrack_particles.y[mask][xtrack_particles.test[mask]==0], xtrack_particles.py[mask][xtrack_particles.test[mask]==0]]), bias=True)
+
+    else:
+        if len(mask) == 0 or len(mask) == len(xtrack_particles.x):
+            cov_matrix = np.cov(np.array([xtrack_particles.x, xtrack_particles.px,
+                                          xtrack_particles.y, xtrack_particles.py]), bias=True)
+        else:
+            cov_matrix = np.cov(np.array([xtrack_particles.x[mask], xtrack_particles.px[mask],
+                                          xtrack_particles.y[mask], xtrack_particles.py[mask]]), bias=True)
+
+    return {
+            "Sig_11": cov_matrix[0,0],
+            "Sig_12": cov_matrix[0,1],
+            "Sig_13": cov_matrix[0,2],
+            "Sig_14": cov_matrix[0,3],
+            "Sig_22": cov_matrix[1,1],
+            "Sig_23": cov_matrix[1,2],
+            "Sig_24": cov_matrix[1,3],
+            "Sig_33": cov_matrix[2,2],
+            "Sig_34": cov_matrix[2,3],
+            "Sig_44": cov_matrix[3,3],
+           }
+
+
 class BiGaussianFieldMapData(xo.Struct):
     mean_x = xo.Float64
     mean_y = xo.Float64

@@ -29,38 +29,16 @@ void MacropartToCP(const unsigned int use_strongstrong,
 
     // weakstrong model: center of ref. is full beam 2 centroid: x^cp_weak_macropart + xc_strong_fullbeam - xc^cp_strong_slice = Sx_i w.r.t. strong slice centroid at CP  
     if (use_strongstrong == 0){
-        //printf("0");        
         (*Sx_i) = x1 + px1*(*Sz_i) + x2_bc - (x2_c - px2_c*(*Sz_i)); //- (x_c - px_c*(*Sz_i)); 
         (*Sy_i) = y1 + py1*(*Sz_i) + y2_bc - (y2_c - py2_c*(*Sz_i)); //- (y_c - py_c*(*Sz_i));
 
     // strongstorng model: center of ref. is the barycentric frame with common origin: x^cp_beam1_macropart - xc^cp_beam2_slice = Sx_i w.r.t. strong slice centroid at CP  
     }else if (use_strongstrong == 1){
-        //printf("1");
         (*Sx_i) = x1 + px1*(*Sz_i) - (x2_c - px2_c*(*Sz_i)); 
         (*Sy_i) = y1 + py1*(*Sz_i) - (y2_c - py2_c*(*Sz_i));
     }
-    // all 0 unless specified outside
-/*
-    printf("Sz: %.12f\n",   (*Sz_i));
- 
-    printf("x: %.12f\n",   x1);
-//    printf("y: %.12f\n",   y1);
-//    printf("z: %.12f\n",   z1);
-    printf("px: %.12f\n", px1);
-//    printf("py: %.12f\n", py1);
-    printf("%.12f\n", x1 + px1*(*Sz_i) );
-    printf("%.12f\n", x2_c - px2_c*(*Sz_i) );
-
-
-    printf("x_c: %.12f\n",   x2_c);
-    printf("x_bc: %.12f\n",  x2_bc);
-//    printf("y_c: %.12f\n",   y2_c);
-//    printf("z_c: %.12f\n",   z2_c);
-    printf("px_c: %.12f\n", px2_c);
-//    printf("py_c: %.12f\n", py2_c);
-
-*/
 }
+
 
 /*gpufun*/
 void IPToCP3D_track_local_particle(IPToCP3DData el, 
