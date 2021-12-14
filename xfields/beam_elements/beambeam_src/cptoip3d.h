@@ -46,6 +46,8 @@ void MacropartToIP(const unsigned int use_strongstrong,
 /*gpufun*/
 void CPToIP3D_track_local_particle(CPToIP3DData el, 
 		 	   LocalParticle* part){
+//    clock_t tt;
+//    tt = clock(); 
 	
     // boosted centroid coords of beam 2 passed in with element.update()
     /*gpuglmem*/ const double* x_bb_centroid  = CPToIP3DData_getp_x_bb_centroid(el);
@@ -68,24 +70,30 @@ void CPToIP3D_track_local_particle(CPToIP3DData el,
   
     int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
     
+    int64_t count = 0;
+
     // loop over macroparticles
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
         part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
 
-        // these already boosted probably
-    	double Sx_i = LocalParticle_get_x(part);
-    	double px = LocalParticle_get_px(part);
-    	double Sy_i = LocalParticle_get_y(part);
-    	double py = LocalParticle_get_py(part);
-    	double Sz_i = LocalParticle_get_zeta(part);
-    	double delta = LocalParticle_get_delta(part);
-
         // macropart state: 0=dead, 1=alive, 100X: part of slice X
         int64_t state = LocalParticle_get_state(part);
-        // state -= 1000;
 
-        // code is executed only if macropart is in correct slice or if there are no slices
-        if(state == slice_id || is_sliced == 0){
+        // code is executed only if macropart is in correct slice or if there are no slices 
+        int cond;
+        cond = (state == slice_id || is_sliced == 0);
+
+        if(cond){
+
+            count += 1;
+
+            // these already boosted probably
+    	    double Sx_i = LocalParticle_get_x(part);
+    	    double px = LocalParticle_get_px(part);
+    	    double Sy_i = LocalParticle_get_y(part);
+    	    double py = LocalParticle_get_py(part);
+    	    double Sz_i = LocalParticle_get_zeta(part);
+    	    double delta = LocalParticle_get_delta(part);
 
             // move slice 1 macroparts to CP nusing slice 2 centroid
             double x, y, z; // slice 1 macropart coords at CP
@@ -102,8 +110,15 @@ void CPToIP3D_track_local_particle(CPToIP3DData el,
       	    LocalParticle_set_py(part, py);
     	    LocalParticle_set_zeta(part, z);
     	    LocalParticle_update_delta(part, delta);
-        }	
+        }
+	
     } //only_for_context cpu_serial cpu_openmp
+
+//   tt = clock() - tt;
+//   double ttime_taken = ((double)tt)/CLOCKS_PER_SEC;
+//   printf("[cptoip.h] took %.8f seconds to execute, %d times entered if\n", ttime_taken, count);
+
+
 }
 
 

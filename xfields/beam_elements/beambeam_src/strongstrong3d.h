@@ -389,7 +389,9 @@ void synrad(double e_macropart, // [GeV]
 
 /*gpufun*/
 void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* part){
-
+//    clock_t tt;
+//    tt = clock(); 
+	
     // part= single macropart
     // el= beambeam element (other beam)	
     // Get data from memory
@@ -414,24 +416,31 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
    
     int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
 
+    int64_t count = 0;
+
     // loop over slice 1 macroparts    
     for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
         part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
 
-        // get macropart properties, boosted and at CP (px, py, delta are the same at ip and cp)
-    	double Sx_i          = LocalParticle_get_x(part);
-    	double px_boosted    = LocalParticle_get_px(part);
-    	double Sy_i          = LocalParticle_get_y(part);
-    	double py_boosted    = LocalParticle_get_py(part);
-    	double Sz_i          = LocalParticle_get_zeta(part);
-    	double delta_boosted = LocalParticle_get_delta(part);
         // macropart state: 0=dead, 1=alive, 100X: part of slice X
         int64_t state = LocalParticle_get_state(part);
-        // state -= 1000;
 
-        // code is executed only if macropart is in correct slice or if there are no slices
-        if(state == slice_id || is_sliced == 0){
+        // code is executed only if macropart is in correct slice or if there are no slices 
+        int cond;
+        cond = (state == slice_id || is_sliced == 0);
 
+        if(cond){
+
+            count += 1;
+
+            // get macropart properties, boosted and at CP (px, py, delta are the same at ip and cp)
+       	    double Sx_i          = LocalParticle_get_x(part);
+    	    double px_boosted    = LocalParticle_get_px(part);
+    	    double Sy_i          = LocalParticle_get_y(part);
+    	    double py_boosted    = LocalParticle_get_py(part);
+    	    double Sz_i          = LocalParticle_get_zeta(part);
+    	    double delta_boosted = LocalParticle_get_delta(part);
+ 
        	    const double q0  = LocalParticle_get_q0(part); // charge of single macropart [elementary charge]
     	    const double p0c = LocalParticle_get_p0c(part); // [eV]
     	    const double P0  = p0c/C_LIGHT*QELEM;  // [C]
@@ -535,7 +544,14 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
     	    LocalParticle_update_delta(part, delta_boosted);
 	
         }
+
     } //only_for_context cpu_serial cpu_openmp
+//   tt = clock() - tt;
+//   double ttime_taken = ((double)tt)/CLOCKS_PER_SEC;
+//   printf("[strongstrong3d.h] took %.8f seconds to execute, %d times entered if\n", ttime_taken, count);
+
+
+
 }
 
 

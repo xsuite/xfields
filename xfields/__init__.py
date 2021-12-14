@@ -15,7 +15,6 @@ from .beam_elements.iptocp3d import IPToCP3D
 from .beam_elements.iptocp3d_old import IPToCP3D_old
 from .beam_elements.cptoip3d import CPToIP3D
 from .beam_elements.strongstrong3d import StrongStrong3D
-from .beam_elements.changereference import ChangeReference
 
 
 from .general import _pkg_root
