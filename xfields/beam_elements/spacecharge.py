@@ -70,9 +70,19 @@ class SpaceCharge3D(xt.BeamElement):
         (SpaceCharge3D): A space-charge 3D beam element.
     """
     _xofields = {
-        'fieldmap': TriLinearInterpolatedFieldMapData,
+        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMapData),
         'length': xo.Float64,
         }
+
+    def copy(self, _context=None, _buffer=None, _offset=None):
+        if _buffer is not self._buffer:
+            raise NotImplementedError
+        return SpaceCharge3D(_context=_context,
+                _buffer=_buffer, _offset=_offset,
+                update_on_track=self.update_on_track,
+                length=self.length,
+                apply_z_kick=self.apply_z_kick,
+                fieldmap=self.fieldmap)
 
     def __init__(self,
                  _context=None,
@@ -81,6 +91,7 @@ class SpaceCharge3D(xt.BeamElement):
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
+                 fieldmap=None,
                  x_range=None, y_range=None, z_range=None,
                  nx=None, ny=None, nz=None,
                  dx=None, dy=None, dz=None,
@@ -108,19 +119,21 @@ class SpaceCharge3D(xt.BeamElement):
             _context = _buffer.context
         if _context is None:
             _context = xo.context_default
-        # I build the fieldmap on a temporary buffer
-        temp_buff = _context.new_buffer()
-        fieldmap = TriLinearInterpolatedFieldMap(
-                    _buffer=temp_buff,
-                    rho=rho, phi=phi,
-                    x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
-                    x_range=x_range, y_range=y_range, z_range=z_range,
-                    dx=dx, dy=dy, dz=dz,
-                    nx=nx, ny=ny, nz=nz,
-                    solver=solver,
-                    scale_coordinates_in_solver=scale_coordinates_in_solver,
-                    updatable=update_on_track,
-                    fftplan=fftplan)
+
+        if fieldmap is None:
+            # I build the fieldmap on a temporary buffer
+            temp_buff = _context.new_buffer()
+            fieldmap = TriLinearInterpolatedFieldMap(
+                        _buffer=temp_buff,
+                        rho=rho, phi=phi,
+                        x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
+                        x_range=x_range, y_range=y_range, z_range=z_range,
+                        dx=dx, dy=dy, dz=dz,
+                        nx=nx, ny=ny, nz=nz,
+                        solver=solver,
+                        scale_coordinates_in_solver=scale_coordinates_in_solver,
+                        updatable=update_on_track,
+                        fftplan=fftplan)
 
         self.xoinitialize(
                  _context=_context,
@@ -130,6 +143,10 @@ class SpaceCharge3D(xt.BeamElement):
                  length=length)
 
         # temp_buff is deallocate here
+
+    @property
+    def iscollective(self):
+        return self.update_on_track
 
 
     def track(self, particles):
@@ -144,11 +161,7 @@ class SpaceCharge3D(xt.BeamElement):
 
         if self.update_on_track:
             self.fieldmap.update_from_particles(
-                    x_p=particles.x,
-                    y_p=particles.y,
-                    z_p=particles.zeta,
-                    ncharges_p=particles.weight,
-                    q0_coulomb=particles.q0*qe)
+                particles=particles)
 
         # call C tracking kernel
         super().track(particles)
@@ -171,10 +184,22 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'length': xo.Float64,
         }
 
+    def to_dict(self):
+        dct = super().to_dict()
+        # To be loaded by ducktrack:
+        dct['number_of_particles'] = self.longitudinal_profile.number_of_particles
+        dct['bunchlength_rms'] = self.longitudinal_profile.sigma_z
+        dct['sigma_x'] = self.fieldmap.sigma_x
+        dct['sigma_y'] = self.fieldmap.sigma_y
+        dct['x_co'] = self.fieldmap.mean_x
+        dct['y_co'] = self.fieldmap.mean_y
+        return dct
+
     def __init__(self,
                  _context=None,
                  _buffer=None,
                  _offset=None,
+                 _xobject=None,
                  update_on_track=False,
                  length=None,
                  apply_z_kick=False,
@@ -183,32 +208,45 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  mean_y=0.,
                  sigma_x=None,
                  sigma_y=None,
-                 min_sigma_diff=1e-10):
+                 fieldmap=None,
+                 min_sigma_diff=1e-10,
+                 **kwargs # to avoid issues when building form dict
+                 ):
 
-        self.xoinitialize(
-                 _context=_context,
-                 _buffer=_buffer,
-                 _offset=_offset)
+        if _xobject is not None:
+            self.xoinitialize(
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset,
+                     _xobject=_xobject)
+        else:
+            self.xoinitialize(
+                     _context=_context,
+                     _buffer=_buffer,
+                     _offset=_offset)
 
-        if apply_z_kick:
-            raise NotImplementedError
+            if apply_z_kick:
+                raise NotImplementedError
 
-        assert longitudinal_profile is not None, (
-            'Longitudinal profile must be provided')
+            assert longitudinal_profile is not None, (
+                'Longitudinal profile must be provided')
 
-        self.length = length
-        self.longitudinal_profile = longitudinal_profile
-        self.apply_z_kick = apply_z_kick
-        self._init_update_on_track(update_on_track)
+            self.length = length
+            self.longitudinal_profile = longitudinal_profile
+            self.apply_z_kick = apply_z_kick
+            self._init_update_on_track(update_on_track)
 
-        self.fieldmap = BiGaussianFieldMap(
-                     _context=self._buffer.context,
-                     mean_x=mean_x,
-                     mean_y=mean_y,
-                     sigma_x=sigma_x,
-                     sigma_y=sigma_y,
-                     min_sigma_diff=min_sigma_diff,
-                     updatable=True)
+            if fieldmap is None:
+                self.fieldmap = BiGaussianFieldMap(
+                         _context=self._buffer.context,
+                         mean_x=mean_x,
+                         mean_y=mean_y,
+                         sigma_x=sigma_x,
+                         sigma_y=sigma_y,
+                         min_sigma_diff=min_sigma_diff,
+                         updatable=True)
+            else:
+                self.fieldmap=fieldmap
 
         self.iscollective = None # Inferred from _update_flag
 
@@ -299,39 +337,11 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
 
-    @classmethod
-    def from_xline(cls, xline_spacecharge=None,
-            _context=None, _buffer=None, _offset=None):
-
-        assert xline_spacecharge.__class__.__name__ == 'SCQGaussProfile'
-        xlsc = xline_spacecharge
-        assert np.isclose(xlsc.q_parameter, 1, atol=1e-13) # TODO Bug to be sorted out in pysixtrack (see issue), for now gaussian only!
-
-        lprofile = LongitudinalProfileQGaussian(
-                _context=_context,
-                _buffer=_buffer,
-                number_of_particles=xlsc.number_of_particles,
-                sigma_z=xlsc.bunchlength_rms,
-                z0=0.,
-                q_parameter=xlsc.q_parameter)
-
-        sc = cls(
-            _context=_context,
-            _buffer=_buffer,
-            _offset=_offset,
-            length=xlsc.length,
-            apply_z_kick=False,
-            longitudinal_profile=lprofile,
-            mean_x=xlsc.x_co,
-            mean_y=xlsc.y_co,
-            sigma_x=xlsc.sigma_x,
-            sigma_y=xlsc.sigma_y,
-            min_sigma_diff=xlsc.min_sigma_diff)
-
-        return sc
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
+srcs.append(_pkg_root.joinpath('headers/sincos.h'))
+srcs.append(_pkg_root.joinpath('headers/power_n.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
