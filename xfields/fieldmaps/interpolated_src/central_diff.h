@@ -7,8 +7,16 @@ void central_diff(
 	      const int     row_size,
 	      const int     stride_in_dbl,
 	      const double  factor,
-/*gpuglmem*/  const double* matrix,
-/*gpuglmem*/        double* res){
+/*gpuglmem*/  const int8_t* matrix_buffer,
+              const int64_t matrix_offset,
+/*gpuglmem*/        int8_t* res_buffer,
+                    int64_t res_offset
+              ){
+
+   /*gpuglmem*/ const double* matrix = 
+	           (/*gpuglmem*/ double*) (matrix_buffer + matrix_offset); 
+   /*gpuglmem*/       double*  res = 
+	           (/*gpuglmem*/ double*) (res_buffer + res_offset); 
 
    for(int ii=0; ii<nelem; ii++){//vectorize_over ii nelem
       if (ii-stride_in_dbl>=0 && ii+stride_in_dbl<nelem){

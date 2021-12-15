@@ -5,3 +5,6 @@ include *.md
 
 # Include the license file
 include LICENSE.txt
+
+recursive-include xfields *.h
+recursive-include xfields *.clh

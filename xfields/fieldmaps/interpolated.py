@@ -1,6 +1,7 @@
 import numpy as np
 
 import xobjects as xo
+import xpart as xp
 import xtrack as xt
 
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
@@ -23,6 +24,7 @@ class TriLinearInterpolatedFieldMapData(xo.Struct):
     dphi_dz = xo.Float64[:]
 
 TriLinearInterpolatedFieldMapData.extra_sources = [
+    _pkg_root.joinpath('headers/constants.h'),
     _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
     _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
     _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
@@ -35,18 +37,17 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
             xo.Arg(xo.Int32,   pointer=False, name='row_size'),
             xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
             xo.Arg(xo.Float64, pointer=False, name='factor'),
-            xo.Arg(xo.Float64, pointer=True,  name='matrix'),
-            xo.Arg(xo.Float64, pointer=True,  name='res'),
+            xo.Arg(xo.Int8,    pointer=True,  name='matrix_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='matrix_offset'),
+            xo.Arg(xo.Int8,    pointer=True,  name='res_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='res_offset'),
             ],
         n_threads='nelem'
         ),
-    'p2m_rectmesh3d': xo.Kernel(
+    'p2m_rectmesh3d_xparticles': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xo.Float64, pointer=True, name='x'),
-            xo.Arg(xo.Float64, pointer=True, name='y'),
-            xo.Arg(xo.Float64, pointer=True, name='z'),
-            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
+            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
             xo.Arg(xo.Float64, pointer=False, name='x0'),
             xo.Arg(xo.Float64, pointer=False, name='y0'),
             xo.Arg(xo.Float64, pointer=False, name='z0'),
@@ -56,7 +57,30 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
             xo.Arg(xo.Int32,   pointer=False, name='nx'),
             xo.Arg(xo.Int32,   pointer=False, name='ny'),
             xo.Arg(xo.Int32,   pointer=False, name='nz'),
-            xo.Arg(xo.Float64, pointer=True, name='grid1d'),
+            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
+            ],
+        n_threads='nparticles'
+        ),
+    'p2m_rectmesh3d': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xo.Float64, pointer=True, name='x'),
+            xo.Arg(xo.Float64, pointer=True, name='y'),
+            xo.Arg(xo.Float64, pointer=True, name='z'),
+            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
+            xo.Arg(xo.Int64,   pointer=True, name='part_state'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
             ],
         n_threads='nparticles'
         ),
@@ -79,7 +103,7 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
 # I add undescores in front of the names so that I can define custom properties
 rename_trilinear = {ff.name:'_'+ff.name for ff
                 in TriLinearInterpolatedFieldMapData._fields}
-class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
+class TriLinearInterpolatedFieldMap(xo.dress(TriLinearInterpolatedFieldMapData,
                                              rename=rename_trilinear)):
 
     """
@@ -271,19 +295,25 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         return particles_quantities
 
     #@profile
-    def update_from_particles(self, x_p, y_p, z_p, ncharges_p, q0_coulomb,
+    def update_from_particles(self,
+                        particles=None,
+                        x_p=None, y_p=None, z_p=None,
+                        ncharges_p=None, state_p=None, q0_coulomb=None,
                         reset=True, update_phi=True, solver=None, force=False):
 
         """
-        Updates the charge density at the grid using a given set of particles.
+        Updates the charge density at the grid using a given set of particles,
+        which can be provided by a particles object or by individual arrays.
         The potential can be optionally updated accordingly.
 
         Args:
+            particles (xtrack.Particles): xtrack particle object.
             x_p (float64 array): Horizontal coordinates of the macroparticles.
             y_p (float64 array): Vertical coordinates of the macroparticles.
             z_p (float64 array): Longitudinal coordinates of the macroparticles.
             ncharges_p (float64 array): Number of reference charges in the
                 macroparticles.
+            state_p (int64, array): particle state (>0 active, lost otherwise)
             q0_coulomb (float64): Reference charge in Coulomb.
             reset (bool): If ``True`` the stored charge density is overwritten
                 with the provided one. If ``False`` the provided charge density
@@ -303,18 +333,38 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
         if reset:
             self.rho[:,:,:] = 0.
 
-        assert len(x_p) == len(y_p) == len(z_p) == len(ncharges_p)
-
         context = self._buffer.context
 
-        context.kernels.p2m_rectmesh3d(
-                nparticles=len(x_p),
-                x=x_p, y=y_p, z=z_p,
-                part_weights=q0_coulomb*ncharges_p,
-                x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
-                dx=self.dx, dy=self.dy, dz=self.dz,
-                nx=self.nx, ny=self.ny, nz=self.nz,
-                grid1d=self.rho)
+        if particles is None:
+            assert (len(x_p) == len(y_p) == len(z_p) == len(ncharges_p))
+            if state_p is None:
+                state_p = context.zeros(shape=x_p.shape, dtype=np.int64) + 1
+            else:
+                assert len(state_p) == len(x_p)
+
+            context.kernels.p2m_rectmesh3d(
+                    nparticles=len(x_p),
+                    x=x_p, y=y_p, z=z_p,
+                    part_weights=q0_coulomb*ncharges_p,
+                    part_state=state_p,
+                    x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
+                    dx=self.dx, dy=self.dy, dz=self.dz,
+                    nx=self.nx, ny=self.ny, nz=self.nz,
+                    grid1d_buffer=self._xobject.rho._buffer.buffer,
+                    grid1d_offset=self._xobject.rho._offset
+                                 +self._xobject.rho._data_offset)
+        else:
+            assert (x_p is None and y_p is None and z_p is None
+                    and ncharges_p is None and state_p is None)
+            context.kernels.p2m_rectmesh3d_xparticles(
+                    nparticles=particles._capacity,
+                    particles=particles,
+                    x0=self.x_grid[0], y0=self.y_grid[0], z0=self.z_grid[0],
+                    dx=self.dx, dy=self.dy, dz=self.dz,
+                    nx=self.nx, ny=self.ny, nz=self.nz,
+                    grid1d_buffer=self._xobject.rho._buffer.buffer,
+                    grid1d_offset=self._xobject.rho._offset
+                                 +self._xobject.rho._data_offset)
 
         if update_phi:
             self.update_phi_from_rho(solver=solver)
@@ -372,22 +422,34 @@ class TriLinearInterpolatedFieldMap(xt.dress(TriLinearInterpolatedFieldMapData,
                 row_size = self.nx,
                 stride_in_dbl = self.phi.strides[0]/8,
                 factor = 1/(2*self.dx),
-                matrix = self.phi,
-                res = self.dphi_dx)
+                matrix_buffer = self._xobject.phi._buffer.buffer,
+                matrix_offset = (self._xobject.phi._offset
+                               + self._xobject.phi._data_offset),
+                res_buffer = self._xobject.dphi_dx._buffer.buffer,
+                res_offset = (self._xobject.dphi_dx._offset
+                            + self._xobject.dphi_dx._data_offset))
         context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.ny,
                 stride_in_dbl = self.phi.strides[1]/8,
                 factor = 1/(2*self.dy),
-                matrix = self.phi,
-                res = self.dphi_dy)
+                matrix_buffer = self._xobject.phi._buffer.buffer,
+                matrix_offset = (self._xobject.phi._offset
+                               + self._xobject.phi._data_offset),
+                res_buffer = self._xobject.dphi_dy._buffer.buffer,
+                res_offset = (self._xobject.dphi_dy._offset
+                            + self._xobject.dphi_dy._data_offset))
         context.kernels.central_diff(
                 nelem = self.phi.size,
                 row_size = self.nz,
                 stride_in_dbl = self.phi.strides[2]/8,
                 factor = 1/(2*self.dz),
-                matrix = self.phi,
-                res = self.dphi_dz)
+                matrix_buffer = self._xobject.phi._buffer.buffer,
+                matrix_offset = (self._xobject.phi._offset
+                               + self._xobject.phi._data_offset),
+                res_buffer = self._xobject.dphi_dz._buffer.buffer,
+                res_offset = (self._xobject.dphi_dz._offset
+                            + self._xobject.dphi_dz._data_offset))
 
     #@profile
     def update_phi_from_rho(self, solver=None):

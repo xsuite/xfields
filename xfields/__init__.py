@@ -18,5 +18,14 @@ from .beam_elements.strongstrong3d import StrongStrong3D
 
 
 from .general import _pkg_root
-from .config_tools import replace_spaceharge_with_quasi_frozen
-from .config_tools import replace_spaceharge_with_PIC
+from .config_tools import replace_spacecharge_with_quasi_frozen
+from .config_tools import replace_spacecharge_with_PIC
+from .config_tools import configure_orbit_dependent_parameters_for_bb
+
+import xtrack as _xt
+
+element_classes = tuple(
+    v for v in globals().values()
+    if isinstance(v, type) and issubclass(v, _xt.BeamElement)
+)
+del _xt

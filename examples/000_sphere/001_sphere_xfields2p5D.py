@@ -10,7 +10,7 @@ from xfields import TriLinearInterpolatedFieldMap
 
 context = ContextCpu()
 #context = ContextCupy(default_block_size=256)
-context = ContextPyopencl()
+#context = ContextPyopencl()
 
 print(repr(context))
 

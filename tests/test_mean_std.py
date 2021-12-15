@@ -5,12 +5,8 @@ import xfields as xf
 
 def test_mean_and_std():
 
-    for CTX in xo.ContextCpu, xo.ContextPyopencl, xo.ContextCupy:
-        if CTX not in xo.context.available:
-            continue
-
-        print(f"Test {CTX}")
-        ctx = CTX()
+    for ctx in xo.context.get_test_contexts():
+        print(f"Test {ctx.__class__}")
 
         n_x=100
         a_host = np.array(np.random.rand(n_x))
