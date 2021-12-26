@@ -69,52 +69,34 @@ void BoostParameters_boost_coordinates(const BoostParameters bp,
 }
 
 /*gpufun*/
-void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part){
+void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
 
-    // part= single macropart
-    // el= beambeam element (other beam)	
+    // part0 = single macropart
+    // el    = beambeam element (other beam)
+	
     // Get data from memory
     const BoostParameters bpar      = Boost3DData_getp_boost_parameters(el);
     const double x2_bc              = Boost3DData_get_x2_bc(el);
     const double y2_bc              = Boost3DData_get_y2_bc(el);
     const double px2_bc             = Boost3DData_get_px2_bc(el);
     const double py2_bc             = Boost3DData_get_py2_bc(el);
-    const unsigned int use_strongstrong = Boost3DData_get_use_strongstrong(el);
 
-    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
-
-    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
-        
-        // point to macropart ii
-        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
-      
-        // get macropart properties, one number each, using generated C code of the particle element
-    	double x     = LocalParticle_get_x(part);
-    	double px    = LocalParticle_get_px(part);
-    	double y     = LocalParticle_get_y(part);
-    	double py    = LocalParticle_get_py(part);
-    	double z     = LocalParticle_get_zeta(part);
+    //start_per_particle_block (part0->part)
+    	double x = LocalParticle_get_x(part);
+    	double px = LocalParticle_get_px(part);
+    	double y = LocalParticle_get_y(part);
+    	double py = LocalParticle_get_py(part);
+    	double zeta = LocalParticle_get_zeta(part);
     	double delta = LocalParticle_get_delta(part);
         
-        // Optionally change reference frame into centered at other full beam's centroid (ref. frames never have a separation by definition of the IP)
-        double x_star, px_star, y_star, py_star, z_star, delta_star;
-        if(use_strongstrong == 0){  // weakstrong case, other beam has no coords just a disk, so this beam needs to know the other beam coords by moving to its reference frame
-            x_star     = x     - x2_bc;
-            px_star    = px    - px2_bc;
-            y_star     = y     - y2_bc;
-            py_star    = py    - py2_bc;
-            z_star     = z;
-            delta_star = delta;
-        }else{  // strongstrong case, CO is inplicitely in the particle coordinates
-
-            x_star     = x;
-  	    px_star    = px;
- 	    y_star     = y;
-       	    py_star    = py;
-     	    z_star     = z;
-   	    delta_star = delta;
-        }
-
+        // if weakstrong case: other beam has no coords just a disk, change reference frame into a frame centered at the other full beam's centroid (ref. frames never have a separation by definition of the IP)
+        double x_star     = x  - x2_bc;
+        double px_star    = px - px2_bc;;
+        double y_star     = y  - y2_bc;
+        double py_star    = py - py2_bc;;
+        double z_star     = zeta;
+        double delta_star = delta;
+  
         // Boost coordinates
 	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
     	
@@ -125,8 +107,7 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part){
     	LocalParticle_set_zeta(part, z_star);
     	LocalParticle_update_delta(part, delta_star);
 
-      } //only_for_context cpu_serial cpu_openmp
+    //end_per_particle_block
 }
-
 
 #endif

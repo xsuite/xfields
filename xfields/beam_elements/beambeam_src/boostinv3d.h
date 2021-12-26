@@ -68,10 +68,11 @@ void BoostParameters_boost_coordinates_inv(
 }
 
 /*gpufun*/
-void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part){
+void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
 
-    // part= single macropart
-    // el= beambeam element (other beam)	
+    // part0 = single macropart
+    // el    = beambeam element (other beam)
+	
     // Get data from memory
     const BoostParameters bpar      = BoostInv3DData_getp_boost_parameters(el);
     const double x2_bc              = BoostInv3DData_get_x2_bc(el);
@@ -84,16 +85,8 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part){
     const double Dpy_sub            = BoostInv3DData_get_Dpy_sub(el);
     const double Dz_sub             = BoostInv3DData_get_Dz_sub(el);
     const double Ddelta_sub         = BoostInv3DData_get_Ddelta_sub(el);
-    const unsigned int use_strongstrong = BoostInv3DData_get_use_strongstrong(el);
 
-    int64_t const n_part = LocalParticle_get_num_particles(part); //only_for_context cpu_serial cpu_openmp
-    
-    for (int ii=0; ii<n_part; ii++){ //only_for_context cpu_serial cpu_openmp
-        
-        // point to macropart ii
-        part->ipart = ii;            //only_for_context cpu_serial cpu_openmp
-      
-        // get macropart properties, one number each
+    //start_per_particle_block (part0->part)
     	double x_star     = LocalParticle_get_x(part);
     	double px_star    = LocalParticle_get_px(part);
     	double y_star     = LocalParticle_get_y(part);
@@ -104,25 +97,13 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part){
     	// Inverse boost coordinates
 	BoostParameters_boost_coordinates_inv(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
 
-        // Go back to original reference frame and remove dipolar effect
-        double x, px, y, py, z, delta;
-        if(use_strongstrong == 0){
-    
-    	    x     = x_star       + x2_bc    - Dx_sub;
-            px    = px_star      + px2_bc   - Dpx_sub;
-    	    y     = y_star       + y2_bc    - Dy_sub;
-      	    py    = py_star      + py2_bc   - Dpy_sub;
-    	    z     = z_star                  - Dz_sub;
-    	    delta = delta_star              - Ddelta_sub;
-        }else{
-
-            x     = x_star;
-            px    = px_star;
-            y     = y_star;
-            py    = py_star;
-            z     = z_star;
-            delta = delta_star;
-        }
+        // if weakstrong case: go back to original reference frame and remove dipolar effect
+    	double x     = x_star       + x2_bc    - Dx_sub;
+        double px    = px_star      + px2_bc   - Dpx_sub;
+    	double y     = y_star       + y2_bc    - Dy_sub;
+      	double py    = py_star      + py2_bc   - Dpy_sub;
+    	double z     = z_star                  - Dz_sub;
+    	double delta = delta_star              - Ddelta_sub;
    	
         LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
@@ -131,9 +112,7 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part){
     	LocalParticle_set_zeta(part, z);
     	LocalParticle_update_delta(part, delta);
 	
-
-    } //only_for_context cpu_serial cpu_openmp
+    //end_per_particle_block
 }
-
 
 #endif

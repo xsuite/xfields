@@ -27,7 +27,6 @@ class Boost3D(xt.BeamElement):
         'y2_bc': xo.Float64,
         'px2_bc': xo.Float64,
         'py2_bc': xo.Float64,
-        'use_strongstrong': xo.UInt8,
     }
 
     def __init__(self,
@@ -40,7 +39,7 @@ class Boost3D(xt.BeamElement):
             y2_bc=0.,
             px2_bc=0.,
             py2_bc=0.,
- 	    use_strongstrong=0): # not the same as above the xobject vars, only if set below
+ 	    ): # not the same as above the xobject vars, only if set below
 
         if _context is None:
             _context = context_default
@@ -55,7 +54,6 @@ class Boost3D(xt.BeamElement):
         self.y2_bc = y2_bc
         self.px2_bc = px2_bc
         self.py2_bc = py2_bc
-        self.use_strongstrong = use_strongstrong
         self.phi = phi,
         self.alpha = alpha,
         self.boost_parameters = {

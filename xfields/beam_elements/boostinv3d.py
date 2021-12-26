@@ -33,7 +33,6 @@ class BoostInv3D(xt.BeamElement):
         'Dpy_sub': xo.Float64,
         'Dz_sub': xo.Float64,
         'Ddelta_sub': xo.Float64,
-	'use_strongstrong': xo.UInt8
  
     }
 
@@ -53,7 +52,7 @@ class BoostInv3D(xt.BeamElement):
             Dpy_sub=0.,
             Dz_sub=0.,
             Ddelta_sub=0.,
-	    use_strongstrong=0):
+	    ):
  
         if _context is None:
             _context = context_default
@@ -73,7 +72,6 @@ class BoostInv3D(xt.BeamElement):
         self.Dpy_sub= Dpy_sub
         self.Dz_sub = Dz_sub
         self.Ddelta_sub = self.Ddelta_sub
-        self.use_strongstrong = use_strongstrong
         self.phi = phi,
         self.alpha = alpha,
         self.boost_parameters = {

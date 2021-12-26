@@ -26,6 +26,26 @@
     #define QELEM (1.60217662e-19)
 #endif
 
+#if !defined( MPROTON_GEVPERC )
+    #define MPROTON_GEVPERC (0.93827208816)
+#endif
+
+#if !defined( MELECTRON_GEVPERC )
+    #define MELECTRON_GEVPERC (0.00051099895000)
+#endif
+
+#if !defined( MELECTRON_KG )
+    #define MELECTRON_KG (9.1093837015e-31)
+#endif
+
+#if !defined( ALPHA )
+    #define ALPHA (7.29735257e-3)
+#endif
+
+#if !defined( HBAR_GEVS )
+    #define HBAR_GEVS (9.1093837015e-31)
+#endif
+
 #if !defined( TWO_OVER_SQRT_PI )
     #define TWO_OVER_SQRT_PI (1.128379167095512573896158903121545171688101258657997713688171443418)
 #endif

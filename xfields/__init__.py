@@ -15,6 +15,7 @@ from .beam_elements.iptocp3d import IPToCP3D
 from .beam_elements.iptocp3d_empty import IPToCP3D_empty
 from .beam_elements.cptoip3d import CPToIP3D
 from .beam_elements.strongstrong3d import StrongStrong3D
+from .beam_elements.sbc6d import Sbc6D
 
 
 from .general import _pkg_root

@@ -8,6 +8,7 @@ from ..general import _pkg_root
 """
 18/08/21: add slicing by index
 25/08/21: add beamstrahlung flag
+22/12/21: add sbc6d element to merge transport and kick
 """
 
 # covariance matrix is symmetric
@@ -24,7 +25,7 @@ class Sigmas(xo.Struct):
     Sig_44 = xo.Float64
 
 
-class StrongStrong3D(xt.BeamElement):
+class Sbc6D(xt.BeamElement):
 
     # xofields element member vars
     _xofields = {
@@ -38,6 +39,15 @@ class StrongStrong3D(xt.BeamElement):
         'slice_id': xo.Int64,
         'do_beamstrahlung': xo.Int64,
         'verbose_info': xo.Int64,
+        'x_bb_centroid': xo.Float64,
+        'px_bb_centroid': xo.Float64,
+        'y_bb_centroid': xo.Float64,
+        'py_bb_centroid': xo.Float64,
+        'z_bb_centroid': xo.Float64,
+        'x_full_bb_centroid': xo.Float64,
+        'y_full_bb_centroid': xo.Float64,
+        'use_strongstrong': xo.UInt8, 
+ 
      }
 
     def update(self, **kwargs):
@@ -54,6 +64,6 @@ srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.
 srcs.append('#define NOFIELDMAP') #TODO Remove this workaound
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(Sigmas._gen_c_api()[0]) #TODO This shouldnt be needed
-srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/strongstrong3d.h'))
+srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/sbc6d.h'))
 
-StrongStrong3D.XoStruct.extra_sources = srcs
+Sbc6D.XoStruct.extra_sources = srcs

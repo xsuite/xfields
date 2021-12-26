@@ -1,5 +1,5 @@
-#ifndef XFIELDS_STRONGSTRONG3D_H
-#define XFIELDS_STRONGSTRONG3D_H
+#ifndef XFIELDS_SBC6D_H
+#define XFIELDS_SBC6D_H
 
 #if !defined(mysign)
     #define mysign(a) (((a) >= 0) - ((a) < 0))
@@ -10,7 +10,6 @@
 /*gpufun*/
 void uncouple_xy_plane(
 	Sigmas sigma_matrix_boosted_ip,
-        Sigmas sigma_matrix_boosted_cp,
         double const Sz_i, // macropart z coord at CP
 	double const threshold_singular,
         int64_t const handle_singularities, // flag
@@ -36,7 +35,7 @@ void uncouple_xy_plane(
     double const Sig_34_ip = Sigmas_get_Sig_34(sigma_matrix_boosted_ip);
     double const Sig_44_ip = Sigmas_get_Sig_44(sigma_matrix_boosted_ip);
 
-/*
+
     // sigma at CP
     // Propagate sigma matrix
     double const Sig_11_cp = Sig_11_ip + 2.*Sig_12_ip*Sz_i            + Sig_22_ip*Sz_i*Sz_i;
@@ -49,7 +48,7 @@ void uncouple_xy_plane(
     double const Sig_24_cp = Sig_24_ip;
     double const Sig_34_cp = Sig_34_ip + Sig_44_ip*Sz_i;
     double const Sig_44_cp = Sig_44_ip;
-*/
+
 /*
     printf("sigma_xx at IP: %.20f\n", Sig_11_ip);
     printf("sigma_xpx at IP: %.20f\n", Sig_12_ip);
@@ -67,7 +66,7 @@ void uncouple_xy_plane(
     printf("sigma_ypy at CP: %.20f\n", Sig_34_cp);
     printf("sigma_pypy at CP: %.20f\n", Sig_44_cp);
 */
-
+/*
     double const Sig_11_cp = Sigmas_get_Sig_11(sigma_matrix_boosted_cp);
     double const Sig_12_cp = Sigmas_get_Sig_12(sigma_matrix_boosted_cp);
     double const Sig_13_cp = Sigmas_get_Sig_13(sigma_matrix_boosted_cp);
@@ -78,7 +77,7 @@ void uncouple_xy_plane(
     double const Sig_33_cp = Sigmas_get_Sig_33(sigma_matrix_boosted_cp);
     double const Sig_34_cp = Sigmas_get_Sig_34(sigma_matrix_boosted_cp);
     double const Sig_44_cp = Sigmas_get_Sig_44(sigma_matrix_boosted_cp);
-
+*/
   
  
 // sigmas are (co)-variances 
@@ -387,8 +386,61 @@ void synrad(double e_macropart, // [GeV]
     }
 }
 
+
+void MacropartToCP(const unsigned int use_strongstrong,
+                   double x1, double y1, const double z1, double px1, double py1,
+                   const double x2_c, const double y2_c, const double z2_c, const double px2_c, const double py2_c,// boosted centroid of other slice at IP (= vector pointing from my full beam/slice centoid to other beam slice centroid)
+                   const double x2_bc, const double y2_bc, // boosted centroid of other full beam (or slice, when ref frames are transformed slice by slice, so same as x_c) at IP (= vector pointing from my full beam/slice centroid to other full beam/slice centroid), w.r.t other full beam centroid
+                   double* Sx_i, double* Sy_i, double* Sz_i){
+
+    // in order to move macroparts of slice 1 to their CP need to have centroid of slice 2 in advance
+    // for this slice 2 is collapsed onto the Z of the centroid as a thin lens
+    // each macropart of slice 1 will interact with this thin lens at CP
+    (*Sz_i) = 0.5*(z1 - z2_c); // CP for macropart
+
+    // weakstrong model: center of ref. is full beam 2 centroid: x^cp_weak_macropart + xc_strong_fullbeam - xc^cp_strong_slice = Sx_i w.r.t. strong slice centroid at CP  
+    if (use_strongstrong == 0){
+
+        // if beams have 1 slice, then x2_bc = x2_c
+        (*Sx_i) = (x1 + px1*(*Sz_i)) + x2_bc - (x2_c - px2_c*(*Sz_i)); 
+        (*Sy_i) = (y1 + py1*(*Sz_i)) + y2_bc - (y2_c - py2_c*(*Sz_i));
+
+    // strongstorng model: center of ref. is the barycentric frame with common origin: x^cp_beam1_macropart - xc^cp_beam2_slice = Sx_i w.r.t. strong slice centroid at CP  
+    }else if (use_strongstrong == 1){
+        (*Sx_i) = (x1 + px1*(*Sz_i)) - (x2_c - px2_c*(*Sz_i)); 
+        (*Sy_i) = (y1 + py1*(*Sz_i)) - (y2_c - py2_c*(*Sz_i));
+    }
+}
+
+
+void MacropartToIP(const unsigned int use_strongstrong,
+                   double Sx_i, double Sy_i, double Sz_i, double px1, double py1,
+                   const double x2_c, const double y2_c, const double z2_c, const double px2_c, const double py2_c,
+                   const double x2_bc, const double y2_bc,
+                   double* x1, double* y1, double* z1){
+
+    // IP for macropart, here we get back the centroid of beam 1
+    (*z1) = 2*Sz_i + z2_c; 
+
+    // weakstrong model: center of ref. is full beam 2 centroid: x^cp_weak_macropart + xc_strong_fullbeam - xc^cp_strong_slice = Sx_i w.r.t. strong slice centroid at CP   
+    if (use_strongstrong == 0){        
+
+        // if beams have 1 slice, then x2_bc = x2_c
+        (*x1) = (Sx_i - px1*Sz_i) - x2_bc + (x2_c - px2_c*Sz_i); 
+        (*y1) = (Sy_i - py1*Sz_i) - y2_bc + (y2_c - py2_c*Sz_i);
+
+    // strongstorng model: center of ref. is the barycentric frame with common origin: x^cp_beam1_macropart - xc^cp_beam2_slice = Sx_i w.r.t. strong slice centroid at CP  
+    }else if (use_strongstrong == 1){
+
+        (*x1) = (Sx_i - px1*Sz_i) + (x2_c - px2_c*Sz_i); 
+        (*y1) = (Sy_i - py1*Sz_i) + (y2_c - py2_c*Sz_i);
+    }
+}
+
+
+
 /*gpufun*/
-void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* part0){
+void Sbc6D_track_local_particle(Sbc6DData el, LocalParticle* part0){
 //    clock_t tt;
 //    tt = clock(); 
 	
@@ -399,18 +451,29 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
     // bar = uncoupled frame (_uncoupled)
 
     // slice 2
-    const double q0_bb              = StrongStrong3DData_get_q0_bb(el); // charge of slice 2 (the whole slice as a thin lens)    
-    const double n_macroparts_bb    = StrongStrong3DData_get_n_macroparts_bb(el);
-    const double min_sigma_diff     = StrongStrong3DData_get_min_sigma_diff(el);
-    const double threshold_singular = StrongStrong3DData_get_threshold_singular(el);
-    const int64_t slice_id          = StrongStrong3DData_get_slice_id(el);
-    const int64_t is_sliced         = StrongStrong3DData_get_is_sliced(el);
-    const int64_t do_beamstrahlung  = StrongStrong3DData_get_do_beamstrahlung(el);
-    const int64_t verbose_info  = StrongStrong3DData_get_verbose_info(el); // print turn number
+    const double q0_bb              = Sbc6DData_get_q0_bb(el);    
+    const double n_macroparts_bb    = Sbc6DData_get_n_macroparts_bb(el);
+    const double min_sigma_diff     = Sbc6DData_get_min_sigma_diff(el);
+    const double threshold_singular = Sbc6DData_get_threshold_singular(el);
+    const int64_t slice_id          = Sbc6DData_get_slice_id(el);
+    const int64_t is_sliced         = Sbc6DData_get_is_sliced(el);
+    const int64_t do_beamstrahlung  = Sbc6DData_get_do_beamstrahlung(el);
+    const int64_t verbose_info      = Sbc6DData_get_verbose_info(el); // print turn number
+    const unsigned int use_strongstrong    = Sbc6DData_get_use_strongstrong(el);
 
-    // sigma matrix is passed in the call
-    const Sigmas sigma_matrix_boosted_ip = StrongStrong3DData_getp_sigma_matrix_ip(el); // centroid sigmas at IP
-    const Sigmas sigma_matrix_boosted_cp = StrongStrong3DData_getp_sigma_matrix_cp(el); // centroid sigmas at CP
+    // boosted centroid of other beam slice at IP
+    /*gpuglmem*/ const double* x_bb_centroid  = Sbc6DData_getp_x_bb_centroid(el);
+    /*gpuglmem*/ const double* y_bb_centroid  = Sbc6DData_getp_y_bb_centroid(el);
+    /*gpuglmem*/ const double* z_bb_centroid  = Sbc6DData_getp_z_bb_centroid(el);
+    /*gpuglmem*/ const double* px_bb_centroid = Sbc6DData_getp_px_bb_centroid(el);
+    /*gpuglmem*/ const double* py_bb_centroid = Sbc6DData_getp_py_bb_centroid(el);
+
+    // boosted centroid of other full beam at IP
+    /*gpuglmem*/ const double* x_full_bb_centroid  = Sbc6DData_getp_x_full_bb_centroid(el);
+    /*gpuglmem*/ const double* y_full_bb_centroid  = Sbc6DData_getp_y_full_bb_centroid(el);
+
+    // slice 1 centroid sigmas at IP
+    const Sigmas sigma_matrix_boosted_ip = Sbc6DData_getp_sigma_matrix_ip(el);
    
     int64_t count = 0;
 
@@ -425,25 +488,32 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
             count += 1;
 
             // get macropart properties, boosted and at CP (px, py, delta are the same at ip and cp)
-       	    double Sx_i          = LocalParticle_get_x(part);
-    	    double px_boosted    = LocalParticle_get_px(part);
-    	    double Sy_i          = LocalParticle_get_y(part);
-    	    double py_boosted    = LocalParticle_get_py(part);
-    	    double Sz_i          = LocalParticle_get_zeta(part);
-    	    double delta_boosted = LocalParticle_get_delta(part);
- 
+       	    double x     = LocalParticle_get_x(part);
+    	    double px    = LocalParticle_get_px(part);
+    	    double y     = LocalParticle_get_y(part);
+    	    double py    = LocalParticle_get_py(part);
+    	    double z     = LocalParticle_get_zeta(part);
+    	    double delta = LocalParticle_get_delta(part);
+
+            // transport IP to CP
+            double Sx_i, Sy_i, Sz_i;
+            MacropartToCP(use_strongstrong,
+                      x, y, z, px, py,
+                      *x_bb_centroid, *y_bb_centroid, *z_bb_centroid, *px_bb_centroid, *py_bb_centroid,
+                      *x_full_bb_centroid, *y_full_bb_centroid,
+                      &Sx_i, &Sy_i, &Sz_i);
+
+            //Compute force scaling factor: Q_bb * Q_macropart / pc [C^2 C-1 m s-1] 
        	    const double q0  = LocalParticle_get_q0(part); // charge of single macropart [elementary charge]
     	    const double p0c = LocalParticle_get_p0c(part); // [eV]
     	    const double P0  = p0c/C_LIGHT*QELEM;  // [C]
-
-            //Compute force scaling factor: Q_bb * Q_macropart / pc [C^2 C-1 m s-1]
-    	    const double Ksl = n_macroparts_bb*QELEM*q0_bb * QELEM*q0 / (P0 * C_LIGHT);
+   	    const double Ksl = n_macroparts_bb*QELEM*q0_bb * QELEM*q0 / (P0 * C_LIGHT);
 
             // get thetas from the sigma matrix
     	    double Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta;
     	    double dS_Sig_11_boosted_cp_uncoupled, dS_Sig_33_boosted_cp_uncoupled, dS_costheta, dS_sintheta;
 
-            uncouple_xy_plane(sigma_matrix_boosted_ip, sigma_matrix_boosted_cp, Sz_i, threshold_singular, 1,
+            uncouple_xy_plane(sigma_matrix_boosted_ip, Sz_i, threshold_singular, 1,
             &Sig_11_boosted_cp_uncoupled, &Sig_33_boosted_cp_uncoupled, &costheta, &sintheta,
             &dS_Sig_11_boosted_cp_uncoupled, &dS_Sig_33_boosted_cp_uncoupled, &dS_costheta, &dS_sintheta);
 
@@ -462,7 +532,9 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
 
 	    //compute Gs
 	    double Gx, Gy;
-	    compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff, Ex, Ey, &Gx, &Gy);
+	    compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled,
+                sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff,
+                Ex, Ey, &Gx, &Gy);
 	    
             // Compute kicks
             double Fx_boosted_cp_uncoupled = Ksl*Ex;
@@ -477,13 +549,13 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
     	    // Compute longitudinal kick
     	    double Fz_boosted = 0.5*(Fx_boosted_cp_uncoupled*dS_x_boosted_cp_uncoupled      + Fy_boosted_cp_uncoupled*dS_y_boosted_cp_uncoupled +
     	                         Gx_boosted_cp_uncoupled*dS_Sig_11_boosted_cp_uncoupled + Gy_boosted_cp_uncoupled*dS_Sig_33_boosted_cp_uncoupled);
-            if (ii == -1){
+            if (count == -1){
                 printf("Turn: %d macropart %d Sx_i: %.10f\n",                           verbose_info, ii,                              Sx_i);
-                printf("Turn: %d macropart %d px_i: %.10f\n",                           verbose_info, ii,                        px_boosted);
+                printf("Turn: %d macropart %d px_i: %.10f\n",                           verbose_info, ii,                        px);
                 printf("Turn: %d macropart %d Sy_i: %.10f\n",                           verbose_info, ii,                              Sy_i);
-                printf("Turn: %d macropart %d py_i: %.10f\n",                           verbose_info, ii,                        py_boosted);
+                printf("Turn: %d macropart %d py_i: %.10f\n",                           verbose_info, ii,                        py);
                 printf("Turn: %d macropart %d Sz_i: %.10f\n",                           verbose_info, ii,                              Sz_i);
-                printf("Turn: %d macropart %d delta_i_: %.10f\n",                       verbose_info, ii,                     delta_boosted); 
+                printf("Turn: %d macropart %d delta_i_: %.10f\n",                       verbose_info, ii,                     delta); 
                 printf("Turn: %d macropart %d Sx_i_uncoupled: %.10f\n",                 verbose_info, ii,                    Sx_i_uncoupled);
                 printf("Turn: %d macropart %d Sy_i_uncoupled: %.10f\n",                 verbose_info, ii,                    Sy_i_uncoupled);
                 printf("Turn: %d macropart %d fx: %.20f\n",                             verbose_info, ii,                                Ex);
@@ -514,9 +586,9 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
             }
 
     	    // Apply the kicks (Hirata's synchro-beam)
-    	    delta_boosted +=      Fz_boosted + 0.5*(Fx_boosted*(px_boosted + 0.5*Fx_boosted) + Fy_boosted*(py_boosted + 0.5*Fy_boosted)); 
-    	    px_boosted    +=      Fx_boosted;
-    	    py_boosted    +=      Fy_boosted;
+    	    delta +=      Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted)); 
+    	    px    +=      Fx_boosted;
+    	    py    +=      Fy_boosted;
     
             // emit beamstrahlung photons from single macropart
          //   if (do_beamstrahlung){
@@ -525,14 +597,21 @@ void StrongStrong3D_track_local_particle(StrongStrong3DData el, LocalParticle* p
 
 
           //  }
+
+            double x_new, y_new, z_new;
+            MacropartToIP(use_strongstrong,
+                  Sx_i, Sy_i, Sz_i, px, py,
+                  *x_bb_centroid, *y_bb_centroid, *z_bb_centroid, *px_bb_centroid, *py_bb_centroid, 
+                  *x_full_bb_centroid, *y_full_bb_centroid,
+                  &x_new, &y_new, &z_new);
  
             // only momenta are updated, coords will be drifted back to IP with new momentum
-    	    LocalParticle_set_x(part, Sx_i);
-    	    LocalParticle_set_px(part, px_boosted);
-    	    LocalParticle_set_y(part, Sy_i);
-    	    LocalParticle_set_py(part, py_boosted);
-    	    LocalParticle_set_zeta(part, Sz_i);
-    	    LocalParticle_update_delta(part, delta_boosted);
+    	    LocalParticle_set_x(part, x_new);
+    	    LocalParticle_set_px(part, px);
+    	    LocalParticle_set_y(part, y_new);
+    	    LocalParticle_set_py(part, py);
+    	    LocalParticle_set_zeta(part, z_new);
+    	    LocalParticle_update_delta(part, delta);
         }
     //end_per_particle_block
 }
