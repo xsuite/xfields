@@ -47,23 +47,26 @@ def get_mean(xtrack_particles, mask=[], test_particles=False):
            }
 
 
-def get_cov(xtrack_particles, mask=[], test_particles=False):
-
+def get_cov(xtrack_particles, mask=[], test_particles=False, bias=False):
+    """
+    bias= True: /N - true mean is known in advance
+          False: /(N-1) - mean is computed as average of the data
+    """
     if test_particles:
         if len(mask) == 0 or len(mask) == len(xtrack_particles.x):
             cov_matrix = np.cov(np.array([xtrack_particles.x[xtrack_particles.test==0], xtrack_particles.px[xtrack_particles.test==0],
-                                          xtrack_particles.y[xtrack_particles.test==0], xtrack_particles.py[xtrack_particles.test==0]]), bias=True)
+                                          xtrack_particles.y[xtrack_particles.test==0], xtrack_particles.py[xtrack_particles.test==0]]), bias=bias)
         else:
             cov_matrix = np.cov(np.array([xtrack_particles.x[mask][xtrack_particles.test[mask]==0], xtrack_particles.px[mask][xtrack_particles.test[mask]==0],
-                                          xtrack_particles.y[mask][xtrack_particles.test[mask]==0], xtrack_particles.py[mask][xtrack_particles.test[mask]==0]]), bias=True)
+                                          xtrack_particles.y[mask][xtrack_particles.test[mask]==0], xtrack_particles.py[mask][xtrack_particles.test[mask]==0]]), bias=bias)
 
     else:
         if len(mask) == 0 or len(mask) == len(xtrack_particles.x):
             cov_matrix = np.cov(np.array([xtrack_particles.x, xtrack_particles.px,
-                                          xtrack_particles.y, xtrack_particles.py]), bias=True)
+                                          xtrack_particles.y, xtrack_particles.py]), bias=bias)
         else:
             cov_matrix = np.cov(np.array([xtrack_particles.x[mask], xtrack_particles.px[mask],
-                                          xtrack_particles.y[mask], xtrack_particles.py[mask]]), bias=True)
+                                          xtrack_particles.y[mask], xtrack_particles.py[mask]]), bias=bias)
 
     return {
             "Sig_11": cov_matrix[0,0],
