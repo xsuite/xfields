@@ -1,7 +1,119 @@
 import numpy as np
+import pandas as pd
 
 from ..beam_elements.spacecharge import SpaceChargeBiGaussian
 from ..beam_elements.spacecharge import SpaceCharge3D
+
+import xpart as xp
+import xtrack as xt
+from xtrack.line import _is_thick, _is_drift
+
+def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
+                               nemitt_x, nemitt_y, sigma_z,
+                               num_spacecharge_interactions,
+                               tol_spacecharge_position):
+    line_no_sc = line
+
+    tracker_no_sc = xt.Tracker(line=line_no_sc)
+
+    # Make a matched bunch just to get the matched momentum spread
+    bunch = xp.generate_matched_gaussian_bunch(
+             num_particles=int(2e6), total_intensity_particles=1.,
+             nemitt_x=nemitt_x, nemitt_y=nemitt_y, sigma_z=sigma_z,
+             particle_ref=particle_ref, tracker=tracker_no_sc)
+    delta_rms = np.std(bunch.delta)
+
+    # Remove all drifts
+    s_no_drifts = []
+    e_no_drifts = []
+    n_no_drifts = []
+    for ss, ee, nn in zip(line_no_sc.get_s_elements(), line_no_sc.elements,
+                          line_no_sc.element_names):
+        if not _is_drift(ee):
+            assert not _is_thick(ee)
+            s_no_drifts.append(ss)
+            e_no_drifts.append(ee)
+            n_no_drifts.append(nn)
+
+    s_no_drifts = np.array(s_no_drifts)
+
+    # Generate spacecharge positions
+    s_spacecharge = np.linspace(0, line_no_sc.get_length(),
+                                num_spacecharge_interactions+1)[:-1]
+
+    # Adjust spacecharge positions where possible
+    for ii, ss in enumerate(s_spacecharge):
+        s_closest = np.argmin(np.abs(ss-s_no_drifts))
+        if np.abs(ss - s_closest) < tol_spacecharge_position:
+            s_spacecharge[ii] = s_closest
+
+    sc_lengths = 0*s_spacecharge
+    sc_lengths[:-1] = np.diff(s_spacecharge)
+    sc_lengths[-1] = line_no_sc.get_length() - s_spacecharge[-1]
+
+    # Create spacecharge elements (dummy)
+    sc_elements = []
+    sc_names = []
+    for ii, ll in enumerate(sc_lengths):
+        sc_elements.append(SpaceChargeBiGaussian(
+            length=ll,
+            apply_z_kick=False,
+            longitudinal_profile=longitudinal_profile,
+            mean_x=0.,
+            mean_y=0.,
+            sigma_x=1.,
+            sigma_y=1.))
+        sc_names.append(f'spacecharge_{ii}')
+
+    # Merge lattice and spacecharge elements
+    df_lattice = pd.DataFrame({'s': s_no_drifts, 'elements': e_no_drifts,
+                               'element_names': n_no_drifts})
+    df_spacecharge = pd.DataFrame({'s': s_spacecharge, 'elements': sc_elements,
+                                   'element_names': sc_names})
+    df_elements = pd.concat([df_lattice, df_spacecharge]).sort_values('s')
+
+    # Build new line with drifts
+    new_elements = []
+    new_names = []
+    s_curr = 0
+    i_drift = 0
+    for ss, ee, nn, in zip(df_elements['s'].values,
+                           df_elements['elements'].values,
+                           df_elements['element_names'].values):
+
+        if ss > s_curr + 1e-10:
+            new_elements.append(xt.Drift(length=(ss-s_curr)))
+            new_names.append(f'drift_{i_drift}')
+            s_curr = ss
+            i_drift += 1
+        new_elements.append(ee)
+        new_names.append(nn)
+
+    if s_curr < line_no_sc.get_length():
+        new_elements.append(xt.Drift(length=line_no_sc.get_length() - s_curr))
+        new_names.append(f'drift_{i_drift}')
+    line = xt.Line(elements=new_elements, element_names=new_names)
+    assert np.isclose(line.get_length(), line_no_sc.get_length(), rtol=0, atol=1e-10)
+
+    # Twiss at spacecharge
+    line_sc_off = line.filter_elements(exclude_types_starting_with='SpaceCh')
+    tracker_sc_off = xt.Tracker(line=line_sc_off,
+            element_classes=tracker_no_sc.element_classes,
+            track_kernel=tracker_no_sc.track_kernel)
+    tw_at_sc = tracker_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
+
+    # Configure lenses
+    for ii, sc in enumerate(sc_elements):
+        sc.mean_x = tw_at_sc['x'][ii]
+        sc.mean_y = tw_at_sc['y'][ii]
+        sc.sigma_x = np.sqrt(tw_at_sc['betx'][ii]*nemitt_x
+                               /particle_ref.beta0/particle_ref.gamma0
+                             + (tw_at_sc['dx'][ii]*delta_rms)**2)
+        sc.sigma_y = np.sqrt(tw_at_sc['bety'][ii]*nemitt_y
+                               /particle_ref.beta0/particle_ref.gamma0
+                             + (tw_at_sc['dy'][ii]*delta_rms)**2)
+
+    return line
 
 def replace_spacecharge_with_quasi_frozen(
                         line, _buffer,

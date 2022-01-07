@@ -22,6 +22,7 @@ from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
 from .config_tools import replace_spacecharge_with_PIC
 from .config_tools import configure_orbit_dependent_parameters_for_bb
+from .config_tools import install_spacecharge_frozen
 
 import xtrack as _xt
 

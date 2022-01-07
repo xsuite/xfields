@@ -13,7 +13,7 @@ extensions = []
 
 setup(
     name='xfields',
-    version='0.3.1',
+    version='0.4.0',
     description='Field Maps and Particle In Cell',
     url='https://github.com/xsuite/xfields',
     author='Giovanni Iadarola',
@@ -23,6 +23,7 @@ setup(
     install_requires=[
         'numpy>=1.0',
         'scipy',
+        'pandas',
         'xobjects>=0.0.4',
         'xtrack>=0.0.1',
         ]
