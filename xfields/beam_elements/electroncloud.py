@@ -31,13 +31,13 @@ class ElectronCloud(xt.BeamElement):
         tau_shift (float): shifts the tau coordinate. Should be set equal 
             to the closed orbit if the fieldmap is defined with respect to 
             the closed orbit. Measured in meters. (tau = s/beta_0 - c t)
-        dipolar_kick_px (float): subtracts a constant value from the kick to px.
+        dipolar_px_kick (float): subtracts a constant value from the kick to px.
             Should be set equal to the field map's kick at the closed orbit to 
             remove closed orbit distortion effects.
-        dipolar_kick_py (float): subtracts a constant value from the kick to py.
+        dipolar_py_kick (float): subtracts a constant value from the kick to py.
             Should be set equal to the field map's kick at the closed orbit to 
             remove closed orbit distortion effects.
-        dipolar_kick_ptau (float): subtracts a constant value from the kick to 
+        dipolar_ptau_kick (float): subtracts a constant value from the kick to 
             ptau. Should be set equal to the field map's kick at the closed 
             orbit to remove closed orbit distortion effects.
         length (float): the length of the electron-cloud interaction in
@@ -54,9 +54,9 @@ class ElectronCloud(xt.BeamElement):
         'x_shift': xo.Float64,
         'y_shift': xo.Float64,
         'tau_shift': xo.Float64,
-        'dipolar_kick_px': xo.Float64,
-        'dipolar_kick_py': xo.Float64,
-        'dipolar_kick_ptau': xo.Float64,
+        'dipolar_px_kick': xo.Float64,
+        'dipolar_py_kick': xo.Float64,
+        'dipolar_ptau_kick': xo.Float64,
         'length': xo.Float64,
         'fieldmap': xo.Ref(TriCubicInterpolatedFieldMapData),
         }
@@ -78,14 +78,15 @@ class ElectronCloud(xt.BeamElement):
                  x_shift=0.,
                  y_shift=0.,
                  tau_shift=0.,
-                 dipolar_kick_px=0.,
-                 dipolar_kick_py=0.,
-                 dipolar_kick_ptau=0.,
+                 dipolar_px_kick=0.,
+                 dipolar_py_kick=0.,
+                 dipolar_ptau_kick=0.,
                  length=None,
                  apply_z_kick=True,
                  fieldmap=None,
                  ):
 
+        # To be implemented if false
         self.apply_z_kick = apply_z_kick
 
         if _buffer is not None:
@@ -115,9 +116,9 @@ class ElectronCloud(xt.BeamElement):
                  x_shift=x_shift,
                  y_shift=y_shift,
                  tau_shift=tau_shift,
-                 dipolar_kick_px=dipolar_kick_px,
-                 dipolar_kick_py=dipolar_kick_py,
-                 dipolar_kick_ptau=dipolar_kick_ptau,
+                 dipolar_px_kick=dipolar_px_kick,
+                 dipolar_py_kick=dipolar_py_kick,
+                 dipolar_ptau_kick=dipolar_ptau_kick,
                  length=length,
                  fieldmap=fieldmap)
 
@@ -139,7 +140,8 @@ class ElectronCloud(xt.BeamElement):
 
 srcs = []
 #srcs.append(_pkg_root.joinpath('headers/constants.h'))
-#srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'))
 
 ElectronCloud.XoStruct.extra_sources = srcs
