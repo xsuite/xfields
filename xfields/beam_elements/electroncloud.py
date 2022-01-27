@@ -145,13 +145,3 @@ srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h
 srcs.append(_pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'))
 
 ElectronCloud.XoStruct.extra_sources = srcs
-
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('headers/sincos.h'))
-srcs.append(_pkg_root.joinpath('headers/power_n.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
-
