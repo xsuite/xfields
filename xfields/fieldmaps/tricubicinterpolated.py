@@ -24,6 +24,7 @@ class TriCubicInterpolatedFieldMapData(xo.Struct):
     phi_taylor = xo.Float64[:]
 
 TriCubicInterpolatedFieldMapData.extra_sources = [
+    _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
     _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
     ]
 
