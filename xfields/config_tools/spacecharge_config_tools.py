@@ -214,13 +214,13 @@ def replace_spacecharge_with_PIC(
         _buffer=None):
 
     all_sc_elems = []
-    ind_sc_elems = []
+    name_sc_elems = []
     all_sigma_x = []
     all_sigma_y = []
     for ii, ee in enumerate(line.elements):
         if isinstance(ee, SpaceChargeBiGaussian):
             all_sc_elems.append(ee)
-            ind_sc_elems.append(ii)
+            name_sc_elems.append(line.element_names[ii])
             all_sigma_x.append(ee.sigma_x)
             all_sigma_y.append(ee.sigma_y)
 
@@ -238,13 +238,13 @@ def replace_spacecharge_with_PIC(
         z_range=z_range)
 
     all_pics = []
-    for ii, ee in zip(ind_sc_elems, all_sc_elems):
+    for nn, ee in zip(name_sc_elems, all_sc_elems):
         xlim = n_sigmas_range_pic_x*ee.sigma_x
         ylim = n_sigmas_range_pic_y*ee.sigma_y
         base_sc = pic_collection.get_pic(xlim, ylim)
         sc = base_sc.copy(_buffer=base_sc._buffer)
         sc.length = ee.length
-        line.elements[ii] = sc
+        line.element_dict[nn] = sc
         all_pics.append(sc)
 
     return pic_collection, all_pics
