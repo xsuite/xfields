@@ -31,19 +31,14 @@ def generate_particles_object(
     z_part = np.concatenate([z_probes, z_part])
     weights_part = np.concatenate([0*x_probes, weights_part])
 
-    px_part = 0*x_part
-    py_part = 0*x_part
-    pt_part = 0*x_part
 
     particles = Particles(
             p0c=p0c,
-            mass = mass,
+            mass0 = mass,
             x=x_part,
             y=y_part,
             zeta=z_part,
-            px=px_part,
-            py=py_part,
-            ptau=pt_part)
+            )
     particles.weight = weights_part
 
     return particles, r_probes, x_probes, y_probes, z_probes
