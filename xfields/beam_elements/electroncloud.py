@@ -58,7 +58,8 @@ class ElectronCloud(xt.BeamElement):
         'dipolar_py_kick': xo.Float64,
         'dipolar_ptau_kick': xo.Float64,
         'length': xo.Float64,
-        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMapData),
+        'fieldmap': TriCubicInterpolatedFieldMapData,
+        #'fieldmap': xo.Ref(TriCubicInterpolatedFieldMapData),
         }
 
 #     def copy(self, _context=None, _buffer=None, _offset=None):
