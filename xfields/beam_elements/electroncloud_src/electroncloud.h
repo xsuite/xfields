@@ -13,7 +13,6 @@ void ElectronCloud_track_local_particle(
     const double y_shift = ElectronCloudData_get_y_shift(el);
     const double tau_shift = ElectronCloudData_get_tau_shift(el);
     TriCubicInterpolatedFieldMapData fmap = ElectronCloudData_getp_fieldmap(el);
-
     //start_per_particle_block (part0->part)
     const double x = LocalParticle_get_x(part);
     const double y = LocalParticle_get_y(part);
@@ -32,15 +31,14 @@ void ElectronCloud_track_local_particle(
         x - x_shift, y - y_shift, tau - tau_shift,
         &px_kick, &py_kick, &ptau_kick)
       ){
-          LocalParticle_set_state(part, -11);
+          LocalParticle_set_state(part, -11); // Stop tracking particle if it escapes the interpolation grid.
       }
 
     px_kick = px_kick * length - ElectronCloudData_get_dipolar_px_kick(el);
-    py_kick = py_kick * length - ElectronCloudData_get_dipolar_px_kick(el);
-    ptau_kick = ptau_kick * length - ElectronCloudData_get_dipolar_px_kick(el);
+    py_kick = py_kick * length - ElectronCloudData_get_dipolar_py_kick(el);
+    ptau_kick = ptau_kick * length - ElectronCloudData_get_dipolar_ptau_kick(el);
 
     // TODO: implement kicks for particles with different charge and or mass
-
     LocalParticle_add_to_px(part, px_kick);
     LocalParticle_add_to_py(part, py_kick);
 
