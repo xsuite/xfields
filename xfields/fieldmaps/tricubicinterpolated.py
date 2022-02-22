@@ -64,7 +64,7 @@ class TriCubicInterpolatedFieldMap(xo.dress(TriCubicInterpolatedFieldMapData,
             the computing grid.
         nx (int): Number of cells in the horizontal direction.
         ny (int): Number of cells in the vertical direction.
-        nz (int): Number of cells in the vertical direction.
+        nz (int): Number of cells in the longitudinal direction.
         dx (float): Horizontal cell size in meters. It can be
             provided alternatively to ``nx``.
         dy (float): Vertical cell size in meters. It can be
