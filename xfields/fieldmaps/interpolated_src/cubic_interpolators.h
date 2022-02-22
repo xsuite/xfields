@@ -8,7 +8,7 @@ void TriCubicInterpolatedFieldMap_construct_b(
        double* b_vector){
 
     /*gpuglmem*/ double* phi_taylor = TriCubicInterpolatedFieldMapData_getp1_phi_taylor(fmap, 0);
-    // Optimization TODO: change integer to int for less register pressure
+    // Optimization TODO: change int64 to int for less register pressure?
     const int64_t nx = TriCubicInterpolatedFieldMapData_get_nx(fmap);
     const int64_t ny = TriCubicInterpolatedFieldMapData_get_ny(fmap);
 
@@ -73,9 +73,9 @@ int TriCubicInterpolatedFieldMap_interpolate_grad(
     double const zn = sfz - izf;
 
     // check that indices are within the grid
-    int indices_are_inside_box = ix >= 0 && ix <= ( TriCubicInterpolatedFieldMapData_get_nx(fmap) - 2 ) 
-                              && iy >= 0 && iy <= ( TriCubicInterpolatedFieldMapData_get_ny(fmap) - 2 ) 
-                              && iz >= 0 && iz <= ( TriCubicInterpolatedFieldMapData_get_nz(fmap) - 2 );
+    int indices_are_inside_box = ( ix >= 0 ) && ( ix <= ( TriCubicInterpolatedFieldMapData_get_nx(fmap) - 2 ) ) 
+                              && ( iy >= 0 ) && ( iy <= ( TriCubicInterpolatedFieldMapData_get_ny(fmap) - 2 ) ) 
+                              && ( iz >= 0 ) && ( iz <= ( TriCubicInterpolatedFieldMapData_get_nz(fmap) - 2 ) );
 
     if(!indices_are_inside_box){ // flag particle for death, it is outside the grid,
         return 1;                // no need for interpolation
@@ -132,7 +132,7 @@ int TriCubicInterpolatedFieldMap_interpolate_grad(
             }
         }
     }
-    *ptau_kick *= - sign_y * inv_dz; 
+    *ptau_kick *= - sign_z * inv_dz; 
 
 	return 0;
 }
