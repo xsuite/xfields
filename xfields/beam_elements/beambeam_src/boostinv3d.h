@@ -86,6 +86,8 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
     const double Dz_sub             = BoostInv3DData_get_Dz_sub(el);
     const double Ddelta_sub         = BoostInv3DData_get_Ddelta_sub(el);
 
+    //printf("[boostinv3d]");
+
     //start_per_particle_block (part0->part)
     	double x_star     = LocalParticle_get_x(part);
     	double px_star    = LocalParticle_get_px(part);

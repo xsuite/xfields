@@ -81,6 +81,8 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
     const double px2_bc             = Boost3DData_get_px2_bc(el);
     const double py2_bc             = Boost3DData_get_py2_bc(el);
 
+    //printf("[boost3d]");
+
     //start_per_particle_block (part0->part)
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);

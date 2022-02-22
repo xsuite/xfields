@@ -1,3 +1,6 @@
+#ifndef XFIELDS_CONSTANTS_H
+#define XFIELDS_CONSTANTS_H
+
 #if !defined( C_LIGHT )
     #define   C_LIGHT ( 299792458.0 )
 #endif
@@ -43,7 +46,7 @@
 #endif
 
 #if !defined( HBAR_GEVS )
-    #define HBAR_GEVS (9.1093837015e-31)
+    #define HBAR_GEVS (6.582119569e-25)
 #endif
 
 #if !defined( TWO_OVER_SQRT_PI )
@@ -54,6 +57,12 @@
     #define SQRT_TWO (1.414213562373095048801688724209698078569671875376948073176679738)
 #endif
 
+#if !defined( REDUCED_COMPTON )
+    #define REDUCED_COMPTON (3.8615926796089057e-13)
+#endif
+
 #if !defined( REAL_EPSILON )
     #define REAL_EPSILON 2.22044604925031e-16
 #endif /* !defined( REAL_EPSILON ) */
+
+#endif /* XFIELDS_CONSTANTS_H */

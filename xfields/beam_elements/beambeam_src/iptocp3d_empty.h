@@ -64,39 +64,33 @@ void IPToCP3D_empty_track_local_particle(IPToCP3D_emptyData el,
         // macropart state: 0=dead, 1=alive, 100X: part of slice X
         int64_t state = LocalParticle_get_state(part);
 
-        // code is executed only if macropart is in correct slice or if there are no slices
-        int cond;
-        cond = (state == slice_id || is_sliced == 0);
- 
-        // these already boosted
-  	double x = LocalParticle_get_x(part);
-    	double px = LocalParticle_get_px(part);
-    	double y = LocalParticle_get_y(part);
-    	double py = LocalParticle_get_py(part);
-    	double zeta = LocalParticle_get_zeta(part);
-    	double delta = LocalParticle_get_delta(part);       
-        // slice 1 macropart coords at CP
-            
-        double Sx_i, Sy_i, Sz_i;
+        if(state == slice_id || is_sliced == 0){
+	    //counter += 1;
 
-        if(cond){
-	    counter += 1;
-
-
-
+            // these already boosted
+  	    double x = LocalParticle_get_x(part);
+    	    double px = LocalParticle_get_px(part);
+       	    double y = LocalParticle_get_y(part);
+    	    double py = LocalParticle_get_py(part);
+    	    double zeta = LocalParticle_get_zeta(part);
+    	    double delta = LocalParticle_get_delta(part);       
+        
+            // slice 1 macropart coords at CP
+            double Sx_i, Sy_i, Sz_i;
 
             MacropartToCP(use_strongstrong,
                       x, y, *z_centroid, px, py,
                       *x_bb_centroid, *y_bb_centroid, *z_bb_centroid, *px_bb_centroid, *py_bb_centroid,
                       *x_full_bb_centroid, *y_full_bb_centroid,
                       &Sx_i, &Sy_i, &Sz_i);
-        }
         
+           // printf("Sx_i: %.5f\n",Sx_i); 
+        }
     //end_per_particle_block
 
 
 //    double ttime_taken = ((double)tt)/CLOCKS_PER_SEC;
-//    printf("\n[empty.h] empty full took %.8f seconds to execute\nCounter: %d", ttime_taken, counter);
+   //printf("[empty.h] Counter: %d\n", counter);
 }
 
 

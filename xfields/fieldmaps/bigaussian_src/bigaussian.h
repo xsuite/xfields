@@ -66,6 +66,11 @@ void get_transv_field_gauss_ellip(
 
     Ex = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ey = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
+
+    FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_ellip.txt", "a");
+    fprintf(f1, "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", S, factBE, etaBE_re, etaBE_im, zetaBE_re, zetaBE_im, expBE, w_zetaBE_re, w_zetaBE_im, w_etaBE_re, w_etaBE_im, sigmax, sigmay, Ex, Ey);
+    fclose(f1);
+
   }
   else if (sigmax<sigmay){
     S = sqrt(2.*(sigmay*sigmay-sigmax*sigmax));
@@ -86,6 +91,8 @@ void get_transv_field_gauss_ellip(
 
     Ey = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ex = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
+
+
   }
   else{
     //printf("Round beam not implemented!\n");
@@ -112,14 +119,17 @@ void get_Ex_Ey_gauss(
 
         // round beam
 	if (fabs(sigma_x-sigma_y)< min_sigma_diff){
-            //printf("Using round beam");
+            //printf("Using round beam\n");
+            //printf("min_sigma_diff: %.25e\n", min_sigma_diff);
+            //printf("sigma_x: %.10e\n", sigma_x);
+            //printf("sigma_y: %.10e\n", sigma_y);
 	    double sigma = 0.5*(sigma_x+sigma_y);
 	    	get_transv_field_gauss_round(sigma, 0., 0., x, y, Ex_ptr, Ey_ptr);
 	}
        
         // elliptical beam
 	else{
-            //printf("Using elliptical beam");
+            //printf("Using elliptical beam\n");
 	    get_transv_field_gauss_ellip(
 	            sigma_x, sigma_y, 0., 0., x, y, Ex_ptr, Ey_ptr);
 

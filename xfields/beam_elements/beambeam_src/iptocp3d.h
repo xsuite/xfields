@@ -66,7 +66,7 @@ void IPToCP3D_track_local_particle(IPToCP3DData el,
 
         // code is executed only if macropart is in correct slice or if there are no slices 
         if(state == slice_id || is_sliced == 0){
-	    counter+=1;
+	    //counter+=1;
  
             // these already boosted
             double x = LocalParticle_get_x(part);
@@ -84,7 +84,7 @@ void IPToCP3D_track_local_particle(IPToCP3DData el,
                       *x_bb_centroid, *y_bb_centroid, *z_bb_centroid, *px_bb_centroid, *py_bb_centroid,
                       *x_full_bb_centroid, *y_full_bb_centroid,
                       &Sx_i, &Sy_i, &Sz_i);
-
+            //printf("%.1f\n",Sx_i); 
             // variables at CP (only x,y,z changes; x,y are w.r.t to the centroid of the other slice at CP)
        	    LocalParticle_set_x(part, Sx_i);
     	    LocalParticle_set_px(part, px);
@@ -95,7 +95,7 @@ void IPToCP3D_track_local_particle(IPToCP3DData el,
         }   
    //end_per_particle_block
 //    double ttime_taken = ((double)tt)/CLOCKS_PER_SEC;
-//    printf("[iptocp.h] iptocp full took %.8f seconds to execute\nCounter: %d", ttime_taken, counter);
+   //printf("[iptocp.h] Counter: %d\n", counter);
 
 }
 

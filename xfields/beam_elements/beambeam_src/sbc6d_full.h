@@ -5,8 +5,6 @@
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
 
-#define rndm_synrad() rndm7()
-
 /*gpufun*/
 void uncouple_xy_plane(
         double const Sig_11_ip,
@@ -31,7 +29,8 @@ void uncouple_xy_plane(
         double* dS_costheta_ptr,
         double* dS_sintheta_ptr)
 {
-   
+    //printf("sig_11: %.10e\n", Sig_11_ip);
+    //printf("sig_33: %.10e\n", Sig_33_ip);    
     // sigma at CP
     // Propagate sigma matrix
     double const Sig_11_cp = Sig_11_ip + 2.*Sig_12_ip*Sz_i            + Sig_22_ip*Sz_i*Sz_i;
@@ -188,7 +187,8 @@ void uncouple_xy_plane(
     printf("sigma x: %.20f\n", Sig_11_uncoupled);
     printf("sigma y: %.20f\n", Sig_33_uncoupled);
 */
-
+    //printf("sig_11_uncoupled: %.10e\n", Sig_11_uncoupled);
+    //printf("sig_33_uncoupled: %.10e\n", Sig_33_uncoupled);
     *Sig_11_uncoupled_ptr = Sig_11_uncoupled;
     *Sig_33_uncoupled_ptr = Sig_33_uncoupled;
     *costheta_ptr = costheta;
@@ -240,133 +240,6 @@ void uncouple_xy_plane(
 
     *Gx_ptr = Gx;
     *Gy_ptr = Gy;
-}
-
-
-/*gpufun*/
-int synrad_0(double e_macropart,
-             double dz,
-             double rho_inv,  // [1/m] changes after each photon emission
-             double* e_photon){ 
-
-
-    /*
-    return 0: no photon
-    return 1: emit 1 photon, energy stored in photon_energy
-    */
-
-    // constants for approximating synrad spectrum
-    const double g1_a[5] = {1.0, -0.8432885317, 0.1835132767, -0.0527949659, 0.0156489316};
-    const double g2_a[5] = {0.4999456517, -0.5853467515, 0.3657833336, -0.0695055284, 0.019180386};
-    const double g1_b[7] = {2.066603927, -0.5718025331, 0.04243170587, -0.9691386396, 5.651947051, -0.6903991322, 1.0};
-    const double g2_b[7] = {1.8852203645, -0.5176616313, 0.03812218492, -0.49158806, 6.1800441958, -0.6524469236, 1.0};
-    const double g1_c[4] = {1.0174394594, 0.5831679349, 0.9949036186, 1.0};
-    const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
-
-    double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEVPERC, 3) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3 
-    double xcrit = c1 * pow(e_macropart, 2) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit(C)=ξ(doc)=upsbar(C++)
-    double ecrit = xcrit * e_macropart;  // [GeV]
-    double omega_crit = ecrit/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
-    double upsilon = 2/3 * ecrit / e_macropart;  // [1] beamstrahlung parameter for single macropart
-
-
-    double p0 = 25.4 * e_macropart * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
-
-    // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
-    if (rndm_synrad() > p0){return 0;}
-    
-    // 2 random numbers to calculate g(v, xcrit)
-    double p = rndm_synrad();  // if this is 1, then it corresponds to p0 on original p0*g-v plane
-    double v;
-    while((v=rndm_synrad())==0.0) ; // draw a nonzero random number, variable of the beamstrahlung spectrum
-    
-    double v2 = v*v;
-    double v3 = v2*v;
-    double y = v3 / (1.0 - v3);
-    double denom = 1 - ( 1 - xcrit ) * v3;
-    
-    // calculate synrad spectrum coefficients, depending the value of y
-    double g1, g2;
-    if (y <= 1.54){
-        g1 = pow(y, -2/3) * (g1_a[0] + g1_a[1]*pow(y, 2/3) + g1_a[2]*pow(y, 2) + g1_a[3]*pow(y, 10/3) + g1_a[4]*pow(y, 4));
-        g2 = pow(y, -2/3) * (g2_a[0] + g2_a[1]*pow(y, 4/3) + g2_a[2]*pow(y, 2) + g2_a[3]*pow(y, 10/3) + g2_a[4]*pow(y, 4));
-    }else if (y <= 4.48){
-        g1 = ( g1_b[0] + g1_b[1]*y + g1_b[2]*pow(y, 2) ) / ( g1_b[3] + g1_b[4]*y + g1_b[5]*pow(y, 2) + g1_b[6]*pow(y, 3) );
-        g2 = ( g2_b[0] + g2_b[1]*y + g2_b[2]*pow(y, 2) ) / ( g2_b[3] + g2_b[4]*y + g2_b[5]*pow(y, 2) + g2_b[6]*pow(y, 3) );
-    }else if (y <= 165){
-        g1 = exp(-y)/sqrt(y) * ( g1_c[0] + g1_c[1]*y ) / ( g1_c[2] + g1_c[3]*y );
-        g2 = exp(-y)/sqrt(y) * ( g2_c[0] + g2_c[1]*y ) / ( g2_c[2] + g2_c[3]*y );
-    }else{
-        // no radiation, y too high
-        return 0;
-    }
-        
-    // g normalized (g(v=0, xcrit)=1=p0), g(v, xcrit) gives the no. of emitted photons in a fiven delta v interval
-    double g = v2 / pow(denom, 2) * ( g1 + ( pow(xcrit, 2) * pow(y, 2) ) / ( 1 + xcrit * y ) * g2 );  // g (w.o. normalization above) splits the unit rectangle p0*g-v to A,B,C regions
-    
-    // region C (emit photon) if p<p0*g, region B (no photon) if p>=p0*g, p0=1 bc. of normalization above
-    if (p<g){
-        *e_photon = ecrit * v3 / denom;
-        return 1;
-    }else{
-        *e_photon = 0.0;
-        return 0;
-    }
-}
-
-
-
-/*gpufun*/
-void synrad(double e_macropart, // [GeV]
-            double gamma,  // [1] 
-       	    double Fx_boosted,  // [1] (px' - px)/Dt, Dt=1
-            double Fy_boosted,  // [1] (py' - py)/Dt, Dt=1
-	    double dz,  // [m] z step between 2 slices ((z_max - z_min) / 2)
-	    double* e_photon_array // [GeV] array to store energy of emitted photons
-){
-
-    double r = pow(QELEM, 2)/(4* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2));  // [m] electron radius
-    
-    double ax = dz/(e_macropart) * Fx_boosted;
-    double ay = dz/(e_macropart) * Fy_boosted;
-    double rho_inv = sqrt(ax*ax + ay*ay) / dz;  // [m] (Fr/E) macropart bending radius from bb kick: dz/rho = dz/E*sqrt((px' - px)**2 + (py' - py)**2) = Fr * dz / E
-
-    double tmp = 25.4 * e_macropart * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
-    int max_photons = (int)(tmp*10.0)+1;
-
-    // photons are emitted uniformly in space along dz (between 2 slice interactions)
-    dz /= max_photons;
-    
-    int j = 0;
-    // emit photons in a loop
-    for (int i=0; i<max_photons; i++){
-    
-        // see if photon emitted
-
-        double e_photon;
-        if (synrad_0(e_macropart, dz, rho_inv, &e_photon)){
-            e_photon_array[j] = e_photon;
-            
-            // update bending radius
-            rho_inv *= e_macropart/(e_macropart - e_photon);
-
-            // update macropart energy
-            e_macropart -= e_photon;
-
-            // one more photon
-            j++;
-           
-            // some error handling
-            if (e_photon_array[j]<=0.0){
-		printf("photon emitted with negative energy: E_photon=%g, E_macropart=%g, photon ID: %d, limit: %d\n", e_photon, e_macropart, j, max_photons);
-       	    }
-       	    if (j>=1000){
-		printf("too many photons produced by one particle (photon ID: %d)\n", j);
-		exit(-1);
-	    }
-
-        }
-    }
 }
 
 
@@ -439,13 +312,15 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
     const int64_t do_beamstrahlung         = Sbc6D_fullData_get_do_beamstrahlung(el);
     const int64_t verbose_info             = Sbc6D_fullData_get_verbose_info(el); // print turn number
     const unsigned int use_strongstrong    = Sbc6D_fullData_get_use_strongstrong(el);
-
+    const double q0_bb                     = Sbc6D_fullData_get_q0_bb(el);  // +/-1
 
     const int64_t timestep = Sbc6D_fullData_get_timestep(el);
     const int64_t n_slices = Sbc6D_fullData_get_n_slices(el);
 
+    double energy_loss;
+
     // arrays of boosted slice moments and intensities of other beam
-    /*gpuglmem*/ const double* q0_bb_per_slice_arr     = Sbc6D_fullData_getp1_q0_bb(el, 0);
+    /*gpuglmem*/ const double* n_bb_per_slice_arr      = Sbc6D_fullData_getp1_n_bb(el, 0);
     /*gpuglmem*/ const double* mean_x_per_slice_arr    = Sbc6D_fullData_getp1_mean_x(el, 0); 
     /*gpuglmem*/ const double* mean_xp_per_slice_arr   = Sbc6D_fullData_getp1_mean_xp(el, 0);
     /*gpuglmem*/ const double* mean_y_per_slice_arr    = Sbc6D_fullData_getp1_mean_y(el, 0);
@@ -461,13 +336,13 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
     /*gpuglmem*/ const double* var_y_per_slice_arr     = Sbc6D_fullData_getp1_var_y(el, 0);
     /*gpuglmem*/ const double* cov_y_yp_per_slice_arr  = Sbc6D_fullData_getp1_cov_y_yp(el, 0);
     /*gpuglmem*/ const double* var_yp_per_slice_arr    = Sbc6D_fullData_getp1_var_yp(el, 0);
+    /*gpuglmem*/ const double* var_z_per_slice_arr     = Sbc6D_fullData_getp1_var_z(el, 0);
 
     const double* x_full_bb_centroid  = Sbc6D_fullData_getp_x_full_bb_centroid(el);
     const double* y_full_bb_centroid  = Sbc6D_fullData_getp_y_full_bb_centroid(el);
 
     int64_t count = 0;
-
-    //printf("q0_bb_per_slice_arr: %f\n",q0_bb_per_slice_arr[0]);
+    //printf("[sbc6d_full]");
 
     //start_per_particle_block (part0->part)
 
@@ -483,7 +358,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
             count += 1;
 
             // get moments of colliding slice
-            const double q0_bb        =     q0_bb_per_slice_arr[slice_id_bb];
+            const double n_bb         =      n_bb_per_slice_arr[slice_id_bb];
             const double mean_x_bb    =    mean_x_per_slice_arr[slice_id_bb]; 
             const double mean_xp_bb   =   mean_xp_per_slice_arr[slice_id_bb];
             const double mean_y_bb    =    mean_y_per_slice_arr[slice_id_bb];
@@ -499,6 +374,8 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
             const double var_y_bb     =     var_y_per_slice_arr[slice_id_bb];
             const double cov_y_yp_bb  =  cov_y_yp_per_slice_arr[slice_id_bb];
             const double var_yp_bb    =    var_yp_per_slice_arr[slice_id_bb];
+            const double var_z_bb     =     var_z_per_slice_arr[slice_id_bb];
+
             //printf("q0_bb: %f\n", q0_bb);
             //printf("mean_x_bb: %f\n", mean_x_bb);
             //printf("mean_y_bb: %f\n", mean_y_bb);
@@ -519,13 +396,13 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                       mean_x_bb, mean_y_bb, mean_z_bb, mean_xp_bb, mean_yp_bb,
                       *x_full_bb_centroid, *y_full_bb_centroid,
                       &Sx_i, &Sy_i, &Sz_i);
-//            printf("after iptocp:\nx: %f\npx: %f\ny: %f\npy: %f\nz: %f\nd: %f\n", Sx_i, px, Sy_i, py, Sz_i, delta);     
   
             //Compute force scaling factor: Q_bb * Q_macropart / pc [C^2 C-1 m s-1] 
-       	    const double q0  = LocalParticle_get_q0(part);  // +/-1*n_particles_per_macropart [counts of elementary charge repr. by 1 macropart]
-    	    const double p0c = LocalParticle_get_p0c(part); // [eV]
-    	    const double P0  = p0c/C_LIGHT*QELEM;  // [C]
-   	    const double Ksl = (QELEM*q0_bb)*(QELEM*q0) / (P0 * C_LIGHT);
+       	    const double q0  = LocalParticle_get_q0(part);  // +/-1
+    	    const double p0c = LocalParticle_get_p0c(part); // ref. energy [eV]
+    	    const double P0  = p0c/C_LIGHT*QELEM;  // ref. momentum, electronvolt to joule conversion
+   	    const double Ksl = (QELEM*q0_bb*n_bb)*(QELEM*q0) / (P0 * C_LIGHT);
+            //printf("QELEM: %.10e, p0c: %.10e, P0: %.10e, C_LIGHT: %.10e, Ksl: %.10e, q0: %.10e, q0_bb: %.10e\n", QELEM, p0c, P0, C_LIGHT, Ksl, q0, q0_bb);
 
             // get thetas from the sigma matrix
     	    double Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta;
@@ -535,9 +412,6 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
             Sz_i, threshold_singular, 1,
             &Sig_11_boosted_cp_uncoupled, &Sig_33_boosted_cp_uncoupled, &costheta, &sintheta,
             &dS_Sig_11_boosted_cp_uncoupled, &dS_Sig_33_boosted_cp_uncoupled, &dS_costheta, &dS_sintheta);
-
-//            printf("after uncouple:\nx: %f\npx: %f\ny: %f\npy: %f\nz: %f\nd: %f\n", Sx_i, px, Sy_i, py, Sz_i, delta);     
-
 
             // Move to the uncoupled reference frame and the derivatives of the tranformation
     	    const double Sx_i_uncoupled =  Sx_i*costheta + Sy_i*sintheta;
@@ -567,42 +441,68 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
             // Move disks to coupled reference frame
     	    double Fx_boosted = Fx_boosted_cp_uncoupled*costheta - Fy_boosted_cp_uncoupled*sintheta;
     	    double Fy_boosted = Fx_boosted_cp_uncoupled*sintheta + Fy_boosted_cp_uncoupled*costheta;
-
-    	    // Compute longitudinal kick
     	    double Fz_boosted = 0.5*(Fx_boosted_cp_uncoupled*dS_x_boosted_cp_uncoupled      + Fy_boosted_cp_uncoupled*dS_y_boosted_cp_uncoupled +
     	                         Gx_boosted_cp_uncoupled*dS_Sig_11_boosted_cp_uncoupled + Gy_boosted_cp_uncoupled*dS_Sig_33_boosted_cp_uncoupled);
 
-    	    // Apply the kicks (Hirata's synchro-beam)
-    	    delta +=      Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted)); 
-    	    px    +=      Fx_boosted;
-    	    py    +=      Fy_boosted;
-    
-            // emit beamstrahlung photons from single macropart
-         //   if (do_beamstrahlung){
+            // bs is a consequence of kick: emit beamstrahlung photons from single macropart
+            if (do_beamstrahlung==1){
+          
+                // total kick 
+                double const Fr = hypot(Fx_boosted, Fy_boosted) * LocalParticle_get_rpp(part); // rad
 
-	//	synrad(e_macropart, gamma, Fx_boosted, Fy_boosted, dz, &e_photon_array);
+                // longitudinal distance
+                /*gpuglmem*/ const double* dz_arr = Sbc6D_fullData_getp1_dz(el, 0);
+                //const double dz = 0.0726;
+                const double dz = dz_arr[slice_id_bb]/2.;
+                double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
+                FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_force.txt", "a");
+                fprintf(f1, "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i_uncoupled, Sy_i_uncoupled, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
+                fclose(f1);
+                energy_loss = synrad(part, Fr, dz);
+ 
+                // BS rescales these, so load again before kick 
+    	        delta = LocalParticle_get_delta(part);  
+            }
+            else if(do_beamstrahlung==2){
+                synrad_avg(part, n_bb, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), sqrt(var_z_bb));  // slice intensity and RMS slice sizes
+                delta = LocalParticle_get_delta(part);  
+            }
 
+            delta += Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted));
+     	    LocalParticle_add_to_px(part, Fx_boosted);
+     	    LocalParticle_add_to_py(part, Fy_boosted);
+     	    LocalParticle_update_delta(part, delta);
+     	    LocalParticle_add_to_x(part, -Sz_i*Fx_boosted);
+     	    LocalParticle_add_to_y(part, -Sz_i*Fy_boosted);
 
-          //  }
+      	    // Apply the kicks (Hirata's synchro-beam)
+    	    //delta +=      Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted)); 
+    	    //px    +=      Fx_boosted;
+    	    //py    +=      Fy_boosted;
+ 
+            //x_new -= Sz_i*Fx_boosted;
+            //y_new -= Sz_i*Fy_boosted;
 
-            double x_new, y_new, z_new;
-            MacropartToIP(use_strongstrong, Sx_i, Sy_i, Sz_i, px, py,
-                  mean_x_bb, mean_y_bb, mean_z_bb, mean_xp_bb, mean_yp_bb, 
-                  *x_full_bb_centroid, *y_full_bb_centroid,
-                  &x_new, &y_new, &z_new);
-//            printf("after cptoip:\nx: %f\npx: %f\ny: %f\npy: %f\nz: %f\nd: %f\n", Sx_i, px, Sy_i, py, Sz_i, delta);     
+            //double x_new, y_new, z_new;
+            //MacropartToIP(use_strongstrong, Sx_i, Sy_i, Sz_i, px, py,
+            //      mean_x_bb, mean_y_bb, mean_z_bb, mean_xp_bb, mean_yp_bb, 
+            //      *x_full_bb_centroid, *y_full_bb_centroid,
+            //      &x_new, &y_new, &z_new);
 
+            // update due to kick, coords will be drifted back to IP with new momentum
+    	    //LocalParticle_set_x(part, x_new);
+    	    //LocalParticle_set_px(part, px);
+    	    //LocalParticle_set_y(part, y_new);
+    	    //LocalParticle_set_py(part, py);
+    	    //LocalParticle_set_zeta(part, z_new);  // z gets rescaled in BS
+    	    //LocalParticle_update_delta(part, delta);
 
-            // only momenta are updated, coords will be drifted back to IP with new momentum
-    	    LocalParticle_set_x(part, x_new);
-    	    LocalParticle_set_px(part, px);
-    	    LocalParticle_set_y(part, y_new);
-    	    LocalParticle_set_py(part, py);
-    	    LocalParticle_set_zeta(part, z_new);
-    	    LocalParticle_update_delta(part, delta);
         }
     //end_per_particle_block
     //printf("count: %d\n", count);
+
+   
+
 }
 
 #endif
