@@ -417,9 +417,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
     	// Change reference frame
     	double x_star =     x     - x_CO    - delta_x;
-    	double px_star =    px    - px_CO   - delta_px;
+    	double px_star =    px    - px_CO;
     	double y_star =     y     - y_CO    - delta_y;
-    	double py_star =    py    - py_CO   - delta_py;
+    	double py_star =    py    - py_CO;
     	double sigma_star = zeta  - sigma_CO;
     	double delta_star = delta - delta_CO;
 
@@ -552,9 +552,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
     	// Go back to original reference frame and remove dipolar effect
     	x =     x_star     + x_CO   + delta_x - Dx_sub;
-    	px =    px_star    + px_CO  + delta_px- Dpx_sub;
+    	px =    px_star    + px_CO            - Dpx_sub;
     	y =     y_star     + y_CO   + delta_y - Dy_sub;
-    	py =    py_star    + py_CO  + delta_py- Dpy_sub;
+    	py =    py_star    + py_CO            - Dpy_sub;
     	zeta =  sigma_star + sigma_CO         - Dsigma_sub;
     	delta = delta_star + delta_CO         - Ddelta_sub;
 

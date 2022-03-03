@@ -76,10 +76,10 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
 	
     // Get data from memory
     const BoostParameters bpar      = Boost3DData_getp_boost_parameters(el);
-    const double x2_bc              = Boost3DData_get_x2_bc(el);
-    const double y2_bc              = Boost3DData_get_y2_bc(el);
-    const double px2_bc             = Boost3DData_get_px2_bc(el);
-    const double py2_bc             = Boost3DData_get_py2_bc(el);
+    const double x2_CO              = Boost3DData_get_x2_CO(el);
+    const double y2_CO              = Boost3DData_get_y2_CO(el);
+    const double px2_CO             = Boost3DData_get_px2_CO(el);
+    const double py2_CO             = Boost3DData_get_py2_CO(el);
 
     //printf("[boost3d]");
 
@@ -92,10 +92,11 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
     	double delta = LocalParticle_get_delta(part);
         
         // if weakstrong case: other beam has no coords just a disk, change reference frame into a frame centered at the other full beam's centroid (ref. frames never have a separation by definition of the IP)
-        double x_star     = x  - x2_bc;
-        double px_star    = px - px2_bc;;
-        double y_star     = y  - y2_bc;
-        double py_star    = py - py2_bc;;
+        // 22/02/2022: but other beam has centroid coords that i have and can input. These coord shifts are for the closed orbit that is computed from twiss.
+        double x_star     = x  - x2_CO;
+        double px_star    = px - px2_CO;
+        double y_star     = y  - y2_CO;
+        double py_star    = py - py2_CO;
         double z_star     = zeta;
         double delta_star = delta;
   
