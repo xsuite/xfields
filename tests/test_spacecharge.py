@@ -28,7 +28,7 @@ def test_spacecharge_gauss_qgauss():
             x0 = 1e-3
             y0 = -4e-3
             p0c = 25.92e9
-            mass = pmass,
+            mass = pmass
             theta_probes = 30 * np.pi/180
             r_max_probes = 2e-2
             z_probes = 1.2*sigma_z
@@ -150,7 +150,7 @@ def test_spacecharge_pic():
             sigma_y = 2e-3
             sigma_z = 30e-2
             p0c = 25.92e9
-            mass = pmass,
+            mass = pmass
             theta_probes = 30 * np.pi/180
             r_max_probes = 2e-2
             z_probes = 1.2*sigma_z
