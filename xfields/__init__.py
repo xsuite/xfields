@@ -11,6 +11,7 @@ from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam import BeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 from .beam_elements.electroncloud import ElectronCloud
+from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
 
 from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
