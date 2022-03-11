@@ -32,7 +32,7 @@ void TriCubicInterpolatedFieldMap_construct_b(
 int TriCubicInterpolatedFieldMap_interpolate_grad(
 	TriCubicInterpolatedFieldMapData fmap,
 	   const double x, const double y, const double z, 
-	   double* px_kick, double* py_kick, double* ptau_kick){
+	   double* dphi_dx, double* dphi_dy, double* dphi_dtau){
 	
     double const x_min = TriCubicInterpolatedFieldMapData_get_x_min(fmap);
     double const y_min = TriCubicInterpolatedFieldMapData_get_y_min(fmap);
@@ -107,32 +107,32 @@ int TriCubicInterpolatedFieldMap_interpolate_grad(
     for( int i = 1; i < 4; i++ ){
         for( int j = 0; j < 4; j++ ){
             for( int k = 0; k < 4; k++ ){
-                *px_kick += i * ( ( ( coefs[i + 4 * j + 16 * k] * x_power[i-1] ) 
+                *dphi_dx += i * ( ( ( coefs[i + 4 * j + 16 * k] * x_power[i-1] ) 
                                     * y_power[j] ) * z_power[k] );
             }
         }
     }
-    *px_kick *= - sign_x * inv_dx; 
+    *dphi_dx *= sign_x * inv_dx; 
 
     for( int i = 0; i < 4; i++ ){
         for( int j = 1; j < 4; j++ ){
             for( int k = 0; k < 4; k++ ){
-                *py_kick += j * ( ( ( coefs[i + 4 * j + 16 * k] * x_power[i] ) 
+                *dphi_dy += j * ( ( ( coefs[i + 4 * j + 16 * k] * x_power[i] ) 
                                     * y_power[j-1] ) * z_power[k] );
             }
         }
     }
-    *py_kick *= - sign_y * inv_dy; 
+    *dphi_dy *= sign_y * inv_dy; 
 
     for( int i = 0; i < 4; i++){
         for( int j = 0; j < 4; j++){
             for( int k = 1; k < 4; k++){
-                *ptau_kick += k * ( ( ( coefs[i + 4 * j + 16 * k] * x_power[i] ) 
+                *dphi_dtau += k * ( ( ( coefs[i + 4 * j + 16 * k] * x_power[i] ) 
                                     * y_power[j] ) * z_power[k-1] );
             }
         }
     }
-    *ptau_kick *= - sign_z * inv_dz; 
+    *dphi_dtau *= sign_z * inv_dz; 
 
 	return 0;
 }
