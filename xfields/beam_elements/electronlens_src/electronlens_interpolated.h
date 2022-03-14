@@ -7,9 +7,10 @@ void ElectronLensInterpolated_track_local_particle(ElectronLensInterpolatedData 
     const double length = ElectronLensInterpolatedData_get_length(el);
     const double current = ElectronLensInterpolatedData_get_current(el);
     const double voltage = ElectronLensInterpolatedData_get_voltage(el);
-    TriLinearInterpolatedFieldMapData fmap = ElectronLensInterpolatedData_getp_fieldmap(el);
-    /*gpuglmem*/ double* dphi_dx_map = ElectronLensInterpolatedData_getp1_fieldmap_dphi_dx(el, 0);
-    /*gpuglmem*/ double* dphi_dy_map = ElectronLensInterpolatedData_getp1_fieldmap_dphi_dy(el, 0);
+    // TriLinearInterpolatedFieldMapData fmap = ElectronLensInterpolatedData_getp_fieldmap(el);
+    // /*gpuglmem*/ double* dphi_dx_map = ElectronLensInterpolatedData_getp1_fieldmap_dphi_dx(el, 0);
+    // /*gpuglmem*/ double* dphi_dy_map = ElectronLensInterpolatedData_getp1_fieldmap_dphi_dy(el, 0);
+    TriCubicInterpolatedFieldMapData fmap = ElectronLensInterpolatedData_getp_fieldmap(el);
 
     // # Electron properties
     // total electron energy
@@ -26,24 +27,23 @@ void ElectronLensInterpolated_track_local_particle(ElectronLensInterpolatedData 
         const double x = LocalParticle_get_x(part);
         const double y = LocalParticle_get_y(part);
 
-        // double dphi_dx=0;
-        // double dphi_dy=0;
-        // double dphi_dtau=0;
-        //
-        // if( TriCubicInterpolatedFieldMap_interpolate_grad(fmap, 
-        //     x, y, 0.,
-        //     &dphi_dx, &dphi_dy, &dphi_dtau)
-        //   ){
-        //       LocalParticle_set_state(part, -11); // Stop tracking particle if it escapes the interpolation grid.
-        //   }
+        double dphi_dx=0;
+        double dphi_dy=0;
+        double dphi_dtau=0;
+        
+        if( TriCubicInterpolatedFieldMap_interpolate_grad(fmap, 
+            x, y, 0.,
+            &dphi_dx, &dphi_dy, &dphi_dtau)
+          ){
+              LocalParticle_set_state(part, -11); // Stop tracking particle if it escapes the interpolation grid.
+          }
 
-	    const IndicesAndWeights iw = 
-	        TriLinearInterpolatedFieldMap_compute_indeces_and_weights(fmap, x, y, 0.);
-
-      	const double dphi_dx = 
-	        TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(dphi_dx_map, iw);
-      	const double dphi_dy = 
-	        TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(dphi_dy_map, iw);
+        // const IndicesAndWeights iw = 
+        //     TriLinearInterpolatedFieldMap_compute_indeces_and_weights(fmap, x, y, 0.);
+        // const double dphi_dx = 
+        //     TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(dphi_dx_map, iw);
+        // const double dphi_dy = 
+        //     TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(dphi_dy_map, iw);
 
 	    const double q0 = LocalParticle_get_q0(part);
 	    const double mass0 = LocalParticle_get_mass0(part);

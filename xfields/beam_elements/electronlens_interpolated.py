@@ -4,6 +4,7 @@ import xobjects as xo
 import xtrack as xt
 
 from ..fieldmaps import TriLinearInterpolatedFieldMap
+from ..fieldmaps import TriCubicInterpolatedFieldMap
 
 from ..fieldmaps import TriCubicInterpolatedFieldMapData
 from ..fieldmaps import TriLinearInterpolatedFieldMapData
@@ -15,7 +16,7 @@ class ElectronLensInterpolated(xt.BeamElement):
                'current':  xo.Float64,
                'length':   xo.Float64,
                'voltage':  xo.Float64,
-               "fieldmap": TriLinearInterpolatedFieldMapData,
+               "fieldmap": TriCubicInterpolatedFieldMapData,
               }
 
     def __init__(self,
@@ -28,12 +29,8 @@ class ElectronLensInterpolated(xt.BeamElement):
                  nx=None, ny=None,
                  dx=None, dy=None,
                  x_grid=None, y_grid=None,
-                 rho=None, phi=None,
-                 solver=None,
-                 fftplan=None,
+                 rho=None,
                  current=None, voltage=None,
-                 x_center=0., y_center=0.,
-                 inner_radius=None, outer_radius=None,
                  ):
 
         if _buffer is not None:
@@ -56,6 +53,49 @@ class ElectronLensInterpolated(xt.BeamElement):
             fieldmap.rho[:,:,ii] = rho
         fieldmap.update_phi_from_rho()
 
+        tc_fieldmap = TriCubicInterpolatedFieldMap(x_grid=fieldmap._x_grid, 
+                                                   y_grid=fieldmap._y_grid, 
+                                                   z_grid=fieldmap._z_grid,
+                                                  )
+
+        nx = tc_fieldmap.nx
+        ny = tc_fieldmap.ny
+        nz = tc_fieldmap.nz
+        dx = tc_fieldmap.dx 
+        dy = tc_fieldmap.dy 
+        dz = tc_fieldmap.dz 
+        scale = [1., dx, dy, dz, 
+                dx * dy, dx * dz, dy * dz, 
+                dx * dy * dz]
+
+        phi = fieldmap.phi
+        print(phi.shape)
+        dphi_dx = np.zeros_like(phi)
+        dphi_dy = np.zeros_like(phi)
+        dphi_dxdy = np.zeros_like(phi)
+        dphi_dx[1:-1,:] = 0.5*(phi[2:,:] - phi[:-2,:])
+        dphi_dy[:,1:-1] = 0.5*(phi[:,2:] - phi[:,:-2])
+        dphi_dxdy[1:-1,:] = 0.5*(dphi_dy[2:,:] - dphi_dy[:-2,:])
+
+        print("Setting derivatives: ")
+        kk=0.
+        for ix in range(nx):
+            if (ix)/nx > kk:
+                while (ix)/nx > kk:
+                    kk += 0.1
+                print(f"{int(np.round(100*kk)):d}%..")
+            for iy in range(ny):
+                for iz in range(nz):
+                    index = 8 * ix + 8 * nx * iy + 8 * nx * ny * iz
+                    tc_fieldmap._phi_taylor[index+0] = phi[ix, iy, 0]
+                    tc_fieldmap._phi_taylor[index+1] = dphi_dx[ix, iy, 0]
+                    tc_fieldmap._phi_taylor[index+2] = dphi_dy[ix, iy, 0]
+                    tc_fieldmap._phi_taylor[index+3] = 0.
+                    tc_fieldmap._phi_taylor[index+4] = dphi_dxdy[ix, iy, 0]
+                    tc_fieldmap._phi_taylor[index+5] = 0.
+                    tc_fieldmap._phi_taylor[index+6] = 0.
+                    tc_fieldmap._phi_taylor[index+7] = 0.
+
         self.xoinitialize(
                  _context=_context,
                  _buffer=_buffer,
@@ -63,9 +103,8 @@ class ElectronLensInterpolated(xt.BeamElement):
                  current=current,
                  length=length,
                  voltage=voltage,
-                 fieldmap=fieldmap)
+                 fieldmap=tc_fieldmap)
 
-    
 
     def track(self, particles):
 
@@ -82,9 +121,9 @@ class ElectronLensInterpolated(xt.BeamElement):
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
-#srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
-#srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
+#srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
+srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/electronlens_src/electronlens_interpolated.h'))
 
 ElectronLensInterpolated.XoStruct.extra_sources = srcs
