@@ -69,7 +69,7 @@ class ElectronLensInterpolated(xt.BeamElement):
                 dx * dy * dz]
 
         phi = fieldmap.phi
-        print(phi.shape)
+        #print(phi.shape)
         dphi_dx = np.zeros_like(phi)
         dphi_dy = np.zeros_like(phi)
         dphi_dxdy = np.zeros_like(phi)
