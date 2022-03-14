@@ -47,7 +47,7 @@ void ElectronLensInterpolated_track_local_particle(ElectronLensInterpolatedData 
 
 	    const double q0 = LocalParticle_get_q0(part);
 	    const double mass0 = LocalParticle_get_mass0(part);
-	    const double chi = LocalParticle_get_chi(part);
+	    //const double chi = LocalParticle_get_chi(part);
 	    const double beta0 = LocalParticle_get_beta0(part);
 	    const double gamma0 = LocalParticle_get_gamma0(part);
         //const double charge_mass_ratio = 
