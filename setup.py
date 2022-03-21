@@ -13,7 +13,7 @@ extensions = []
 
 setup(
     name='xfields',
-    version='0.4.2',
+    version='0.4.3',
     description='Field Maps and Particle In Cell',
     url='https://github.com/xsuite/xfields',
     author='Giovanni Iadarola',
