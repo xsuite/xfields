@@ -11,10 +11,10 @@ from xtrack.line import _is_thick, _is_drift
 def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
                                nemitt_x, nemitt_y, sigma_z,
                                num_spacecharge_interactions,
-                               tol_spacecharge_position):
-    line_no_sc = line
+                               tol_spacecharge_position,
+                               s_spacecharge=None):
 
-    tracker_no_sc = xt.Tracker(line=line_no_sc)
+    tracker_no_sc = xt.Tracker(line=line.copy())
 
     # Make a matched bunch just to get the matched momentum spread
     bunch = xp.generate_matched_gaussian_bunch(
@@ -23,40 +23,17 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
              particle_ref=particle_ref, tracker=tracker_no_sc)
     delta_rms = np.std(bunch.delta)
 
-    # Remove all drifts
-    s_no_drifts = []
-    e_no_drifts = []
-    n_no_drifts = []
-    for ss, ee, nn in zip(line_no_sc.get_s_elements(), line_no_sc.elements,
-                          line_no_sc.element_names):
-        if not _is_drift(ee):
-            assert not _is_thick(ee)
-            s_no_drifts.append(ss)
-            e_no_drifts.append(ee)
-            n_no_drifts.append(nn)
-
-    s_no_drifts = np.array(s_no_drifts)
-
     # Generate spacecharge positions
-    s_spacecharge = np.linspace(0, line_no_sc.get_length(),
-                                num_spacecharge_interactions+1)[:-1]
-
-    # Adjust spacecharge positions where possible
-    for ii, ss in enumerate(s_spacecharge):
-        s_closest = np.argmin(np.abs(ss-s_no_drifts))
-        if np.abs(ss - s_closest) < tol_spacecharge_position:
-            s_spacecharge[ii] = s_closest
-
-    sc_lengths = 0*s_spacecharge
-    sc_lengths[:-1] = np.diff(s_spacecharge)
-    sc_lengths[-1] = line_no_sc.get_length() - s_spacecharge[-1]
+    if s_spacecharge is None:
+        s_spacecharge = np.linspace(0, line.get_length(),
+                                    num_spacecharge_interactions+1)[:-1]
 
     # Create spacecharge elements (dummy)
     sc_elements = []
     sc_names = []
-    for ii, ll in enumerate(sc_lengths):
+    for ii, ss in enumerate(s_spacecharge):
         sc_elements.append(SpaceChargeBiGaussian(
-            length=ll,
+            length=-9999,
             apply_z_kick=False,
             longitudinal_profile=longitudinal_profile,
             mean_x=0.,
@@ -65,35 +42,16 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
             sigma_y=1.))
         sc_names.append(f'spacecharge_{ii}')
 
-    # Merge lattice and spacecharge elements
-    df_lattice = pd.DataFrame({'s': s_no_drifts, 'elements': e_no_drifts,
-                               'element_names': n_no_drifts})
-    df_spacecharge = pd.DataFrame({'s': s_spacecharge, 'elements': sc_elements,
-                                   'element_names': sc_names})
-    df_elements = pd.concat([df_lattice, df_spacecharge]).sort_values('s')
+        #TODO Replace loop with single insert_element when available in xtrack
+        line.insert_element(name=sc_names[-1], element=sc_elements[-1],
+                            at_s=ss, s_tol=tol_spacecharge_position)
 
-    # Build new line with drifts
-    new_elements = []
-    new_names = []
-    s_curr = 0
-    i_drift = 0
-    for ss, ee, nn, in zip(df_elements['s'].values,
-                           df_elements['elements'].values,
-                           df_elements['element_names'].values):
 
-        if ss > s_curr + 1e-10:
-            new_elements.append(xt.Drift(length=(ss-s_curr)))
-            new_names.append(f'drift_{i_drift}')
-            s_curr = ss
-            i_drift += 1
-        new_elements.append(ee)
-        new_names.append(nn)
+    actual_s_spch = line.get_s_position(sc_names)
 
-    if s_curr < line_no_sc.get_length():
-        new_elements.append(xt.Drift(length=line_no_sc.get_length() - s_curr))
-        new_names.append(f'drift_{i_drift}')
-    line = xt.Line(elements=new_elements, element_names=new_names)
-    assert np.isclose(line.get_length(), line_no_sc.get_length(), rtol=0, atol=1e-10)
+    sc_lengths = 0*s_spacecharge
+    sc_lengths[:-1] = np.diff(actual_s_spch)
+    sc_lengths[-1] = line.get_length() - np.sum(sc_lengths[:-1]) 
 
     # Twiss at spacecharge
     line_sc_off = line.filter_elements(exclude_types_starting_with='SpaceCh')
@@ -112,8 +70,8 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
         sc.sigma_y = np.sqrt(tw_at_sc['bety'][ii]*nemitt_y
                                /particle_ref.beta0/particle_ref.gamma0
                              + (tw_at_sc['dy'][ii]*delta_rms)**2)
+        sc.length = sc_lengths[ii]
 
-    return line
 
 def replace_spacecharge_with_quasi_frozen(
                         line, _buffer,
