@@ -71,17 +71,15 @@ void BoostParameters_boost_coordinates(const BoostParameters bp,
 /*gpufun*/
 void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
 
-    // part0 = single macropart
-    // el    = beambeam element (other beam)
-	
     // Get data from memory
-    const BoostParameters bpar      = Boost3DData_getp_boost_parameters(el);
-    const double x2_CO              = Boost3DData_get_x2_CO(el);
-    const double y2_CO              = Boost3DData_get_y2_CO(el);
-    const double px2_CO             = Boost3DData_get_px2_CO(el);
-    const double py2_CO             = Boost3DData_get_py2_CO(el);
-
-    //printf("[boost3d]");
+    const BoostParameters bpar = Boost3DData_getp_boost_parameters(el);
+    const double x2_CO         = Boost3DData_get_x2_CO(el);
+    const double y2_CO         = Boost3DData_get_y2_CO(el);
+    const double px2_CO        = Boost3DData_get_px2_CO(el);
+    const double py2_CO        = Boost3DData_get_py2_CO(el);
+    const double delta_x       = Boost3DData_get_delta_x(el);
+    const double delta_y       = Boost3DData_get_delta_y(el);
+    const int64_t swap_x       = Boost3DData_get_swap_x(el);
 
     //start_per_particle_block (part0->part)
     	double x = LocalParticle_get_x(part);
@@ -90,12 +88,17 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
     	double py = LocalParticle_get_py(part);
     	double zeta = LocalParticle_get_zeta(part);
     	double delta = LocalParticle_get_delta(part);
-        
-        // if weakstrong case: other beam has no coords just a disk, change reference frame into a frame centered at the other full beam's centroid (ref. frames never have a separation by definition of the IP)
-        // 22/02/2022: but other beam has centroid coords that i have and can input. These coord shifts are for the closed orbit that is computed from twiss.
-        double x_star     = x  - x2_CO;
+ 
+
+        // swap x and px
+        if(swap_x == 1){
+            x *= -1.0;
+            px *= -1.0;
+        }
+
+        double x_star     = x  - x2_CO   - delta_x;
         double px_star    = px - px2_CO;
-        double y_star     = y  - y2_CO;
+        double y_star     = y  - y2_CO   - delta_y;
         double py_star    = py - py2_CO;
         double z_star     = zeta;
         double delta_star = delta;

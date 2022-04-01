@@ -7,6 +7,8 @@ from ..general import _pkg_root
 
 """
 14/10/2021: add x2_bc for ws case. Remove x_CO and delta_x as closed orbit is not explicit here. "x2_bc = x_CO+delta_x"
+28/03/2022: add x_co and delta_x for convenience
+- add swap_x as part of this element
 """
 
 
@@ -23,16 +25,19 @@ class BoostInv3D(xt.BeamElement):
         'boost_parameters': BoostParameters,
        	'alpha': xo.Float64,
 	'phi': xo.Float64,
-        'x2_bc': xo.Float64,
-        'y2_bc': xo.Float64,
-        'px2_bc': xo.Float64,
-        'py2_bc': xo.Float64,
+        'x2_CO': xo.Float64,
+        'y2_CO': xo.Float64,
+        'px2_CO': xo.Float64,
+        'py2_CO': xo.Float64,
         'Dx_sub': xo.Float64,
         'Dpx_sub': xo.Float64,
         'Dy_sub': xo.Float64,
         'Dpy_sub': xo.Float64,
         'Dz_sub': xo.Float64,
         'Ddelta_sub': xo.Float64,
+        'delta_x': xo.Float64,
+        'delta_y': xo.Float64,
+        'swap_x': xo.Int64,
  
     }
 
@@ -42,16 +47,19 @@ class BoostInv3D(xt.BeamElement):
             _offset=None,
        	    alpha=0.,
             phi=0., 
-            x2_bc=0.,
-            y2_bc=0.,
-            px2_bc=0.,
-            py2_bc=0.,
+            x2_CO=0.,
+            y2_CO=0.,
+            px2_CO=0.,
+            py2_CO=0.,
             Dx_sub=0.,
             Dpx_sub=0.,
             Dy_sub=0.,
             Dpy_sub=0.,
             Dz_sub=0.,
             Ddelta_sub=0.,
+            delta_x=0.,
+            delta_y=0.,
+            swap_x=0,
 	    ):
  
         if _context is None:
@@ -62,18 +70,21 @@ class BoostInv3D(xt.BeamElement):
                  _buffer=_buffer,
                  _offset=_offset)
 
-        self.x2_bc = x2_bc
-        self.y2_bc = y2_bc
-        self.px2_bc = px2_bc
-        self.py2_bc = py2_bc
-        self.Dx_sub = Dx_sub
-        self.Dpx_sub = Dpx_sub
-        self.Dy_sub = Dy_sub
-        self.Dpy_sub= Dpy_sub
-        self.Dz_sub = Dz_sub
+        self.x2_CO      = x2_CO
+        self.y2_CO      = y2_CO
+        self.px2_CO     = px2_CO
+        self.py2_CO     = py2_CO
+        self.Dx_sub     = Dx_sub
+        self.Dpx_sub    = Dpx_sub
+        self.Dy_sub     = Dy_sub
+        self.Dpy_sub    = Dpy_sub
+        self.Dz_sub     = Dz_sub
         self.Ddelta_sub = self.Ddelta_sub
-        self.phi = phi,
-        self.alpha = alpha,
+        self.phi        = phi,
+        self.alpha      = alpha,
+        self.delta_x    = delta_x,
+        self.delta_y    = delta_y,
+        self.swap_x     = swap_x,
         self.boost_parameters = {
                 'sphi': np.sin(phi),
                 'cphi': np.cos(phi),

@@ -13,6 +13,8 @@ int synrad_0(LocalParticle *part,
              double* ecrit){  // [GeV] 
 
     /*
+    Based on:
+    https://inis.iaea.org/collection/NCLCollectionStore/_Public/18/033/18033162.pdf?r=1
     return 0: no photon
     return 1: emit 1 photon, energy stored in photon_energy
     */
@@ -24,16 +26,12 @@ int synrad_0(LocalParticle *part,
     const double g1_c[4] = {1.0174394594, 0.5831679349, 0.9949036186, 1.0};
     const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
 
-    double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEVPERC, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3 --> 2.22e-6 
-    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit(C)=ξ(doc)=upsbar(C++)
+    double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEVPERC, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
+    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
     (*ecrit) = xcrit * energy*1e-9;  // [GeV]
     double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
     double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);  // [1] beamstrahlung parameter for single macropart
     double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
-    //printf("p0: %.10e\n", p0);
-    //printf("ecrit: %.10e\n", (*ecrit));
-    //printf("upsilon: %.10e\n", upsilon);
-    //printf("xcrit: %.10e\n", xcrit);
  
     // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
     if (LocalParticle_generate_random_double(part) > p0){return 0;}
@@ -73,15 +71,6 @@ int synrad_0(LocalParticle *part,
     // region C (emit photon) if p<p0*g, region B (no photon) if p>=p0*g, p0=1 bc. of normalization above
     if (p<g){
         (*e_photon) = (*ecrit) * v3 / denom;
-        //printf("g: %.10e\n", g);
-        //printf("denom: %.10e\n", denom);
-        //printf("p: %.10e\n", p);
-        //printf("v3: %.10e\n", v3);
-        //printf("v: %.10e\n", v);
-        //printf("g1: %.10e\n", g1);
-        //printf("g2: %.10e\n", g2);
-        //printf("xcrit: %.10e\n", xcrit);
-
         return 1;
     }else{
         (*e_photon) = 0.0;
@@ -96,7 +85,7 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
     double r              = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
     const double c1       = 2.59*(5.0/6.0)*(r*r)/(REDUCED_COMPTON);
     const double c2       =  1.2*(25.0/36.0)*(r*r*r*r)/(REDUCED_COMPTON)*137.0;
-    const double m0       = LocalParticle_get_mass0(part); // particle mass [eV]
+    const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); // [eV]
     double gamma          = initial_energy / m0; // [1] 
 
@@ -105,10 +94,10 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
     double U_BS         = delta_avg*initial_energy;  // Average energy loss per macropart per IP. [eV]
     double u_avg        = delta_avg/n_avg;  // Average photon energy normalized to electron energy before emission [1]
     double e_photon_avg = u_avg*initial_energy;  // Average photon energy [eV]
-    FILE *f5 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_photons_avg.txt", "a");
-    fprintf(f5, "%d %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", part->ipart, initial_energy, sigma_x, sigma_y, sigma_z, n_avg, delta_avg, U_BS);  // save photon ID and energy, all in [ev]
+    //FILE *f5 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_photons_avg.txt", "a");
+    //fprintf(f5, "%d %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", part->ipart, initial_energy, sigma_x, sigma_y, sigma_z, n_avg, delta_avg, U_BS);  // save photon ID and energy, all in [ev]
     //fprintf(f5, "%d %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", part->ipart, initial_energy, n_bb, sigma_x, sigma_y, sigma_z, r, c1, c2, n_avg, delta_avg, U_BS);  // save photon ID and energy, all in [ev]
-    fclose(f5);
+    //fclose(f5);
     LocalParticle_add_to_energy(part, -U_BS, 0);
 }
 
@@ -119,28 +108,20 @@ double synrad(LocalParticle *part,
 	    double dz  // [m] z step between 2 slices ((z_max - z_min) / 2)
 ){
 
-    const double m0 = LocalParticle_get_mass0(part); // particle mass [eV]
+    const double m0 = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); // [eV]
     double energy = initial_energy;  // [eV]
     double gamma = energy / m0; // [1] 
     double r = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
-    double rho_inv = Fr / dz;  // [1/m] (Fr/E) macropart bending radius from bb kick: dz/rho = dz/E*sqrt((px' - px)**2 + (py' - py)**2) = Fr * dz / E
+    double rho_inv = Fr / dz;  // [1/m] macropart bending radius from bb kick: dz/rho = dz/E*sqrt((px' - px)**2 + (py' - py)**2) = Fr * dz / E
     double tmp = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
     int max_photons = (int)(tmp*10.0)+1;
-
-    //printf("rho_inv: %.10e\n", rho_inv);
-    //printf("dz: %.10e\n", dz);
-    //printf("tmp: %.10e\n", tmp);
-    //printf("gamma: %.10e\n", gamma);
-    //printf("energy: %.10e\n", energy);
-    //printf("e_photon_array[0]: %.10e\n", e_photon_array[0]); 
-    //printf("Max photons: %d\n", max_photons); 
 
     //FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_max_photons.txt", "a");
     //FILE *f2 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_rho_inv.txt", "a");
     //FILE *f3 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_tmp.txt", "a");
     //FILE *f4 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_fr.txt", "a");
-    FILE *f5 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_photons.txt", "a");
+    //FILE *f5 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_photons.txt", "a");
     //FILE *f6 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_dz.txt", "a");
     //FILE *f7 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_eloss.txt", "a");
 
@@ -156,20 +137,18 @@ double synrad(LocalParticle *part,
     // BS photon counter and energy storage
     int j = 0;
     double e_photon_array[1000];
-
     for (int i=0; i<max_photons; i++){
     
-        // see if photon can be emitted
         double e_photon, ecrit;  // [GeV]
-        if (synrad_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){
+        if (synrad_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
 
-            fprintf(f5, "%d %d %.10e %.10e %.10e %.10e %.10e %.10e %d\n", part->ipart, j, e_photon*1e9, ecrit*1e9, energy, rho_inv, dz, initial_energy, max_photons);  // save photon ID and energy, all in [ev]
+            //fprintf(f5, "%d %d %.10e %.10e %.10e %.10e %.10e %.10e %d\n", part->ipart, j, e_photon*1e9, ecrit*1e9, energy, rho_inv, dz, initial_energy, max_photons);  // save photon ID and energy, all in [ev]
 
             // update bending radius, macropart energy and gamma
             rho_inv *= energy/(energy - e_photon*1e9);
-            energy -= e_photon*1e9;
-            gamma *= (energy - e_photon*1e9)/energy;
+            energy  -= e_photon*1e9;
+            gamma   *= (energy - e_photon*1e9)/energy;
 
             // some error handling
             if (e_photon_array[j]<=0.0){
@@ -178,9 +157,6 @@ double synrad(LocalParticle *part,
 
             // increment photon counter
             j++;
-
-            
-
        	    if (j>=1000){
 		printf("too many photons produced by one particle (photon ID: %d)\n", j);
 		exit(-1);
@@ -203,7 +179,7 @@ double synrad(LocalParticle *part,
     //fclose(f2);
     //fclose(f3);
     //fclose(f4);
-    fclose(f5);
+    //fclose(f5);
     //fclose(f6);
     //fclose(f7);
     return energy_loss;

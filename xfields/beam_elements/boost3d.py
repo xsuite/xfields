@@ -10,6 +10,8 @@ from ..general import _pkg_root
 22/02/2022: change _bc to _CO as the ref. frame shift to other beam centroid is unnecessary complication. _CO comes from e.g. madx twiss (delta_ is the separation).
 The original ref. frame is in the ref. orbit (the perfect circle) and _CO are the closed orbit coords w.r.t. that at the IP. I draw my particle coords w.r.t. this ref. frame
 but I need to shift them to around the closed orbit. This shift is very small ~1e-18 m.
+28/03/2022: add x_co and delta_x for convenience
+- add swap_x as part of this element
 """
 
 class BoostParameters(xo.Struct):
@@ -30,6 +32,10 @@ class Boost3D(xt.BeamElement):
         'y2_CO': xo.Float64,
         'px2_CO': xo.Float64,
         'py2_CO': xo.Float64,
+        'delta_x': xo.Float64,
+        'delta_y': xo.Float64,
+        'swap_x': xo.Int64,
+
     }
 
     def __init__(self,
@@ -42,6 +48,9 @@ class Boost3D(xt.BeamElement):
             y2_CO=0.,
             px2_CO=0.,
             py2_CO=0.,
+            delta_x=0.,
+            delta_y=0.,
+            swap_x=0,
  	    ): # not the same as above the xobject vars, only if set below
 
         if _context is None:
@@ -53,12 +62,15 @@ class Boost3D(xt.BeamElement):
                  _offset=_offset)
 
         # element member variables, input arg. can be named anyhow, the member var. name matters
-        self.x2_CO = x2_CO
-        self.y2_CO = y2_CO
-        self.px2_CO = px2_CO
-        self.py2_CO = py2_CO
-        self.phi = phi,
-        self.alpha = alpha,
+        self.x2_CO   = x2_CO
+        self.y2_CO   = y2_CO
+        self.px2_CO  = px2_CO
+        self.py2_CO  = py2_CO
+        self.delta_x = delta_x
+        self.delta_y = delta_y
+        self.phi     = phi,
+        self.alpha   = alpha,
+        self.swap_x  = swap_x,
         self.boost_parameters = {
                 'sphi': np.sin(phi),
                 'cphi': np.cos(phi),

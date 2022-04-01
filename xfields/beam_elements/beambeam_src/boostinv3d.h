@@ -70,23 +70,21 @@ void BoostParameters_boost_coordinates_inv(
 /*gpufun*/
 void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
 
-    // part0 = single macropart
-    // el    = beambeam element (other beam)
-	
     // Get data from memory
-    const BoostParameters bpar      = BoostInv3DData_getp_boost_parameters(el);
-    const double x2_bc              = BoostInv3DData_get_x2_bc(el);
-    const double y2_bc              = BoostInv3DData_get_y2_bc(el);
-    const double px2_bc             = BoostInv3DData_get_px2_bc(el);
-    const double py2_bc             = BoostInv3DData_get_py2_bc(el);
-    const double Dx_sub             = BoostInv3DData_get_Dx_sub(el); 
-    const double Dpx_sub            = BoostInv3DData_get_Dpx_sub(el);
-    const double Dy_sub             = BoostInv3DData_get_Dy_sub(el);
-    const double Dpy_sub            = BoostInv3DData_get_Dpy_sub(el);
-    const double Dz_sub             = BoostInv3DData_get_Dz_sub(el);
-    const double Ddelta_sub         = BoostInv3DData_get_Ddelta_sub(el);
-
-    //printf("[boostinv3d]");
+    const BoostParameters bpar = BoostInv3DData_getp_boost_parameters(el);
+    const double x2_CO         = BoostInv3DData_get_x2_CO(el);
+    const double y2_CO         = BoostInv3DData_get_y2_CO(el);
+    const double px2_CO        = BoostInv3DData_get_px2_CO(el);
+    const double py2_CO        = BoostInv3DData_get_py2_CO(el);
+    const double delta_x       = BoostInv3DData_get_delta_x(el);
+    const double delta_y       = BoostInv3DData_get_delta_y(el);
+    const double Dx_sub        = BoostInv3DData_get_Dx_sub(el); 
+    const double Dpx_sub       = BoostInv3DData_get_Dpx_sub(el);
+    const double Dy_sub        = BoostInv3DData_get_Dy_sub(el);
+    const double Dpy_sub       = BoostInv3DData_get_Dpy_sub(el);
+    const double Dz_sub        = BoostInv3DData_get_Dz_sub(el);
+    const double Ddelta_sub    = BoostInv3DData_get_Ddelta_sub(el);
+    const int64_t swap_x       = BoostInv3DData_get_swap_x(el);
 
     //start_per_particle_block (part0->part)
     	double x_star     = LocalParticle_get_x(part);
@@ -99,13 +97,18 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
     	// Inverse boost coordinates
 	BoostParameters_boost_coordinates_inv(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
 
-        // if weakstrong case: go back to original reference frame and remove dipolar effect
-    	double x     = x_star       + x2_bc    - Dx_sub;
-        double px    = px_star      + px2_bc   - Dpx_sub;
-    	double y     = y_star       + y2_bc    - Dy_sub;
-      	double py    = py_star      + py2_bc   - Dpy_sub;
-    	double z     = z_star                  - Dz_sub;
-    	double delta = delta_star              - Ddelta_sub;
+    	double x     = x_star       + x2_CO  + delta_x - Dx_sub;
+        double px    = px_star      + px2_CO           - Dpx_sub;
+    	double y     = y_star       + y2_CO  + delta_y - Dy_sub;
+      	double py    = py_star      + py2_CO           - Dpy_sub;
+    	double z     = z_star                          - Dz_sub;
+    	double delta = delta_star                      - Ddelta_sub;
+
+        // swap x and px
+        if(swap_x == 1){
+            x *= -1.0;
+            px *= -1.0;
+        }
    	
         LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
