@@ -1,4 +1,3 @@
-
 import numpy as np
 
 import xobjects as xo
@@ -261,7 +260,8 @@ class TriCubicInterpolatedFieldMap(xo.dress(TriCubicInterpolatedFieldMapData,
             (tuple of float64 array): The required quantities at the provided points.
         """
 
-        raise Exception("Method not checked/implemented.")
+        #raise Exception("Method not checked/implemented.")
+        raise NotImplementedError
 
         assert len(x) == len(y) == len(z)
 
@@ -318,7 +318,8 @@ class TriCubicInterpolatedFieldMap(xo.dress(TriCubicInterpolatedFieldMapData,
                 map is declared as not updateable. The default is ``False``.
         """
 
-        raise Exception("Method not checked/implemented.")
+        #raise Exception("Method not checked/implemented.")
+        raise NotImplementedError
 
         if not force:
             self._assert_updatable()

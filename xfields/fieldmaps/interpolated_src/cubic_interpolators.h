@@ -73,6 +73,7 @@ int TriCubicInterpolatedFieldMap_interpolate_grad(
     double const zn = sfz - izf;
 
     // check that indices are within the grid
+    // TODO: replace with ranges in x,y,z
     int indices_are_inside_box = ( ix >= 0 ) && ( ix <= ( TriCubicInterpolatedFieldMapData_get_nx(fmap) - 2 ) ) 
                               && ( iy >= 0 ) && ( iy <= ( TriCubicInterpolatedFieldMapData_get_ny(fmap) - 2 ) ) 
                               && ( iz >= 0 ) && ( iz <= ( TriCubicInterpolatedFieldMapData_get_nz(fmap) - 2 ) );
