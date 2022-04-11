@@ -68,4 +68,3 @@ def test_electronlens_interpolated():
                            atol=1.e-8, rtol=1.e-15)
         assert np.all(part.delta == 0.)
         assert np.all(part.ptau == 0.)
-        assert np.all(part.psigma == 0.)
