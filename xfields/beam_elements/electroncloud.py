@@ -62,16 +62,6 @@ class ElectronCloud(xt.BeamElement):
         'fieldmap': xo.Ref(TriCubicInterpolatedFieldMapData),
         }
 
-#     def copy(self, _context=None, _buffer=None, _offset=None):
-#         if _buffer is not self._buffer:
-#             raise NotImplementedError
-#         return SpaceCharge3D(_context=_context,
-#                 _buffer=_buffer, _offset=_offset,
-#                 update_on_track=self.update_on_track,
-#                 length=self.length,
-#                 apply_z_kick=self.apply_z_kick,
-#                 fieldmap=self.fieldmap)
-
     def __init__(self,
                  _context=None,
                  _buffer=None,
