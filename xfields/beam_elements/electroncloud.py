@@ -102,19 +102,6 @@ class ElectronCloud(xt.BeamElement):
 
         # temp_buff is deallocate here
 
-    def track(self, particles):
-
-        """
-        Computes and applies the electron cloud forces for the provided set of
-        particles.
-
-        Args:
-            particles (Particles Object): Particles to be tracked.
-        """
-
-        # call C tracking kernel
-        super().track(particles)
-
 
 srcs = []
 #srcs.append(_pkg_root.joinpath('headers/constants.h'))
