@@ -38,10 +38,10 @@ class ElectronLensInterpolated(xt.BeamElement):
         if _context is None:
             _context = xo.context_default
 
-        nz = 11
-        z_range=(-1,1)
-        z_grid=None
-        dz=None
+        nz = 11 # Choose a small number of slices with a large range in zeta.
+        z_range=(-1,1) # By copying the same potential on each slice, the 
+        z_grid=None # interpolation becomes 2D, doesn't depend on the 
+        dz=None # longitudinal variable.
 
         fieldmap = TriLinearInterpolatedFieldMap(x_range=x_range, y_range=y_range, 
                                 z_range=z_range, nx=nx, ny=ny, nz=nz, 
