@@ -7,9 +7,6 @@ void ElectronLensInterpolated_track_local_particle(ElectronLensInterpolatedData 
     const double length = ElectronLensInterpolatedData_get_length(el);
     const double current = ElectronLensInterpolatedData_get_current(el);
     const double voltage = ElectronLensInterpolatedData_get_voltage(el);
-    // TriLinearInterpolatedFieldMapData fmap = ElectronLensInterpolatedData_getp_fieldmap(el);
-    // /*gpuglmem*/ double* dphi_dx_map = ElectronLensInterpolatedData_getp1_fieldmap_dphi_dx(el, 0);
-    // /*gpuglmem*/ double* dphi_dy_map = ElectronLensInterpolatedData_getp1_fieldmap_dphi_dy(el, 0);
     TriCubicInterpolatedFieldMapData fmap = ElectronLensInterpolatedData_getp_fieldmap(el);
 
     // # Electron properties
