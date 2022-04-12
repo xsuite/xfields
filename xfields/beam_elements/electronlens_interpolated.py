@@ -110,7 +110,6 @@ class ElectronLensInterpolated(xt.BeamElement):
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
-#srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/electronlens_src/electronlens_interpolated.h'))
