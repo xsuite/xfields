@@ -35,13 +35,6 @@ void ElectronLensInterpolated_track_local_particle(ElectronLensInterpolatedData 
               LocalParticle_set_state(part, -11); // Stop tracking particle if it escapes the interpolation grid.
           }
 
-        // const IndicesAndWeights iw = 
-        //     TriLinearInterpolatedFieldMap_compute_indeces_and_weights(fmap, x, y, 0.);
-        // const double dphi_dx = 
-        //     TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(dphi_dx_map, iw);
-        // const double dphi_dy = 
-        //     TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(dphi_dy_map, iw);
-
 	    const double q0 = LocalParticle_get_q0(part);
 	    const double mass0 = LocalParticle_get_mass0(part);
 	    //const double chi = LocalParticle_get_chi(part);
