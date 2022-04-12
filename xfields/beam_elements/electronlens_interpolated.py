@@ -47,8 +47,8 @@ class ElectronLensInterpolated(xt.BeamElement):
 
         fieldmap = TriLinearInterpolatedFieldMap(x_range=x_range, y_range=y_range, 
                                 z_range=z_range, nx=nx, ny=ny, nz=nz, 
-                                dx=dx, dy=dy, dz=dz, 
-                                x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
+                                dx=dx, dy=dy, 
+                                x_grid=x_grid, y_grid=y_grid,
                                 solver="FFTSolver2p5D")
 
         for ii in range(nz):
@@ -108,18 +108,18 @@ class ElectronLensInterpolated(xt.BeamElement):
                  fieldmap=tc_fieldmap)
 
 
-    def track(self, particles):
+    #  z_range=(-1,1)def track(self, particles):
 
-        """
-        Computes and applies the electron lens forces for the provided set of
-        particles.
+    #     """
+    #     Computes and applies the electron lens forces for the provided set of
+    #     particles.
 
-        Args:
-            particles (Particles Object): Particles to be tracked.
-        """
+    #     Args:
+    #         particles (Particles Object): Particles to be tracked.
+    #     """
 
-        # call C tracking kernel
-        super().track(particles)
+    #     # call C tracking kernel
+    #     super().track(particles)
 
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
