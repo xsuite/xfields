@@ -85,20 +85,7 @@ class ElectronCloud(xt.BeamElement):
         if _context is None:
             _context = xo.context_default
 
-        # if fieldmap is None:
-        #     # I build the fieldmap on a temporary buffer
-        #     temp_buff = _context.new_buffer()
-        #     fieldmap = TriLinearInterpolatedFieldMap(
-        #                 _buffer=temp_buff,
-        #                 rho=rho, phi=phi,
-        #                 x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
-        #                 x_range=x_range, y_range=y_range, z_range=z_range,
-        #                 dx=dx, dy=dy, dz=dz,
-        #                 nx=nx, ny=ny, nz=nz,
-        #                 solver=solver,
-        #                 scale_coordinates_in_solver=scale_coordinates_in_solver,
-        #                 updatable=update_on_track,
-        #                 fftplan=fftplan)
+        assert fieldmap is not None
 
         self.xoinitialize(
                  _context=_context,
