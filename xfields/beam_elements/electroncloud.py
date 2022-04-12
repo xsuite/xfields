@@ -1,12 +1,3 @@
-# import numpy as np
-# from scipy.constants import e as qe
-# from scipy.constants import c as clight
-# 
-# from xfields import BiGaussianFieldMap, mean_and_std
-# from xfields import TriLinearInterpolatedFieldMap
-# from ..longitudinal_profiles import LongitudinalProfileQGaussianData
-# from ..longitudinal_profiles import LongitudinalProfileQGaussian
-# from ..fieldmaps import BiGaussianFieldMapData
 from ..fieldmaps import TriCubicInterpolatedFieldMapData
 from ..general import _pkg_root
 
@@ -79,6 +70,8 @@ class ElectronCloud(xt.BeamElement):
 
         # To be implemented if false
         self.apply_z_kick = apply_z_kick
+        if self.apply_z_kick is False:
+            raise NotImplementedError
 
         if _buffer is not None:
             _context = _buffer.context
@@ -100,11 +93,9 @@ class ElectronCloud(xt.BeamElement):
                  length=length,
                  fieldmap=fieldmap)
 
-        # temp_buff is deallocate here
 
 
 srcs = []
-#srcs.append(_pkg_root.joinpath('headers/constants.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'))
