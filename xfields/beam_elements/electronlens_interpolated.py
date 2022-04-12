@@ -108,19 +108,6 @@ class ElectronLensInterpolated(xt.BeamElement):
                  fieldmap=tc_fieldmap)
 
 
-    #  z_range=(-1,1)def track(self, particles):
-
-    #     """
-    #     Computes and applies the electron lens forces for the provided set of
-    #     particles.
-
-    #     Args:
-    #         particles (Particles Object): Particles to be tracked.
-    #     """
-
-    #     # call C tracking kernel
-    #     super().track(particles)
-
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))
 #srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
