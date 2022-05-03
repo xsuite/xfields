@@ -11,7 +11,7 @@ def test_tricubic_interpolation():
 
         scale=0.05
         ff = lambda x, y, z: sum([ scale * x**i * y**j * z**k
-            for i in range(4) for j in range(4) for k in range(4)]) 
+            for i in range(4) for j in range(4) for k in range(4)])
         dfdx = lambda x, y, z: sum([ i * scale * x**(i-1) * y**j * z**k
             for i in range(1,4) for j in range(4) for k in range(4)])
         dfdy = lambda x, y, z: sum([ j * scale * x**i * y**(j-1) * z**k
@@ -32,7 +32,8 @@ def test_tricubic_interpolation():
         y_grid = np.linspace(-0.5, 0.5, NN)
         z_grid = np.linspace(-0.5, 0.5, NN)
 
-        fieldmap = xf.TriCubicInterpolatedFieldMap(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid)
+        fieldmap = xf.TriCubicInterpolatedFieldMap(_context=context,
+                x_grid=x_grid, y_grid=y_grid, z_grid=z_grid)
         ecloud = xf.ElectronCloud(length=1, fieldmap=fieldmap,
                                   _buffer=fieldmap._buffer)
 
@@ -65,11 +66,13 @@ def test_tricubic_interpolation():
 
 
         p0c = 450e9
-        testp0 = xp.Particles(_context=context, p0c=p0c)
+        testp0 = xp.Particles(p0c=p0c)
         beta0 = testp0.beta0
-        part = xp.Particles(_context=context, x=x_test, y=y_test, zeta=beta0*tau_test, p0c=p0c)
+        part = xp.Particles(_context=context, x=x_test, y=y_test,
+                            zeta=beta0*tau_test, p0c=p0c)
         ecloud.track(part)
 
+        part._move_to(_context=xo.ContextCpu())
         mask_p = part.state != -11
         true_px = np.array([-dfdx(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p], part.zeta[mask_p]/(part.rvv[mask_p] * part.beta0[mask_p]))])
         true_py = np.array([-dfdy(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p], part.zeta[mask_p]/(part.rvv[mask_p] * part.beta0[mask_p]))])

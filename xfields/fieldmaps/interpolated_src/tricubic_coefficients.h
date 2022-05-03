@@ -1,6 +1,7 @@
 #ifndef XFIELDS_TRICUBIC_COEFFICIENTS_H
 #define XFIELDS_TRICUBIC_COEFFICIENTS_H
 
+/*gpufun*/
 void TriCubicInterpolatedFieldMap_construct_coefficients(
     const double* b, double* coefs){
 
