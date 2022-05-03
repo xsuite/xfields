@@ -72,31 +72,48 @@ class ElectronLensInterpolated(xt.BeamElement):
 
         phi = fieldmap.phi
         #print(phi.shape)
-        dphi_dx = np.zeros_like(phi)
-        dphi_dy = np.zeros_like(phi)
-        dphi_dxdy = np.zeros_like(phi)
-        dphi_dx[1:-1,:] = 0.5*(phi[2:,:] - phi[:-2,:])
-        dphi_dy[:,1:-1] = 0.5*(phi[:,2:] - phi[:,:-2])
-        dphi_dxdy[1:-1,:] = 0.5*(dphi_dy[2:,:] - dphi_dy[:-2,:])
 
-        print("Setting derivatives: ")
-        kk=0.
-        for ix in range(nx):
-            if (ix)/nx > kk:
-                while (ix)/nx > kk:
-                    kk += 0.1
-                print(f"{int(np.round(100*kk)):d}%..")
-            for iy in range(ny):
-                for iz in range(nz):
-                    index = 8 * ix + 8 * nx * iy + 8 * nx * ny * iz
-                    tc_fieldmap._phi_taylor[index+0] = phi[ix, iy, 0]
-                    tc_fieldmap._phi_taylor[index+1] = dphi_dx[ix, iy, 0]
-                    tc_fieldmap._phi_taylor[index+2] = dphi_dy[ix, iy, 0]
-                    tc_fieldmap._phi_taylor[index+3] = 0.
-                    tc_fieldmap._phi_taylor[index+4] = dphi_dxdy[ix, iy, 0]
-                    tc_fieldmap._phi_taylor[index+5] = 0.
-                    tc_fieldmap._phi_taylor[index+6] = 0.
-                    tc_fieldmap._phi_taylor[index+7] = 0.
+        ##########################################################################
+        # dphi_dx = np.zeros_like(phi)
+        # dphi_dy = np.zeros_like(phi)
+        # dphi_dxdy = np.zeros_like(phi)
+        # dphi_dx[1:-1,:] = 0.5*(phi[2:,:] - phi[:-2,:])
+        # dphi_dy[:,1:-1] = 0.5*(phi[:,2:] - phi[:,:-2])
+        # dphi_dxdy[1:-1,:] = 0.5*(dphi_dy[2:,:] - dphi_dy[:-2,:])
+        
+        # print("Setting derivatives: ")
+        # kk=0.
+        # for ix in range(nx):
+        #     if (ix)/nx > kk:
+        #         while (ix)/nx > kk:
+        #             kk += 0.1
+        #         print(f"{int(np.round(100*kk)):d}%..")
+        #     for iy in range(ny):
+        #         for iz in range(nz):
+        #             index = 8 * ix + 8 * nx * iy + 8 * nx * ny * iz
+        #             tc_fieldmap._phi_taylor[index+0] = phi[ix, iy, 0]
+        #             tc_fieldmap._phi_taylor[index+1] = dphi_dx[ix, iy, 0]
+        #             tc_fieldmap._phi_taylor[index+2] = dphi_dy[ix, iy, 0]
+        #             tc_fieldmap._phi_taylor[index+3] = 0.
+        #             tc_fieldmap._phi_taylor[index+4] = dphi_dxdy[ix, iy, 0]
+        #             tc_fieldmap._phi_taylor[index+5] = 0.
+        #             tc_fieldmap._phi_taylor[index+6] = 0.
+        #             tc_fieldmap._phi_taylor[index+7] = 0.
+        ##########################################################################
+
+        ## Optimized version of above block ##########################################
+        phi_slice = np.zeros([phi.shape[0], phi.shape[1], 8])
+        for iz in range(nz):
+            phi_slice[:,:,0] = phi[:,:, iz]
+            phi_slice[1:-1,:,1] =  0.5*(phi[2:,:,iz] - phi[:-2,:,iz])
+            phi_slice[:,1:-1,2] = 0.5*(phi[:,2:,iz] - phi[:,:-2,iz])
+            phi_slice[1:-1,:,4] = 0.5*(phi_slice[2:,:,2] - phi_slice[:-2,:,2])
+
+            flat_slice = phi_slice.transpose(1,0,2).flatten()
+            len_slice = len(flat_slice)
+            index_offset = 8 * nx * ny * iz
+            tc_fieldmap._phi_taylor[index_offset:index_offset+len_slice] = flat_slice
+        ##############################################################################
 
         self.xoinitialize(
                  _context=_context,
