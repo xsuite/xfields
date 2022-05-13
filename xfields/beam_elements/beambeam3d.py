@@ -1,6 +1,7 @@
 from scipy.constants import e as qe
 import xobjects as xo
 import xtrack as xt
+import xpart as xp
 
 from ..general import _pkg_root
 
@@ -234,6 +235,12 @@ srcs.append(_pkg_root.joinpath('headers/power_n.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append('#define NOFIELDMAP') #TODO Remove this workaound
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
+
+# beamstrahlung
+srcs.append(xp.general._pkg_root.joinpath('random_number_generator/rng_src/base_rng.h'))
+srcs.append(xp.general._pkg_root.joinpath('random_number_generator/rng_src/local_particle_rng.h'))
+srcs.append(_pkg_root.joinpath('headers/beamstrahlung_spectrum.h'))
+
 srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'))
 
 BeamBeamBiGaussian3D.XoStruct.extra_sources = srcs

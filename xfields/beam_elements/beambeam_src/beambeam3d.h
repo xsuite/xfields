@@ -401,6 +401,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
+    double energy_loss;
     //start_per_particle_block (part0->part)
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
@@ -528,7 +529,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // rad
     
                 // bending radius is over this distance (half slice length)
-                /*gpuglmem*/ const double* dz_arr = Sbc6D_fullData_getp1_dz(el, 0);
+                /*gpuglmem*/ const double* dz_arr = BeamBeamBiGaussian3DData_getp1_dz(el, 0);
                 const double dz = dz_arr[i_slice]/2.;
                     
                 double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
