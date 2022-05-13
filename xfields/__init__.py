@@ -19,10 +19,8 @@ from .beam_elements.cptoip3d import CPToIP3D
 from .beam_elements.strongstrong3d import StrongStrong3D
 from .beam_elements.sbc6d import Sbc6D
 from .beam_elements.sbc6d_full import Sbc6D_full
-=======
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
->>>>>>> 0664de28196bf040b3be8e45edb71fd50310bd17
 
 from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
