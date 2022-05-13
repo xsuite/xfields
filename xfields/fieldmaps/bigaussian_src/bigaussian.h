@@ -126,7 +126,7 @@ void get_Ex_Ey_gauss(
        
         // elliptical beam
 	else{
-            //printf("Using elliptical beam\n");
+            //printf("Using elliptical beam\nsigma_x: %.20f\nsigma_y: %.20f\nx: %.20f\ny: %.20f\n", sigma_x, sigma_y, x, y);
 	    get_transv_field_gauss_ellip(
 	            sigma_x, sigma_y, 0., 0., x, y, Ex_ptr, Ey_ptr);
 
