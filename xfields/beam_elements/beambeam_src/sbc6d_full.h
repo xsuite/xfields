@@ -5,6 +5,11 @@
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
 
+#if !defined(dump_path)
+    #define dump_path "/Users/pkicsiny/phd/cern/xsuite/outputs/n34_xsuite" 
+#endif
+
+
 /*gpufun*/
 void uncouple_xy_plane(
         double const Sig_11_ip,
@@ -250,7 +255,6 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
     const double min_sigma_diff            = Sbc6D_fullData_get_min_sigma_diff(el);
     const double threshold_singular        = Sbc6D_fullData_get_threshold_singular(el);
     const int64_t do_beamstrahlung         = Sbc6D_fullData_get_do_beamstrahlung(el);
-    const int64_t verbose_info             = Sbc6D_fullData_get_verbose_info(el); // print turn number
     const double q0_bb                     = Sbc6D_fullData_get_q0_bb(el);  // +/-1
 
     const int64_t timestep = Sbc6D_fullData_get_timestep(el);
@@ -258,6 +262,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 
     double energy_loss;
     // arrays of boosted slice moments and intensities of other beam
+    /*gpuglmem*/ const double* n_macroparts_bb_per_slice_arr = Sbc6D_fullData_getp1_n_macroparts_bb(el, 0);
     /*gpuglmem*/ const double* n_bb_per_slice_arr      = Sbc6D_fullData_getp1_n_bb(el, 0);
     /*gpuglmem*/ const double* mean_x_per_slice_arr    = Sbc6D_fullData_getp1_mean_x(el, 0); 
     /*gpuglmem*/ const double* mean_xp_per_slice_arr   = Sbc6D_fullData_getp1_mean_xp(el, 0);
@@ -276,6 +281,10 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
     /*gpuglmem*/ const double* var_yp_per_slice_arr    = Sbc6D_fullData_getp1_var_yp(el, 0);
     /*gpuglmem*/ const double* var_z_per_slice_arr     = Sbc6D_fullData_getp1_var_z(el, 0);
 
+    char dump_file[1024];
+    sprintf(dump_file, "%s/%s", dump_path, "xsuite_forces.txt");
+    //FILE *f1 = fopen(dump_file, "a");
+
     //start_per_particle_block (part0->part)
         // macropart state: 0=dead, 1=alive
         int64_t state       = LocalParticle_get_state(part);
@@ -283,114 +292,122 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         int64_t slice_id_bb = timestep - slice_id;  // need to use sigma of this slice
 
         // code is executed only if macropart is alive and interacts with a valid slice 
-        if(slice_id_bb>=0 && slice_id_bb<n_slices && state!=0){
+        if(slice_id_bb>=0 && slice_id_bb<n_slices){
+            const double n_macroparts_bb = n_macroparts_bb_per_slice_arr[slice_id_bb];
+            if(n_macroparts_bb > 2){
 
-            // get moments of colliding slice
-            const double n_bb         =      n_bb_per_slice_arr[slice_id_bb];
-            const double mean_x_bb    =    mean_x_per_slice_arr[slice_id_bb]; 
-            const double mean_xp_bb   =   mean_xp_per_slice_arr[slice_id_bb];
-            const double mean_y_bb    =    mean_y_per_slice_arr[slice_id_bb];
-            const double mean_yp_bb   =   mean_yp_per_slice_arr[slice_id_bb];
-            const double mean_z_bb    =    mean_z_per_slice_arr[slice_id_bb];
-            const double var_x_bb     =     var_x_per_slice_arr[slice_id_bb];
-            const double cov_x_xp_bb  =  cov_x_xp_per_slice_arr[slice_id_bb];
-            const double cov_x_y_bb   =   cov_x_y_per_slice_arr[slice_id_bb];
-            const double cov_x_yp_bb  =  cov_x_yp_per_slice_arr[slice_id_bb];
-            const double var_xp_bb    =    var_xp_per_slice_arr[slice_id_bb];
-            const double cov_xp_y_bb  =  cov_xp_y_per_slice_arr[slice_id_bb];
-            const double cov_xp_yp_bb = cov_xp_yp_per_slice_arr[slice_id_bb];
-            const double var_y_bb     =     var_y_per_slice_arr[slice_id_bb];
-            const double cov_y_yp_bb  =  cov_y_yp_per_slice_arr[slice_id_bb];
-            const double var_yp_bb    =    var_yp_per_slice_arr[slice_id_bb];
-            const double var_z_bb     =     var_z_per_slice_arr[slice_id_bb];
-
-            // get macropart properties, boosted and at IP 
-       	    double x     = LocalParticle_get_x(part);
-    	    double px    = LocalParticle_get_px(part);
-    	    double y     = LocalParticle_get_y(part);
-    	    double py    = LocalParticle_get_py(part);
-    	    double z     = LocalParticle_get_zeta(part);
-    	    double delta = LocalParticle_get_delta(part);
-
-            // transport IP to CP (px, py, delta are the same at ip and cp)
-            double Sx_i, Sy_i, Sz_i;
-            MacropartToCP(x, y, z, px, py,
-                      mean_x_bb, mean_y_bb, mean_z_bb, mean_xp_bb, mean_yp_bb,
-                      &Sx_i, &Sy_i, &Sz_i);
-
-            //Compute force scaling factor 
-       	    const double q0  = LocalParticle_get_q0(part);  // +/-1
-    	    const double p0c = LocalParticle_get_p0c(part); // ref. energy [eV]
-    	    const double P0  = p0c/C_LIGHT*QELEM;  // ref. momentum, electronvolt to joule conversion
-   	    const double Ksl = (QELEM*q0_bb*n_bb)*(QELEM*q0) / (P0 * C_LIGHT);
-
-            // get thetas from the sigma matrix
-    	    double Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta;
-    	    double dS_Sig_11_boosted_cp_uncoupled, dS_Sig_33_boosted_cp_uncoupled, dS_costheta, dS_sintheta;
-
-            uncouple_xy_plane(var_x_bb, cov_x_xp_bb, cov_x_y_bb, cov_x_yp_bb, var_xp_bb, cov_xp_y_bb, cov_xp_yp_bb, var_y_bb, cov_y_yp_bb, var_yp_bb,
-            Sz_i, threshold_singular, 1,
-            &Sig_11_boosted_cp_uncoupled, &Sig_33_boosted_cp_uncoupled, &costheta, &sintheta,
-            &dS_Sig_11_boosted_cp_uncoupled, &dS_Sig_33_boosted_cp_uncoupled, &dS_costheta, &dS_sintheta);
-
-            // Move to the uncoupled reference frame and the derivatives of the tranformation
-    	    const double Sx_i_uncoupled =  Sx_i*costheta + Sy_i*sintheta;
-            const double Sy_i_uncoupled = -Sx_i*sintheta + Sy_i*costheta;
-    	    const double dS_x_boosted_cp_uncoupled =  Sx_i*dS_costheta  + Sy_i*dS_sintheta;
-            const double dS_y_boosted_cp_uncoupled = -Sx_i*dS_sintheta  + Sy_i*dS_costheta;
-
-    	    // Get transverse fields using soft Gausiian of beam 2 slice
-    	    double Ex, Ey;
-    	    get_Ex_Ey_gauss(Sx_i_uncoupled, Sy_i_uncoupled, 
-    	        sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled),
-		min_sigma_diff,
-    	        &Ex, &Ey);
-
-	    double Gx, Gy;
-	    compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled,
-                sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff,
-                Ex, Ey, &Gx, &Gy);
-	    
-            // Compute kicks
-            double Fx_boosted_cp_uncoupled = Ksl*Ex;
-    	    double Fy_boosted_cp_uncoupled = Ksl*Ey;
-    	    double Gx_boosted_cp_uncoupled = Ksl*Gx;
-    	    double Gy_boosted_cp_uncoupled = Ksl*Gy;
-
-            // Move disks to coupled reference frame
-    	    double Fx_boosted = Fx_boosted_cp_uncoupled*costheta - Fy_boosted_cp_uncoupled*sintheta;
-    	    double Fy_boosted = Fx_boosted_cp_uncoupled*sintheta + Fy_boosted_cp_uncoupled*costheta;
-    	    double Fz_boosted = 0.5*(Fx_boosted_cp_uncoupled*dS_x_boosted_cp_uncoupled      + Fy_boosted_cp_uncoupled*dS_y_boosted_cp_uncoupled +
-    	                         Gx_boosted_cp_uncoupled*dS_Sig_11_boosted_cp_uncoupled + Gy_boosted_cp_uncoupled*dS_Sig_33_boosted_cp_uncoupled);
-
-            // emit beamstrahlung photons from single macropart
-            if (do_beamstrahlung==1){
-          
-                // total kick 
-                double const Fr = hypot(Fx_boosted, Fy_boosted) * LocalParticle_get_rpp(part); // rad
-
-                // bending radius is over this distance (half slice length)
-                /*gpuglmem*/ const double* dz_arr = Sbc6D_fullData_getp1_dz(el, 0);
-                const double dz = dz_arr[slice_id_bb]/2.;
-                
-                double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
-                energy_loss = synrad(part, Fr, dz);
- 
-                // BS rescales these, so load again before kick 
-    	        delta = LocalParticle_get_delta(part);  
+                // get moments of colliding slice
+                const double n_bb         =      n_bb_per_slice_arr[slice_id_bb];
+                const double mean_x_bb    =    mean_x_per_slice_arr[slice_id_bb]; 
+                const double mean_xp_bb   =   mean_xp_per_slice_arr[slice_id_bb];
+                const double mean_y_bb    =    mean_y_per_slice_arr[slice_id_bb];
+                const double mean_yp_bb   =   mean_yp_per_slice_arr[slice_id_bb];
+                const double mean_z_bb    =    mean_z_per_slice_arr[slice_id_bb];
+                const double var_x_bb     =     var_x_per_slice_arr[slice_id_bb];
+                const double cov_x_xp_bb  =  cov_x_xp_per_slice_arr[slice_id_bb];
+                const double cov_x_y_bb   =   cov_x_y_per_slice_arr[slice_id_bb];
+                const double cov_x_yp_bb  =  cov_x_yp_per_slice_arr[slice_id_bb];
+                const double var_xp_bb    =    var_xp_per_slice_arr[slice_id_bb];
+                const double cov_xp_y_bb  =  cov_xp_y_per_slice_arr[slice_id_bb];
+                const double cov_xp_yp_bb = cov_xp_yp_per_slice_arr[slice_id_bb];
+                const double var_y_bb     =     var_y_per_slice_arr[slice_id_bb];
+                const double cov_y_yp_bb  =  cov_y_yp_per_slice_arr[slice_id_bb];
+                const double var_yp_bb    =    var_yp_per_slice_arr[slice_id_bb];
+                const double var_z_bb     =     var_z_per_slice_arr[slice_id_bb];
+    
+                // get macropart properties, boosted and at IP 
+           	double x     = LocalParticle_get_x(part);
+        	double px    = LocalParticle_get_px(part);
+        	double y     = LocalParticle_get_y(part);
+        	double py    = LocalParticle_get_py(part);
+        	double z     = LocalParticle_get_zeta(part);
+        	double delta = LocalParticle_get_delta(part);
+    
+                // transport IP to CP (px, py, delta are the same at ip and cp)
+                double Sx_i, Sy_i, Sz_i;
+                MacropartToCP(x, y, z, px, py,
+                          mean_x_bb, mean_y_bb, mean_z_bb, mean_xp_bb, mean_yp_bb,
+                          &Sx_i, &Sy_i, &Sz_i);
+    
+                //Compute force scaling factor 
+           	const double q0  = LocalParticle_get_q0(part);  // +/-1
+        	const double p0c = LocalParticle_get_p0c(part); // ref. energy [eV]
+        	const double P0  = p0c/C_LIGHT*QELEM;  // ref. momentum, electronvolt to joule conversion
+       	        const double Ksl = (QELEM*q0_bb*n_bb)*(QELEM*q0) / (P0 * C_LIGHT);
+    
+                // get thetas from the sigma matrix
+        	double Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta;
+        	double dS_Sig_11_boosted_cp_uncoupled, dS_Sig_33_boosted_cp_uncoupled, dS_costheta, dS_sintheta;
+    
+                uncouple_xy_plane(var_x_bb, cov_x_xp_bb, cov_x_y_bb, cov_x_yp_bb, var_xp_bb, cov_xp_y_bb, cov_xp_yp_bb, var_y_bb, cov_y_yp_bb, var_yp_bb,
+                Sz_i, threshold_singular, 1,
+                &Sig_11_boosted_cp_uncoupled, &Sig_33_boosted_cp_uncoupled, &costheta, &sintheta,
+                &dS_Sig_11_boosted_cp_uncoupled, &dS_Sig_33_boosted_cp_uncoupled, &dS_costheta, &dS_sintheta);
+    
+                // Move to the uncoupled reference frame and the derivatives of the tranformation
+        	const double Sx_i_uncoupled =  Sx_i*costheta + Sy_i*sintheta;
+                const double Sy_i_uncoupled = -Sx_i*sintheta + Sy_i*costheta;
+        	const double dS_x_boosted_cp_uncoupled =  Sx_i*dS_costheta  + Sy_i*dS_sintheta;
+                const double dS_y_boosted_cp_uncoupled = -Sx_i*dS_sintheta  + Sy_i*dS_costheta;
+    
+        	// Get transverse fields using soft Gausiian of beam 2 slice
+        	double Ex, Ey;
+        	get_Ex_Ey_gauss(Sx_i_uncoupled, Sy_i_uncoupled, 
+        	sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled),
+    		min_sigma_diff, &Ex, &Ey);
+    
+    	        double Gx, Gy;
+    	        compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled,
+                    sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff,
+                    Ex, Ey, &Gx, &Gy);
+    	    
+                // Compute kicks
+                double Fx_boosted_cp_uncoupled = Ksl*Ex;
+        	double Fy_boosted_cp_uncoupled = Ksl*Ey;
+        	double Gx_boosted_cp_uncoupled = Ksl*Gx;
+        	double Gy_boosted_cp_uncoupled = Ksl*Gy;
+    
+                // Move disks to coupled reference frame
+        	double Fx_boosted = Fx_boosted_cp_uncoupled*costheta - Fy_boosted_cp_uncoupled*sintheta;
+        	double Fy_boosted = Fx_boosted_cp_uncoupled*sintheta + Fy_boosted_cp_uncoupled*costheta;
+        	double Fz_boosted = 0.5*(Fx_boosted_cp_uncoupled*dS_x_boosted_cp_uncoupled      + Fy_boosted_cp_uncoupled*dS_y_boosted_cp_uncoupled +
+        	                         Gx_boosted_cp_uncoupled*dS_Sig_11_boosted_cp_uncoupled + Gy_boosted_cp_uncoupled*dS_Sig_33_boosted_cp_uncoupled);
+    
+                // emit beamstrahlung photons from single macropart
+                if (do_beamstrahlung==1){
+              
+                    // total kick 
+                    double const Fr = hypot(Fx_boosted, Fy_boosted) * LocalParticle_get_rpp(part); // rad
+    
+                    // bending radius is over this distance (half slice length)
+                    /*gpuglmem*/ const double* dz_arr = Sbc6D_fullData_getp1_dz(el, 0);
+                    const double dz = dz_arr[slice_id_bb]/2.;
+                    
+                    double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
+                    energy_loss = synrad(part, Fr, dz);
+     
+                    //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
+                   
+                    // BS rescales these, so load again before kick 
+        	    delta = LocalParticle_get_delta(part);  
+                }
+                else if(do_beamstrahlung==2){
+                    synrad_avg(part, n_bb, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), sqrt(var_z_bb));  // slice intensity and RMS slice sizes
+                    delta = LocalParticle_get_delta(part);  
+                }
+    
+                delta += Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted));
+         	LocalParticle_add_to_px(part, Fx_boosted);
+         	LocalParticle_add_to_py(part, Fy_boosted);
+         	LocalParticle_update_delta(part, delta);
+         	LocalParticle_add_to_x(part, -Sz_i*Fx_boosted);
+         	LocalParticle_add_to_y(part, -Sz_i*Fy_boosted);
             }
-            else if(do_beamstrahlung==2){
-                synrad_avg(part, n_bb, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), sqrt(var_z_bb));  // slice intensity and RMS slice sizes
-                delta = LocalParticle_get_delta(part);  
-            }
-
-            delta += Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted));
-     	    LocalParticle_add_to_px(part, Fx_boosted);
-     	    LocalParticle_add_to_py(part, Fy_boosted);
-     	    LocalParticle_update_delta(part, delta);
-     	    LocalParticle_add_to_x(part, -Sz_i*Fx_boosted);
-     	    LocalParticle_add_to_y(part, -Sz_i*Fy_boosted);
         }
     //end_per_particle_block
+
+    //fclose(f1);
+
+
 }
 #endif

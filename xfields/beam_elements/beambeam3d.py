@@ -57,6 +57,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'x_slices_star': xo.Float64[:],
         'y_slices_star': xo.Float64[:],
         'sigma_slices_star': xo.Float64[:],
+        'dz': xo.Float64[:],
+        'do_beamstrahlung': xo.Int64,
     }
 
     _input_param_names = [

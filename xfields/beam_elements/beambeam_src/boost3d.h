@@ -90,12 +90,6 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
     	double delta = LocalParticle_get_delta(part);
  
 
-        // swap x and px
-        if(swap_x == 1){
-            x *= -1.0;
-            px *= -1.0;
-        }
-
         double x_star     = x  - x2_CO   - delta_x;
         double px_star    = px - px2_CO;
         double y_star     = y  - y2_CO   - delta_y;
@@ -105,6 +99,12 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
   
         // Boost coordinates
 	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
+ 
+        // swap x and px
+        if(swap_x == 1){
+            x_star  *= -1.0;
+            px_star *= -1.0;
+        }
     	
         LocalParticle_set_x(part, x_star);
     	LocalParticle_set_px(part, px_star);

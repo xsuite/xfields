@@ -18,8 +18,6 @@ class Sbc6D_full(xt.BeamElement):
     _xofields = {
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
-        'use_strongstrong': xo.UInt8,
-        'verbose_info': xo.Int64,
         'q0_bb': xo.Float64,
         'n_bb'     : xo.Float64[:], 
         'mean_x'   : xo.Float64[:],
@@ -38,12 +36,11 @@ class Sbc6D_full(xt.BeamElement):
         'cov_y_yp' : xo.Float64[:],
         'var_yp'   : xo.Float64[:],   
         'var_z'    : xo.Float64[:],
-        #'x_full_bb_centroid': xo.Float64,
-        #'y_full_bb_centroid': xo.Float64,
         'timestep': xo.Int64, 
         'n_slices': xo.Int64, 
         'do_beamstrahlung': xo.Int64,
         'dz': xo.Float64[:],  # slice z widths for beamstrahlung
+        'n_macroparts_bb': xo.Float64[:],
      }
   #  """
     """

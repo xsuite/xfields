@@ -94,6 +94,12 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
     	double z_star     = LocalParticle_get_zeta(part);
     	double delta_star = LocalParticle_get_delta(part);
 
+        // swap x and px
+        if(swap_x == 1){
+            x_star  *= -1.0;
+            px_star *= -1.0;
+        }
+ 
     	// Inverse boost coordinates
 	BoostParameters_boost_coordinates_inv(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
 
@@ -103,13 +109,7 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
       	double py    = py_star      + py2_CO           - Dpy_sub;
     	double z     = z_star                          - Dz_sub;
     	double delta = delta_star                      - Ddelta_sub;
-
-        // swap x and px
-        if(swap_x == 1){
-            x *= -1.0;
-            px *= -1.0;
-        }
-   	
+  	
         LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
     	LocalParticle_set_y(part, y);

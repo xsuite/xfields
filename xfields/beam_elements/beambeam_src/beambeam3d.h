@@ -368,6 +368,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 		 	   LocalParticle* part0){
 	
     // Get data from memory
+    const double do_beamstrahlung  = BeamBeamBiGaussian3DData_get_do_beamstrahlung(el);   
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
     const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
     const Sigmas Sigmas_0_star = BeamBeamBiGaussian3DData_getp_Sigmas_0_star(el);
@@ -400,9 +401,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
-    int counter = 0;
     //start_per_particle_block (part0->part)
-        counter++;
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
     	double y = LocalParticle_get_y(part);
@@ -522,6 +521,23 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
     	                   Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
 
+            // emit beamstrahlung photons from single macropart
+            if (do_beamstrahlung==1){
+              
+                // total kick 
+                double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // rad
+    
+                // bending radius is over this distance (half slice length)
+                /*gpuglmem*/ const double* dz_arr = Sbc6D_fullData_getp1_dz(el, 0);
+                const double dz = dz_arr[i_slice]/2.;
+                    
+                double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
+                energy_loss = synrad(part, Fr, dz);
+     
+                // BS rescales these, so load again before kick 
+                delta_star = LocalParticle_get_delta(part);  
+            }
+ 
     	    // Apply the kicks (Hirata's synchro-beam)
     	    delta_star = delta_star + Fz_star+0.5*(
     	                Fx_star*(px_star+0.5*Fx_star)+
