@@ -97,7 +97,7 @@ void get_transv_field_gauss_ellip(
   else{
     //printf("Round beam not implemented!\n");
     //exit(1);
-    Ex = Ey = 1./0.;
+    Ex = Ey = 0.;
   }
 
   if((x - Delta_x)<0) Ex=-Ex;
