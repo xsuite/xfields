@@ -92,7 +92,7 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
     const double c1       = 2.59*(5.0/6.0)*(r*r)/(REDUCED_COMPTON);
     const double c2       =  1.2*(25.0/36.0)*(r*r*r*r)/(REDUCED_COMPTON)*137.0;
     const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
-    double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); // [eV]
+    double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part); // [eV]
     double gamma          = initial_energy / m0; // [1] 
 
     double n_avg        = c1*n_bb/(sigma_x + sigma_y);  // Avg. number of emitted photons from 1 macroparticle in one collision [1]
@@ -101,6 +101,10 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
     double u_avg        = delta_avg/n_avg;  // Average photon energy normalized to electron energy before emission [1]
     double e_photon_avg = u_avg*initial_energy;  // Average photon energy [eV]
 
+/*
+    printf("[synrad_avg] energy0: %.20f, psigma: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_psigma(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
+    printf("[synrad_avg] c2: %.20f, sigma_x: %.20f, sigma_y: %.20f, sigma_z: %.20f, gamma: %.20f, delta_avg: %.20f, initial_energy: %.20f\n", c2, sigma_x, sigma_y, sigma_z, gamma, delta_avg, initial_energy);
+*/
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_photons_avg.txt");
     //FILE *f1 = fopen(dump_file, "a");
@@ -108,6 +112,8 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
     //fprintf(f1, "%d %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", part->ipart, initial_energy, n_bb, sigma_x, sigma_y, sigma_z, r, c1, c2, n_avg, delta_avg, U_BS);  // save photon ID and energy, all in [ev]
     //fclose(f1);
     LocalParticle_add_to_energy(part, -U_BS, 0);
+    double energy_loss = -U_BS;
+    return energy_loss;
 }
 
 

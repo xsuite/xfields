@@ -29,6 +29,8 @@ class BoostInv3D(xt.BeamElement):
         'y2_CO': xo.Float64,
         'px2_CO': xo.Float64,
         'py2_CO': xo.Float64,
+        'zeta2_CO': xo.Float64,
+        'delta2_CO': xo.Float64,       
         'Dx_sub': xo.Float64,
         'Dpx_sub': xo.Float64,
         'Dy_sub': xo.Float64,
@@ -41,16 +43,20 @@ class BoostInv3D(xt.BeamElement):
  
     }
 
+    
     def __init__(self,
             _context=None,
             _buffer=None,
             _offset=None,
+            _xobject=None,
        	    alpha=0.,
             phi=0., 
             x2_CO=0.,
             y2_CO=0.,
             px2_CO=0.,
             py2_CO=0.,
+            zeta2_CO=0.,
+            delta2_CO=0.,
             Dx_sub=0.,
             Dpx_sub=0.,
             Dy_sub=0.,
@@ -62,9 +68,6 @@ class BoostInv3D(xt.BeamElement):
             swap_x=0,
 	    ):
  
-        if _context is None:
-            _context = context_default
-
         self.xoinitialize(
                  _context=_context,
                  _buffer=_buffer,
@@ -74,12 +77,14 @@ class BoostInv3D(xt.BeamElement):
         self.y2_CO      = y2_CO
         self.px2_CO     = px2_CO
         self.py2_CO     = py2_CO
+        self.zeta2_CO   = zeta2_CO
+        self.delta2_CO  = delta2_CO
         self.Dx_sub     = Dx_sub
         self.Dpx_sub    = Dpx_sub
         self.Dy_sub     = Dy_sub
         self.Dpy_sub    = Dpy_sub
         self.Dz_sub     = Dz_sub
-        self.Ddelta_sub = self.Ddelta_sub
+        self.Ddelta_sub = Ddelta_sub
         self.phi        = phi,
         self.alpha      = alpha,
         self.delta_x    = delta_x,
@@ -92,6 +97,35 @@ class BoostInv3D(xt.BeamElement):
                 'salpha': np.sin(alpha),
                 'calpha': np.cos(alpha)
                 }
+
+    def to_dict(self):
+        dct = super().to_dict()
+        dct[ "x2_CO"]     = self.x2_CO      
+        dct[ "y2_CO"]     = self.y2_CO  
+        dct[ "px2_CO"]    = self.px2_CO 
+        dct[ "py2_CO"]    = self.py2_CO 
+        dct[ "zeta2_CO"]  = self.zeta2_CO
+        dct[ "delta2_CO"] = self.delta2_CO
+        dct["Dx_sub"]     = self.Dx_sub
+        dct["Dpx_sub"]    = self.Dpx_sub
+        dct["Dy_sub"]     = self.Dy_sub
+        dct["Dpy_sub"]    = self.Dpy_sub
+        dct["Dz_sub"]     = self.Dz_sub
+        dct["Ddelta_sub"] = self.Ddelta_sub
+        dct[ "delta_x"]   = self.delta_x
+        dct[ "delta_y"]   = self.delta_y
+        dct[ "phi"]       = self.phi   
+        dct[ "alpha"]     = self.alpha  
+        dct[ "swap_x"]    = self.swap_x 
+        return dct
+
+    def update(self, **kwargs):
+        for kk in kwargs.keys():
+            if not hasattr(self, kk):
+                raise NameError(f'Unknown parameter: {kk}')
+            setattr(self, kk, kwargs[kk])
+
+
  
 srcs = []
 srcs.append(_pkg_root.joinpath('headers/constants.h'))

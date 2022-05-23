@@ -109,10 +109,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         dct['sigma_33'] = self.Sig_33_0
         dct['sigma_34'] = self.Sig_34_0
         dct['sigma_44'] = self.Sig_44_0
+        dct["do_beamstrahlung"] = self.do_beamstrahlung
         return dct
 
-
     def __init__(self, **kwargs):
+
+#        for key in kwargs.keys():
+#            if key not in []:
+#                raise(f"Invalid keyword arg: ´{key}´")
 
         if 'old_interface' in kwargs:
             params=kwargs['old_interface']
@@ -121,8 +125,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 N_part_per_slice=n_slices,
                 x_slices_star=n_slices,
                 y_slices_star=n_slices,
-                sigma_slices_star=n_slices)
+                sigma_slices_star=n_slices,
+                dz=n_slices)
             self._from_oldinterface(params)
+
+            for nn in kwargs.keys():
+                if nn != "old_interface":
+                    setattr(self, nn, kwargs[nn])
+
         else:
             super().__init__(**kwargs)
             for nn in self._input_param_names:

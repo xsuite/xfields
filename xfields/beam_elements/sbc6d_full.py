@@ -42,75 +42,79 @@ class Sbc6D_full(xt.BeamElement):
         'dz': xo.Float64[:],  # slice z widths for beamstrahlung
         'n_macroparts_bb': xo.Float64[:],
      }
-  #  """
-    """
+    
     def __init__(self,
             _context=None,
             _buffer=None,
             _offset=None,
-            min_sigma_diff     = 0.0,
-            threshold_singular = 0.0,
-            use_strongstrong   = 0,
-            verbose_info       = 0,
-            q0_bb              =0,# np.array([], dtype=float),
-            mean_x             =0,# np.array([], dtype=float),
-            mean_xp            =0,# np.array([], dtype=float), 
-            mean_y             =0,# np.array([], dtype=float),
-            mean_yp            =0,# np.array([], dtype=float),
-            mean_z             =0,# np.array([], dtype=float),
-            var_x              =0,# np.array([], dtype=float),
-            cov_x_xp           =0,# np.array([], dtype=float), 
-            cov_x_y            =0,# np.array([], dtype=float),
-            cov_x_yp           =0,# np.array([], dtype=float),
-            var_xp             =0,# np.array([], dtype=float),
-            cov_xp_y           =0,# np.array([], dtype=float),
-            cov_xp_yp          =0,# np.array([], dtype=float),
-            var_y              =0,# np.array([], dtype=float),  
-            cov_y_yp           =0,# np.array([], dtype=float),
-            var_yp             =0,# np.array([], dtype=float),   
-            x_full_bb_centroid =0,# 0.0,
-            y_full_bb_centroid =0,# 0.0,
-            timestep           =0,# 0, 
-            n_slices           =0,# 1, 
-            do_beamstrahlung   =0,# 0,
-            dz                 =0,# np.array([], dtype=float),
+            _xobject=None,
+            **kwargs,
  	    ): # not the same as above the xobject vars, only if set below
 
-        if _context is None:
-            _context = context_default
+        # this is none when i first init, but then gets built
+        if _xobject is not None:
+               self.xoinitialize(_xobject=_xobject)
+               return  
 
+        assert "n_slices" in kwargs.keys(), "First provide ´n_slices´" 
+        n_slices = kwargs["n_slices"]
+        assert n_slices is not None, "´n_slices´ should be a positive integer"
+
+        # array malloc happens here, context handled here
         self.xoinitialize(
-                 _context=_context,
-                 _buffer=_buffer,
-                 _offset=_offset)
-        self.min_sigma_diff     = min_sigma_diff    
-        self.threshold_singular = threshold_singular
-        self.use_strongstrong   = use_strongstrong  
-        self.verbose_info       = verbose_info      
-        self.q0_bb              = q0_bb             
-        self.mean_x             = mean_x            
-        self.mean_xp            = mean_xp           
-        self.mean_y             = mean_y            
-        self.mean_yp            = mean_yp           
-        self.mean_z             = mean_z            
-        self.var_x              = var_x             
-        self.cov_x_xp           = cov_x_xp          
-        self.cov_x_y            = cov_x_y           
-        self.cov_x_yp           = cov_x_yp          
-        self.var_xp             = var_xp            
-        self.cov_xp_y           = cov_xp_y          
-        self.cov_xp_yp          = cov_xp_yp         
-        self.var_y              = var_y             
-        self.cov_y_yp           = cov_y_yp          
-        self.var_yp             = var_yp            
-        self.x_full_bb_centroid = x_full_bb_centroid
-        self.y_full_bb_centroid = y_full_bb_centroid
-        self.timestep           = timestep          
-        self.n_slices           = n_slices          
-        self.do_beamstrahlung   = do_beamstrahlung  
-        self.dz                 = dz                
-    """
+                 _context        = _context,
+                 _buffer         = _buffer,
+                 _offset         = _offset,
+                 mean_x          = n_slices, 
+                 mean_xp         = n_slices, 
+                 mean_y          = n_slices, 
+                 mean_yp         = n_slices, 
+                 mean_z          = n_slices, 
+                 var_x           = n_slices, 
+                 cov_x_xp        = n_slices, 
+                 cov_x_y         = n_slices, 
+                 cov_x_yp        = n_slices, 
+                 var_xp          = n_slices, 
+                 cov_xp_y        = n_slices, 
+                 cov_xp_yp       = n_slices, 
+                 var_y           = n_slices, 
+                 cov_y_yp        = n_slices, 
+                 var_yp          = n_slices, 
+                 var_z           = n_slices, 
+                 dz              = n_slices, 
+                 n_bb            = n_slices, 
+                 n_macroparts_bb = n_slices, 
+)
+       
+        self.mean_x             = kwargs.get("mean_x"         , np.zeros(n_slices))
+        self.mean_xp            = kwargs.get("mean_xp"        , np.zeros(n_slices))
+        self.mean_y             = kwargs.get("mean_y"         , np.zeros(n_slices))
+        self.mean_yp            = kwargs.get("mean_yp"        , np.zeros(n_slices))
+        self.mean_z             = kwargs.get("mean_z"         , np.zeros(n_slices))
+        self.var_x              = kwargs.get("var_x"          , np.zeros(n_slices))
+        self.cov_x_xp           = kwargs.get("cov_x_xp"       , np.zeros(n_slices))
+        self.cov_x_y            = kwargs.get("cov_x_y"        , np.zeros(n_slices))
+        self.cov_x_yp           = kwargs.get("cov_x_yp"       , np.zeros(n_slices))
+        self.var_xp             = kwargs.get("var_xp"         , np.zeros(n_slices))
+        self.cov_xp_y           = kwargs.get("cov_xp_y"       , np.zeros(n_slices))
+        self.cov_xp_yp          = kwargs.get("cov_xp_yp"      , np.zeros(n_slices)) 
+        self.var_y              = kwargs.get("var_y"          , np.zeros(n_slices))
+        self.cov_y_yp           = kwargs.get("cov_y_yp"       , np.zeros(n_slices))
+        self.var_yp             = kwargs.get("var_yp"         , np.zeros(n_slices))
+        self.var_z              = kwargs.get("var_z"          , np.zeros(n_slices))
+        self.dz                 = kwargs.get("dz"             , np.zeros(n_slices))
+        self.n_bb               = kwargs.get("n_bb"           , np.zeros(n_slices))
+        self.n_macroparts_bb    = kwargs.get("n_macroparts_bb", np.zeros(n_slices))    
 
+ 
+        self.min_sigma_diff     = kwargs.get("min_sigma_diff", 1e-10)    
+        self.threshold_singular = kwargs.get("threshold_singular", 1e-28)
+        self.use_strongstrong   = kwargs.get("use_strongstrong", 0)
+        self.q0_bb              = kwargs.get("q0_bb", 1)
+        self.timestep           = kwargs.get("timestep", 0)          
+        self.n_slices           = kwargs.get("n_slices", 1)         
+        self.do_beamstrahlung   = kwargs.get("do_beamstrahlung", 0) 
+   
     def update(self, **kwargs):
         for kk in kwargs.keys():
             if not hasattr(self, kk):

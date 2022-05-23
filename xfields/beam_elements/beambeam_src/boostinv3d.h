@@ -76,6 +76,8 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
     const double y2_CO         = BoostInv3DData_get_y2_CO(el);
     const double px2_CO        = BoostInv3DData_get_px2_CO(el);
     const double py2_CO        = BoostInv3DData_get_py2_CO(el);
+    const double zeta2_CO      = BoostInv3DData_get_zeta2_CO(el);
+    const double delta2_CO     = BoostInv3DData_get_delta2_CO(el);
     const double delta_x       = BoostInv3DData_get_delta_x(el);
     const double delta_y       = BoostInv3DData_get_delta_y(el);
     const double Dx_sub        = BoostInv3DData_get_Dx_sub(el); 
@@ -107,8 +109,8 @@ void BoostInv3D_track_local_particle(BoostInv3DData el, LocalParticle* part0){
         double px    = px_star      + px2_CO           - Dpx_sub;
     	double y     = y_star       + y2_CO  + delta_y - Dy_sub;
       	double py    = py_star      + py2_CO           - Dpy_sub;
-    	double z     = z_star                          - Dz_sub;
-    	double delta = delta_star                      - Ddelta_sub;
+    	double z     = z_star       + zeta2_CO         - Dz_sub;
+    	double delta = delta_star   + delta2_CO        - Ddelta_sub;
   	
         LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);

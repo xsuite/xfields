@@ -77,6 +77,8 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
     const double y2_CO         = Boost3DData_get_y2_CO(el);
     const double px2_CO        = Boost3DData_get_px2_CO(el);
     const double py2_CO        = Boost3DData_get_py2_CO(el);
+    const double zeta2_CO      = Boost3DData_get_zeta2_CO(el);
+    const double delta2_CO     = Boost3DData_get_delta2_CO(el);
     const double delta_x       = Boost3DData_get_delta_x(el);
     const double delta_y       = Boost3DData_get_delta_y(el);
     const int64_t swap_x       = Boost3DData_get_swap_x(el);
@@ -90,13 +92,22 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
     	double delta = LocalParticle_get_delta(part);
  
 
-        double x_star     = x  - x2_CO   - delta_x;
-        double px_star    = px - px2_CO;
-        double y_star     = y  - y2_CO   - delta_y;
-        double py_star    = py - py2_CO;
-        double z_star     = zeta;
-        double delta_star = delta;
+        double x_star     = x     - x2_CO   - delta_x;
+        double px_star    = px    - px2_CO;
+        double y_star     = y     - y2_CO   - delta_y;
+        double py_star    = py    - py2_CO;
+        double z_star     = zeta  - zeta2_CO;
+        double delta_star = delta - delta2_CO;
   
+        printf("[boost3d] [%d] before boost:\n", part->ipart);
+    	printf("x_star=%.10e\n", x_star);
+	printf("px_star=%.10e\n", px_star);
+	printf("y_star=%.10e\n", y_star);
+	printf("py_star=%.10e\n", py_star);
+    	printf("sigma_star=%.10e\n", z_star);
+	printf("delta_star=%.20e\n", delta_star);
+
+
         // Boost coordinates
 	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
  
@@ -105,7 +116,16 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
             x_star  *= -1.0;
             px_star *= -1.0;
         }
-    	
+ 
+        printf("[boost3d] [%d] after boost:\n", part->ipart);
+    	printf("x_star=%.10e\n", x_star);
+	printf("px_star=%.10e\n", px_star);
+	printf("y_star=%.10e\n", y_star);
+	printf("py_star=%.10e\n", py_star);
+    	printf("sigma_star=%.10e\n", z_star);
+	printf("delta_star=%.20e\n", delta_star);
+
+   	
         LocalParticle_set_x(part, x_star);
     	LocalParticle_set_px(part, px_star);
     	LocalParticle_set_y(part, y_star);
