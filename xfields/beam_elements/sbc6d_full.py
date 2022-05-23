@@ -10,8 +10,19 @@ from ..general import _pkg_root
 18/08/21: add slicing by index
 25/08/21: add beamstrahlung flag
 22/12/21: add sbc6d element to merge transport and kick
+25/05/22: add record data
 """
 
+"""
+class Sbc6D_fullRecord(xo.DressedStruct):
+    _xofields = {
+        '_index': xt.RecordIndex,
+        'generated_rr': xo.Float64[:],
+        'at_element': xo.Int64[:],
+        'at_turn': xo.Int64[:],
+        'particle_id': xo.Int64[:]
+        }
+"""
 class Sbc6D_full(xt.BeamElement):
 
     # xofields element member vars
@@ -42,7 +53,9 @@ class Sbc6D_full(xt.BeamElement):
         'dz': xo.Float64[:],  # slice z widths for beamstrahlung
         'n_macroparts_bb': xo.Float64[:],
      }
-    
+
+   # _internal_record_class = Sbc6D_fullRecord
+
     def __init__(self,
             _context=None,
             _buffer=None,
@@ -128,7 +141,8 @@ srcs.append(_pkg_root.joinpath('headers/sincos.h'))
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
 srcs.append('#define NOFIELDMAP') #TODO Remove this workaound
 srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-# beamstrahlung
+
+# beamstrahlung / record data
 srcs.append(xp.general._pkg_root.joinpath('random_number_generator/rng_src/base_rng.h'))
 srcs.append(xp.general._pkg_root.joinpath('random_number_generator/rng_src/local_particle_rng.h'))
 srcs.append(_pkg_root.joinpath('headers/beamstrahlung_spectrum.h'))

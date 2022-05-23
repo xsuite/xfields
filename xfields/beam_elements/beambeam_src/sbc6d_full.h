@@ -300,6 +300,15 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
     /*gpuglmem*/ const double* var_yp_per_slice_arr    = Sbc6D_fullData_getp1_var_yp(el, 0);
     /*gpuglmem*/ const double* var_z_per_slice_arr     = Sbc6D_fullData_getp1_var_z(el, 0);
 
+/*
+    // Extract the record and record_index
+    Sbc6D_fullRecordData record = Sbc6D_fullData_getp_internal_record(el, part0);
+    RecordIndex record_index = NULL;
+    if (record){
+        record_index = Sbc6D_fullRecordData_getp__index(record);
+    } 
+*/
+
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_forces.txt");
     //FILE *f1 = fopen(dump_file, "a");
@@ -309,6 +318,20 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         int64_t state       = LocalParticle_get_state(part);
         int64_t slice_id    = LocalParticle_get_slice_id(part);
         int64_t slice_id_bb = timestep - slice_id;  // need to use sigma of this slice
+
+/*
+        if (record){
+            // Get a slot in the record (this is thread safe)
+            int64_t i_slot = RecordIndex_get_slot(record_index);
+
+            // The returned slot id is negative if record is NULL or if record is full
+            if (i_slot>=0){
+                Sbc6D_fullRecordData_set_at_element(  record, i_slot, LocalParticle_get_at_element(part));
+                Sbc6D_fullRecordData_set_at_turn(     record, i_slot, LocalParticle_get_at_turn(part));
+                Sbc6D_fullRecordData_set_particle_id( record, i_slot, LocalParticle_get_particle_id(part));
+            }
+        }
+*/
 
         // code is executed only if macropart is alive and interacts with a valid slice 
         if(slice_id_bb>=0 && slice_id_bb<n_slices){
@@ -375,7 +398,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
     	        printf("\tz=%.10e\n", Sz_i);
      	        printf("\tdelta=%.20e\n", delta);
                 printf("\tksl=%.10e, q0: %.12f, q0_bb: %.12f, n_bb: %.12f\n", Ksl, q0, q0_bb, n_bb);
-                printf("\tenergy0: %.20f, psigma: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_psigma(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
+                printf("\tenergy0: %.20f, ptau: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_ptau(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
 
    
                 // get thetas from the sigma matrix
@@ -447,7 +470,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                     /*gpuglmem*/ const double* dz_arr = Sbc6D_fullData_getp1_dz(el, 0);
                     const double dz = dz_arr[slice_id_bb]/2.;
                     
-                    double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
+                    double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); 
                     energy_loss = synrad(part, Fr, dz);
                     printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
 
@@ -478,10 +501,10 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                 printf("\tpy_star=%.20e\n", py);
 
 
-                x  = x - Sz_i * Fx_boosted;
-                px = px + Fx_boosted;
-                y  = y - Sz_i * Fy_boosted;
-                py = py + Fy_boosted;
+                x  -= Sz_i * Fx_boosted;
+                px += Fx_boosted;
+                y  -= Sz_i * Fy_boosted;
+                py += Fy_boosted;
  
                 printf("[sbc6d] [%d] after kick of slice %d:\n", part->ipart, slice_id_bb);
        	        printf("\tx_star=%.10e\n", x);
@@ -499,7 +522,6 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
       	        LocalParticle_set_zeta(part, z);
     	        LocalParticle_update_delta(part, delta);
 	
-
 /*
          	LocalParticle_add_to_px(part, Fx_boosted);
          	LocalParticle_add_to_py(part, Fy_boosted);

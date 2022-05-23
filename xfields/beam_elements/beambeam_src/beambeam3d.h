@@ -519,7 +519,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             printf("\tpy=%.10e\n", py_star); 
             printf("\tdelta=%.20e\n", delta_star);
             printf("\tksl=%.10e, q0: %.12f, q0_bb: %.12f, n_bb: %.12f\n", Ksl, q0, q0_bb, N_part_per_slice_arr[i_slice]);
-            printf("\tenergy0: %.20f, psigma: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_psigma(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
+            printf("\tenergy0: %.20f, ptau: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_ptau(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
 
 
             printf("\tsig_11: %.20f, sig_12: %.20f, sig_13: %.20f, sig_14: %.20f, sig_22: %.20f, sig_23: %.20f, sig_24: %.20f, sig_33: %.20f, sig_34: %.20f, sig_44: %.20f\n", Sigmas_get_Sig_11(Sigmas_0_star), Sigmas_get_Sig_12(Sigmas_0_star), Sigmas_get_Sig_13(Sigmas_0_star), Sigmas_get_Sig_14(Sigmas_0_star), Sigmas_get_Sig_22(Sigmas_0_star), Sigmas_get_Sig_23(Sigmas_0_star), Sigmas_get_Sig_24(Sigmas_0_star), Sigmas_get_Sig_33(Sigmas_0_star), Sigmas_get_Sig_34(Sigmas_0_star), Sigmas_get_Sig_44(Sigmas_0_star)); 
@@ -584,7 +584,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 /*gpuglmem*/ const double* dz_arr = BeamBeamBiGaussian3DData_getp1_dz(el, 0);
                 const double dz = dz_arr[i_slice]/2.;
                     
-                double initial_energy = (LocalParticle_get_energy0(part) + LocalParticle_get_psigma(part)*LocalParticle_get_p0c(part)*LocalParticle_get_beta0(part)); 
+                double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); 
                 energy_loss = synrad(part, Fr, dz);
                 printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
 
