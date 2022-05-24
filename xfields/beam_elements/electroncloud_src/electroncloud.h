@@ -21,13 +21,13 @@ void ElectronCloud_track_local_particle(
     double const beta0 = LocalParticle_get_beta0(part);
     double const rvv = LocalParticle_get_rvv(part);
 
-    double const tau = zeta / ( beta0 * rvv );
+    double const tau = zeta / beta0;
 
     double dphi_dx=0;
     double dphi_dy=0;
     double dphi_dtau=0;
 
-    if( TriCubicInterpolatedFieldMap_interpolate_grad(fmap, 
+    if( TriCubicInterpolatedFieldMap_interpolate_grad(fmap,
         x - x_shift, y - y_shift, tau - tau_shift,
         &dphi_dx, &dphi_dy, &dphi_dtau)
       ){
