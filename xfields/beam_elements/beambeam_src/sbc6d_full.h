@@ -310,7 +310,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 */
 
     char dump_file[1024];
-    sprintf(dump_file, "%s/%s", dump_path, "xsuite_forces.txt");
+    sprintf(dump_file, "%s/%s", dump_path, "xsuite_force.txt");
     //FILE *f1 = fopen(dump_file, "a");
 
     //start_per_particle_block (part0->part)
@@ -364,7 +364,8 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         	double py    = LocalParticle_get_py(part);
         	double z     = LocalParticle_get_zeta(part);
         	double delta = LocalParticle_get_delta(part);
- 
+
+/* 
                 printf("[sbc6d_full] [%d] at ip:\n", part->ipart);
                 printf("\tslice_id: %d\n", slice_id);
                 printf("\tslice_id_bb: %d\n", slice_id_bb);
@@ -374,6 +375,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 	        printf("\tpy=%.10e\n", py);
     	        printf("\tz=%.10e\n", z);
      	        printf("\tdelta=%.20e\n", delta);   
+*/
 
                 // transport IP to CP (px, py, delta are the same at ip and cp)
                 double Sx_i, Sy_i, Sz_i;
@@ -387,7 +389,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         	const double P0  = p0c/C_LIGHT*QELEM;  // ref. momentum, electronvolt to joule conversion
        	        const double Ksl = (QELEM*q0_bb*n_bb)*(QELEM*q0) / (P0 * C_LIGHT);
 
-
+/*
                 printf("[sbc6d_full] [%d] at cp:\n", part->ipart);
                 printf("\tslice_id: %d\n", slice_id);
                 printf("\tslice_id_bb: %d\n", slice_id_bb);
@@ -399,7 +401,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
      	        printf("\tdelta=%.20e\n", delta);
                 printf("\tksl=%.10e, q0: %.12f, q0_bb: %.12f, n_bb: %.12f\n", Ksl, q0, q0_bb, n_bb);
                 printf("\tenergy0: %.20f, ptau: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_ptau(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
-
+*/
    
                 // get thetas from the sigma matrix
         	double Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta;
@@ -418,7 +420,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         	const double dS_x_boosted_cp_uncoupled =  Sx_i*dS_costheta  + Sy_i*dS_sintheta;
                 const double dS_y_boosted_cp_uncoupled = -Sx_i*dS_sintheta  + Sy_i*dS_costheta;
  
- 
+/*
                  printf("\tsig_11: %.20f, sig_12: %.20f, sig_13: %.20f, sig_14: %.20f, sig_22: %.20f, sig_23: %.20f, sig_24: %.20f, sig_33: %.20f, sig_34: %.20f, sig_44: %.20f\n", var_x_bb, cov_x_xp_bb, cov_x_y_bb, cov_x_yp_bb, var_xp_bb, cov_xp_y_bb, cov_xp_yp_bb, var_y_bb, cov_y_yp_bb, var_yp_bb); 
                 printf("\tSig_11_hat_star: %.20f, Sig_33_hat_star: %.20f, costheta: %.12f, sintheta: %.12f\n", Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta);
                 printf("\tdS_Sig_11_hat_stat: %.20f, dS_Sig_33_hat_star: %.20f, dS_costheta: %.12f, dS_sintheta: %.12f\n", dS_Sig_11_boosted_cp_uncoupled, dS_Sig_33_boosted_cp_uncoupled, dS_costheta, dS_sintheta);
@@ -426,24 +428,28 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                 printf("[%d] uncoupled:\n", part->ipart);
                 printf("\tx=%.10e\n", Sx_i_uncoupled);
 	        printf("\ty=%.10e\n", Sy_i_uncoupled);
-
+*/
 
         	// Get transverse fields using soft Gausiian of beam 2 slice
         	double Ex, Ey;
         	get_Ex_Ey_gauss(Sx_i_uncoupled, Sy_i_uncoupled, 
         	sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled),
     		min_sigma_diff, &Ex, &Ey);
-    
+
+/*  
   	        printf("\tEx=%.10e\n", Ex);
 	        printf("\tEy=%.10e\n", Ey);
+*/
 	
     	        double Gx, Gy;
     	        compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled,
                     sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff,
                     Ex, Ey, &Gx, &Gy);
-    	    
+
+/*    	    
                 printf("\tGx=%.10e\n", Gx);
 	        printf("\tGy=%.10e\n", Gy);
+*/
 
                 // Compute kicks
                 double Fx_boosted_cp_uncoupled = Ksl*Ex;
@@ -461,9 +467,11 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                 if (do_beamstrahlung==1){
               
                     // total kick
+/*
                     printf("\trpp=%.20e\n", LocalParticle_get_rpp(part));
                     printf("\tFx_star=%.20e\n", Fx_boosted); 
                     printf("\tFy_star=%.20e\n", Fy_boosted); 
+*/
                     double const Fr = hypot(Fx_boosted, Fy_boosted) * LocalParticle_get_rpp(part); // rad
     
                     // bending radius is over this distance (half slice length)
@@ -472,9 +480,9 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                     
                     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); 
                     energy_loss = synrad(part, Fr, dz);
-                    printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
-
-                    //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
+                    //printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
+                    //printf(     "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
+                    //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
                    
                     // BS rescales these, so load again before kick 
         	    delta = LocalParticle_get_delta(part);  
@@ -483,15 +491,16 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                     double var_z_bb = 0.00345;
                     energy_loss = synrad_avg(part, n_bb, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), var_z_bb);  // slice intensity and RMS slice sizes
                     
-                    printf("n_bb: %.20e, sigma_11: %.20e, sigma_33: %.20e, energy_loss: %.20e\n", n_bb, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), energy_loss);
+                    //printf("n_bb: %.20e, sigma_11: %.20e, sigma_33: %.20e, energy_loss: %.20e\n", n_bb, sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), energy_loss);
 
                     delta = LocalParticle_get_delta(part);  
                 }
 
-                printf("[sbc6d] [%d] before delta kick of slice %d\n", part->ipart, slice_id_bb);
-                printf("\tdelta: %.20e\n", delta);               
+                //printf("[sbc6d] [%d] before delta kick of slice %d\n", part->ipart, slice_id_bb);
+                //printf("\tdelta: %.20e\n", delta);               
                 delta += Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted));
 
+/*
                 printf("[sbc6d] [%d] after kick of slice %d:\n", part->ipart, slice_id_bb);
                 printf("\tdelta: %.20e\n", delta);
                 printf("\tFx_star=%.20e\n", Fx_boosted);
@@ -499,13 +508,14 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                 printf("\tFz_star=%.20e\n", Fz_boosted);
                 printf("\tpx_star=%.20e\n", px);
                 printf("\tpy_star=%.20e\n", py);
-
+*/
 
                 x  -= Sz_i * Fx_boosted;
                 px += Fx_boosted;
                 y  -= Sz_i * Fy_boosted;
                 py += Fy_boosted;
  
+/*
                 printf("[sbc6d] [%d] after kick of slice %d:\n", part->ipart, slice_id_bb);
        	        printf("\tx_star=%.10e\n", x);
 	        printf("\tpx_star=%.10e\n", px);
@@ -513,7 +523,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
  	        printf("\tpy_star=%.10e\n", py);
     	        printf("\tsigma_star=%.10e\n", z);
    	        printf("\tdelta_star=%.20e\n", delta);
- 
+ */
 
       	        LocalParticle_set_x(part, x);
     	        LocalParticle_set_px(part, px);

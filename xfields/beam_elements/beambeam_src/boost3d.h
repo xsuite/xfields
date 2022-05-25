@@ -98,7 +98,8 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
         double py_star    = py    - py2_CO;
         double z_star     = zeta  - zeta2_CO;
         double delta_star = delta - delta2_CO;
-  
+
+/*
         printf("[boost3d] [%d] before boost:\n", part->ipart);
     	printf("x_star=%.10e\n", x_star);
 	printf("px_star=%.10e\n", px_star);
@@ -106,7 +107,7 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
 	printf("py_star=%.10e\n", py_star);
     	printf("sigma_star=%.10e\n", z_star);
 	printf("delta_star=%.20e\n", delta_star);
-
+*/
 
         // Boost coordinates
 	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &z_star, &delta_star);
@@ -117,6 +118,7 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
             px_star *= -1.0;
         }
  
+/*
         printf("[boost3d] [%d] after boost:\n", part->ipart);
     	printf("x_star=%.10e\n", x_star);
 	printf("px_star=%.10e\n", px_star);
@@ -124,7 +126,7 @@ void Boost3D_track_local_particle(Boost3DData el, LocalParticle* part0){
 	printf("py_star=%.10e\n", py_star);
     	printf("sigma_star=%.10e\n", z_star);
 	printf("delta_star=%.20e\n", delta_star);
-
+*/
    	
         LocalParticle_set_x(part, x_star);
     	LocalParticle_set_px(part, px_star);

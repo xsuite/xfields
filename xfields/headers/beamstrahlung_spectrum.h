@@ -70,7 +70,7 @@ int synrad_0(LocalParticle *part,
    
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_synrad0.txt");
-    //FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_synrad0.txt", "a");
+    //FILE *f1 = fopen(dump_file, "a");
     //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e\n", c1, xcrit, (*ecrit), p0, g);
     //fclose(f1);
 
@@ -134,7 +134,7 @@ double synrad(LocalParticle *part,
 
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_photons.txt");
-    //FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_photons.txt", "a");
+    //FILE *f1 = fopen(dump_file, "a");
     //FILE *f2 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_rho_inv.txt", "a");
     //FILE *f3 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_tmp.txt", "a");
     //FILE *f4 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_fr.txt", "a");

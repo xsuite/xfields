@@ -444,6 +444,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	double sigma_star = zeta  - sigma_CO;
     	double delta_star = delta - delta_CO;
 
+/*
         printf("[beambeam3d] [%d] before boost:\n", part->ipart);
     	printf("\t_star=%.10e\n", x_star);
 	printf("\tpx_star=%.10e\n", px_star);
@@ -451,12 +452,13 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	printf("\ty_star=%.10e\n", py_star);
     	printf("\tsigma_star=%.10e\n", sigma_star);
 	printf("\tdelta_star=%.20e\n", delta_star);
-
+*/
 
     	// Boost coordinates of the weak beam
 	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &delta_star);
     	LocalParticle_update_delta(part, delta_star);  // this updates energy variables, which are used in beamstrahlung generation
 
+/*
         printf("[beambeam3d] [%d] after boost:\n", part->ipart);
     	printf("\tx_star=%.10e\n", x_star);
 	printf("\tpx_star=%.10e\n", px_star);
@@ -464,7 +466,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	printf("\tpy_star=%.10e\n", py_star);
     	printf("\tsigma_star=%.10e\n", sigma_star);
 	printf("\tdelta_star=%.20e\n", delta_star);
-
+*/
 
     	// Synchro beam, WS because coords are not updaded by default after eahc slice interaction
     	for (int i_slice=0; i_slice<N_slices; i_slice++)
@@ -473,6 +475,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             // new: reload boosted delta after each slice kick to compare with sbc6d; these are boosted
        	    delta_star = LocalParticle_get_delta(part);
 
+/*
             printf("[beambeam3d] [%d] at ip:\n", part->ipart);
     	    printf("\tx=%.10e\n", x_star);
 	    printf("\ty=%.10e\n", y_star);
@@ -480,6 +483,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             printf("\tpx=%.10e\n", px_star);
             printf("\tpy=%.10e\n", py_star); 
             printf("\tdelta=%.20e\n", delta_star);
+*/
 
     	    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
     	    const double x_slice_star = x_slices_star_arr[i_slice];
@@ -510,7 +514,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
     	    const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
 
-
+/*
             printf("[beambeam3d] [%d] at cp:\n", part->ipart);
     	    printf("\tx=%.10e\n", x_bar_star);
 	    printf("\ty=%.10e\n", y_bar_star);
@@ -531,7 +535,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             printf("[%d] uncoupled:\n", part->ipart);
     	    printf("\tx=%.10e\n", x_bar_hat_star);
 	    printf("\ty=%.10e\n", y_bar_hat_star);
-
+*/
 
     	    // Compute derivatives of the transformation
     	    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
@@ -544,8 +548,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 		min_sigma_diff,
     	        &Ex, &Ey);
 
-	    printf("\tEx=%.10e\n", Ex);
-	    printf("\tEy=%.10e\n", Ey);
+	    //printf("\tEx=%.10e\n", Ex);
+	    //printf("\tEy=%.10e\n", Ey);
 	
 	    //compute Gs
 	    double Gx, Gy;
@@ -553,8 +557,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 			  sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
                           min_sigma_diff, Ex, Ey, &Gx, &Gy);
 	    
-	    printf("\tGx=%.10e\n", Gx);
-	    printf("\tGy=%.10e\n", Gy);
+	    //printf("\tGx=%.10e\n", Gx);
+	    //printf("\tGy=%.10e\n", Gy);
 
     	    // Compute kicks
     	    double Fx_hat_star = Ksl*Ex;
@@ -574,9 +578,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             if (do_beamstrahlung==1){
               
                 // total kick
-                printf("\trpp=%.20e\n", LocalParticle_get_rpp(part));
-                printf("\tFx_star=%.20e\n", Fx_star); 
-                printf("\tFy_star=%.20e\n", Fy_star); 
+                //printf("\trpp=%.20e\n", LocalParticle_get_rpp(part));
+                //printf("\tFx_star=%.20e\n", Fx_star); 
+                //printf("\tFy_star=%.20e\n", Fy_star); 
 
                 double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // rad
     
@@ -586,7 +590,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                     
                 double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); 
                 energy_loss = synrad(part, Fr, dz);
-                printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
+                //printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
 
                 // BS rescales these, so load again before kick 
                 delta_star = LocalParticle_get_delta(part);  
@@ -594,18 +598,19 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             else if(do_beamstrahlung==2){
                double var_z_bb = 0.00345;
                energy_loss = synrad_avg(part, N_part_per_slice_arr[i_slice], sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
-               printf("n_bb: %.20e, sigma_11: %.20e, sigma_33: %.20e, energy_loss: %.20e\n", N_part_per_slice_arr[i_slice], sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), energy_loss);
+               //printf("n_bb: %.20e, sigma_11: %.20e, sigma_33: %.20e, energy_loss: %.20e\n", N_part_per_slice_arr[i_slice], sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), energy_loss);
  
                delta_star = LocalParticle_get_delta(part);  
            }
  
     	    // Apply the kicks (Hirata's synchro-beam)
-            printf("[beambeam3d] [%d] before delta kick of slice %d\n", part->ipart, i_slice);
-            printf("\tdelta_star=%.20e\n", delta_star);  
+            //printf("[beambeam3d] [%d] before delta kick of slice %d\n", part->ipart, i_slice);
+            //printf("\tdelta_star=%.20e\n", delta_star);  
     	    delta_star += Fz_star+0.5*(
     	                  Fx_star*(px_star+0.5*Fx_star)+
     	                  Fy_star*(py_star+0.5*Fy_star));
 
+/*
             printf("[beambeam3d] [%d] after kick of slice %d:\n", part->ipart, i_slice);
 	    printf("\tdelta_star=%.20e\n", delta_star);
             printf("\tFx_star=%.20e\n", Fx_star);
@@ -613,15 +618,14 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             printf("\tFz_star=%.20e\n", Fz_star);
             printf("\tpx_star=%.20e\n", px_star);
             printf("\tpy_star=%.20e\n", py_star);
-
-   
+*/ 
 
 	    x_star = x_star - S*Fx_star;
     	    px_star = px_star + Fx_star;
     	    y_star = y_star - S*Fy_star;
     	    py_star = py_star + Fy_star;
 
-
+/*
             printf("[beambeam3d] [%d] after kick of slice %d:\n", part->ipart, i_slice);
     	    printf("\tx_star=%.10e\n", x_star);
 	    printf("\tpx_star=%.10e\n", px_star);
@@ -629,7 +633,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
  	    printf("\tpy_star=%.10e\n", py_star);
     	    printf("\tsigma_star=%.10e\n", sigma_star);
    	    printf("\tdelta_star=%.20e\n", delta_star);
-            
+*/            
             // new: update boosted delta after each ss interaction, like in sbc6d_full; this updates energy vars, like rpp
             LocalParticle_update_delta(part, delta_star);
 
@@ -651,7 +655,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	zeta =  sigma_star + sigma_CO         - Dsigma_sub;
     	delta = delta_star + delta_CO         - Ddelta_sub;
 
-
+/*
         printf("[%d] after inverse boost:\n", part->ipart);
     	printf("x_star=%.10e\n", x);
 	printf("px_star=%.10e\n", px);
@@ -661,7 +665,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	printf("delta_star=%.10e\n\n", delta);
 
         printf("-----------------------------------------------\n");
-
+*/
     	LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
     	LocalParticle_set_y(part, y);
