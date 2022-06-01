@@ -75,11 +75,11 @@ def test_tricubic_interpolation():
         part._move_to(_context=xo.ContextCpu())
         mask_p = part.state != -11
         true_px = np.array([-dfdx(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
-                                                                    part.zeta[mask_p] * part.beta0[mask_p])])
+                                                                    part.zeta[mask_p] / part.beta0[mask_p])])
         true_py = np.array([-dfdy(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
-                                                                    part.zeta[mask_p] * part.beta0[mask_p])])
+                                                                    part.zeta[mask_p] / part.beta0[mask_p])])
         true_ptau = np.array([-dfdz(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
-                                                                    part.zeta[mask_p] * part.beta0[mask_p])])
+                                                                    part.zeta[mask_p] / part.beta0[mask_p])])
 
         # print(true_px[:5])
         # print(part.ptau[:5])
