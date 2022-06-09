@@ -1,5 +1,5 @@
 # copyright ################################# #
-# This file is part of the Xobjects Package.  #
+# This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
@@ -7,7 +7,7 @@ import os
 
 copyright_statement = (
 """copyright #################################
-This file is part of the Xobjects Package. 
+This file is part of the Xfields Package.  
 Copyright (c) CERN, 2021.                  
 ###########################################""")
 

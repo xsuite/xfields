@@ -1,3 +1,8 @@
+// copyright ################################# //
+// This file is part of the Xfields Package.   //
+// Copyright (c) CERN, 2021.                   //
+// ########################################### //
+
 #ifndef XFIELDS_COMPLEX_ERROR_FUNCTION_H
 #define XFIELDS_COMPLEX_ERROR_FUNCTION_H
 

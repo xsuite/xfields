@@ -1,3 +1,8 @@
+// copyright ################################# //
+// This file is part of the Xfields Package.   //
+// Copyright (c) CERN, 2021.                   //
+// ########################################### //
+
 #ifndef XFIELDS_HEADERS_POWER_H_H__
 #define XFIELDS_HEADERS_POWER_H_H__
 
