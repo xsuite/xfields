@@ -311,10 +311,10 @@ void BoostParameters_boost_coordinates_inv(
     
     if (fabs(sigma_x-sigma_y) < min_sigma_diff){
 
-        if (fabs(x)+fabs(y) < 2e-12){
+        if (fabs(x)+fabs(y) < 2e-20){
 
-            Gx = 4.49e19;
-            Gy = 4.49e19;
+            Gx = 0.0;
+            Gy = 0.0;
 
         }
         else{
