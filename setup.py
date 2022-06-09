@@ -33,7 +33,7 @@ setup(
         'pandas',
         'xobjects>=0.0.4',
         'xtrack>=0.0.1',
-        ]
+        ],
     author='G. Iadarola et al.',
     license='Apache 2.0',
     download_url="https://pypi.python.org/pypi/xfields",
