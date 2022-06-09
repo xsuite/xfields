@@ -24,7 +24,6 @@ setup(
                       "by particle ensembles in accelerators.\n\n"
                       "This package is part of the Xsuite collection."),
     url='https://xsuite.readthedocs.io/',
-    author='Giovanni Iadarola',
     packages=find_packages(),
     ext_modules = extensions,
     include_package_data=True,
