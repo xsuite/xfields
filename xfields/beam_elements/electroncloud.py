@@ -1,3 +1,8 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2021.                   #
+# ########################################### #
+
 from ..fieldmaps import TriCubicInterpolatedFieldMapData
 from ..general import _pkg_root
 

@@ -1,5 +1,12 @@
+
 #ifndef XFIELDS_CONSTANTS_H
 #define XFIELDS_CONSTANTS_H
+
+// copyright ################################# //
+// This file is part of the Xfields Package.   //
+// Copyright (c) CERN, 2021.                   //
+// ########################################### //
+
 
 #if !defined( C_LIGHT )
     #define   C_LIGHT ( 299792458.0 )

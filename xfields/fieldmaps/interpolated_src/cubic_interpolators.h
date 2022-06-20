@@ -1,3 +1,8 @@
+// copyright ################################# //
+// This file is part of the Xfields Package.   //
+// Copyright (c) CERN, 2021.                   //
+// ########################################### //
+
 #ifndef XFIELDS_CUBIC_INTERPOLATORS_H
 #define XFIELDS_CUBIC_INTERPOLATORS_H
 

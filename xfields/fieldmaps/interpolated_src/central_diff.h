@@ -1,3 +1,8 @@
+// copyright ################################# //
+// This file is part of the Xfields Package.   //
+// Copyright (c) CERN, 2021.                   //
+// ########################################### //
+
 #ifndef CENTRAL_DIFF_H
 #define CENTRAL_DIFF_H
 

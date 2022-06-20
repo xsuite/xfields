@@ -1,3 +1,8 @@
+// copyright ################################# //
+// This file is part of the Xfields Package.   //
+// Copyright (c) CERN, 2021.                   //
+// ########################################### //
+
 #ifndef XFIEDLS_BIGUASSIIAN_H
 #define XFIEDLS_BIGUASSIIAN_H
 

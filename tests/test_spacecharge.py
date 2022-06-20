@@ -1,3 +1,8 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2021.                   #
+# ########################################### #
+
 import numpy as np
 from scipy.constants import m_p as pmass_kg
 from scipy.constants import e as qe

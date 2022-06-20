@@ -1,3 +1,8 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2021.                   #
+# ########################################### #
+
 from .longitudinal_profiles import LongitudinalProfileCoasting
 from .longitudinal_profiles import LongitudinalProfileQGaussian
 

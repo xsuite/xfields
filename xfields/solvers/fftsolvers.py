@@ -1,3 +1,8 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2021.                   #
+# ########################################### #
+
 import numpy as np
 from scipy.constants import epsilon_0
 from numpy import pi
