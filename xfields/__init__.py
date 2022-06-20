@@ -10,6 +10,7 @@ from .solvers.fftsolvers import FFTSolver3D
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam import BeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
+from .beam_elements.beambeam3d_base import BeamBeamBiGaussian3DBase
 from .beam_elements.boost3d import Boost3D
 from .beam_elements.boostinv3d import BoostInv3D
 from .beam_elements.iptocp3d import IPToCP3D

@@ -13,7 +13,7 @@ from ..general import _pkg_root
 25/05/22: add record data
 """
 
-"""
+
 class Sbc6D_fullRecord(xo.DressedStruct):
     _xofields = {
         '_index': xt.RecordIndex,
@@ -22,7 +22,7 @@ class Sbc6D_fullRecord(xo.DressedStruct):
         'at_turn': xo.Int64[:],
         'particle_id': xo.Int64[:]
         }
-"""
+
 class Sbc6D_full(xt.BeamElement):
 
     # xofields element member vars
@@ -54,7 +54,7 @@ class Sbc6D_full(xt.BeamElement):
         'n_macroparts_bb': xo.Float64[:],
      }
 
-   # _internal_record_class = Sbc6D_fullRecord
+    _internal_record_class = Sbc6D_fullRecord
 
     def __init__(self,
             _context=None,

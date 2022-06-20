@@ -499,6 +499,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             // Propagate sigma matrix
     	    double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
     	    double dS_Sig_11_hat_star, dS_Sig_33_hat_star, dS_costheta, dS_sintheta;
+
     	    // Get strong beam shape at the CP
 	    Sigmas_propagate(Sigmas_0_star, S, threshold_singular, 1,
     	        &Sig_11_hat_star, &Sig_33_hat_star,
@@ -560,6 +561,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	    //printf("\tGx=%.10e\n", Gx);
 	    //printf("\tGy=%.10e\n", Gy);
 
+            //printf("\tKsl=%.10e\n", Ksl);
+
     	    // Compute kicks
     	    double Fx_hat_star = Ksl*Ex;
     	    double Fy_hat_star = Ksl*Ey;
@@ -606,9 +609,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	    // Apply the kicks (Hirata's synchro-beam)
             //printf("[beambeam3d] [%d] before delta kick of slice %d\n", part->ipart, i_slice);
             //printf("\tdelta_star=%.20e\n", delta_star);  
-    	    delta_star += Fz_star+0.5*(
-    	                  Fx_star*(px_star+0.5*Fx_star)+
-    	                  Fy_star*(py_star+0.5*Fy_star));
+    	    delta_star = delta_star + Fz_star+0.5*(
+    	                Fx_star*(px_star+0.5*Fx_star)+
+    	                Fy_star*(py_star+0.5*Fy_star));
 
 /*
             printf("[beambeam3d] [%d] after kick of slice %d:\n", part->ipart, i_slice);
