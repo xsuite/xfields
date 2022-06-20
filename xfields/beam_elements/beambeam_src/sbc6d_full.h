@@ -498,7 +498,7 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 
                 //printf("[sbc6d] [%d] before delta kick of slice %d\n", part->ipart, slice_id_bb);
                 //printf("\tdelta: %.20e\n", delta);               
-                delta += Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted));
+                delta = delta + Fz_boosted + 0.5*(Fx_boosted*(px + 0.5*Fx_boosted) + Fy_boosted*(py + 0.5*Fy_boosted));
 
 /*
                 printf("[sbc6d] [%d] after kick of slice %d:\n", part->ipart, slice_id_bb);
@@ -510,10 +510,10 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                 printf("\tpy_star=%.20e\n", py);
 */
 
-                x  -= Sz_i * Fx_boosted;
-                px += Fx_boosted;
-                y  -= Sz_i * Fy_boosted;
-                py += Fy_boosted;
+                x  = x - Sz_i * Fx_boosted;
+                px = px + Fx_boosted;
+                y  = y - Sz_i * Fy_boosted;
+                py = py + Fy_boosted;
  
 /*
                 printf("[sbc6d] [%d] after kick of slice %d:\n", part->ipart, slice_id_bb);
