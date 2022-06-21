@@ -291,67 +291,70 @@ void BoostParameters_boost_coordinates_inv(
     *delta = delta_i;
 
 }
-
-
 /*gpufun*/ void compute_Gx_Gy(
              const double  x, 
              const double  y,
              const double  sigma_x, 
              const double  sigma_y,
-             const double  min_sigma_diff, 
+             const double  min_sigma_diff,
 	     const double  Ex,
 	     const double  Ey,
                    double* Gx_ptr,
                    double* Gy_ptr){
 
     double Gx, Gy;
-    
-    
-    
-    
+
     if (fabs(sigma_x-sigma_y) < min_sigma_diff){
-
-        if (fabs(x)+fabs(y) < 2e-20){
-
-            Gx = 0.0;
-            Gy = 0.0;
-
+        
+        if (fabs(x) < 1e-14){
+            const double x_g = 1e-14;
+            const double sigma = 0.5*(sigma_x+sigma_y); 
+            if (fabs(Ex) < 1e-50){
+                const double y_g = 1e-14;
+                Gx = (1./((x_g*x_g+y_g*y_g))*(x_g*x_g*exp(-(x_g*x_g+y_g*y_g)/2./sigma*sigma)/sigma*sigma));
+                Gy = (1./((x_g*x_g+y_g*y_g))*(y_g*y_g*exp(-(x_g*x_g+y_g*y_g)/2./sigma*sigma)/sigma*sigma));             
+            }
+            else{
+                const double y_g = Ey/Ex*x;
+                Gx = (1./((x*x+y_g*y_g))*(y_g*Ey-x*Ex+y_g*y_g*exp(-(x*x+y_g*y_g)/2./sigma*sigma)/sigma*sigma));
+                Gy = (1./((x*x+y_g*y_g))*(y_g*Ey-x*Ex+y_g*y_g*exp(-(x*x+y_g*y_g)/2./sigma*sigma)/sigma*sigma));
+                        
+            }            
         }
         else{
-
+            
 
             const double sigma = 0.5*(sigma_x+sigma_y);
-            Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
+            Gx = 1./(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2.*PI*EPSILON_0*sigma*sigma)
                                 *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
-            Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
+            Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2.*PI*EPSILON_0*sigma*sigma)
                                 *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
-
+            printf("Ex%.10e\n", Ex);
+            printf("Ey%.10e\n", Ey);
         }
     }
     else{
 
         const double Sig_11 = sigma_x*sigma_x;
         const double Sig_33 = sigma_y*sigma_y;
+    
+	printf("Inside Sig_11=%.10e\n", Sig_11);
+	printf("Inside Sig_33=%.10e\n", Sig_33);
+
+        Gx =-1./(2.*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2.*PI*EPSILON_0)   
+                   *(sigma_y/sigma_x*exp(-x*x/(2.*Sig_11)-y*y/(2*Sig_33))-1.));
+        Gy =1./(2.*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2.*PI*EPSILON_0)*
+                      (sigma_x/sigma_y*exp(-x*x/(2.*Sig_11)-y*y/(2.*Sig_33))-1.));
 
 
-
-
-
-	//printf("Inside Sig_11=%.10e\n", Sig_11);
-	//printf("Inside Sig_33=%.10e\n", Sig_33);
-
-        Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)   
-                   *(sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-        Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*
-                      (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-
-	//printf("Inside Gx=%.10e\n", Gx);
-	//printf("Inside Gy=%.10e\n", Gy);
+        
     }
 
     *Gx_ptr = Gx;
     *Gy_ptr = Gy;
 }
+
+
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, 
 		 	   LocalParticle* part0){
