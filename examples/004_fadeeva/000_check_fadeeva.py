@@ -121,9 +121,6 @@ plt.plot(z_im, wz_re - wofz(z_re + 1j * z_im).real, 'b')
 plt.plot(z_im, wz_im - wofz(z_re + 1j * z_im).imag, 'r')
 plt.xlabel('y')
 
-plt.show()
-
-
 #Time it
 n_test = int(1e6)
 
@@ -138,3 +135,5 @@ ctx.kernels.eval_cerrf_q1(
 )
 t2 = time.time()
 print(f"Time: {(t2 - t1)/n_test:e} s/point")
+
+plt.show()
