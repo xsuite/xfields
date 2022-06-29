@@ -19,7 +19,6 @@ import ducktrack as dtk
 
 context = ContextCpu(omp_num_threads=0) # no omp
 #context = ContextCpu(omp_num_threads=1) # omp
-context = ContextCpu(omp_num_threads=8) # omp
 #context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl('0.0')
 
