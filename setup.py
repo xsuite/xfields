@@ -18,7 +18,7 @@ extensions = []
 
 setup(
     name='xfields',
-    version='0.6.2',
+    version='0.6.3',
     description='Field Maps and Particle In Cell',
     long_description=("Python package for the computation of fields generated "
                       "by particle ensembles in accelerators.\n\n"
