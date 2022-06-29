@@ -6,6 +6,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.special import wofz
 
+mode = 'special_y_0'
+mode = 'standard'
 
 ctx = xo.ContextCpu(omp_num_threads=0)
 
@@ -54,6 +56,11 @@ headers = [
     _pkg_root.joinpath("headers/power_n.h"),
     _pkg_root.joinpath("fieldmaps/bigaussian_src/complex_error_function.h"),
 ]
+
+assert mode in ['special_y_0', 'standard']
+if mode == "special_y_0":
+    headers = ["#define FADDEEVA_SPECIAL_Y_0"] + headers
+
 ctx.add_kernels(
     sources=headers + [src_code], kernels=kernel_descriptions)
 
@@ -71,24 +78,27 @@ ctx.kernels.eval_cerrf_q1(
 )
 
 plt.close("all")
+plt.suptitle(f'mode = {mode}')
 plt.figure(1)
 plt.subplot(2,1,1)
 plt.plot(z_re, wz_re, 'b.')
 plt.plot(z_re, wofz(z_re + 1j * z_im).real, 'b')
 plt.plot(z_re, wz_im, 'r.')
 plt.plot(z_re, wofz(z_re + 1j * z_im).imag, 'r')
+plt.title('y = 0')
 plt.subplot(2,1,2)
 plt.plot(z_re, wz_re - wofz(z_re + 1j * z_im).real, 'b')
 plt.plot(z_re, wz_im - wofz(z_re + 1j * z_im).imag, 'r')
 plt.xlabel('x')
-plt.title('y = 0')
 
 
-# Plot on x = 1
+# Plot on assigned x value
+
+x_val = 1.0
 
 z_im = np.arange(-1, 10, 0.1)
 z_im[np.abs(z_im) < 1e-10] = 0
-z_re = 0 * z_im + 1
+z_re = 0 * z_im + x_val
 
 wz_re = 0 * z_re
 wz_im = 0 * z_re
@@ -99,16 +109,17 @@ ctx.kernels.eval_cerrf_q1(
 )
 
 plt.figure(2)
+plt.suptitle(f'mode = {mode}')
 plt.subplot(2,1,1)
 plt.plot(z_im, wz_re, 'b.')
 plt.plot(z_im, wofz(z_re + 1j * z_im).real, 'b')
 plt.plot(z_im, wz_im, 'r.')
 plt.plot(z_im, wofz(z_re + 1j * z_im).imag, 'r')
-plt.xlabel('y')
-plt.title('x = 1')
+plt.title(f'x = {x_val}')
 plt.subplot(2,1,2)
 plt.plot(z_im, wz_re - wofz(z_re + 1j * z_im).real, 'b')
 plt.plot(z_im, wz_im - wofz(z_re + 1j * z_im).imag, 'r')
+plt.xlabel('y')
 
 plt.show()
 

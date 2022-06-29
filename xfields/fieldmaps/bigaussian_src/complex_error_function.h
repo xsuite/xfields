@@ -140,9 +140,11 @@
      * very unlikely case, use the continuos fraction & verify result! */
     use_taylor_sum &= ( h2_n > ( double )REAL_EPSILON );
 
+    Rx = 0;
+    #ifdef FADDEEVA_SPECIAL_Y_0
     Rx = ( y > ( double )REAL_EPSILON )
        ? ( double )0.0 : exp( -x * x ) / ( double )TWO_OVER_SQRT_PI;
-    //Rx = 0;
+    #endif
 
     n = nu;
     nn = ( double )n;
