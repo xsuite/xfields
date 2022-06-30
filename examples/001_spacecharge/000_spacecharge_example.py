@@ -15,10 +15,9 @@ import xpart as xp
 # Choose context #
 ###################
 
-#context = ContextCpu(omp_num_threads=0) # no omp
-context = ContextCpu(omp_num_threads=1) # omp
+context = ContextCpu(omp_num_threads=0) # no omp
 #context = ContextCpu(omp_num_threads=48) # omp
-context = ContextCupy(default_block_size=256)
+#context = ContextCupy(default_block_size=256)
 #context = ContextPyopencl('0.0')
 
 print(repr(context))
@@ -33,7 +32,7 @@ sigma_x = 3e-3
 sigma_y = 2e-3
 sigma_z = 30e-2
 p0c = 25.92e9
-mass = xp.pmass,
+mass = xp.pmass
 theta_probes = 30 * np.pi/180
 r_max_probes = 2e-2
 z_probes = 1.2*sigma_z
