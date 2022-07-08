@@ -11,7 +11,8 @@ from ..general import _pkg_root
 
 import xobjects as xo
 import xtrack as xt
-
+import xfields as xf
+from xtrack import PipelineStatus
 
 class BeamBeamBiGaussian2D(xt.BeamElement):
     """
@@ -73,8 +74,19 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             d_py=0.,
             min_sigma_diff=1e-28,
             fieldmap=None,
+            update_on_track = None,
+            partners = [],
+            pipeline_number = None,
+            pipeline_max_size=1000,
+            pipeline_max_particles_per_rank=100,
+            communicator=None,
             **kwargs # TODO: to be removed, needed to avoid problems in from_dict
             ):
+        if pipeline_number is not None:
+            xt.BeamElement.__init__(self,pipeline_number = pipeline_number,pipeline_max_size=pipeline_max_size,pipeline_max_particles_per_rank=pipeline_max_particles_per_rank,communicator=communicator)
+            self.partners = partners
+            self._recv_buffer = np.zeros(5,dtype=np.float64)
+        self.update_on_track = update_on_track
 
         if _xobject is not None:
 
@@ -118,6 +130,56 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             if not hasattr(self, kk):
                 raise NameError(f'Unknown parameter: {kk}')
             setattr(self, kk, kwargs[kk])
+
+    def send_pipeline_messages(self,particles):
+        if particles.pipeline_ID.number not in self._pending_requests.keys():
+            self._pending_requests[particles.pipeline_ID.number] = {}
+            self._last_requests_turn[particles.pipeline_ID.number] = {}
+        ready_to_send = True
+        tag = self.get_pipeline_message_tag(self.partners[0],particles.pipeline_ID)
+        if tag in self._pending_requests[particles.pipeline_ID.number].keys():
+            if particles.at_turn[0] <= self._last_requests_turn[particles.pipeline_ID.number][tag]:
+                ready_to_send = False
+            else:
+                if not self._pending_requests[particles.pipeline_ID.number][tag].Test():
+                    ready_to_send = False
+        if ready_to_send:
+            if np.any(np.isnan(particles.x)):
+                print(particles.pipeline_ID,'turn',particles.at_turn[0],'nan in x in BeamBeam')
+            mean_x, sigma_x = xf.mean_and_std(particles.x)
+            mean_y, sigma_y = xf.mean_and_std(particles.y)
+            #############################################################
+            # TODO those properties are from PyHEADTAIL, should we bring them into xsuite?
+            n_particles = 1E11
+            #n_particles = particles.macroparticlenumber*particles.particlenumber_per_mp
+            #############################################################
+            params = np.array([mean_x,mean_y,sigma_x,sigma_y,n_particles],dtype=np.float64)
+            request = self._communicator.Issend(params,dest=self.partners[0].rank,tag=tag)
+            self._pending_requests[particles.pipeline_ID.number][tag] = request
+            print(particles.at_turn[0])
+            self._last_requests_turn[particles.pipeline_ID.number][tag] = particles.at_turn[0]
+
+    def pipeline_messages_are_ready(self,particles):
+        return self._communicator.Iprobe(source=self.partners[0].rank, tag=self.get_pipeline_message_tag(self.partners[0],particles.pipeline_ID))
+
+    def track(self,particles, **kwargs):
+        if self.update_on_track:
+            assert len(self.partners) > 0
+            self.send_pipeline_messages(particles)
+            if self.pipeline_messages_are_ready(particles):
+                tag = self.get_pipeline_message_tag(self.partners[0],particles.pipeline_ID)
+                self._communicator.Recv(self._recv_buffer,source=self.partners[0].rank,tag=tag)
+                self.update(mean_x=self._recv_buffer[0],mean_y=self._recv_buffer[1],sigma_x=self._recv_buffer[2],sigma_y=self._recv_buffer[3],n_particles=self._recv_buffer[4])
+            else:
+                return PipelineStatus(on_hold=True)
+        super().track(particles)
+
+    @property
+    def iscollective(self):
+        if self.update_on_track:
+            return True
+        else:
+            return False
 
     @property
     def mean_x(self):
