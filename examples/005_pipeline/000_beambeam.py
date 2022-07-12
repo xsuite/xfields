@@ -11,9 +11,9 @@ import xobjects as xo
 import xtrack as xt
 import xpart as xp
 from xfields.beam_elements.beambeam import BeamBeamBiGaussian2D
+from xtrack.pipeline import PipelineManager
 
 context = xo.ContextCpu(omp_num_threads=0)
-my_rank = MPI.COMM_WORLD.Get_rank()
 
 proton_mass = cst.value('proton mass energy equivalent in MeV')*1E6
 n_turn = int(1E4)
@@ -32,9 +32,6 @@ Q_y = 0.32
 beta_s = sigma_z/sigma_delta
 Q_s = 1E-3
 
-B1b1_ID = xp.particles.PipelineID(rank=0,number=0)
-B2b1_ID = xp.particles.PipelineID(rank=1,number=0)
-
 particles = xp.Particles(_context=context,
                      #particlenumber_per_mp=bunch_intensity/n_macroparticles,
                      q0 = 1,
@@ -46,7 +43,6 @@ particles = xp.Particles(_context=context,
                      py=np.sqrt(epsn_y/betastar_y/gamma)*np.random.randn(n_macroparticles),
                      zeta=sigma_z*np.random.randn(n_macroparticles),
                      delta=sigma_delta*np.random.randn(n_macroparticles),
-                     rank=my_rank,pipeline_number=0,
                      )
 
 arc12 = xt.LinearTransferMatrix(alpha_x_0 = 0.0, beta_x_0 = betastar_x, disp_x_0 = 0.0,
@@ -65,12 +61,28 @@ arc21 = xt.LinearTransferMatrix(alpha_x_0 = 0.0, beta_x_0 = betastar_x, disp_x_0
                        beta_s = beta_s, Q_s = -Q_s/2,
                        energy_ref_increment=0.0,energy_increment=0)
 
+beamBeam_IP1 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,q0=1,beta0=betar,
+                                    update_on_track = True)
+beamBeam_IP2 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,q0=1,beta0=betar,
+                                    update_on_track = True)
+
+####### Setting up pipeline #######
+my_rank = MPI.COMM_WORLD.Get_rank()
+pipeline_manager = PipelineManager(communicator = MPI.COMM_WORLD)
 if my_rank == 0:
-    partner = B2b1_ID
+    name = 'B1b1'
+    partner_name = 'B2b1'
 else:
-    partner = B1b1_ID
-beamBeam_IP1 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,pipeline_number=1,q0=1,beta0=betar,partners=[partner],communicator=MPI.COMM_WORLD,update_on_track = True)
-beamBeam_IP2 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,pipeline_number=2,q0=1,beta0=betar,partners=[partner],communicator=MPI.COMM_WORLD,update_on_track = True)
+    name = 'B2b1'
+    partner_name = 'B1b1'
+particles.init_pipeline(name=name)
+beamBeam_IP1.init_pipeline(pipeline_manager=pipeline_manager,name = 'BBIP1',partners_names=[partner_name])
+beamBeam_IP2.init_pipeline(pipeline_manager=pipeline_manager,name = 'BBIP2',partners_names=[partner_name])
+pipeline_manager.add_particles('B1b1',0)
+pipeline_manager.add_particles('B2b1',1)
+pipeline_manager.add_element(beamBeam_IP1.name)
+pipeline_manager.add_element(beamBeam_IP2.name)
+####################################
 
 tracker = xt.Tracker(
     line=xt.Line(elements=[beamBeam_IP1,
