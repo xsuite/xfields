@@ -61,10 +61,8 @@ arc21 = xt.LinearTransferMatrix(alpha_x_0 = 0.0, beta_x_0 = betastar_x, disp_x_0
                        beta_s = beta_s, Q_s = -Q_s/2,
                        energy_ref_increment=0.0,energy_increment=0)
 
-beamBeam_IP1 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,q0=1,beta0=betar,
-                                    update_on_track = True)
-beamBeam_IP2 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,q0=1,beta0=betar,
-                                    update_on_track = True)
+beamBeam_IP1 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,q0=1,beta0=betar)
+beamBeam_IP2 = BeamBeamBiGaussian2D(_context=context,min_sigma_diff=1e-10,q0=1,beta0=betar)
 
 ####### Setting up pipeline #######
 my_rank = MPI.COMM_WORLD.Get_rank()

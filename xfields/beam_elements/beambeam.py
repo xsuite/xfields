@@ -74,10 +74,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             d_py=0.,
             min_sigma_diff=1e-28,
             fieldmap=None,
-            update_on_track = None,
             **kwargs # TODO: to be removed, needed to avoid problems in from_dict
             ):
-        self.update_on_track = update_on_track
 
         if _xobject is not None:
 
@@ -144,7 +142,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             self._pipeline_manager.send_message(params,element_name=self.name,sender_name=particles.name,reciever_name=self.partners_names[0],turn=particles.at_turn[0])
 
     def track(self,particles, **kwargs):
-        if self.update_on_track:
+        if hasattr(self,'_pipeline_manager'):
             assert len(self.partners_names) > 0
             self.send_pipeline_messages(particles)
             if self.pipeline_messages_are_ready(particles):
@@ -156,7 +154,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     @property
     def iscollective(self):
-        if self.update_on_track:
+        if hasattr(self,'_pipeline_manager'):
             return True
         else:
             return False
