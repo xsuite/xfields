@@ -83,8 +83,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             **kwargs # TODO: to be removed, needed to avoid problems in from_dict
             ):
         if pipeline_number is not None:
-            xt.BeamElement.__init__(self,pipeline_number = pipeline_number,pipeline_max_size=pipeline_max_size,pipeline_max_particles_per_rank=pipeline_max_particles_per_rank,communicator=communicator)
-            self.partners = partners
+            xt.BeamElement.__init__(self)
+            self.init_pipeline(pipeline_number = pipeline_number,pipeline_max_size=pipeline_max_size,pipeline_max_particles_per_rank=pipeline_max_particles_per_rank,communicator=communicator,partners=partners)
             self._recv_buffer = np.zeros(5,dtype=np.float64)
         self.update_on_track = update_on_track
 
