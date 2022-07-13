@@ -113,6 +113,9 @@ class BeamBeam3D(xt.BeamElement):
 
             assert particles.name in self.collision_schedule.keys()
 
+
+        assert self.slide_index is None # The previous bunch interaction has been completed
+
         #### Move particles to the computation reference frame
 
         # Shift
@@ -133,6 +136,19 @@ class BeamBeam3D(xt.BeamElement):
 
         # Kick
         for i_step in range(self.num_slices_self + self.num_slices_other):
+
+            # Compute momenta
+            momenta_self = self.compute_slice_momenta(particles, self.slice_index)
+
+            # Send momenta (I invent a bit for now...)
+            self.pipeline_manager.send_data(momenta_self,
+                destination_for_particles=self.collision_schedule[particles.name]
+                tag_from_sting=f'{self.name}__{particles.name}__{i_step}')
+
+            # Send momenta (I invent a bit for now...)
+            self.pipeline_manager.send_data(momenta_self,
+                destination_for_particles=self.collision_schedule[particles.name]
+                tag_from_sting=f'{self.name}__{particles.name}__{i_step}')
 
             self._sychrobeam_kick(particles=particles, slice_index=self.slice_index,
                                   i_step=i_step)
