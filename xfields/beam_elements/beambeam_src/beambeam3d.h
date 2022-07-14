@@ -298,11 +298,11 @@ void BoostParameters_boost_coordinates_inv(
 }
 
 /*gpufun*/ void compute_Gx_Gy(
-             const double  x, 
+             const double  x,
              const double  y,
-             const double  sigma_x, 
+             const double  sigma_x,
              const double  sigma_y,
-             const double  min_sigma_diff, 
+             const double  min_sigma_diff,
 	     const double  Ex,
 	     const double  Ey,
                    double* Gx_ptr,
@@ -326,7 +326,7 @@ void BoostParameters_boost_coordinates_inv(
 	//printf("Inside Sig_11=%.10e\n", Sig_11);
 	//printf("Inside Sig_33=%.10e\n", Sig_33);
 
-        Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)   
+        Gx =-1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)
                    *(sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
         Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*
                       (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
@@ -352,15 +352,15 @@ void BoostParameters_boost_coordinates_inv(
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);
     const Sigmas Sigmas_0_star = BeamBeamBiGaussian3DData_getp_Sigmas_0_star(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
-    const double threshold_singular = 
+    const double threshold_singular =
 	    BeamBeamBiGaussian3DData_get_threshold_singular(el);
-    /*gpuglmem*/ const double* N_part_per_slice_arr = 
+    /*gpuglmem*/ const double* N_part_per_slice_arr =
 	    BeamBeamBiGaussian3DData_getp1_N_part_per_slice(el, 0);
-    /*gpuglmem*/ const double* x_slices_star_arr = 
+    /*gpuglmem*/ const double* x_slices_star_arr =
 	    BeamBeamBiGaussian3DData_getp1_x_slices_star(el, 0);
-    /*gpuglmem*/ const double* y_slices_star_arr = 
+    /*gpuglmem*/ const double* y_slices_star_arr =
 	    BeamBeamBiGaussian3DData_getp1_y_slices_star(el, 0);
-    /*gpuglmem*/ const double* sigma_slices_star_arr = 
+    /*gpuglmem*/ const double* sigma_slices_star_arr =
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
     	    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
     	    const double x_slice_star = x_slices_star_arr[i_slice];
@@ -386,15 +386,6 @@ void BoostParameters_boost_coordinates_inv(
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
     	        &dS_costheta, &dS_sintheta);
 
-    	    //printf("Sig_11_hat_star=%.10e\n",Sig_11_hat_star);
-	    //printf("Sig_33_hat_star=%.10e\n",Sig_33_hat_star);
-    	    //printf("costheta=%.10e\n",costheta);
-            //printf("sintheta=%.10e\n",sintheta);
-    	    //printf("dS_Sig_11_hat_star=%.10e\n",dS_Sig_11_hat_star);
-	    //printf("dS_Sig_33_hat_star=%.10e\n",dS_Sig_33_hat_star);
-    	    //printf("dS_costheta=%.10e\n",dS_costheta);
-            //printf("dS_sintheta=%.10e\n",dS_sintheta);
-
     	    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
     	    const double x_bar_star = *x_star + *px_star * S - x_slice_star;
     	    const double y_bar_star = *y_star + *py_star * S - y_slice_star;
@@ -414,17 +405,11 @@ void BoostParameters_boost_coordinates_inv(
 		min_sigma_diff,
     	        &Ex, &Ey);
 
-	    //printf("Ex=%.10e\n", Ex);
-	    //printf("Ey=%.10e\n", Ey);
-	
 	    //compute Gs
 	    double Gx, Gy;
 	    compute_Gx_Gy(x_bar_hat_star, y_bar_hat_star,
-			  sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
+			  sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
                           min_sigma_diff, Ex, Ey, &Gx, &Gy);
-	    
-	    //printf("Gx=%.10e\n", Gx);
-	    //printf("Gy=%.10e\n", Gy);
 
     	    // Compute kicks
     	    double Fx_hat_star = Ksl*Ex;
@@ -453,21 +438,21 @@ void BoostParameters_boost_coordinates_inv(
     }
 
 /*gpufun*/
-void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, 
+void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 		 	   LocalParticle* part0){
-	
+
     // Get data from memory
     const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
     const int N_slices = BeamBeamBiGaussian3DData_get_num_slices(el);
     const double delta_x = BeamBeamBiGaussian3DData_get_delta_x(el);
     const double delta_y = BeamBeamBiGaussian3DData_get_delta_y(el);
-    const double x_CO  = BeamBeamBiGaussian3DData_get_x_CO(el);     
+    const double x_CO = BeamBeamBiGaussian3DData_get_x_CO(el);
     const double px_CO = BeamBeamBiGaussian3DData_get_px_CO(el);
     const double y_CO = BeamBeamBiGaussian3DData_get_y_CO(el);
     const double py_CO = BeamBeamBiGaussian3DData_get_py_CO(el);
     const double sigma_CO = BeamBeamBiGaussian3DData_get_sigma_CO(el);
     const double delta_CO = BeamBeamBiGaussian3DData_get_delta_CO(el);
-    const double Dx_sub = BeamBeamBiGaussian3DData_get_Dx_sub(el); 
+    const double Dx_sub = BeamBeamBiGaussian3DData_get_Dx_sub(el);
     const double Dpx_sub = BeamBeamBiGaussian3DData_get_Dpx_sub(el);
     const double Dy_sub =BeamBeamBiGaussian3DData_get_Dy_sub(el);
     const double Dpy_sub =BeamBeamBiGaussian3DData_get_Dpy_sub(el);
@@ -482,7 +467,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	double zeta = LocalParticle_get_zeta(part);
     	double pzeta = LocalParticle_get_pzeta(part);
 
-    	const double q0 = LocalParticle_get_q0(part); 
+    	const double q0 = LocalParticle_get_q0(part);
     	const double p0c = LocalParticle_get_p0c(part); // eV
 
 
@@ -542,15 +527,15 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	LocalParticle_set_py(part, py);
     	LocalParticle_set_zeta(part, zeta);
     	LocalParticle_update_pzeta(part, pzeta);
-	
+
     //end_per_particle_block
 
 }
 
 /*gpufun*/
-void boost_local_particle(BeamBeamBiGaussian3DData el, 
+void boost_local_particle(BeamBeamBiGaussian3DData el,
 		 	   LocalParticle* part0){
-	
+
     // Get data from memory
     const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
 
