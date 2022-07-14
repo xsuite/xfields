@@ -130,8 +130,8 @@ bb_dtk.track(dtk_part)
 for cc in 'x px y py zeta delta'.split():
     val_test = getattr(part, cc)[0]
     val_ref = getattr(dtk_part, cc)
-    print('\n')
+    print('')
     print(f'ducktrack: {cc} = {val_ref:.12e}')
-    print(f'xsuite:     {cc} = {val_test:.12e}')
+    print(f'xsuite:    {cc} = {val_test:.12e}')
     assert np.isclose(val_test, val_ref, rtol=1e-11, atol=5e-12)
 

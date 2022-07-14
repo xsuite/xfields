@@ -234,3 +234,8 @@ srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
 srcs.append(_pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'))
 
 BeamBeamBiGaussian3D.XoStruct.extra_sources = srcs
+
+BeamBeamBiGaussian3D.XoStruct.per_particle_kernels=[
+    {'kernel_name': 'boost_particles', 
+     'local_particle_function_name': 'boost_local_particle'}
+]
