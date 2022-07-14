@@ -526,5 +526,45 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
 }
 
+/*gpufun*/
+void boost_local_particle(BeamBeamBiGaussian3DData el, 
+		 	   LocalParticle* part0){
+	
+    // Get data from memory
+    const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
+
+    //start_per_particle_block (part0->part)
+    	double x = LocalParticle_get_x(part);
+    	double px = LocalParticle_get_px(part);
+    	double y = LocalParticle_get_y(part);
+    	double py = LocalParticle_get_py(part);
+    	double zeta = LocalParticle_get_zeta(part);
+    	double pzeta = LocalParticle_get_pzeta(part);
+
+    	// Change reference frame
+    	double x_star =     x;
+    	double px_star =    px;
+    	double y_star =     y;
+    	double py_star =    py;
+    	double sigma_star = zeta;
+    	double pzeta_star = pzeta; // TODO: could be fixed, in any case we assume beta=beta0=1
+	                                      //       in the synchrobeam
+
+    	// Boost coordinates of the weak beam
+	BoostParameters_boost_coordinates(bpar,
+    	    &x_star, &px_star, &y_star, &py_star,
+    	    &sigma_star, &pzeta_star);
+
+    	LocalParticle_set_x(part, x);
+    	LocalParticle_set_px(part, px);
+    	LocalParticle_set_y(part, y);
+    	LocalParticle_set_py(part, py);
+    	LocalParticle_set_zeta(part, zeta);
+    	LocalParticle_update_pzeta(part, pzeta);
+
+    //end_per_particle_block
+
+}
+
 
 #endif
