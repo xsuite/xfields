@@ -134,7 +134,7 @@ class BeamBeam3D(xt.BeamElement):
         # Apply the bb kicks (puts the simulation on hold if waiting for message)
         ret = self._apply_bb_kicks_and_restore_ref_frame()
 
-        # Ret is None if done, esle it is a PipelineStatus
+        # ret is None if done, else it is a PipelineStatus
         return ret
 
     def resume(self, particles):
