@@ -177,6 +177,7 @@ class BeamBeam3D(xt.BeamElement):
             if data_received == 'not_ready':
                 return PipelineStatus(on_hold=True)
             else:
+                # Remember that here the slices need to be boosted (if not already done)
                 self.update_from_received_data(data_received) # Method to be written
 
             self._sychrobeam_kick(particles=particles, slice_index=self.slice_index,
