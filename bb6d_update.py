@@ -114,10 +114,16 @@ class BeamBeam3D(xt.BeamElement):
         if self.iscollective:
             assert isinstance(self._buffer.context, xo.ContextCpu), (
                 'Still to be generalized to run on GPU')
+            assert self.collision_schedule is not None
+            assert self.pipeline_manager is not None
+            assert self.i_step == 0
+            assert self._working_on_bunch is None # Not occupied by a bunch
             assert particles.name in self.collision_schedule.keys()
 
 
         assert self.slide_index is None # The previous bunch interaction has been completed
+
+        self._working_on_bunch = particles.name
 
         # Move particles to the computation reference frame
         self._change_ref_frame(particles)
@@ -176,6 +182,7 @@ class BeamBeam3D(xt.BeamElement):
             self.i_step += 1
             if self.i_step == self.num_slices_self + self.num_slices_other:
                 self.i_step = 0
+                self._working_on_bunch = None
                 break
 
         #### Move particles back from the computation reference frame and subtract user-defined kicks
