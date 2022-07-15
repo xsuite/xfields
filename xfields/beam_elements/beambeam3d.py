@@ -3,6 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
+from re import S
 from scipy.constants import e as qe
 import xobjects as xo
 import xtrack as xt
@@ -56,6 +57,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'x_slices_star': xo.Float64[:],
         'y_slices_star': xo.Float64[:],
         'sigma_slices_star': xo.Float64[:],
+
+        # New naming
+        'slices_other_beam_Sigma_11_star': xo.Float64[:],
+        'slices_other_beam_Sigma_12_star': xo.Float64[:],
+        'slices_other_beam_Sigma_13_star': xo.Float64[:],
+        'slices_other_beam_Sigma_14_star': xo.Float64[:],
+        'slices_other_beam_Sigma_22_star': xo.Float64[:],
+        'slices_other_beam_Sigma_23_star': xo.Float64[:],
+        'slices_other_beam_Sigma_24_star': xo.Float64[:],
+        'slices_other_beam_Sigma_33_star': xo.Float64[:],
+        'slices_other_beam_Sigma_34_star': xo.Float64[:],
+        'slices_other_beam_Sigma_44_star': xo.Float64[:],
+
+
     }
 
     _input_param_names = [
@@ -75,6 +90,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         ]
 
     def to_dict(self):
+
+        raise NotImplementedError('To be updated')
 
         dct = super().to_dict()
         for nn in self._input_param_names:
@@ -117,7 +134,18 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 N_part_per_slice=n_slices,
                 x_slices_star=n_slices,
                 y_slices_star=n_slices,
-                sigma_slices_star=n_slices)
+                sigma_slices_star=n_slices,
+                slices_other_beam_Sigma_11_star=n_slices,
+                slices_other_beam_Sigma_12_star=n_slices,
+                slices_other_beam_Sigma_13_star=n_slices,
+                slices_other_beam_Sigma_14_star=n_slices,
+                slices_other_beam_Sigma_22_star=n_slices,
+                slices_other_beam_Sigma_23_star=n_slices,
+                slices_other_beam_Sigma_24_star=n_slices,
+                slices_other_beam_Sigma_33_star=n_slices,
+                slices_other_beam_Sigma_34_star=n_slices,
+                slices_other_beam_Sigma_44_star=n_slices,
+                )
             self._from_oldinterface(params)
         else:
             super().__init__(**kwargs)
@@ -187,6 +215,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                  'Sig_33': bb6d_data.Sigmas_0_star.Sig_33_0,
                  'Sig_34': bb6d_data.Sigmas_0_star.Sig_34_0,
                  'Sig_44': bb6d_data.Sigmas_0_star.Sig_44_0}
+
+        self.slices_other_beam_Sigma_11_star = bb6d_data.Sigmas_0_star.Sig_11_0
+        self.slices_other_beam_Sigma_12_star = bb6d_data.Sigmas_0_star.Sig_12_0
+        self.slices_other_beam_Sigma_13_star = bb6d_data.Sigmas_0_star.Sig_13_0
+        self.slices_other_beam_Sigma_14_star = bb6d_data.Sigmas_0_star.Sig_14_0
+        self.slices_other_beam_Sigma_22_star = bb6d_data.Sigmas_0_star.Sig_22_0
+        self.slices_other_beam_Sigma_23_star = bb6d_data.Sigmas_0_star.Sig_23_0
+        self.slices_other_beam_Sigma_24_star = bb6d_data.Sigmas_0_star.Sig_24_0
+        self.slices_other_beam_Sigma_33_star = bb6d_data.Sigmas_0_star.Sig_33_0
+        self.slices_other_beam_Sigma_34_star = bb6d_data.Sigmas_0_star.Sig_34_0
+        self.slices_other_beam_Sigma_44_star = bb6d_data.Sigmas_0_star.Sig_44_0
+
+
+
         self.min_sigma_diff = bb6d_data.min_sigma_diff
         self.threshold_singular = bb6d_data.threshold_singular
         self.delta_x = bb6d_data.delta_x
