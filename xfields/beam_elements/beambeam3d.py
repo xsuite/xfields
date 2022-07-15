@@ -24,12 +24,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'boost_parameters': BoostParameters,
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
-        'num_slices': xo.Int64,
-        'delta_x': xo.Float64,
-        'delta_y': xo.Float64,
 
         # New naming
-
         'ref_shift_x': xo.Float64,
         'ref_shift_px': xo.Float64,
         'ref_shift_y': xo.Float64,
@@ -43,6 +39,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'post_subtract_py': xo.Float64,
         'post_subtract_zeta': xo.Float64,
         'post_subtract_pzeta': xo.Float64,
+
+        'num_slices_other_beam': xo.Int64,
 
         'slices_other_beam_num_particles': xo.Float64[:],
         'slices_other_beam_zeta_star_center': xo.Float64[:],
@@ -214,10 +212,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.min_sigma_diff = bb6d_data.min_sigma_diff
         self.threshold_singular = bb6d_data.threshold_singular
-        self.delta_x = 0.
-        self.delta_y = 0.
 
-        self.num_slices = len(bb6d_data.N_part_per_slice)
+        self.num_slices_other_beam = len(bb6d_data.N_part_per_slice)
 
     extra_sources= [
         _pkg_root.joinpath('headers/constants.h'),
