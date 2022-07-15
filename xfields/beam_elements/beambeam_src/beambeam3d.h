@@ -396,7 +396,7 @@ void synchrobeam_kick(
             &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
             &dS_costheta, &dS_sintheta);
 
-    // Evaluate transverse coordinates of the weake baem w.r.t. the strong beam centroid
+    // Evaluate transverse coordinates of the weak baem w.r.t. the strong beam centroid
     const double x_bar_star = *x_star + *px_star * S - x_slice_star;
     const double y_bar_star = *y_star + *py_star * S - y_slice_star;
 
