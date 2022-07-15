@@ -134,8 +134,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 q_part=qe, # the ducktrack input has the charge
                 phi=params["phi"],
                 alpha=params["alpha"],
-                delta_x=params["x_bb_co"],
-                delta_y=params["y_bb_co"],
+                delta_x=1.,
+                delta_y=1.,
                 N_part_per_slice=params["charge_slices"], #
                 z_slices=params["zeta_slices"],
                 Sig_11_0=1.,
@@ -148,20 +148,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 Sig_33_0=1.,
                 Sig_34_0=1.,
                 Sig_44_0=1.,
-                x_CO=params["x_co"],
-                px_CO=params["px_co"],
-                y_CO=params["y_co"],
-                py_CO=params["py_co"],
-                sigma_CO=params["zeta_co"],
-                delta_CO=params["delta_co"],
-                min_sigma_diff=1e-10,
-                threshold_singular=1e-28,
-                Dx_sub=params["d_x"],
-                Dpx_sub=params["d_px"],
-                Dy_sub=params["d_y"],
-                Dpy_sub=params["d_py"],
-                Dsigma_sub=params["d_zeta"],
-                Ddelta_sub=params["d_delta"],
+                x_CO=1.,
+                px_CO=1.,
+                y_CO=1.,
+                py_CO=1.,
+                sigma_CO=1.,
+                delta_CO=1.,
+                min_sigma_diff=1.,
+                threshold_singular=1.,
+                Dx_sub=1.,
+                Dpx_sub=1.,
+                Dy_sub=1.,
+                Dpy_sub=1.,
+                Dsigma_sub=1.,
+                Ddelta_sub=1.,
                 enabled=1,
             )
         assert(
@@ -193,22 +193,22 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_x_star_center = bb6d_data.x_slices_star
         self.slices_other_beam_y_star_center = bb6d_data.y_slices_star
 
-        self.ref_shift_x = bb6d_data.x_CO + bb6d_data.delta_x
-        self.ref_shift_px = bb6d_data.px_CO
-        self.ref_shift_y = bb6d_data.y_CO + bb6d_data.delta_y
-        self.ref_shift_py = bb6d_data.py_CO
-        self.ref_shift_zeta = bb6d_data.sigma_CO
-        self.ref_shift_pzeta = bb6d_data.delta_CO
+        self.ref_shift_x = params['x_co'] + params["x_bb_co"]
+        self.ref_shift_px = params['px_co']
+        self.ref_shift_y = params['y_co'] + params["y_bb_co"]
+        self.ref_shift_py = params['py_co']
+        self.ref_shift_zeta = params['zeta_co']
+        self.ref_shift_pzeta = params['delta_co']
 
-        self.post_subtract_x = bb6d_data.Dx_sub
-        self.post_subtract_px = bb6d_data.Dpx_sub
-        self.post_subtract_y = bb6d_data.Dy_sub
-        self.post_subtract_py = bb6d_data.Dpy_sub
-        self.post_subtract_zeta = bb6d_data.Dsigma_sub
-        self.post_subtract_pzeta = bb6d_data.Ddelta_sub
+        self.post_subtract_x = params['d_x']
+        self.post_subtract_px = params['d_px']
+        self.post_subtract_y = params['d_y']
+        self.post_subtract_py = params['d_py']
+        self.post_subtract_zeta = params['d_zeta']
+        self.post_subtract_pzeta = params['d_delta']
 
-        self.min_sigma_diff = bb6d_data.min_sigma_diff
-        self.threshold_singular = bb6d_data.threshold_singular
+        self.min_sigma_diff = 1e-10
+        self.threshold_singular = 1e-28
 
         self.num_slices_other_beam = len(bb6d_data.N_part_per_slice)
 
