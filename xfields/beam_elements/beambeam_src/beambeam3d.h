@@ -347,16 +347,7 @@ void synchrobeam_kick(
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
-    const double threshold_singular =
-        BeamBeamBiGaussian3DData_get_threshold_singular(el);
-    /*gpuglmem*/ const double* N_part_per_slice_arr =
-        BeamBeamBiGaussian3DData_getp1_N_part_per_slice(el, 0);
-    /*gpuglmem*/ const double* x_slices_star_arr =
-        BeamBeamBiGaussian3DData_getp1_x_slices_star(el, 0);
-    /*gpuglmem*/ const double* y_slices_star_arr =
-        BeamBeamBiGaussian3DData_getp1_y_slices_star(el, 0);
-    /*gpuglmem*/ const double* sigma_slices_star_arr =
-        BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
+    const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -369,18 +360,19 @@ void synchrobeam_kick(
     double const Sig_34_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_34_star(el, i_slice);
     double const Sig_44_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_44_star(el, i_slice);
 
-    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
-    const double x_slice_star = x_slices_star_arr[i_slice];
-    const double y_slice_star = y_slices_star_arr[i_slice];
+    double const zeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_star_center(el, i_slice);
+    double const num_part_slice = BeamBeamBiGaussian3DData_get_slices_other_beam_num_particles(el, i_slice);
+
+    const double x_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_x_star_center(el, i_slice);
+    const double y_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_y_star_center(el, i_slice);
 
     const double P0 = p0c/C_LIGHT*QELEM;
 
     //Compute force scaling factor
-    const double Ksl = N_part_per_slice_arr[i_slice]*QELEM*q0_bb
-                *QELEM*q0/(P0 * C_LIGHT);
+    const double Ksl = num_part_slice*QELEM*q0_bb*QELEM*q0/(P0 * C_LIGHT);
 
     //Identify the Collision Point (CP)
-    const double S = 0.5*(*zeta_star - sigma_slice_star);
+    const double S = 0.5*(*zeta_star - zeta_slice_star);
 
     // Propagate sigma matrix
     double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;

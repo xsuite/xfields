@@ -3,7 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from re import S
+from re import S, U
 from scipy.constants import e as qe
 import xobjects as xo
 import xtrack as xt
@@ -39,12 +39,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'Dpy_sub': xo.Float64,
         'Dsigma_sub': xo.Float64,
         'Ddelta_sub': xo.Float64,
-        'N_part_per_slice': xo.Float64[:],
-        'x_slices_star': xo.Float64[:],
-        'y_slices_star': xo.Float64[:],
-        'sigma_slices_star': xo.Float64[:],
 
         # New naming
+
+        'slices_other_beam_num_particles': xo.Float64[:],
+        'slices_other_beam_zeta_star_center': xo.Float64[:],
+        'slices_other_beam_x_star_center': xo.Float64[:],
+        'slices_other_beam_y_star_center': xo.Float64[:],
+
         'slices_other_beam_Sigma_11_star': xo.Float64[:],
         'slices_other_beam_Sigma_12_star': xo.Float64[:],
         'slices_other_beam_Sigma_13_star': xo.Float64[:],
@@ -105,6 +107,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 x_slices_star=n_slices,
                 y_slices_star=n_slices,
                 sigma_slices_star=n_slices,
+
                 slices_other_beam_Sigma_11_star=n_slices,
                 slices_other_beam_Sigma_12_star=n_slices,
                 slices_other_beam_Sigma_13_star=n_slices,
@@ -115,6 +118,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_Sigma_33_star=n_slices,
                 slices_other_beam_Sigma_34_star=n_slices,
                 slices_other_beam_Sigma_44_star=n_slices,
+
+                slices_other_beam_num_particles=n_slices,
+                slices_other_beam_zeta_star_center=n_slices,
+                slices_other_beam_x_star_center=n_slices,
+                slices_other_beam_y_star_center=n_slices
+
                 )
             self._from_oldinterface(params)
         else:
@@ -186,6 +195,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_Sigma_34_star = bb6d_data.Sigmas_0_star.Sig_34_0
         self.slices_other_beam_Sigma_44_star = bb6d_data.Sigmas_0_star.Sig_44_0
 
+        self.slices_other_beam_num_particles = bb6d_data.N_part_per_slice
+        self.slices_other_beam_zeta_star_center = bb6d_data.sigma_slices_star
+        self.slices_other_beam_x_star_center = bb6d_data.x_slices_star
+        self.slices_other_beam_y_star_center = bb6d_data.y_slices_star
+
 
 
         self.min_sigma_diff = bb6d_data.min_sigma_diff
@@ -205,10 +219,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.Dsigma_sub = bb6d_data.Dsigma_sub
         self.Ddelta_sub = bb6d_data.Ddelta_sub
         self.num_slices = len(bb6d_data.N_part_per_slice)
-        self.N_part_per_slice = bb6d_data.N_part_per_slice
-        self.x_slices_star = bb6d_data.x_slices_star
-        self.y_slices_star = bb6d_data.y_slices_star
-        self.sigma_slices_star = bb6d_data.sigma_slices_star
 
     extra_sources= [
         _pkg_root.joinpath('headers/constants.h'),
