@@ -10,20 +10,18 @@ import xtrack as xt
 
 from ..general import _pkg_root
 
-class BoostParameters(xo.Struct):
-    sphi = xo.Float64
-    cphi = xo.Float64
-    tphi = xo.Float64
-    salpha = xo.Float64
-    calpha = xo.Float64
-
 class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
         'q0': xo.Float64,
-        'boost_parameters': BoostParameters,
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
+
+        'sin_phi': xo.Float64,
+        'cos_phi': xo.Float64,
+        'tan_phi': xo.Float64,
+        'sin_alpha': xo.Float64,
+        'cos_alpha': xo.Float64,
 
         # New naming
         'ref_shift_x': xo.Float64,
@@ -173,12 +171,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             len(bb6d_data.sigma_slices_star))
 
         self.q0 = bb6d_data.q_part/qe, # ducktrack uses coulomb
-        self.boost_parameters = {
-                 'sphi': bb6d_data.parboost.sphi,
-                 'cphi': bb6d_data.parboost.cphi,
-                 'tphi': bb6d_data.parboost.tphi,
-                 'salpha': bb6d_data.parboost.salpha,
-                 'calpha': bb6d_data.parboost.calpha}
+        self.sin_phi = bb6d_data.parboost.sphi,
+        self.cos_phi = bb6d_data.parboost.cphi,
+        self.tan_phi = bb6d_data.parboost.tphi,
+        self.sin_alpha = bb6d_data.parboost.salpha,
+        self.cos_alpha = bb6d_data.parboost.calpha
 
         self.slices_other_beam_Sigma_11_star = bb6d_data.Sigmas_0_star.Sig_11_0
         self.slices_other_beam_Sigma_12_star = bb6d_data.Sigmas_0_star.Sig_12_0

@@ -162,7 +162,11 @@ void Sigmas_propagate(
 
 /*gpufun*/
 void BoostParameters_boost_coordinates(
-        const BoostParameters bp,
+        double const sphi,
+        double const cphi,
+        double const tphi,
+        double const salpha,
+        double const calpha,
         double* x_star,
         double* px_star,
         double* y_star,
@@ -170,11 +174,6 @@ void BoostParameters_boost_coordinates(
         double* sigma_star,
         double* delta_star){
 
-    double const sphi = BoostParameters_get_sphi(bp);
-    double const cphi = BoostParameters_get_cphi(bp);
-    double const tphi = BoostParameters_get_tphi(bp);
-    double const salpha = BoostParameters_get_salpha(bp);
-    double const calpha = BoostParameters_get_calpha(bp);
 
     double const x = *x_star;
     double const px = *px_star;
@@ -224,19 +223,17 @@ void BoostParameters_boost_coordinates(
 
 /*gpufun*/
 void BoostParameters_boost_coordinates_inv(
-        const BoostParameters bp,
+        double const sphi,
+        double const cphi,
+        double const tphi,
+        double const salpha,
+        double const calpha,
         double* x,
         double* px,
         double* y,
         double* py,
         double* sigma,
         double* delta){
-
-    double const sphi = BoostParameters_get_sphi(bp);
-    double const cphi = BoostParameters_get_cphi(bp);
-    double const tphi = BoostParameters_get_tphi(bp);
-    double const salpha = BoostParameters_get_salpha(bp);
-    double const calpha = BoostParameters_get_calpha(bp);
 
     double const x_st = *x;
     double const px_st = *px;
@@ -451,9 +448,13 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 LocalParticle* part0){
 
     // Get data from memory
-    const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
-    const int N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
+    double const sin_phi = BeamBeamBiGaussian3DData_get_sin_phi(el);
+    double const cos_phi = BeamBeamBiGaussian3DData_get_cos_phi(el);
+    double const tan_phi = BeamBeamBiGaussian3DData_get_tan_phi(el);
+    double const sin_alpha = BeamBeamBiGaussian3DData_get_sin_alpha(el);
+    double const cos_alpha = BeamBeamBiGaussian3DData_get_cos_alpha(el);
 
+    const int N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
 
     const double ref_shift_x = BeamBeamBiGaussian3DData_get_ref_shift_x(el);
     const double ref_shift_px = BeamBeamBiGaussian3DData_get_ref_shift_px(el);
@@ -491,7 +492,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                                           //       in the synchrobeam
 
         // Boost coordinates of the weak beam
-        BoostParameters_boost_coordinates(bpar,
+        BoostParameters_boost_coordinates(
+            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
             &x_star, &px_star, &y_star, &py_star,
             &sigma_star, &pzeta_star);
 
@@ -509,7 +511,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         }
 
         // Inverse boost on the coordinates of the weak beam
-        BoostParameters_boost_coordinates_inv(bpar,
+        BoostParameters_boost_coordinates_inv(
+            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
             &x_star, &px_star, &y_star, &py_star,
             &sigma_star, &pzeta_star);
 
@@ -538,9 +541,14 @@ void boost_local_particle(BeamBeamBiGaussian3DData el,
                 LocalParticle* part0){
 
     // Get data from memory
-    const BoostParameters bpar = BeamBeamBiGaussian3DData_getp_boost_parameters(el);
+    double const sin_phi = BeamBeamBiGaussian3DData_get_sin_phi(el);
+    double const cos_phi = BeamBeamBiGaussian3DData_get_cos_phi(el);
+    double const tan_phi = BeamBeamBiGaussian3DData_get_tan_phi(el);
+    double const sin_alpha = BeamBeamBiGaussian3DData_get_sin_alpha(el);
+    double const cos_alpha = BeamBeamBiGaussian3DData_get_cos_alpha(el);
 
     //start_per_particle_block (part0->part)
+
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
         double y = LocalParticle_get_y(part);
@@ -558,7 +566,8 @@ void boost_local_particle(BeamBeamBiGaussian3DData el,
                                           //       in the synchrobeam
 
         // Boost coordinates of the weak beam
-        BoostParameters_boost_coordinates(bpar,
+        BoostParameters_boost_coordinates(
+            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
             &x_star, &px_star, &y_star, &py_star,
             &sigma_star, &pzeta_star);
 
