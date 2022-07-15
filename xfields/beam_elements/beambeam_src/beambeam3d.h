@@ -12,7 +12,16 @@
 
 /*gpufun*/
 void Sigmas_propagate(
-        Sigmas sigmas_0,
+        double const Sig_11_0,
+        double const Sig_12_0,
+        double const Sig_13_0,
+        double const Sig_14_0,
+        double const Sig_22_0,
+        double const Sig_23_0,
+        double const Sig_24_0,
+        double const Sig_33_0,
+        double const Sig_34_0,
+        double const Sig_44_0,
         double const S,
         double const threshold_singular,
         int64_t const handle_singularities,
@@ -25,16 +34,6 @@ void Sigmas_propagate(
         double* dS_costheta_ptr,
         double* dS_sintheta_ptr)
 {
-    double const Sig_11_0 = Sigmas_get_Sig_11(sigmas_0);
-    double const Sig_12_0 = Sigmas_get_Sig_12(sigmas_0);
-    double const Sig_13_0 = Sigmas_get_Sig_13(sigmas_0);
-    double const Sig_14_0 = Sigmas_get_Sig_14(sigmas_0);
-    double const Sig_22_0 = Sigmas_get_Sig_22(sigmas_0);
-    double const Sig_23_0 = Sigmas_get_Sig_23(sigmas_0);
-    double const Sig_24_0 = Sigmas_get_Sig_24(sigmas_0);
-    double const Sig_33_0 = Sigmas_get_Sig_33(sigmas_0);
-    double const Sig_34_0 = Sigmas_get_Sig_34(sigmas_0);
-    double const Sig_44_0 = Sigmas_get_Sig_44(sigmas_0);
 
     // Propagate sigma matrix
     double const Sig_11 = Sig_11_0 + 2.*Sig_12_0*S+Sig_22_0*S*S;
@@ -360,6 +359,17 @@ void synchrobeam_kick(
     /*gpuglmem*/ const double* sigma_slices_star_arr =
         BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
+    double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
+    double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
+    double const Sig_13_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_13_star(el, i_slice);
+    double const Sig_14_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_14_star(el, i_slice);
+    double const Sig_22_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_22_star(el, i_slice);
+    double const Sig_23_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_23_star(el, i_slice);
+    double const Sig_24_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_24_star(el, i_slice);
+    double const Sig_33_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_33_star(el, i_slice);
+    double const Sig_34_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_34_star(el, i_slice);
+    double const Sig_44_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_44_star(el, i_slice);
+
     const double sigma_slice_star = sigma_slices_star_arr[i_slice];
     const double x_slice_star = x_slices_star_arr[i_slice];
     const double y_slice_star = y_slices_star_arr[i_slice];
@@ -378,7 +388,18 @@ void synchrobeam_kick(
     double dS_Sig_11_hat_star, dS_Sig_33_hat_star, dS_costheta, dS_sintheta;
 
     // Get strong beam shape at the CP
-    Sigmas_propagate(Sigmas_0_star, S, threshold_singular, 1,
+    Sigmas_propagate(
+            Sig_11_0,
+            Sig_12_0,
+            Sig_13_0,
+            Sig_14_0,
+            Sig_22_0,
+            Sig_23_0,
+            Sig_24_0,
+            Sig_33_0,
+            Sig_34_0,
+            Sig_44_0,
+            S, threshold_singular, 1,
             &Sig_11_hat_star, &Sig_33_hat_star,
             &costheta, &sintheta,
             &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
