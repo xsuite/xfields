@@ -13,9 +13,6 @@ from ..general import _pkg_root
 class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
-        'q0': xo.Float64,
-        'min_sigma_diff': xo.Float64,
-        'threshold_singular': xo.Float64,
 
         'sin_phi': xo.Float64,
         'cos_phi': xo.Float64,
@@ -23,7 +20,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'sin_alpha': xo.Float64,
         'cos_alpha': xo.Float64,
 
-        # New naming
         'ref_shift_x': xo.Float64,
         'ref_shift_px': xo.Float64,
         'ref_shift_y': xo.Float64,
@@ -37,6 +33,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'post_subtract_py': xo.Float64,
         'post_subtract_zeta': xo.Float64,
         'post_subtract_pzeta': xo.Float64,
+
+        'q0_other_beam': xo.Float64,
 
         'num_slices_other_beam': xo.Int64,
 
@@ -56,6 +54,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'slices_other_beam_Sigma_34_star': xo.Float64[:],
         'slices_other_beam_Sigma_44_star': xo.Float64[:],
 
+        'min_sigma_diff': xo.Float64,
+        'threshold_singular': xo.Float64,
 
     }
 
@@ -170,7 +170,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             len(bb6d_data.y_slices_star) ==
             len(bb6d_data.sigma_slices_star))
 
-        self.q0 = bb6d_data.q_part/qe, # ducktrack uses coulomb
+        self.q0_other_beam = bb6d_data.q_part/qe, # ducktrack uses coulomb
         self.sin_phi = bb6d_data.parboost.sphi,
         self.cos_phi = bb6d_data.parboost.cphi,
         self.tan_phi = bb6d_data.parboost.tphi,
