@@ -455,18 +455,19 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const int N_slices = BeamBeamBiGaussian3DData_get_num_slices(el);
     const double delta_x = BeamBeamBiGaussian3DData_get_delta_x(el);
     const double delta_y = BeamBeamBiGaussian3DData_get_delta_y(el);
-    const double x_CO = BeamBeamBiGaussian3DData_get_x_CO(el);
-    const double px_CO = BeamBeamBiGaussian3DData_get_px_CO(el);
-    const double y_CO = BeamBeamBiGaussian3DData_get_y_CO(el);
-    const double py_CO = BeamBeamBiGaussian3DData_get_py_CO(el);
-    const double sigma_CO = BeamBeamBiGaussian3DData_get_sigma_CO(el);
-    const double delta_CO = BeamBeamBiGaussian3DData_get_delta_CO(el);
     const double Dx_sub = BeamBeamBiGaussian3DData_get_Dx_sub(el);
     const double Dpx_sub = BeamBeamBiGaussian3DData_get_Dpx_sub(el);
-    const double Dy_sub =BeamBeamBiGaussian3DData_get_Dy_sub(el);
-    const double Dpy_sub =BeamBeamBiGaussian3DData_get_Dpy_sub(el);
-    const double Dsigma_sub =BeamBeamBiGaussian3DData_get_Dsigma_sub(el);
-    const double Ddelta_sub =BeamBeamBiGaussian3DData_get_Ddelta_sub(el);
+    const double Dy_sub = BeamBeamBiGaussian3DData_get_Dy_sub(el);
+    const double Dpy_sub = BeamBeamBiGaussian3DData_get_Dpy_sub(el);
+    const double Dsigma_sub = BeamBeamBiGaussian3DData_get_Dsigma_sub(el);
+    const double Ddelta_sub = BeamBeamBiGaussian3DData_get_Ddelta_sub(el);
+
+    const double ref_shift_x = BeamBeamBiGaussian3DData_get_ref_shift_x(el);
+    const double ref_shift_px = BeamBeamBiGaussian3DData_get_ref_shift_px(el);
+    const double ref_shift_y = BeamBeamBiGaussian3DData_get_ref_shift_y(el);
+    const double ref_shift_py = BeamBeamBiGaussian3DData_get_ref_shift_py(el);
+    const double ref_shift_zeta = BeamBeamBiGaussian3DData_get_ref_shift_zeta(el);
+    const double ref_shift_pzeta = BeamBeamBiGaussian3DData_get_ref_shift_pzeta(el);
 
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
@@ -481,12 +482,12 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
 
         // Change reference frame
-        double x_star =     x     - x_CO    - delta_x;
-        double px_star =    px    - px_CO;
-        double y_star =     y     - y_CO    - delta_y;
-        double py_star =    py    - py_CO;
-        double sigma_star = zeta  - sigma_CO;
-        double pzeta_star = pzeta - delta_CO; // TODO: could be fixed, in any case we assume beta=beta0=1
+        double x_star =     x     - ref_shift_x - delta_x;
+        double px_star =    px    - ref_shift_px;
+        double y_star =     y     - ref_shift_y    - delta_y;
+        double py_star =    py    - ref_shift_py;
+        double sigma_star = zeta  - ref_shift_zeta;
+        double pzeta_star = pzeta - ref_shift_pzeta; // TODO: could be fixed, in any case we assume beta=beta0=1
                                           //       in the synchrobeam
 
         // Boost coordinates of the weak beam
@@ -513,12 +514,12 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             &sigma_star, &pzeta_star);
 
         // Go back to original reference frame and remove dipolar effect
-        x =     x_star     + x_CO   + delta_x - Dx_sub;
-        px =    px_star    + px_CO            - Dpx_sub;
-        y =     y_star     + y_CO   + delta_y - Dy_sub;
-        py =    py_star    + py_CO            - Dpy_sub;
-        zeta =  sigma_star + sigma_CO         - Dsigma_sub;
-        pzeta = pzeta_star + delta_CO         - Ddelta_sub;
+        x =     x_star     + ref_shift_x     + delta_x - Dx_sub;
+        px =    px_star    + ref_shift_px              - Dpx_sub;
+        y =     y_star     + ref_shift_y     + delta_y - Dy_sub;
+        py =    py_star    + ref_shift_py              - Dpy_sub;
+        zeta =  sigma_star + ref_shift_zeta            - Dsigma_sub;
+        pzeta = pzeta_star + ref_shift_pzeta           - Ddelta_sub;
 
 
         LocalParticle_set_x(part, x);
