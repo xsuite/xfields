@@ -198,9 +198,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_x_star_center = bb6d_data.x_slices_star
         self.slices_other_beam_y_star_center = bb6d_data.y_slices_star
 
-        self.ref_shift_x = bb6d_data.x_CO
+        self.ref_shift_x = bb6d_data.x_CO + bb6d_data.delta_x
         self.ref_shift_px = bb6d_data.px_CO
-        self.ref_shift_y = bb6d_data.y_CO
+        self.ref_shift_y = bb6d_data.y_CO + bb6d_data.delta_y
         self.ref_shift_py = bb6d_data.py_CO
         self.ref_shift_zeta = bb6d_data.sigma_CO
         self.ref_shift_pzeta = bb6d_data.delta_CO
@@ -214,8 +214,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.min_sigma_diff = bb6d_data.min_sigma_diff
         self.threshold_singular = bb6d_data.threshold_singular
-        self.delta_x = bb6d_data.delta_x
-        self.delta_y = bb6d_data.delta_y
+        self.delta_x = 0.
+        self.delta_y = 0.
 
         self.num_slices = len(bb6d_data.N_part_per_slice)
 
