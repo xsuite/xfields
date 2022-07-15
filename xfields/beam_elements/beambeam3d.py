@@ -103,10 +103,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             params=kwargs['old_interface']
             n_slices=len(params["charge_slices"])
             super().__init__(
-                N_part_per_slice=n_slices,
-                x_slices_star=n_slices,
-                y_slices_star=n_slices,
-                sigma_slices_star=n_slices,
 
                 slices_other_beam_Sigma_11_star=n_slices,
                 slices_other_beam_Sigma_12_star=n_slices,
