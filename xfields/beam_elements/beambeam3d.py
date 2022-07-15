@@ -210,7 +210,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.min_sigma_diff = 1e-10
         self.threshold_singular = 1e-28
 
-        self.num_slices_other_beam = len(bb6d_data.N_part_per_slice)
+        self.num_slices_other_beam = len(params["charge_slices"])
 
     extra_sources= [
         _pkg_root.joinpath('headers/constants.h'),
