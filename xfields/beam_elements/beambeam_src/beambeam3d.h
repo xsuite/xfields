@@ -357,11 +357,11 @@ void synchrobeam_kick(
     double const Sig_34_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_34_star(el, i_slice);
     double const Sig_44_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_44_star(el, i_slice);
 
-    double const zeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_star_center(el, i_slice);
     double const num_part_slice = BeamBeamBiGaussian3DData_get_slices_other_beam_num_particles(el, i_slice);
 
-    const double x_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_x_star_center(el, i_slice);
-    const double y_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_y_star_center(el, i_slice);
+    const double x_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_x_center_star(el, i_slice);
+    const double y_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_y_center_star(el, i_slice);
+    double const zeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_center_star(el, i_slice);
 
     const double P0 = p0c/C_LIGHT*QELEM;
 

@@ -39,9 +39,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'num_slices_other_beam': xo.Int64,
 
         'slices_other_beam_num_particles': xo.Float64[:],
-        'slices_other_beam_zeta_star_center': xo.Float64[:],
-        'slices_other_beam_x_star_center': xo.Float64[:],
-        'slices_other_beam_y_star_center': xo.Float64[:],
+
+        'slices_other_beam_zeta_center_star': xo.Float64[:],
+        'slices_other_beam_x_center_star': xo.Float64[:],
+        'slices_other_beam_y_center_star': xo.Float64[:],
 
         'slices_other_beam_Sigma_11_star': xo.Float64[:],
         'slices_other_beam_Sigma_12_star': xo.Float64[:],
@@ -114,9 +115,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_Sigma_44_star=n_slices,
 
                 slices_other_beam_num_particles=n_slices,
-                slices_other_beam_zeta_star_center=n_slices,
-                slices_other_beam_x_star_center=n_slices,
-                slices_other_beam_y_star_center=n_slices
+                slices_other_beam_zeta_center_star=n_slices,
+                slices_other_beam_x_center_star=n_slices,
+                slices_other_beam_y_center_star=n_slices
 
                 )
             self._from_oldinterface(params)
@@ -189,9 +190,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_Sigma_44 = params['sigma_44']
 
         self.slices_other_beam_num_particles = bb6d_data.N_part_per_slice
-        self.slices_other_beam_zeta_star_center = bb6d_data.sigma_slices_star
-        self.slices_other_beam_x_star_center = bb6d_data.x_slices_star
-        self.slices_other_beam_y_star_center = bb6d_data.y_slices_star
+        self.slices_other_beam_zeta_center_star = bb6d_data.sigma_slices_star
+        self.slices_other_beam_x_center_star = bb6d_data.x_slices_star
+        self.slices_other_beam_y_center_star = bb6d_data.y_slices_star
 
         self.ref_shift_x = params['x_co'] + params["x_bb_co"]
         self.ref_shift_px = params['px_co']
@@ -226,6 +227,41 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         {'kernel_name': 'boost_particles',
         'local_particle_function_name': 'boost_local_particle'}
     ]
+
+    @property
+    def slices_other_beam_z_centers(self):
+
+        x_star_slices = self.slices_other_beam_x_star_center
+        y_star_slices = self.slices_other_beam_y_star_center
+        z_star_slices = self.slices_other_beam_zeta_star_center
+
+        # TODO: might not work on GPU
+        (
+            x_slices,
+            px_slices,
+            y_slices,
+            py_slices,
+            sigma_slices,
+            delta_slices,
+        ) = _python_inv_boost(
+            x_st=x_star_slices,
+            px_st=0 * x_star_slices,
+            y_st=y_star_slices,
+            py_st=0 * x_star_slices,
+            sigma_st=z_star_slices,
+            delta_st=0 * z_star_slices,
+            sphi=self.sin_phi,
+            cphi=self.cos_phi,
+            tphi=self.tan_phi,
+            salpha=self.sin_alpha,
+            calpha=self.cos_alpha,
+        )
+
+        return self._buffer.context.linked_array_type.from_array(
+              sigma_slices,
+              mode='setitem_from_container',
+              container=self,
+              container_setitem_name='tobewritten')
 
     # Generated properties (using the following code)
     '''
@@ -529,5 +565,5 @@ def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, sigma_st, delta_st,
 
     return x_i, px_i, y_i, py_i, sigma_i, delta_i
 
-_python_inv_boost = np.vectorize(_python_inv_boost_scalar,  
+_python_inv_boost = np.vectorize(_python_inv_boost_scalar,
     excluded=("sphi", "cphi", "tphi", "salpha", "calpha"))
