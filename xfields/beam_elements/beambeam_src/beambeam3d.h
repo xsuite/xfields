@@ -455,12 +455,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const int N_slices = BeamBeamBiGaussian3DData_get_num_slices(el);
     const double delta_x = BeamBeamBiGaussian3DData_get_delta_x(el);
     const double delta_y = BeamBeamBiGaussian3DData_get_delta_y(el);
-    const double Dx_sub = BeamBeamBiGaussian3DData_get_Dx_sub(el);
-    const double Dpx_sub = BeamBeamBiGaussian3DData_get_Dpx_sub(el);
-    const double Dy_sub = BeamBeamBiGaussian3DData_get_Dy_sub(el);
-    const double Dpy_sub = BeamBeamBiGaussian3DData_get_Dpy_sub(el);
-    const double Dsigma_sub = BeamBeamBiGaussian3DData_get_Dsigma_sub(el);
-    const double Ddelta_sub = BeamBeamBiGaussian3DData_get_Ddelta_sub(el);
+
 
     const double ref_shift_x = BeamBeamBiGaussian3DData_get_ref_shift_x(el);
     const double ref_shift_px = BeamBeamBiGaussian3DData_get_ref_shift_px(el);
@@ -468,6 +463,13 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const double ref_shift_py = BeamBeamBiGaussian3DData_get_ref_shift_py(el);
     const double ref_shift_zeta = BeamBeamBiGaussian3DData_get_ref_shift_zeta(el);
     const double ref_shift_pzeta = BeamBeamBiGaussian3DData_get_ref_shift_pzeta(el);
+
+    const double post_subtract_x = BeamBeamBiGaussian3DData_get_post_subtract_x(el);
+    const double post_subtract_px = BeamBeamBiGaussian3DData_get_post_subtract_px(el);
+    const double post_subtract_y = BeamBeamBiGaussian3DData_get_post_subtract_y(el);
+    const double post_subtract_py = BeamBeamBiGaussian3DData_get_post_subtract_py(el);
+    const double post_subtract_zeta = BeamBeamBiGaussian3DData_get_post_subtract_zeta(el);
+    const double post_subtract_pzeta = BeamBeamBiGaussian3DData_get_post_subtract_pzeta(el);
 
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
@@ -514,12 +516,12 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             &sigma_star, &pzeta_star);
 
         // Go back to original reference frame and remove dipolar effect
-        x =     x_star     + ref_shift_x     + delta_x - Dx_sub;
-        px =    px_star    + ref_shift_px              - Dpx_sub;
-        y =     y_star     + ref_shift_y     + delta_y - Dy_sub;
-        py =    py_star    + ref_shift_py              - Dpy_sub;
-        zeta =  sigma_star + ref_shift_zeta            - Dsigma_sub;
-        pzeta = pzeta_star + ref_shift_pzeta           - Ddelta_sub;
+        x =     x_star     + ref_shift_x     + delta_x - post_subtract_x;
+        px =    px_star    + ref_shift_px              - post_subtract_px;
+        y =     y_star     + ref_shift_y     + delta_y - post_subtract_y;
+        py =    py_star    + ref_shift_py              - post_subtract_py;
+        zeta =  sigma_star + ref_shift_zeta            - post_subtract_zeta;
+        pzeta = pzeta_star + ref_shift_pzeta           - post_subtract_pzeta;
 
 
         LocalParticle_set_x(part, x);

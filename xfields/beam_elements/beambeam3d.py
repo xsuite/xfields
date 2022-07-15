@@ -27,12 +27,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'num_slices': xo.Int64,
         'delta_x': xo.Float64,
         'delta_y': xo.Float64,
-        'Dx_sub': xo.Float64,
-        'Dpx_sub': xo.Float64,
-        'Dy_sub': xo.Float64,
-        'Dpy_sub': xo.Float64,
-        'Dsigma_sub': xo.Float64,
-        'Ddelta_sub': xo.Float64,
 
         # New naming
 
@@ -42,6 +36,13 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'ref_shift_py': xo.Float64,
         'ref_shift_zeta': xo.Float64,
         'ref_shift_pzeta': xo.Float64,
+
+        'post_subtract_x': xo.Float64,
+        'post_subtract_px': xo.Float64,
+        'post_subtract_y': xo.Float64,
+        'post_subtract_py': xo.Float64,
+        'post_subtract_zeta': xo.Float64,
+        'post_subtract_pzeta': xo.Float64,
 
         'slices_other_beam_num_particles': xo.Float64[:],
         'slices_other_beam_zeta_star_center': xo.Float64[:],
@@ -204,16 +205,18 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.ref_shift_zeta = bb6d_data.sigma_CO
         self.ref_shift_pzeta = bb6d_data.delta_CO
 
+        self.post_subtract_x = bb6d_data.Dx_sub
+        self.post_subtract_px = bb6d_data.Dpx_sub
+        self.post_subtract_y = bb6d_data.Dy_sub
+        self.post_subtract_py = bb6d_data.Dpy_sub
+        self.post_subtract_zeta = bb6d_data.Dsigma_sub
+        self.post_subtract_pzeta = bb6d_data.Ddelta_sub
+
         self.min_sigma_diff = bb6d_data.min_sigma_diff
         self.threshold_singular = bb6d_data.threshold_singular
         self.delta_x = bb6d_data.delta_x
         self.delta_y = bb6d_data.delta_y
-        self.Dx_sub = bb6d_data.Dx_sub
-        self.Dpx_sub = bb6d_data.Dpx_sub
-        self.Dy_sub = bb6d_data.Dy_sub
-        self.Dpy_sub = bb6d_data.Dpy_sub
-        self.Dsigma_sub = bb6d_data.Dsigma_sub
-        self.Ddelta_sub = bb6d_data.Ddelta_sub
+
         self.num_slices = len(bb6d_data.N_part_per_slice)
 
     extra_sources= [
