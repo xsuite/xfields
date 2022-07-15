@@ -17,25 +17,11 @@ class BoostParameters(xo.Struct):
     salpha = xo.Float64
     calpha = xo.Float64
 
-class Sigmas(xo.Struct):
-    Sig_11 = xo.Float64
-    Sig_12 = xo.Float64
-    Sig_13 = xo.Float64
-    Sig_14 = xo.Float64
-    Sig_22 = xo.Float64
-    Sig_23 = xo.Float64
-    Sig_24 = xo.Float64
-    Sig_33 = xo.Float64
-    Sig_34 = xo.Float64
-    Sig_44 = xo.Float64
-
-
 class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
         'q0': xo.Float64,
         'boost_parameters': BoostParameters,
-        'Sigmas_0_star': Sigmas,
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
         'num_slices': xo.Int64,

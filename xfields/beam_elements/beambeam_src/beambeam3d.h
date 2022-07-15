@@ -346,7 +346,6 @@ void synchrobeam_kick(
 
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);
-    const Sigmas Sigmas_0_star = BeamBeamBiGaussian3DData_getp_Sigmas_0_star(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular =
         BeamBeamBiGaussian3DData_get_threshold_singular(el);
