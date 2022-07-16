@@ -488,7 +488,7 @@ def _python_boost_scalar(x, px, y, py, sigma, delta,
 
     return x_st, px_st, y_st, py_st, sigma_st, delta_st
 
-_python_boost = np.vectorize(_python_boost_scalar,  
+_python_boost = np.vectorize(_python_boost_scalar,
     excluded=("sphi", "cphi", "tphi", "salpha", "calpha"))
 
 def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, sigma_st, delta_st,
