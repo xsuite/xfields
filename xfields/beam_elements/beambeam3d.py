@@ -40,9 +40,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         'slices_other_beam_num_particles': xo.Float64[:],
 
-        'slices_other_beam_zeta_center_star': xo.Float64[:],
         'slices_other_beam_x_center_star': xo.Float64[:],
+        'slices_other_beam_px_center_star': xo.Float64[:],
         'slices_other_beam_y_center_star': xo.Float64[:],
+        'slices_other_beam_py_center_star': xo.Float64[:],
+        'slices_other_beam_zeta_center_star': xo.Float64[:],
+        'slices_other_beam_pzeta_center_star': xo.Float64[:],
 
         'slices_other_beam_Sigma_11_star': xo.Float64[:],
         'slices_other_beam_Sigma_12_star': xo.Float64[:],
@@ -115,9 +118,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_Sigma_44_star=n_slices,
 
                 slices_other_beam_num_particles=n_slices,
-                slices_other_beam_zeta_center_star=n_slices,
                 slices_other_beam_x_center_star=n_slices,
-                slices_other_beam_y_center_star=n_slices
+                slices_other_beam_px_center_star=n_slices,
+                slices_other_beam_y_center_star=n_slices,
+                slices_other_beam_py_center_star=n_slices,
+                slices_other_beam_zeta_center_star=n_slices,
+                slices_other_beam_pzeta_center_star=n_slices,
 
                 )
             self._from_oldinterface(params)
