@@ -3,6 +3,8 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
+from lib2to3.pgen2.token import SLASHEQUAL
+from tkinter import W
 import numpy as np
 
 import xobjects as xo
@@ -41,11 +43,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'slices_other_beam_num_particles': xo.Float64[:],
 
         'slices_other_beam_x_center_star': xo.Float64[:],
-        'slices_other_beam_px_center_star': xo.Float64[:],
         'slices_other_beam_y_center_star': xo.Float64[:],
-        'slices_other_beam_py_center_star': xo.Float64[:],
         'slices_other_beam_zeta_center_star': xo.Float64[:],
-        'slices_other_beam_pzeta_center_star': xo.Float64[:],
 
         'slices_other_beam_Sigma_11_star': xo.Float64[:],
         'slices_other_beam_Sigma_12_star': xo.Float64[:],
@@ -119,11 +118,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                 slices_other_beam_num_particles=n_slices,
                 slices_other_beam_x_center_star=n_slices,
-                slices_other_beam_px_center_star=n_slices,
                 slices_other_beam_y_center_star=n_slices,
-                slices_other_beam_py_center_star=n_slices,
                 slices_other_beam_zeta_center_star=n_slices,
-                slices_other_beam_pzeta_center_star=n_slices,
 
                 )
             self._from_oldinterface(params)
@@ -134,55 +130,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     setattr(self, nn, kwargs[nn])
 
     def _from_oldinterface(self, params):
-        import ducktrack
 
-        from scipy.constants import e as qe
-        bb6d_data = ducktrack.BB6Ddata.BB6D_init(
-                q_part=qe, # the ducktrack input has the charge
-                phi=params["phi"],
-                alpha=params["alpha"],
-                delta_x=1.,
-                delta_y=1.,
-                N_part_per_slice=params["charge_slices"], #
-                z_slices=params["zeta_slices"],
-                Sig_11_0=1.,
-                Sig_12_0=1.,
-                Sig_13_0=1.,
-                Sig_14_0=1.,
-                Sig_22_0=1.,
-                Sig_23_0=1.,
-                Sig_24_0=1.,
-                Sig_33_0=1.,
-                Sig_34_0=1.,
-                Sig_44_0=1.,
-                x_CO=1.,
-                px_CO=1.,
-                y_CO=1.,
-                py_CO=1.,
-                sigma_CO=1.,
-                delta_CO=1.,
-                min_sigma_diff=1.,
-                threshold_singular=1.,
-                Dx_sub=1.,
-                Dpx_sub=1.,
-                Dy_sub=1.,
-                Dpy_sub=1.,
-                Dsigma_sub=1.,
-                Ddelta_sub=1.,
-                enabled=1,
-            )
-        assert(
-            len(bb6d_data.N_part_per_slice) ==
-            len(bb6d_data.x_slices_star) ==
-            len(bb6d_data.y_slices_star) ==
-            len(bb6d_data.sigma_slices_star))
+        self.q0_other_beam = 1., # TODO: handle ions
 
-        self.q0_other_beam = bb6d_data.q_part/qe, # ducktrack uses coulomb
-        self.sin_phi = bb6d_data.parboost.sphi,
-        self.cos_phi = bb6d_data.parboost.cphi,
-        self.tan_phi = bb6d_data.parboost.tphi,
-        self.sin_alpha = bb6d_data.parboost.salpha,
-        self.cos_alpha = bb6d_data.parboost.calpha
+        phi = params["phi"]
+        alpha = params["alpha"]
+        self.sin_phi = np.sin(phi)
+        self.cos_phi = np.cos(phi)
+        self.tan_phi = np.tan(phi)
+        self.sin_alpha = np.sin(alpha)
+        self.cos_alpha = np.cos(alpha)
 
         self.slices_other_beam_Sigma_11 = params['sigma_11']
         self.slices_other_beam_Sigma_12 = params['sigma_12']
@@ -195,10 +152,38 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_Sigma_34 = params['sigma_34']
         self.slices_other_beam_Sigma_44 = params['sigma_44']
 
-        self.slices_other_beam_num_particles = bb6d_data.N_part_per_slice
-        self.slices_other_beam_zeta_center_star = bb6d_data.sigma_slices_star
-        self.slices_other_beam_x_center_star = bb6d_data.x_slices_star
-        self.slices_other_beam_y_center_star = bb6d_data.y_slices_star
+        # Sort according to z, head at the first position in the arrays
+        z_slices = np.array(params["zeta_slices"]).copy()
+        N_part_per_slice = params["charge_slices"].copy()
+        ind_sorted = np.argsort(z_slices)[::-1]
+        z_slices = np.take(z_slices, ind_sorted)
+        N_part_per_slice = np.take(N_part_per_slice, ind_sorted)
+
+        (
+        x_slices_star,
+        px_slices_star,
+        y_slices_star,
+        py_slices_star,
+        zeta_slices_star,
+        pzeta_slices_star,
+        ) = _python_boost(
+            x=0 * z_slices,
+            px=0 * z_slices,
+            y=0 * z_slices,
+            py=0 * z_slices,
+            sigma=z_slices,
+            delta=0 * z_slices,
+            sphi = self.sin_phi,
+            cphi = self.cos_phi,
+            tphi = self.tan_phi,
+            salpha = self.sin_alpha,
+            calpha = self.cos_alpha,
+        )
+
+        self.slices_other_beam_num_particles = N_part_per_slice
+        self.slices_other_beam_zeta_center_star = zeta_slices_star
+        self.slices_other_beam_x_center_star = x_slices_star
+        self.slices_other_beam_y_center_star = y_slices_star
 
         self.ref_shift_x = params['x_co'] + params["x_bb_co"]
         self.ref_shift_px = params['px_co']
@@ -234,40 +219,40 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'local_particle_function_name': 'boost_local_particle'}
     ]
 
-    @property
-    def slices_other_beam_z_centers(self):
+    # We keep this just as inspiration for the future
+    # @property
+    # def slices_other_beam_zeta_centers(self):
 
-        x_star_slices = self.slices_other_beam_x_star_center
-        y_star_slices = self.slices_other_beam_y_star_center
-        z_star_slices = self.slices_other_beam_zeta_star_center
-
-        # TODO: might not work on GPU
-        (
-            x_slices,
-            px_slices,
-            y_slices,
-            py_slices,
-            sigma_slices,
-            delta_slices,
-        ) = _python_inv_boost(
-            x_st=x_star_slices,
-            px_st=0 * x_star_slices,
-            y_st=y_star_slices,
-            py_st=0 * x_star_slices,
-            sigma_st=z_star_slices,
-            delta_st=0 * z_star_slices,
-            sphi=self.sin_phi,
-            cphi=self.cos_phi,
-            tphi=self.tan_phi,
-            salpha=self.sin_alpha,
-            calpha=self.cos_alpha,
-        )
-
-        return self._buffer.context.linked_array_type.from_array(
-              sigma_slices,
-              mode='setitem_from_container',
-              container=self,
-              container_setitem_name='tobewritten')
+    #     x_star_slices = self.slices_other_beam_x_center_star
+    #     px_star_slices = self.slices_other_beam_px_center_star
+    #     y_star_slices = self.slices_other_beam_y_center_star
+    #     py_star_slices = self.slices_other_beam_py_center_star
+    #     zeta_star_slices = self.slices_other_beam_zeta_center_star
+    #     pzeta_star_slices = self.slices_other_beam_pzeta_center_star
+    #
+    #     (
+    #         x_slices,
+    #         px_slices,
+    #         y_slices,
+    #         py_slices,
+    #         zeta_slices,
+    #         delta_slices,
+    #     ) = _python_inv_boost(
+    #         x_st=x_star_slices,
+    #         px_st=px_star_slices,
+    #         y_st=y_star_slices,
+    #         py_st=py_star_slices,
+    #         sigma_st=zeta_star_slices,
+    #         delta_st=pzeta_star_slices,
+    #         sphi=self.sin_phi,
+    #         cphi=self.cos_phi,
+    #         tphi=self.tan_phi,
+    #         salpha=self.sin_alpha,
+    #         calpha=self.cos_alpha,
+    #     )
+    #    return self._buffer.context.linked_array_type.from_array(
+    #          zeta_slices,
+    #          mode='readonly')
 
     # Generated properties (using the following code)
     '''
