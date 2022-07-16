@@ -3,8 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from lib2to3.pgen2.token import SLASHEQUAL
-from tkinter import W
 import numpy as np
 
 import xobjects as xo
