@@ -530,7 +530,6 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         zeta =  sigma_star + shift_zeta  - post_subtract_zeta;
         pzeta = pzeta_star + shift_pzeta - post_subtract_pzeta;
 
-
         LocalParticle_set_x(part, x);
         LocalParticle_set_px(part, px);
         LocalParticle_set_y(part, y);
