@@ -27,6 +27,13 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'ref_shift_zeta': xo.Float64,
         'ref_shift_pzeta': xo.Float64,
 
+        'other_beam_shift_x': xo.Float64,
+        'other_beam_shift_px': xo.Float64,
+        'other_beam_shift_y': xo.Float64,
+        'other_beam_shift_py': xo.Float64,
+        'other_beam_shift_zeta': xo.Float64,
+        'other_beam_shift_pzeta': xo.Float64,
+
         'post_subtract_x': xo.Float64,
         'post_subtract_px': xo.Float64,
         'post_subtract_y': xo.Float64,
@@ -183,12 +190,19 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_x_center_star = x_slices_star
         self.slices_other_beam_y_center_star = y_slices_star
 
-        self.ref_shift_x = params['x_co'] + params["x_bb_co"]
+        self.ref_shift_x = params['x_co']
         self.ref_shift_px = params['px_co']
-        self.ref_shift_y = params['y_co'] + params["y_bb_co"]
+        self.ref_shift_y = params['y_co']
         self.ref_shift_py = params['py_co']
         self.ref_shift_zeta = params['zeta_co']
         self.ref_shift_pzeta = params['delta_co']
+
+        self.other_beam_shift_x =  params["x_bb_co"]
+        self.other_beam_shift_px = 0
+        self.other_beam_shift_y = params["y_bb_co"]
+        self.other_beam_shift_py = 0
+        self.other_beam_shift_zeta = 0
+        self.other_beam_shift_pzeta = 0
 
         self.post_subtract_x = params['d_x']
         self.post_subtract_px = params['d_px']
