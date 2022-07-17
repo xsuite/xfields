@@ -39,7 +39,7 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
             ee.ref_shift_y = temp_particles.y[0]
             ee.ref_shift_py = temp_particles.py[0]
             ee.ref_shift_zeta = temp_particles.zeta[0]
-            ee.ref_shift_pzeta = temp_particles.delta[0]
+            ee.ref_shift_pzeta = temp_particles.delta[0] # Element assumes beta0=1 anyhow
 
             ee.track(temp_particles)
 
@@ -55,7 +55,7 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
             temp_particles.y[0] = ee.ref_shift_y
             temp_particles.py[0] = ee.ref_shift_py
             temp_particles.zeta[0] = ee.ref_shift_zeta
-            temp_particles.delta[0] = ee.ref_shift_pzeta
+            temp_particles.delta[0] = ee.ref_shift_pzeta # Element assumes beta0=1 anyhow
 
         else:
             ee.track(temp_particles)
