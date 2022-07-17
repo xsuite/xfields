@@ -67,40 +67,40 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     }
 
-    def to_dict(self):
+    # def to_dict(self):
 
-        raise NotImplementedError('To be updated')
+    #     raise NotImplementedError('To be updated')
 
-        dct = super().to_dict()
-        for nn in self._input_param_names:
-            dct[nn] = getattr(self, nn)
-        # For compatibility with ducktrack:
-        dct['x_bb_co'] = self.delta_x
-        dct['y_bb_co'] = self.delta_y
-        dct['x_co'] = self.x_CO
-        dct['px_co'] = self.px_CO
-        dct['y_co'] = self.y_CO
-        dct['py_co'] = self.py_CO
-        dct['zeta_co'] = self.sigma_CO
-        dct['delta_co'] = self.delta_CO
-        dct['d_x'] = self.Dx_sub
-        dct['d_px'] = self.Dpx_sub
-        dct['d_y'] = self.Dy_sub
-        dct['d_py'] = self.Dpy_sub
-        dct['d_zeta'] = self.Dsigma_sub
-        dct['d_delta'] = self.Ddelta_sub
-        dct['charge_slices'] = self.N_part_per_slice
-        dct['sigma_11'] = self.Sig_11_0
-        dct['sigma_12'] = self.Sig_12_0
-        dct['sigma_13'] = self.Sig_13_0
-        dct['sigma_14'] = self.Sig_14_0
-        dct['sigma_22'] = self.Sig_22_0
-        dct['sigma_23'] = self.Sig_23_0
-        dct['sigma_24'] = self.Sig_24_0
-        dct['sigma_33'] = self.Sig_33_0
-        dct['sigma_34'] = self.Sig_34_0
-        dct['sigma_44'] = self.Sig_44_0
-        return dct
+    #     dct = super().to_dict()
+    #     for nn in self._input_param_names:
+    #         dct[nn] = getattr(self, nn)
+    #     # For compatibility with ducktrack:
+    #     dct['x_bb_co'] = self.delta_x
+    #     dct['y_bb_co'] = self.delta_y
+    #     dct['x_co'] = self.x_CO
+    #     dct['px_co'] = self.px_CO
+    #     dct['y_co'] = self.y_CO
+    #     dct['py_co'] = self.py_CO
+    #     dct['zeta_co'] = self.sigma_CO
+    #     dct['delta_co'] = self.delta_CO
+    #     dct['d_x'] = self.Dx_sub
+    #     dct['d_px'] = self.Dpx_sub
+    #     dct['d_y'] = self.Dy_sub
+    #     dct['d_py'] = self.Dpy_sub
+    #     dct['d_zeta'] = self.Dsigma_sub
+    #     dct['d_delta'] = self.Ddelta_sub
+    #     dct['charge_slices'] = self.N_part_per_slice
+    #     dct['sigma_11'] = self.Sig_11_0
+    #     dct['sigma_12'] = self.Sig_12_0
+    #     dct['sigma_13'] = self.Sig_13_0
+    #     dct['sigma_14'] = self.Sig_14_0
+    #     dct['sigma_22'] = self.Sig_22_0
+    #     dct['sigma_23'] = self.Sig_23_0
+    #     dct['sigma_24'] = self.Sig_24_0
+    #     dct['sigma_33'] = self.Sig_33_0
+    #     dct['sigma_34'] = self.Sig_34_0
+    #     dct['sigma_44'] = self.Sig_44_0
+    #     return dct
 
 
     def __init__(self, **kwargs):
