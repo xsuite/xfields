@@ -130,9 +130,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self._from_oldinterface(params)
         else:
             super().__init__(**kwargs)
-            for nn in self._input_param_names:
-                if nn in kwargs.keys():
-                    setattr(self, nn, kwargs[nn])
 
     def _from_oldinterface(self, params):
 
