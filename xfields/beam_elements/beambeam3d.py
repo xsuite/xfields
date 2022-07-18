@@ -206,6 +206,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.num_slices_other_beam = len(params["charge_slices"])
 
+    def _track_dev(self, particles):
+
+        pass
+
 
     # We keep this just as inspiration for the future
     # @property
