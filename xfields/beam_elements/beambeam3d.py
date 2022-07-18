@@ -77,6 +77,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_transport_sigmas.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
+        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
+
     ]
 
     per_particle_kernels={
