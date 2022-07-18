@@ -80,8 +80,13 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     per_particle_kernels={
         'boost_particles': xo.Kernel(
             c_name='boost_local_particle',
-            args=[]
-        )
+            args=[]),
+        'synchro_beam_kick': xo.Kernel(
+            c_name='BeamBeam3D_selective_apply_synchrobeam_kick',
+            args=[
+                xo.Arg(xo.Int64, pointer=False, name='i_step'),
+                xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
+            ]),
     }
 
 
