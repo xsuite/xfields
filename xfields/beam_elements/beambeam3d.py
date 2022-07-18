@@ -84,7 +84,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'synchro_beam_kick': xo.Kernel(
             c_name='BeamBeam3D_selective_apply_synchrobeam_kick_local_particle',
             args=[
-                xo.Arg(xo.Int64, pointer=False, name='i_step'),
                 xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
             ]),
         'change_ref_frame': xo.Kernel(
@@ -212,7 +211,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         for ii in range(self.num_slices_other_beam):
             i_slice_for_particles = np.zeros_like(particles.zeta, dtype=np.int64) + ii
-            self.synchro_beam_kick(particles, i_step=ii,
+            self.synchro_beam_kick(particles,
                                    i_slice_for_particles=i_slice_for_particles)
 
         self.change_back_ref_frame_and_subtract_dipolar(particles)
