@@ -474,6 +474,34 @@ void change_ref_frame(
     *pzeta = pzeta_star;
     }
 
+void change_back_ref_frame_and_subtract_dipolar(
+        double* x, double* px,
+        double* y, double* py,
+        double* zeta, double* pzeta,
+        double const shift_x, double const shift_px,
+        double const shift_y, double const shift_py,
+        double const shift_zeta, double const shift_pzeta,
+        double const post_subtract_x, double const post_subtract_px,
+        double const post_subtract_y, double const post_subtract_py,
+        double const post_subtract_zeta, double const post_subtract_pzeta,
+        double const sin_phi, double const cos_phi, double const tan_phi,
+        double const sin_alpha, double const cos_alpha){
+
+    // Inverse boost on the coordinates of the weak beam
+    BoostParameters_boost_coordinates_inv(
+        sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
+        x, px, y, py, zeta, pzeta);
+
+    // Go back to original reference frame and remove dipolar effect
+    *x =     *x     + shift_x     - post_subtract_x;
+    *px =    *px    + shift_px    - post_subtract_px;
+    *y =     *y     + shift_y     - post_subtract_y;
+    *py =    *py    + shift_py    - post_subtract_py;
+    *zeta =  *zeta  + shift_zeta  - post_subtract_zeta;
+    *pzeta = *pzeta + shift_pzeta - post_subtract_pzeta;
+
+    }
+
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 LocalParticle* part0){
@@ -538,19 +566,29 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
         }
 
-        // Inverse boost on the coordinates of the weak beam
-        BoostParameters_boost_coordinates_inv(
-            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
-            &x, &px, &y, &py, &zeta, &pzeta);
+        // Go back to original reference frame and remove dipolar effect
+        change_back_ref_frame_and_subtract_dipolar(
+            &x, &px, &y, &py, &zeta, &pzeta,
+            shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
+            post_subtract_x, post_subtract_px,
+            post_subtract_y, post_subtract_py,
+            post_subtract_zeta, post_subtract_pzeta,
+            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
+
+        // // Inverse boost on the coordinates of the weak beam
+        // BoostParameters_boost_coordinates_inv(
+        //     sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
+        //     &x, &px, &y, &py, &zeta, &pzeta);
 
         // Go back to original reference frame and remove dipolar effect
-        x =     x     + shift_x     - post_subtract_x;
-        px =    px    + shift_px    - post_subtract_px;
-        y =     y     + shift_y     - post_subtract_y;
-        py =    py    + shift_py    - post_subtract_py;
-        zeta =  zeta  + shift_zeta  - post_subtract_zeta;
-        pzeta = pzeta + shift_pzeta - post_subtract_pzeta;
+        // x =     x     + shift_x     - post_subtract_x;
+        // px =    px    + shift_px    - post_subtract_px;
+        // y =     y     + shift_y     - post_subtract_y;
+        // py =    py    + shift_py    - post_subtract_py;
+        // zeta =  zeta  + shift_zeta  - post_subtract_zeta;
+        // pzeta = pzeta + shift_pzeta - post_subtract_pzeta;
 
+        // Store
         LocalParticle_set_x(part, x);
         LocalParticle_set_px(part, px);
         LocalParticle_set_y(part, y);
