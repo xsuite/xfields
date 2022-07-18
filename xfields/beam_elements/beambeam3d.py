@@ -78,19 +78,21 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
-
     ]
 
     per_particle_kernels={
-        'boost_particles': xo.Kernel(
-            c_name='boost_local_particle',
-            args=[]),
         'synchro_beam_kick': xo.Kernel(
-            c_name='BeamBeam3D_selective_apply_synchrobeam_kick',
+            c_name='BeamBeam3D_selective_apply_synchrobeam_kick_local_particle',
             args=[
                 xo.Arg(xo.Int64, pointer=False, name='i_step'),
                 xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
             ]),
+        'change_ref_frame_': xo.Kernel(
+            c_name='BeamBeamBiGaussian3D_change_ref_frame_local_particle',
+            args=[]),
+        'change_back_ref_frame_and_subtract_dipolar': xo.Kernel(
+            c_name='BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_particle',
+            args=[]),
     }
 
 

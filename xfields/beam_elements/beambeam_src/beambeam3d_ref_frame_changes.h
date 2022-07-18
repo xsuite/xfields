@@ -140,7 +140,7 @@ void boost_coordinates_inv(
 
 }
 
-void change_ref_frame(
+void change_ref_frame_coordinates(
         double* x, double* px, double* y, double* py, double* zeta, double* pzeta,
         double const shift_x, double const shift_px,
         double const shift_y, double const shift_py,
@@ -170,7 +170,7 @@ void change_ref_frame(
     *pzeta = pzeta_star;
     }
 
-void change_back_ref_frame_and_subtract_dipolar(
+void change_back_ref_frame_and_subtract_dipolar_coordinates(
         double* x, double* px,
         double* y, double* py,
         double* zeta, double* pzeta,

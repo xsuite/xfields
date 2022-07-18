@@ -168,7 +168,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
 
         // Change reference frame
-        change_ref_frame(
+        change_ref_frame_coordinates(
             &x, &px, &y, &py, &zeta, &pzeta,
             shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
@@ -187,7 +187,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         }
 
         // Go back to original reference frame and remove dipolar effect
-        change_back_ref_frame_and_subtract_dipolar(
+        change_back_ref_frame_and_subtract_dipolar_coordinates(
             &x, &px, &y, &py, &zeta, &pzeta,
             shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
             post_subtract_x, post_subtract_px,
