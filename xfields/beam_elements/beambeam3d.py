@@ -67,40 +67,22 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     }
 
-    # def to_dict(self):
+    extra_sources= [
+        _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('headers/sincos.h'),
+        _pkg_root.joinpath('headers/power_n.h'),
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'),
+        '#define NOFIELDMAP', #TODO Remove this workaround
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
+        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
+    ]
 
-    #     raise NotImplementedError('To be updated')
-
-    #     dct = super().to_dict()
-    #     for nn in self._input_param_names:
-    #         dct[nn] = getattr(self, nn)
-    #     # For compatibility with ducktrack:
-    #     dct['x_bb_co'] = self.delta_x
-    #     dct['y_bb_co'] = self.delta_y
-    #     dct['x_co'] = self.x_CO
-    #     dct['px_co'] = self.px_CO
-    #     dct['y_co'] = self.y_CO
-    #     dct['py_co'] = self.py_CO
-    #     dct['zeta_co'] = self.sigma_CO
-    #     dct['delta_co'] = self.delta_CO
-    #     dct['d_x'] = self.Dx_sub
-    #     dct['d_px'] = self.Dpx_sub
-    #     dct['d_y'] = self.Dy_sub
-    #     dct['d_py'] = self.Dpy_sub
-    #     dct['d_zeta'] = self.Dsigma_sub
-    #     dct['d_delta'] = self.Ddelta_sub
-    #     dct['charge_slices'] = self.N_part_per_slice
-    #     dct['sigma_11'] = self.Sig_11_0
-    #     dct['sigma_12'] = self.Sig_12_0
-    #     dct['sigma_13'] = self.Sig_13_0
-    #     dct['sigma_14'] = self.Sig_14_0
-    #     dct['sigma_22'] = self.Sig_22_0
-    #     dct['sigma_23'] = self.Sig_23_0
-    #     dct['sigma_24'] = self.Sig_24_0
-    #     dct['sigma_33'] = self.Sig_33_0
-    #     dct['sigma_34'] = self.Sig_34_0
-    #     dct['sigma_44'] = self.Sig_44_0
-    #     return dct
+    per_particle_kernels={
+        'boost_particles': xo.Kernel(
+            c_name='boost_local_particle',
+            args=[]
+        )
+    }
 
 
     def __init__(self, **kwargs):
@@ -213,20 +195,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.num_slices_other_beam = len(params["charge_slices"])
 
-    extra_sources= [
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('headers/sincos.h'),
-        _pkg_root.joinpath('headers/power_n.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'),
-        '#define NOFIELDMAP', #TODO Remove this workaround
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
-    ]
-
-    per_particle_kernels=[
-        {'kernel_name': 'boost_particles',
-        'local_particle_function_name': 'boost_local_particle'}
-    ]
 
     # We keep this just as inspiration for the future
     # @property
