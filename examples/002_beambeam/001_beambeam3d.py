@@ -123,7 +123,13 @@ dtk_part = dtk.TestParticles(
 part= xp.Particles(_context=context, **dtk_part.to_dict())
 
 #bb.track(part)
+
+
+from xfields.beam_elements.beambeam3d import TempSlicer
+bb.slicer = TempSlicer(bin_edges = [-10, -5, 0, 5, 10])
 bb._track_dev(part)
+
+
 print('------------------------')
 
 bb_dtk.track(dtk_part)

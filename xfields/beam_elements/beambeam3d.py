@@ -97,6 +97,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     def __init__(self, **kwargs):
 
+        if 'slicer' in kwargs.keys():
+            self.slicer = kwargs['slicer']
+            del kwargs['slicer']
+
         if 'old_interface' in kwargs:
             params=kwargs['old_interface']
             n_slices=len(params["charge_slices"])
@@ -207,10 +211,15 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     def _track_dev(self, particles):
 
+        particles_slice_indices = self.slicer.get_slice_indeces(particles)
+        n_slices_self_beam = self.slicer.num_slices
+
         self.change_ref_frame(particles)
 
-        for ii in range(self.num_slices_other_beam):
-            i_slice_for_particles = np.zeros_like(particles.zeta, dtype=np.int64) + ii
+        i_slice_for_particles = np.zeros_like(particles.zeta, dtype=np.int64)
+        for ii in range(self.num_slices_other_beam + n_slices_self_beam):
+            i_slice_for_particles[:] = ii - particles_slice_indices
+            i_slice_for_particles[particles_slice_indices < 0] = -1
             self.synchro_beam_kick(particles,
                                    i_slice_for_particles=i_slice_for_particles)
 
@@ -556,3 +565,17 @@ def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, sigma_st, delta_st,
 
 _python_inv_boost = np.vectorize(_python_inv_boost_scalar,
     excluded=("sphi", "cphi", "tphi", "salpha", "calpha"))
+
+class TempSlicer:
+    def __init__(self, bin_edges):
+
+        bin_edges = np.sort(np.array(bin_edges))[::-1]
+        self.bin_edges = bin_edges
+        self.bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2.0
+        self.num_slices = len(bin_edges) - 1
+
+    def get_slice_indeces(self, particles):
+        indices = np.digitize(particles.zeta, self.bin_edges, right=True)
+        indices[particles.state <=0 ] = -1
+
+        return np.array(indices, dtype=np.int64)

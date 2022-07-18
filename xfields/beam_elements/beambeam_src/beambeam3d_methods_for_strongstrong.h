@@ -128,8 +128,9 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
     //start_per_particle_block (part0->part)
 
         const int64_t i_slice = i_slice_for_particles[part->ipart];
+        const int64_t N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
 
-        if (i_slice >= 0){
+        if (i_slice >= 0 && i_slice < N_slices){
 
             double x_star = LocalParticle_get_x(part);
             double px_star = LocalParticle_get_px(part);
