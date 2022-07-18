@@ -443,6 +443,37 @@ void synchrobeam_kick(
 
     }
 
+
+void change_ref_frame(
+        double* x, double* px, double* y, double* py, double* zeta, double* pzeta,
+        double const shift_x, double const shift_px,
+        double const shift_y, double const shift_py,
+        double const shift_zeta, double const shift_pzeta,
+        double const sin_phi, double const cos_phi, double const tan_phi,
+        double const sin_alpha, double const cos_alpha){
+
+    // Change reference frame
+    double x_star =     *x     - shift_x;
+    double px_star =    *px    - shift_px;
+    double y_star =     *y     - shift_y;
+    double py_star =    *py    - shift_py;
+    double zeta_star =  *zeta  - shift_zeta;
+    double pzeta_star = *pzeta - shift_pzeta;
+
+    // Boost coordinates of the weak beam
+    BoostParameters_boost_coordinates(
+        sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
+        &x_star, &px_star, &y_star, &py_star,
+        &zeta_star, &pzeta_star);
+
+    *x = x_star;
+    *px = px_star;
+    *y = y_star;
+    *py = py_star;
+    *zeta = zeta_star;
+    *pzeta = pzeta_star;
+    }
+
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 LocalParticle* part0){
@@ -489,46 +520,36 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 
 
         // Change reference frame
-        double x_star =     x     - shift_x;
-        double px_star =    px    - shift_px;
-        double y_star =     y     - shift_y;
-        double py_star =    py    - shift_py;
-        double sigma_star = zeta  - shift_zeta;
-        double pzeta_star = pzeta - shift_pzeta; // TODO: could be fixed, in any case we assume beta=beta0=1
-                                          //       in the synchrobeam
-
-        // Boost coordinates of the weak beam
-        BoostParameters_boost_coordinates(
-            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
-            &x_star, &px_star, &y_star, &py_star,
-            &sigma_star, &pzeta_star);
+        change_ref_frame(
+            &x, &px, &y, &py, &zeta, &pzeta,
+            shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
+            sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
 
         // Synchro beam
         for (int i_slice=0; i_slice<N_slices; i_slice++)
         {
             synchrobeam_kick(el, i_slice, q0, p0c,
-                             &x_star,
-                             &px_star,
-                             &y_star,
-                             &py_star,
-                             &sigma_star,
-                             &pzeta_star);
+                             &x,
+                             &px,
+                             &y,
+                             &py,
+                             &zeta,
+                             &pzeta);
 
         }
 
         // Inverse boost on the coordinates of the weak beam
         BoostParameters_boost_coordinates_inv(
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
-            &x_star, &px_star, &y_star, &py_star,
-            &sigma_star, &pzeta_star);
+            &x, &px, &y, &py, &zeta, &pzeta);
 
         // Go back to original reference frame and remove dipolar effect
-        x =     x_star     + shift_x     - post_subtract_x;
-        px =    px_star    + shift_px    - post_subtract_px;
-        y =     y_star     + shift_y     - post_subtract_y;
-        py =    py_star    + shift_py    - post_subtract_py;
-        zeta =  sigma_star + shift_zeta  - post_subtract_zeta;
-        pzeta = pzeta_star + shift_pzeta - post_subtract_pzeta;
+        x =     x     + shift_x     - post_subtract_x;
+        px =    px    + shift_px    - post_subtract_px;
+        y =     y     + shift_y     - post_subtract_y;
+        py =    py    + shift_py    - post_subtract_py;
+        zeta =  zeta  + shift_zeta  - post_subtract_zeta;
+        pzeta = pzeta + shift_pzeta - post_subtract_pzeta;
 
         LocalParticle_set_x(part, x);
         LocalParticle_set_px(part, px);
