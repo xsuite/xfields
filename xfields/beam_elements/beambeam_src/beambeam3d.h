@@ -587,5 +587,52 @@ void boost_local_particle(BeamBeamBiGaussian3DData el,
 
 }
 
+/*gpufun*/
+void BeamBeam3D_selective_apply_synchrobeam_kick(BeamBeamBiGaussian3DData el,
+                LocalParticle* part0,
+                const int64_t i_step,
+                /*gpuglmem*/ int64_t* i_slice_for_particles){
+
+
+    //start_per_particle_block (part0->part)
+
+        const int64_t N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
+        const int64_t i_slice = i_step - i_slice_for_particles[part->ipart];
+
+        if (i_slice >= 0 && i_slice < N_slices){
+
+            double x_star = LocalParticle_get_x(part);
+            double px_star = LocalParticle_get_px(part);
+            double y_star = LocalParticle_get_y(part);
+            double py_star = LocalParticle_get_py(part);
+            double zeta_star = LocalParticle_get_zeta(part);
+            double pzeta_star = LocalParticle_get_pzeta(part);
+
+            const double q0 = LocalParticle_get_q0(part);
+            const double p0c = LocalParticle_get_p0c(part); // eV
+
+            synchrobeam_kick(
+                el, i_slice,
+                q0, p0c,
+                &x_star,
+                &px_star,
+                &y_star,
+                &py_star,
+                &zeta_star,
+                &pzeta_star);
+
+            LocalParticle_set_x(part, x_star);
+            LocalParticle_set_px(part, px_star);
+            LocalParticle_set_y(part, y_star);
+            LocalParticle_set_py(part, py_star);
+            LocalParticle_set_zeta(part, zeta_star);
+            LocalParticle_update_pzeta(part, pzeta_star);
+
+        }
+
+    //end_per_particle_block
+
+}
+
 
 #endif
