@@ -8,7 +8,7 @@
 
 
 /*gpufun*/
-void BoostParameters_boost_coordinates(
+void boost_coordinates(
         double const sphi,
         double const cphi,
         double const tphi,
@@ -69,7 +69,7 @@ void BoostParameters_boost_coordinates(
 }
 
 /*gpufun*/
-void BoostParameters_boost_coordinates_inv(
+void boost_coordinates_inv(
         double const sphi,
         double const cphi,
         double const tphi,
@@ -272,7 +272,7 @@ void change_ref_frame(
     double pzeta_star = *pzeta - shift_pzeta;
 
     // Boost coordinates of the weak beam
-    BoostParameters_boost_coordinates(
+    boost_coordinates(
         sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
         &x_star, &px_star, &y_star, &py_star,
         &zeta_star, &pzeta_star);
@@ -299,7 +299,7 @@ void change_back_ref_frame_and_subtract_dipolar(
         double const sin_alpha, double const cos_alpha){
 
     // Inverse boost on the coordinates of the weak beam
-    BoostParameters_boost_coordinates_inv(
+    boost_coordinates_inv(
         sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
         x, px, y, py, zeta, pzeta);
 
@@ -428,7 +428,7 @@ void boost_local_particle(BeamBeamBiGaussian3DData el,
                                           //       in the synchrobeam
 
         // Boost coordinates of the weak beam
-        BoostParameters_boost_coordinates(
+        boost_coordinates(
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha,
             &x_star, &px_star, &y_star, &py_star,
             &sigma_star, &pzeta_star);
