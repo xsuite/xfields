@@ -75,6 +75,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         '#define NOFIELDMAP', #TODO Remove this workaround
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_transport_sigmas.h'),
+        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
     ]
 
