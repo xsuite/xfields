@@ -87,7 +87,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 xo.Arg(xo.Int64, pointer=False, name='i_step'),
                 xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
             ]),
-        'change_ref_frame_': xo.Kernel(
+        'change_ref_frame': xo.Kernel(
             c_name='BeamBeamBiGaussian3D_change_ref_frame_local_particle',
             args=[]),
         'change_back_ref_frame_and_subtract_dipolar': xo.Kernel(
@@ -208,7 +208,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     def _track_dev(self, particles):
 
-        pass
+        self.change_ref_frame(particles)
+
+        for ii in range(self.num_slices_other_beam):
+            i_slice_for_particles = np.zeros_like(particles.zeta, dtype=np.int64) + ii
+            self.synchro_beam_kick(particles, i_step=ii,
+                                   i_slice_for_particles=i_slice_for_particles)
+
+        self.change_back_ref_frame_and_subtract_dipolar(particles)
 
 
     # We keep this just as inspiration for the future
