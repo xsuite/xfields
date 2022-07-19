@@ -194,7 +194,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_Sigma_24 = 0
 
         self.num_slices_other_beam = n_slices
-        slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
+        self.slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
 
         # Trigger properties to set corresponding starred quantities
         self.slices_other_beam_Sigma_11 = slices_other_beam_Sigma_11

@@ -136,6 +136,13 @@ bb = xf.BeamBeamBiGaussian3D(
 
         other_beam_shift_x=x_bb_co,
         other_beam_shift_y=y_bb_co,
+
+        post_subtract_x=d_x,
+        post_subtract_px=d_px,
+        post_subtract_y=d_y,
+        post_subtract_py=d_py,
+        post_subtract_zeta=d_zeta,
+        post_subtract_pzeta=d_delta,
 )
 
 dtk_part = dtk.TestParticles(
