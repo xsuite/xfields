@@ -122,12 +122,17 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     ref_shift_x=0, ref_shift_px=0,
                     ref_shift_y=0, ref_shift_py=0,
                     ref_shift_zeta=0, ref_shift_pzeta=0,
+
                     other_beam_shift_x=0, other_beam_shift_px=0,
                     other_beam_shift_y=0, other_beam_shift_py=0,
                     other_beam_shift_zeta=0, other_beam_shift_pzeta=0,
+
                     post_subtract_x=0, post_subtract_px=0,
                     post_subtract_y=0, post_subtract_py=0,
                     post_subtract_zeta=0, post_subtract_pzeta=0,
+
+                    min_sigma_diff=1e-10,
+                    threshold_singular = 1e-28,
 
                     old_interface=None, **kwargs):
 
@@ -160,8 +165,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         assert phi is not None
         assert alpha is not None
 
-        self.num_slices_other_beam = n_slices
-
         self._sin_phi = np.sin(phi)
         self._cos_phi = np.cos(phi)
         self._tan_phi = np.tan(phi)
@@ -185,6 +188,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_Sigma_23 = 0
         if slices_other_beam_Sigma_24 is None:
             slices_other_beam_Sigma_24 = 0
+
+        self.num_slices_other_beam = n_slices
+        slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
 
         # Trigger properties to set corresponding starred quantities
         self.slices_other_beam_Sigma_11 = slices_other_beam_Sigma_11
@@ -231,6 +237,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_zeta_center_star = zeta_slices_star
         self.slices_other_beam_pzeta_center_star = pzeta_slices_star
 
+        assert q0_other_beam is not None
+        self.q0_other_beam = q0_other_beam
+
         self.ref_shift_x = ref_shift_x
         self.ref_shift_px = ref_shift_px
         self.ref_shift_y = ref_shift_y
@@ -251,6 +260,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.post_subtract_py = post_subtract_py
         self.post_subtract_zeta = post_subtract_zeta
         self.post_subtract_pzeta = post_subtract_pzeta
+
+        self.min_sigma_diff = min_sigma_diff
+        self.threshold_singular = threshold_singular
 
     def _allocate_xobject(self, n_slices, **kwargs):
         self.xoinitialize(
@@ -375,6 +387,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         i_slice_for_particles = np.zeros_like(particles.zeta, dtype=np.int64)
         for ii in range(self.num_slices_other_beam + n_slices_self_beam):
+
+            # Strong-strong logic
+
             i_slice_for_particles[:] = ii - particles_slice_indices
             i_slice_for_particles[particles_slice_indices < 0] = -1
             self.synchro_beam_kick(particles,
