@@ -171,6 +171,7 @@ void change_ref_frame_coordinates(
     *pzeta = pzeta_star;
     }
 
+/*gpufun*/
 void change_back_ref_frame_and_subtract_dipolar_coordinates(
         double* x, double* px,
         double* y, double* py,
