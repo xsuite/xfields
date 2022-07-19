@@ -3,6 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
+from tkinter import N
 import numpy as np
 
 import xobjects as xo
@@ -14,11 +15,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
 
-        'sin_phi': xo.Float64,
-        'cos_phi': xo.Float64,
-        'tan_phi': xo.Float64,
-        'sin_alpha': xo.Float64,
-        'cos_alpha': xo.Float64,
+        '_sin_phi': xo.Float64,
+        '_cos_phi': xo.Float64,
+        '_tan_phi': xo.Float64,
+        '_sin_alpha': xo.Float64,
+        '_cos_alpha': xo.Float64,
 
         'ref_shift_x': xo.Float64,
         'ref_shift_px': xo.Float64,
@@ -48,8 +49,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'slices_other_beam_num_particles': xo.Float64[:],
 
         'slices_other_beam_x_center_star': xo.Float64[:],
+        'slices_other_beam_px_center_star': xo.Float64[:],
         'slices_other_beam_y_center_star': xo.Float64[:],
+        'slices_other_beam_py_center_star': xo.Float64[:],
         'slices_other_beam_zeta_center_star': xo.Float64[:],
+        'slices_other_beam_pzeta_center_star': xo.Float64[:],
 
         'slices_other_beam_Sigma_11_star': xo.Float64[:],
         'slices_other_beam_Sigma_12_star': xo.Float64[:],
@@ -101,6 +105,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.slicer = kwargs['slicer']
             del kwargs['slicer']
 
+        # Verify that slices are properly sorted (including Sigmas...)
+
         if 'old_interface' in kwargs:
             params=kwargs['old_interface']
             n_slices=len(params["charge_slices"])
@@ -119,8 +125,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                 slices_other_beam_num_particles=n_slices,
                 slices_other_beam_x_center_star=n_slices,
+                slices_other_beam_px_center_star=n_slices,
                 slices_other_beam_y_center_star=n_slices,
+                slices_other_beam_py_center_star=n_slices,
                 slices_other_beam_zeta_center_star=n_slices,
+                slices_other_beam_pzeta_center_star=n_slices,
 
                 )
             self._from_oldinterface(params)
@@ -133,11 +142,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         phi = params["phi"]
         alpha = params["alpha"]
-        self.sin_phi = np.sin(phi)
-        self.cos_phi = np.cos(phi)
-        self.tan_phi = np.tan(phi)
-        self.sin_alpha = np.sin(alpha)
-        self.cos_alpha = np.cos(alpha)
+        self._sin_phi = np.sin(phi)
+        self._cos_phi = np.cos(phi)
+        self._tan_phi = np.tan(phi)
+        self._sin_alpha = np.sin(alpha)
+        self._cos_alpha = np.cos(alpha)
 
         self.slices_other_beam_Sigma_11 = params['sigma_11']
         self.slices_other_beam_Sigma_12 = params['sigma_12']
@@ -179,9 +188,13 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         )
 
         self.slices_other_beam_num_particles = N_part_per_slice
-        self.slices_other_beam_zeta_center_star = zeta_slices_star
+
         self.slices_other_beam_x_center_star = x_slices_star
+        self.slices_other_beam_px_center_star = px_slices_star
         self.slices_other_beam_y_center_star = y_slices_star
+        self.slices_other_beam_py_center_star = py_slices_star
+        self.slices_other_beam_zeta_center_star = zeta_slices_star
+        self.slices_other_beam_pzeta_center_star = pzeta_slices_star
 
         self.ref_shift_x = params['x_co']
         self.ref_shift_px = params['px_co']
@@ -225,41 +238,76 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.change_back_ref_frame_and_subtract_dipolar(particles)
 
+    @property
+    def sin_phi(self):
+        return self._sin_phi
 
-    # We keep this just as inspiration for the future
-    # @property
-    # def slices_other_beam_zeta_centers(self):
+    @property
+    def cos_phi(self):
+        return self._cos_phi
 
-    #     x_star_slices = self.slices_other_beam_x_center_star
-    #     px_star_slices = self.slices_other_beam_px_center_star
-    #     y_star_slices = self.slices_other_beam_y_center_star
-    #     py_star_slices = self.slices_other_beam_py_center_star
-    #     zeta_star_slices = self.slices_other_beam_zeta_center_star
-    #     pzeta_star_slices = self.slices_other_beam_pzeta_center_star
-    #
-    #     (
-    #         x_slices,
-    #         px_slices,
-    #         y_slices,
-    #         py_slices,
-    #         zeta_slices,
-    #         delta_slices,
-    #     ) = _python_inv_boost(
-    #         x_st=x_star_slices,
-    #         px_st=px_star_slices,
-    #         y_st=y_star_slices,
-    #         py_st=py_star_slices,
-    #         sigma_st=zeta_star_slices,
-    #         delta_st=pzeta_star_slices,
-    #         sphi=self.sin_phi,
-    #         cphi=self.cos_phi,
-    #         tphi=self.tan_phi,
-    #         salpha=self.sin_alpha,
-    #         calpha=self.cos_alpha,
-    #     )
-    #    return self._buffer.context.linked_array_type.from_array(
-    #          zeta_slices,
-    #          mode='readonly')
+    @property
+    def tan_phi(self):
+        return self._tan_phi
+
+    @property
+    def sin_alpha(self):
+        return self._sin_alpha
+
+    @property
+    def cos_alpha(self):
+        return self._cos_alpha
+
+    @property
+    def phi(self):
+        return np.arctan2(self.sin_phi, self.cos_phi)
+
+    @phi.setter
+    def phi(self, value):
+        raise NotImplementedError("Setting phi is not implemented yet")
+
+    @property
+    def alpha(self):
+        return np.arctan2(self.sin_alpha, self.cos_alpha)
+
+    @alpha.setter
+    def alpha(self, value):
+        raise NotImplementedError("Setting alpha is not implemented yet")
+
+
+    @property
+    def slices_other_beam_zeta_center(self):
+
+        x_star_slices = self.slices_other_beam_x_center_star
+        px_star_slices = self.slices_other_beam_px_center_star
+        y_star_slices = self.slices_other_beam_y_center_star
+        py_star_slices = self.slices_other_beam_py_center_star
+        zeta_star_slices = self.slices_other_beam_zeta_center_star
+        pzeta_star_slices = self.slices_other_beam_pzeta_center_star
+
+        (
+            x_slices,
+            px_slices,
+            y_slices,
+            py_slices,
+            zeta_slices,
+            delta_slices,
+        ) = _python_inv_boost(
+            x_st=x_star_slices,
+            px_st=px_star_slices,
+            y_st=y_star_slices,
+            py_st=py_star_slices,
+            sigma_st=zeta_star_slices,
+            delta_st=pzeta_star_slices,
+            sphi=self.sin_phi,
+            cphi=self.cos_phi,
+            tphi=self.tan_phi,
+            salpha=self.sin_alpha,
+            calpha=self.cos_alpha,
+        )
+        return self._buffer.context.linked_array_type.from_array(
+              zeta_slices,
+              mode='readonly')
 
     # Generated properties (using the following code)
     '''

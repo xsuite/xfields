@@ -127,11 +127,11 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 LocalParticle* part0){
 
     // Get data from memory
-    double const sin_phi = BeamBeamBiGaussian3DData_get_sin_phi(el);
-    double const cos_phi = BeamBeamBiGaussian3DData_get_cos_phi(el);
-    double const tan_phi = BeamBeamBiGaussian3DData_get_tan_phi(el);
-    double const sin_alpha = BeamBeamBiGaussian3DData_get_sin_alpha(el);
-    double const cos_alpha = BeamBeamBiGaussian3DData_get_cos_alpha(el);
+    double const sin_phi = BeamBeamBiGaussian3DData_get__sin_phi(el);
+    double const cos_phi = BeamBeamBiGaussian3DData_get__cos_phi(el);
+    double const tan_phi = BeamBeamBiGaussian3DData_get__tan_phi(el);
+    double const sin_alpha = BeamBeamBiGaussian3DData_get__sin_alpha(el);
+    double const cos_alpha = BeamBeamBiGaussian3DData_get__cos_alpha(el);
 
     const int N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
 

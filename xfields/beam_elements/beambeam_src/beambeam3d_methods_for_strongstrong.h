@@ -12,11 +12,11 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         BeamBeamBiGaussian3DData el, LocalParticle* part0){
 
     // Get data from memory
-    double const sin_phi = BeamBeamBiGaussian3DData_get_sin_phi(el);
-    double const cos_phi = BeamBeamBiGaussian3DData_get_cos_phi(el);
-    double const tan_phi = BeamBeamBiGaussian3DData_get_tan_phi(el);
-    double const sin_alpha = BeamBeamBiGaussian3DData_get_sin_alpha(el);
-    double const cos_alpha = BeamBeamBiGaussian3DData_get_cos_alpha(el);
+    double const sin_phi = BeamBeamBiGaussian3DData_get__sin_phi(el);
+    double const cos_phi = BeamBeamBiGaussian3DData_get__cos_phi(el);
+    double const tan_phi = BeamBeamBiGaussian3DData_get__tan_phi(el);
+    double const sin_alpha = BeamBeamBiGaussian3DData_get__sin_alpha(el);
+    double const cos_alpha = BeamBeamBiGaussian3DData_get__cos_alpha(el);
 
     const double shift_x = BeamBeamBiGaussian3DData_get_ref_shift_x(el)
                            + BeamBeamBiGaussian3DData_get_other_beam_shift_x(el);
@@ -62,11 +62,11 @@ void BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_parti
         BeamBeamBiGaussian3DData el, LocalParticle* part0){
 
     // Get data from memory
-    double const sin_phi = BeamBeamBiGaussian3DData_get_sin_phi(el);
-    double const cos_phi = BeamBeamBiGaussian3DData_get_cos_phi(el);
-    double const tan_phi = BeamBeamBiGaussian3DData_get_tan_phi(el);
-    double const sin_alpha = BeamBeamBiGaussian3DData_get_sin_alpha(el);
-    double const cos_alpha = BeamBeamBiGaussian3DData_get_cos_alpha(el);
+    double const sin_phi = BeamBeamBiGaussian3DData_get__sin_phi(el);
+    double const cos_phi = BeamBeamBiGaussian3DData_get__cos_phi(el);
+    double const tan_phi = BeamBeamBiGaussian3DData_get__tan_phi(el);
+    double const sin_alpha = BeamBeamBiGaussian3DData_get__sin_alpha(el);
+    double const cos_alpha = BeamBeamBiGaussian3DData_get__cos_alpha(el);
 
     const double shift_x = BeamBeamBiGaussian3DData_get_ref_shift_x(el)
                            + BeamBeamBiGaussian3DData_get_other_beam_shift_x(el);
