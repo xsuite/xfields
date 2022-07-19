@@ -140,6 +140,7 @@ void boost_coordinates_inv(
 
 }
 
+/*gpufun*/
 void change_ref_frame_coordinates(
         double* x, double* px, double* y, double* py, double* zeta, double* pzeta,
         double const shift_x, double const shift_px,
