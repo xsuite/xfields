@@ -290,7 +290,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             **kwargs
             )
 
-
     def _init_from_old_interface(self, old_interface, **kwargs):
 
         params=old_interface

@@ -11,7 +11,8 @@ from ..general import _pkg_root
 
 import xobjects as xo
 import xtrack as xt
-
+import xfields as xf
+from xtrack import PipelineStatus
 
 class BeamBeamBiGaussian2D(xt.BeamElement):
     """
@@ -113,11 +114,50 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
             self.fieldmap=fieldmap
 
+    def init_pipeline(self,pipeline_manager,name,partners_names=[]):
+        super().init_pipeline(pipeline_manager=pipeline_manager,name = name,partners_names=partners_names)
+        self._recv_buffer = np.zeros(5,dtype=np.float64)
+
     def update(self, **kwargs):
         for kk in kwargs.keys():
             if not hasattr(self, kk):
                 raise NameError(f'Unknown parameter: {kk}')
             setattr(self, kk, kwargs[kk])
+
+    def pipeline_messages_are_ready(self,particles):
+        return self._pipeline_manager.is_ready_to_recieve(element_name=self.name,sender_name=self.partners_names[0],reciever_name=particles.name)
+
+    def send_pipeline_messages(self,particles):
+        if self._pipeline_manager.is_ready_to_send(element_name=self.name,sender_name=particles.name,reciever_name=self.partners_names[0],turn=particles.at_turn[0]):
+            if np.any(np.isnan(particles.x)):
+                print(particles.pipeline_ID,'turn',particles.at_turn[0],'nan in x in BeamBeam')
+            mean_x, sigma_x = xf.mean_and_std(particles.x)
+            mean_y, sigma_y = xf.mean_and_std(particles.y)
+            #############################################################
+            # TODO those properties are from PyHEADTAIL, should we bring them into xsuite?
+            n_particles = 1E11
+            #n_particles = particles.macroparticlenumber*particles.particlenumber_per_mp
+            #############################################################
+            params = np.array([mean_x,mean_y,sigma_x,sigma_y,n_particles],dtype=np.float64)
+            self._pipeline_manager.send_message(params,element_name=self.name,sender_name=particles.name,reciever_name=self.partners_names[0],turn=particles.at_turn[0])
+
+    def track(self,particles, **kwargs):
+        if hasattr(self,'_pipeline_manager'):
+            assert len(self.partners_names) > 0
+            self.send_pipeline_messages(particles)
+            if self.pipeline_messages_are_ready(particles):
+                self._pipeline_manager.recieve_message(self._recv_buffer,element_name=self.name,sender_name=self.partners_names[0],reciever_name=particles.name)
+                self.update(mean_x=self._recv_buffer[0],mean_y=self._recv_buffer[1],sigma_x=self._recv_buffer[2],sigma_y=self._recv_buffer[3],n_particles=self._recv_buffer[4])
+            else:
+                return PipelineStatus(on_hold=True)
+        super().track(particles)
+
+    @property
+    def iscollective(self):
+        if hasattr(self,'_pipeline_manager'):
+            return True
+        else:
+            return False
 
     @property
     def mean_x(self):
