@@ -274,9 +274,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def alpha(self, value):
         raise NotImplementedError("Setting alpha is not implemented yet")
 
-
-    @property
-    def slices_other_beam_zeta_center(self):
+    def _inv_boost_slice_centers(self):
 
         x_star_slices = self.slices_other_beam_x_center_star
         px_star_slices = self.slices_other_beam_px_center_star
@@ -291,7 +289,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             y_slices,
             py_slices,
             zeta_slices,
-            delta_slices,
+            pzeta_slices,
         ) = _python_inv_boost(
             x_st=x_star_slices,
             px_st=px_star_slices,
@@ -305,42 +303,145 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             salpha=self.sin_alpha,
             calpha=self.cos_alpha,
         )
+
+        return x_slices, px_slices, y_slices, py_slices, zeta_slices, pzeta_slices
+
+        # The following properties are generate by this code:
+        ## for nn in 'x px y py zeta pzeta'.split():
+        ##     print(f'''
+        ##     @property
+        ##     def slices_other_beam_{nn}_center(self):
+        ##         (x_slices, px_slices, y_slices, py_slices,
+        ##             zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
+        ##         return self._buffer.context.linked_array_type.from_array(
+        ##             {nn}_slices,
+        ##             mode="readonly")
+
+        ##     @slices_other_beam_{nn}_center.setter
+        ##     def slices_other_beam_{nn}_center(self, value):
+        ##         raise NotImplementedError(
+        ##             "Setting slices_other_beam_{nn}_center is not implemented yet")\n''')
+
+
+    @property
+    def slices_other_beam_x_center(self):
+        (x_slices, px_slices, y_slices, py_slices,
+            zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
         return self._buffer.context.linked_array_type.from_array(
-              zeta_slices,
-              mode='readonly')
+            x_slices,
+            mode="readonly")
 
-    # Generated properties (using the following code)
-    '''
-    for nn, factor in (
-        ('11', '1.'),
-        ('12', 'self.cos_phi'),
-        ('13', '1.'),
-        ('14', 'self.cos_phi'),
-        ('22', '(self.cos_phi * self.cos_phi)'),
-        ('23', 'self.cos_phi'),
-        ('24', '(self.cos_phi * self.cos_phi)'),
-        ('33', '1.'),
-        ('34', 'self.cos_phi'),
-        ('44', '(self.cos_phi * self.cos_phi)')):
+    @slices_other_beam_x_center.setter
+    def slices_other_beam_x_center(self, value):
+        raise NotImplementedError(
+            "Setting slices_other_beam_x_center is not implemented yet")
 
-        print(f"""
-        @property
-        def slices_other_beam_Sigma_{nn}(self):
-            return self._buffer.context.linked_array_type.from_array(
-                  self.slices_other_beam_Sigma_{nn}_star * {factor},
-                  mode='setitem_from_container',
-                  container=self,
-                  container_setitem_name='_Sigma_{nn}_setitem')
 
-        def _Sigma_{nn}_setitem(self, indx, val):
-            self.slices_other_beam_Sigma_{nn}_star[indx] = val / {factor}
+    @property
+    def slices_other_beam_px_center(self):
+        (x_slices, px_slices, y_slices, py_slices,
+            zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
 
-        @slices_other_beam_Sigma_{nn}.setter
-        def slices_other_beam_Sigma_{nn}(self, value):
-            self.slices_other_beam_Sigma_{nn}[:] = value
-""")
+        return self._buffer.context.linked_array_type.from_array(
+            px_slices,
+            mode="readonly")
 
-    '''
+    @slices_other_beam_px_center.setter
+    def slices_other_beam_px_center(self, value):
+        raise NotImplementedError(
+            "Setting slices_other_beam_px_center is not implemented yet")
+
+
+    @property
+    def slices_other_beam_y_center(self):
+        (x_slices, px_slices, y_slices, py_slices,
+            zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
+        return self._buffer.context.linked_array_type.from_array(
+            y_slices,
+            mode="readonly")
+
+    @slices_other_beam_y_center.setter
+    def slices_other_beam_y_center(self, value):
+        raise NotImplementedError(
+            "Setting slices_other_beam_y_center is not implemented yet")
+
+
+    @property
+    def slices_other_beam_py_center(self):
+        (x_slices, px_slices, y_slices, py_slices,
+            zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
+        return self._buffer.context.linked_array_type.from_array(
+            py_slices,
+            mode="readonly")
+
+    @slices_other_beam_py_center.setter
+    def slices_other_beam_py_center(self, value):
+        raise NotImplementedError(
+            "Setting slices_other_beam_py_center is not implemented yet")
+
+
+    @property
+    def slices_other_beam_zeta_center(self):
+        (x_slices, px_slices, y_slices, py_slices,
+            zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
+        return self._buffer.context.linked_array_type.from_array(
+            zeta_slices,
+            mode="readonly")
+
+    @slices_other_beam_zeta_center.setter
+    def slices_other_beam_zeta_center(self, value):
+        raise NotImplementedError(
+            "Setting slices_other_beam_zeta_center is not implemented yet")
+
+
+    @property
+    def slices_other_beam_pzeta_center(self):
+        (x_slices, px_slices, y_slices, py_slices,
+            zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
+        return self._buffer.context.linked_array_type.from_array(
+            pzeta_slices,
+            mode="readonly")
+
+    @slices_other_beam_pzeta_center.setter
+    def slices_other_beam_pzeta_center(self, value):
+        raise NotImplementedError(
+            "Setting slices_other_beam_pzeta_center is not implemented yet")
+
+    # The following properties are generate by this code:
+    ## for nn, factor in (
+    ##     ('11', '1.'),
+    ##     ('12', 'self.cos_phi'),
+    ##     ('13', '1.'),
+    ##     ('14', 'self.cos_phi'),
+    ##     ('22', '(self.cos_phi * self.cos_phi)'),
+    ##     ('23', 'self.cos_phi'),
+    ##     ('24', '(self.cos_phi * self.cos_phi)'),
+    ##     ('33', '1.'),
+    ##     ('34', 'self.cos_phi'),
+    ##     ('44', '(self.cos_phi * self.cos_phi)')):
+
+    ##     print(f"""
+    ##     @property
+    ##     def slices_other_beam_Sigma_{nn}(self):
+    ##         return self._buffer.context.linked_array_type.from_array(
+    ##               self.slices_other_beam_Sigma_{nn}_star * {factor},
+    ##               mode='setitem_from_container',
+    ##               container=self,
+    ##               container_setitem_name='_Sigma_{nn}_setitem')
+
+    ##     def _Sigma_{nn}_setitem(self, indx, val):
+    ##         self.slices_other_beam_Sigma_{nn}_star[indx] = val / {factor}
+    ##
+    ##     @slices_other_beam_Sigma_{nn}.setter
+    ##     def slices_other_beam_Sigma_{nn}(self, value):
+    ##         self.slices_other_beam_Sigma_{nn}[:] = value\n""")
+
 
     @property
     def slices_other_beam_Sigma_11(self):
