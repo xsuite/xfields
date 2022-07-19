@@ -99,7 +99,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     }
 
 
-    def __init__(self, **kwargs):
+    def __init__(self, old_interface=None, **kwargs):
 
         if 'slicer' in kwargs.keys():
             self.slicer = kwargs['slicer']
@@ -107,36 +107,36 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # Verify that slices are properly sorted (including Sigmas...)
 
-        if 'old_interface' in kwargs:
-            params=kwargs['old_interface']
-            n_slices=len(params["charge_slices"])
-            super().__init__(
+        if 'old_interface' is not None:
+            self._init_from_old_interface(old_interface=old_interface, **kwargs)
+            return
 
-                slices_other_beam_Sigma_11_star=n_slices,
-                slices_other_beam_Sigma_12_star=n_slices,
-                slices_other_beam_Sigma_13_star=n_slices,
-                slices_other_beam_Sigma_14_star=n_slices,
-                slices_other_beam_Sigma_22_star=n_slices,
-                slices_other_beam_Sigma_23_star=n_slices,
-                slices_other_beam_Sigma_24_star=n_slices,
-                slices_other_beam_Sigma_33_star=n_slices,
-                slices_other_beam_Sigma_34_star=n_slices,
-                slices_other_beam_Sigma_44_star=n_slices,
+        super().__init__(**kwargs)
 
-                slices_other_beam_num_particles=n_slices,
-                slices_other_beam_x_center_star=n_slices,
-                slices_other_beam_px_center_star=n_slices,
-                slices_other_beam_y_center_star=n_slices,
-                slices_other_beam_py_center_star=n_slices,
-                slices_other_beam_zeta_center_star=n_slices,
-                slices_other_beam_pzeta_center_star=n_slices,
+    def _init_from_old_interface(self, old_interface, **kwargs):
 
-                )
-            self._from_oldinterface(params)
-        else:
-            super().__init__(**kwargs)
-
-    def _from_oldinterface(self, params):
+        params=old_interface
+        n_slices=len(params["charge_slices"])
+        super().__init__(
+            slices_other_beam_Sigma_11_star=n_slices,
+            slices_other_beam_Sigma_12_star=n_slices,
+            slices_other_beam_Sigma_13_star=n_slices,
+            slices_other_beam_Sigma_14_star=n_slices,
+            slices_other_beam_Sigma_22_star=n_slices,
+            slices_other_beam_Sigma_23_star=n_slices,
+            slices_other_beam_Sigma_24_star=n_slices,
+            slices_other_beam_Sigma_33_star=n_slices,
+            slices_other_beam_Sigma_34_star=n_slices,
+            slices_other_beam_Sigma_44_star=n_slices,
+            slices_other_beam_num_particles=n_slices,
+            slices_other_beam_x_center_star=n_slices,
+            slices_other_beam_px_center_star=n_slices,
+            slices_other_beam_y_center_star=n_slices,
+            slices_other_beam_py_center_star=n_slices,
+            slices_other_beam_zeta_center_star=n_slices,
+            slices_other_beam_pzeta_center_star=n_slices,
+            **kwargs
+            )
 
         self.q0_other_beam = 1., # TODO: handle ions
 
