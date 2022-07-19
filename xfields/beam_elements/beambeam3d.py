@@ -3,7 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from tkinter import N
 import numpy as np
 
 import xobjects as xo
@@ -98,9 +97,41 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             args=[]),
     }
 
+    def __init__(self, phi=None, alpha=None, q0_other_beam=None,
 
-    def __init__(self, old_interface=None, **kwargs):
+                    slices_other_beam_num_particles=None,
 
+                    slices_other_beam_x_center=0,
+                    slices_other_beam_px_center=0,
+                    slices_other_beam_y_center=0,
+                    slices_other_beam_py_center=0,
+                    slices_other_beam_zeta_center=None,
+                    slices_other_beam_pzeta_center=0,
+
+                    slices_other_beam_Sigma_11=None,
+                    slices_other_beam_Sigma_12=None,
+                    slices_other_beam_Sigma_13=None,
+                    slices_other_beam_Sigma_14=None,
+                    slices_other_beam_Sigma_22=None,
+                    slices_other_beam_Sigma_23=None,
+                    slices_other_beam_Sigma_24=None,
+                    slices_other_beam_Sigma_33=None,
+                    slices_other_beam_Sigma_34=None,
+                    slices_other_beam_Sigma_44=None,
+
+                    ref_shift_x=0, ref_shift_px=0,
+                    ref_shift_y=0, ref_shift_py=0,
+                    ref_shift_zeta=0, ref_shift_pzeta=0,
+                    other_beam_shift_x=0, other_beam_shift_px=0,
+                    other_beam_shift_y=0, other_beam_shift_py=0,
+                    other_beam_shift_zeta=0, other_beam_shift_pzeta=0,
+                    post_subtract_x=0, post_subtract_px=0,
+                    post_subtract_y=0, post_subtract_py=0,
+                    post_subtract_zeta=0, post_subtract_pzeta=0,
+
+                    old_interface=None, **kwargs):
+
+        # TODO: Handle properly strong-strong mode (for now only slicer)
         if 'slicer' in kwargs.keys():
             self.slicer = kwargs['slicer']
             del kwargs['slicer']
@@ -111,13 +142,118 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self._init_from_old_interface(old_interface=old_interface, **kwargs)
             return
 
-        super().__init__(**kwargs)
+        assert slices_other_beam_zeta_center is not None
+        assert slices_other_beam_num_particles is not None
 
-    def _init_from_old_interface(self, old_interface, **kwargs):
+        assert not np.isscalar(slices_other_beam_zeta_center), (
+                        'slices_other_beam_zeta_center must be an array')
+        assert not np.isscalar(slices_other_beam_num_particles), (
+                        'slices_other_beam_num_particles must be an array')
 
-        params=old_interface
-        n_slices=len(params["charge_slices"])
-        super().__init__(
+        assert (len(slices_other_beam_zeta_center)
+                    == len(slices_other_beam_num_particles))
+
+        n_slices = len(slices_other_beam_zeta_center)
+
+        self._allocate_xobject(n_slices, **kwargs)
+
+        assert phi is not None
+        assert alpha is not None
+
+        self.num_slices_other_beam = n_slices
+
+        self._sin_phi = np.sin(phi)
+        self._cos_phi = np.cos(phi)
+        self._tan_phi = np.tan(phi)
+        self._sin_alpha = np.sin(alpha)
+        self._cos_alpha = np.cos(alpha)
+
+        # Mandatory sigmas
+        assert slices_other_beam_Sigma_11 is not None, ("`slices_other_beam_Sigma_11` must be provided")
+        assert slices_other_beam_Sigma_12 is not None, ("`slices_other_beam_Sigma_12` must be provided")
+        assert slices_other_beam_Sigma_22 is not None, ("`slices_other_beam_Sigma_22` must be provided")
+        assert slices_other_beam_Sigma_33 is not None, ("`slices_other_beam_Sigma_33` must be provided")
+        assert slices_other_beam_Sigma_34 is not None, ("`slices_other_beam_Sigma_34` must be provided")
+        assert slices_other_beam_Sigma_44 is not None, ("`slices_other_beam_Sigma_44` must be provided")
+
+        # Coupling between transverse planes
+        if slices_other_beam_Sigma_13 is None:
+            slices_other_beam_Sigma_13 = 0
+        if slices_other_beam_Sigma_14 is None:
+            slices_other_beam_Sigma_14 = 0
+        if slices_other_beam_Sigma_23 is None:
+            slices_other_beam_Sigma_23 = 0
+        if slices_other_beam_Sigma_24 is None:
+            slices_other_beam_Sigma_24 = 0
+
+        # Trigger properties to set corresponding starred quantities
+        self.slices_other_beam_Sigma_11 = slices_other_beam_Sigma_11
+        self.slices_other_beam_Sigma_12 = slices_other_beam_Sigma_12
+        self.slices_other_beam_Sigma_13 = slices_other_beam_Sigma_13
+        self.slices_other_beam_Sigma_14 = slices_other_beam_Sigma_14
+        self.slices_other_beam_Sigma_22 = slices_other_beam_Sigma_22
+        self.slices_other_beam_Sigma_23 = slices_other_beam_Sigma_23
+        self.slices_other_beam_Sigma_24 = slices_other_beam_Sigma_24
+        self.slices_other_beam_Sigma_33 = slices_other_beam_Sigma_33
+        self.slices_other_beam_Sigma_34 = slices_other_beam_Sigma_34
+        self.slices_other_beam_Sigma_44 = slices_other_beam_Sigma_44
+
+        # Check correct according to z, head at the first position in the arrays
+        assert np.all(slices_other_beam_zeta_center[:-1]
+                        >= slices_other_beam_zeta_center[1:]), (
+                        'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
+
+        # Initialize slice positions in the boosted frame
+        (
+        x_slices_star,
+        px_slices_star,
+        y_slices_star,
+        py_slices_star,
+        zeta_slices_star,
+        pzeta_slices_star,
+        ) = _python_boost(
+            x=slices_other_beam_x_center,
+            px=slices_other_beam_px_center,
+            y=slices_other_beam_y_center,
+            py=slices_other_beam_py_center,
+            zeta=slices_other_beam_zeta_center,
+            pzeta=slices_other_beam_pzeta_center,
+            sphi=self.sin_phi,
+            cphi=self.cos_phi,
+            tphi=self.tan_phi,
+            salpha=self.sin_alpha,
+            calpha=self.cos_alpha,
+        )
+        self.slices_other_beam_x_center_star = x_slices_star
+        self.slices_other_beam_px_center_star = px_slices_star
+        self.slices_other_beam_y_center_star = y_slices_star
+        self.slices_other_beam_py_center_star = py_slices_star
+        self.slices_other_beam_zeta_center_star = zeta_slices_star
+        self.slices_other_beam_pzeta_center_star = pzeta_slices_star
+
+        self.ref_shift_x = ref_shift_x
+        self.ref_shift_px = ref_shift_px
+        self.ref_shift_y = ref_shift_y
+        self.ref_shift_py = ref_shift_py
+        self.ref_shift_zeta = ref_shift_zeta
+        self.ref_shift_pzeta = ref_shift_pzeta
+
+        self.other_beam_shift_x = other_beam_shift_x
+        self.other_beam_shift_px = other_beam_shift_px
+        self.other_beam_shift_y = other_beam_shift_y
+        self.other_beam_shift_py = other_beam_shift_py
+        self.other_beam_shift_zeta = other_beam_shift_zeta
+        self.other_beam_shift_pzeta = other_beam_shift_pzeta
+
+        self.post_subtract_x = post_subtract_x
+        self.post_subtract_px = post_subtract_px
+        self.post_subtract_y = post_subtract_y
+        self.post_subtract_py = post_subtract_py
+        self.post_subtract_zeta = post_subtract_zeta
+        self.post_subtract_pzeta = post_subtract_pzeta
+
+    def _allocate_xobject(self, n_slices, **kwargs):
+        self.xoinitialize(
             slices_other_beam_Sigma_11_star=n_slices,
             slices_other_beam_Sigma_12_star=n_slices,
             slices_other_beam_Sigma_13_star=n_slices,
@@ -137,6 +273,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_pzeta_center_star=n_slices,
             **kwargs
             )
+
+
+    def _init_from_old_interface(self, old_interface, **kwargs):
+
+        params=old_interface
+        n_slices=len(params["charge_slices"])
+
+        self._allocate_xobject(n_slices, **kwargs)
 
         self.q0_other_beam = 1., # TODO: handle ions
 
@@ -178,8 +322,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             px=0 * z_slices,
             y=0 * z_slices,
             py=0 * z_slices,
-            sigma=z_slices,
-            delta=0 * z_slices,
+            zeta=z_slices,
+            pzeta=0 * z_slices,
             sphi = self.sin_phi,
             cphi = self.cos_phi,
             tphi = self.tan_phi,
@@ -295,8 +439,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             px_st=px_star_slices,
             y_st=y_star_slices,
             py_st=py_star_slices,
-            sigma_st=zeta_star_slices,
-            delta_st=pzeta_star_slices,
+            zeta_st=zeta_star_slices,
+            pzeta_st=pzeta_star_slices,
             sphi=self.sin_phi,
             cphi=self.cos_phi,
             tphi=self.tan_phi,
@@ -604,27 +748,27 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
 
 # Used only in properties, not in actual tracking
-def _python_boost_scalar(x, px, y, py, sigma, delta,
+def _python_boost_scalar(x, px, y, py, zeta, pzeta,
                   sphi, cphi, tphi, salpha, calpha):
 
     h = (
-        delta
+        pzeta
         + 1.0
-        - np.sqrt((1.0 + delta) * (1.0 + delta) - px * px - py * py)
+        - np.sqrt((1.0 + pzeta) * (1.0 + pzeta) - px * px - py * py)
     )
 
     px_st = px / cphi - h * calpha * tphi / cphi
     py_st = py / cphi - h * salpha * tphi / cphi
-    delta_st = (
-        delta - px * calpha * tphi - py * salpha * tphi + h * tphi * tphi
+    pzeta_st = (
+        pzeta - px * calpha * tphi - py * salpha * tphi + h * tphi * tphi
     )
 
     pz_st = np.sqrt(
-        (1.0 + delta_st) * (1.0 + delta_st) - px_st * px_st - py_st * py_st
+        (1.0 + pzeta_st) * (1.0 + pzeta_st) - px_st * px_st - py_st * py_st
     )
     hx_st = px_st / pz_st
     hy_st = py_st / pz_st
-    hsigma_st = 1.0 - (delta_st + 1) / pz_st
+    hzeta_st = 1.0 - (pzeta_st + 1) / pz_st
 
     L11 = 1.0 + hx_st * calpha * sphi
     L12 = hx_st * salpha * sphi
@@ -634,38 +778,38 @@ def _python_boost_scalar(x, px, y, py, sigma, delta,
     L22 = 1.0 + hy_st * salpha * sphi
     L23 = salpha * tphi
 
-    L31 = hsigma_st * calpha * sphi
-    L32 = hsigma_st * salpha * sphi
+    L31 = hzeta_st * calpha * sphi
+    L32 = hzeta_st * salpha * sphi
     L33 = 1.0 / cphi
 
-    x_st = L11 * x + L12 * y + L13 * sigma
-    y_st = L21 * x + L22 * y + L23 * sigma
-    sigma_st = L31 * x + L32 * y + L33 * sigma
+    x_st = L11 * x + L12 * y + L13 * zeta
+    y_st = L21 * x + L22 * y + L23 * zeta
+    zeta_st = L31 * x + L32 * y + L33 * zeta
 
-    return x_st, px_st, y_st, py_st, sigma_st, delta_st
+    return x_st, px_st, y_st, py_st, zeta_st, pzeta_st
 
 _python_boost = np.vectorize(_python_boost_scalar,
     excluded=("sphi", "cphi", "tphi", "salpha", "calpha"))
 
-def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, sigma_st, delta_st,
+def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, zeta_st, pzeta_st,
                   sphi, cphi, tphi, salpha, calpha):
 
     pz_st = np.sqrt(
-        (1.0 + delta_st) * (1.0 + delta_st) - px_st * px_st - py_st * py_st
+        (1.0 + pzeta_st) * (1.0 + pzeta_st) - px_st * px_st - py_st * py_st
     )
     hx_st = px_st / pz_st
     hy_st = py_st / pz_st
-    hsigma_st = 1.0 - (delta_st + 1) / pz_st
+    hzeta_st = 1.0 - (pzeta_st + 1) / pz_st
 
     Det_L = (
         1.0 / cphi
-        + (hx_st * calpha + hy_st * salpha - hsigma_st * sphi) * tphi
+        + (hx_st * calpha + hy_st * salpha - hzeta_st * sphi) * tphi
     )
 
     Linv_11 = (
-        1.0 / cphi + salpha * tphi * (hy_st - hsigma_st * salpha * sphi)
+        1.0 / cphi + salpha * tphi * (hy_st - hzeta_st * salpha * sphi)
     ) / Det_L
-    Linv_12 = (salpha * tphi * (hsigma_st * calpha * sphi - hx_st)) / Det_L
+    Linv_12 = (salpha * tphi * (hzeta_st * calpha * sphi - hx_st)) / Det_L
     Linv_13 = (
         -tphi
         * (
@@ -676,9 +820,9 @@ def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, sigma_st, delta_st,
         / Det_L
     )
 
-    Linv_21 = (calpha * tphi * (-hy_st + hsigma_st * salpha * sphi)) / Det_L
+    Linv_21 = (calpha * tphi * (-hy_st + hzeta_st * salpha * sphi)) / Det_L
     Linv_22 = (
-        1.0 / cphi + calpha * tphi * (hx_st - hsigma_st * calpha * sphi)
+        1.0 / cphi + calpha * tphi * (hx_st - hzeta_st * calpha * sphi)
     ) / Det_L
     Linv_23 = (
         -tphi
@@ -690,27 +834,27 @@ def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, sigma_st, delta_st,
         / Det_L
     )
 
-    Linv_31 = -hsigma_st * calpha * sphi / Det_L
-    Linv_32 = -hsigma_st * salpha * sphi / Det_L
+    Linv_31 = -hzeta_st * calpha * sphi / Det_L
+    Linv_32 = -hzeta_st * salpha * sphi / Det_L
     Linv_33 = (1.0 + hx_st * calpha * sphi + hy_st * salpha * sphi) / Det_L
 
-    x_i = Linv_11 * x_st + Linv_12 * y_st + Linv_13 * sigma_st
-    y_i = Linv_21 * x_st + Linv_22 * y_st + Linv_23 * sigma_st
-    sigma_i = Linv_31 * x_st + Linv_32 * y_st + Linv_33 * sigma_st
+    x_i = Linv_11 * x_st + Linv_12 * y_st + Linv_13 * zeta_st
+    y_i = Linv_21 * x_st + Linv_22 * y_st + Linv_23 * zeta_st
+    zeta_i = Linv_31 * x_st + Linv_32 * y_st + Linv_33 * zeta_st
 
-    h = (delta_st + 1.0 - pz_st) * cphi * cphi
+    h = (pzeta_st + 1.0 - pz_st) * cphi * cphi
 
     px_i = px_st * cphi + h * calpha * tphi
     py_i = py_st * cphi + h * salpha * tphi
 
-    delta_i = (
-        delta_st
+    pzeta_i = (
+        pzeta_st
         + px_i * calpha * tphi
         + py_i * salpha * tphi
         - h * tphi * tphi
     )
 
-    return x_i, px_i, y_i, py_i, sigma_i, delta_i
+    return x_i, px_i, y_i, py_i, zeta_i, pzeta_i
 
 _python_inv_boost = np.vectorize(_python_inv_boost_scalar,
     excluded=("sphi", "cphi", "tphi", "salpha", "calpha"))
