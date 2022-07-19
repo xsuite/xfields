@@ -3,7 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from email.errors import ObsoleteHeaderDefect
 import numpy as np
 from scipy.constants import e as qe
 
@@ -110,33 +109,7 @@ bb_dtk = dtk.elements.BeamBeam6D(
         d_delta=d_delta
         )
 
-bb = xf.BeamBeamBiGaussian3D(
-        phi=phi, alpha=alpha, q0_other_beam=1,
-
-        slices_other_beam_num_particles=charge_slices[::-1],
-        slices_other_beam_zeta_center=z_slices[::-1],
-
-        slices_other_beam_Sigma_11= Sig_11_0,
-        slices_other_beam_Sigma_12= Sig_12_0,
-        slices_other_beam_Sigma_13= Sig_13_0,
-        slices_other_beam_Sigma_14= Sig_14_0,
-        slices_other_beam_Sigma_22= Sig_22_0,
-        slices_other_beam_Sigma_23= Sig_23_0,
-        slices_other_beam_Sigma_24= Sig_24_0,
-        slices_other_beam_Sigma_33= Sig_33_0,
-        slices_other_beam_Sigma_34= Sig_34_0,
-        slices_other_beam_Sigma_44= Sig_44_0,
-
-        ref_shift_x=x_co,
-        ref_shift_px=px_co,
-        ref_shift_y=y_co,
-        ref_shift_py=py_co,
-        ref_shift_zeta=zeta_co,
-        ref_shift_pzeta=delta_co,
-
-        other_beam_shift_x=x_bb_co,
-        other_beam_shift_y=y_bb_co,
-)
+bb = xf.BeamBeamBiGaussian3D(old_interface=bb_dtk.to_dict(), _context=context)
 
 dtk_part = dtk.TestParticles(
         p0c=6500e9,

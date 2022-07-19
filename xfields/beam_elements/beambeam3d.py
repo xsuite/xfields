@@ -136,6 +136,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     old_interface=None, **kwargs):
 
+        if '_xobject' in kwargs.keys():
+            self.xoinitialize(**kwargs)
+            return
+
         # TODO: Handle properly strong-strong mode (for now only slicer)
         if 'slicer' in kwargs.keys():
             self.slicer = kwargs['slicer']
@@ -143,7 +147,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # Verify that slices are properly sorted (including Sigmas...)
 
-        if 'old_interface' is not None:
+        if old_interface is not None:
             self._init_from_old_interface(old_interface=old_interface, **kwargs)
             return
 
