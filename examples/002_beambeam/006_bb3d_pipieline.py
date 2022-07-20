@@ -14,6 +14,7 @@ update_config = UpdateConfigBeamBeamBiGaussian3D(
         'beam1_bunch2': 'beam2_bunch2',
         'beam1_bunch3': 'beam2_bunch3',
     }
+    update_every=10 # Update every 10 turns
 )
 
 bb = xf.BeamBeamBiGaussian3D(

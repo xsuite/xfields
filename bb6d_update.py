@@ -133,7 +133,7 @@ class BeamBeam3D(xt.BeamElement):
         self._slice_particles(particles)
 
         # Apply the bb kicks (puts the simulation on hold if waiting for message)
-        ret = self._apply_bb_kicks
+        ret = self._apply_bb_kicks()
         if ret is not None:
             return ret # PipelineStatus
         else:
