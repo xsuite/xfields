@@ -97,7 +97,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             args=[]),
     }
 
-    def __init__(self, phi=None, alpha=None, q0_other_beam=None,
+    def __init__(self,
+                    phi=None, alpha=None, q0_other_beam=None,
 
                     slices_other_beam_num_particles=None,
 
@@ -119,13 +120,19 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_Sigma_34=None,
                     slices_other_beam_Sigma_44=None,
 
-                    ref_shift_x=0, ref_shift_px=0,
-                    ref_shift_y=0, ref_shift_py=0,
-                    ref_shift_zeta=0, ref_shift_pzeta=0,
+                    ref_shift_x=0,
+                    ref_shift_px=0,
+                    ref_shift_y=0,
+                    ref_shift_py=0,
+                    ref_shift_zeta=0,
+                    ref_shift_pzeta=0,
 
-                    other_beam_shift_x=0, other_beam_shift_px=0,
-                    other_beam_shift_y=0, other_beam_shift_py=0,
-                    other_beam_shift_zeta=0, other_beam_shift_pzeta=0,
+                    other_beam_shift_x=0,
+                    other_beam_shift_px=0,
+                    other_beam_shift_y=0,
+                    other_beam_shift_py=0,
+                    other_beam_shift_zeta=0,
+                    other_beam_shift_pzeta=0,
 
                     post_subtract_x=0, post_subtract_px=0,
                     post_subtract_y=0, post_subtract_py=0,
@@ -134,18 +141,33 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     min_sigma_diff=1e-10,
                     threshold_singular = 1e-28,
 
-                    old_interface=None, **kwargs):
+                    old_interface=None,
+
+                    update_config=None,
+
+                    **kwargs):
 
         if '_xobject' in kwargs.keys():
             self.xoinitialize(**kwargs)
             return
 
-        # TODO: Handle properly strong-strong mode (for now only slicer)
-        if 'slicer' in kwargs.keys():
-            self.slicer = kwargs['slicer']
-            del kwargs['slicer']
+        # For pipeline (untested)
+        if update_config is not None:
 
-        # Verify that slices are properly sorted (including Sigmas...)
+            self.update_config = update_config
+            self.iscollective = True
+            self.track = self._track_with_collective # switch to specific track method
+
+            # Some dummy values just to initialize the object
+            slices_other_beam_Sigma_11 = 1.
+            slices_other_beam_Sigma_12 = 1.
+            slices_other_beam_Sigma_22 = 1.
+            slices_other_beam_Sigma_33 = 1.
+            slices_other_beam_Sigma_34 = 1.
+            slices_other_beam_Sigma_44 = 1.
+            slices_other_beam_zeta_center = update_config.slicer.zeta_centers
+            slices_other_beam_num_particles = np.zeros_like(
+                                            slices_other_beam_zeta_center)
 
         if old_interface is not None:
             self._init_from_old_interface(old_interface=old_interface, **kwargs)
@@ -165,6 +187,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         n_slices = len(slices_other_beam_zeta_center)
 
         self._allocate_xobject(n_slices, **kwargs)
+
+        # For pipeline (untested)
+        if self.iscollective:
+            if not isinstance(self._buffer.context, xo.ContextCpu):
+                raise NotImplementedError(
+                    'BeamBeamBiGaussian3D only works with CPU context for now')
 
         assert phi is not None
         assert alpha is not None
@@ -381,8 +409,24 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.num_slices_other_beam = len(params["charge_slices"])
 
-    def _track_dev(self, particles):
+    # For pipeline (untested)
+    def _track_collective(self, particles):
 
+        update_every = self.update_config.update_every
+
+        if particles._num_active_particles == 0:
+            return # All particles are lost
+
+        at_turn = particles._xobject.at_turn[0] # On CPU there is always an active particle in position 0
+
+        if at_turn % update_every == 0:
+            do_update = True
+        else:
+            do_update = False
+
+        ARRIVATO_QUA
+        
+        
         particles_slice_indices = self.slicer.get_slice_indeces(particles)
         n_slices_self_beam = self.slicer.num_slices
 
