@@ -156,7 +156,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
             self.config_for_update = config_for_update
             self.iscollective = True
-            self.track = self._track_with_collective # switch to specific track method
+            self.track = self._track_collective # switch to specific track method
 
             assert slices_other_beam_zeta_center is not None
             assert not np.isscalar(slices_other_beam_num_particles)
@@ -434,7 +434,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # Handle update frequency
         at_turn = particles._xobject.at_turn[0] # On CPU there is always an active particle in position 0
-        if at_turn % self.config_for_update.update_every == 0:
+        if (self.config_for_update.update_every is not None
+                and at_turn % self.config_for_update.update_every == 0):
             self.config_for_update._do_update = True
         else:
             self.config_for_update._do_update = False
@@ -443,7 +444,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.change_ref_frame(particles)
 
         # Beam beam interaction in the boosted frame
-        ret = self._apply_bb_kicks_in_boosted_frame(self, particles)
+        ret = self._apply_bb_kicks_in_boosted_frame(particles)
 
         if ret is not None:
             return ret # PipelineStatus
@@ -455,7 +456,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     # For pipeline (untested)
     def _apply_bb_kicks_in_boosted_frame(self, particles):
 
-        n_slices_self_beam = self.slicer.num_slices
+        n_slices_self_beam = self.config_for_update.slicer.num_slices
 
         while True:
 
@@ -484,20 +485,23 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                         data_received=data_received) # Method to be written
 
             self.config_for_update._other_beam_slice_index_for_particles[:] =(
-                 self.config_for_update.i_step - self.config_for_update._particles_slice_index)
+                 self.config_for_update._i_step - self.config_for_update._particles_slice_index)
             self.config_for_update._other_beam_slice_index_for_particles[
                              self.config_for_update._particles_slice_index < 0] = -1
-            self.synchro_beam_kick(particles,
-                    i_slice_for_particles=
-                        self.config_for_update._other_beam_slice_index_for_particles)
+            self.synchro_beam_kick(particles=particles,
+                        i_slice_for_particles=self.config_for_update._other_beam_slice_index_for_particles)
 
-            self.i_step += 1
-            if self.i_step == (n_slices_self_beam + self.num_slices_other_beam):
-                self.i_step = 0
-                self._working_on_bunch = None
+            self.config_for_update._i_step += 1
+            if self.config_for_update._i_step == (n_slices_self_beam + self.num_slices_other_beam):
+                self.config_for_update._i_step = 0
+                self.config_for_update._working_on_bunch = None
                 break
 
         return None
+
+    # For pipeline (untested)
+    def resume(self):
+        raise NotImplementedError
 
 
     @property
@@ -985,7 +989,7 @@ class TempSlicer:
         self.bin_centers = (bin_edges[1:] + bin_edges[:-1]) / 2.0
         self.num_slices = len(bin_edges) - 1
 
-    def get_slice_indeces(self, particles):
+    def get_slice_indices(self, particles):
         indices = np.digitize(particles.zeta, self.bin_edges, right=True)
         indices[particles.state <=0 ] = -1
 
@@ -1007,6 +1011,10 @@ class ConfigForUpdateBeamBeamBiGaussian3D:
         self.slicer = slicer
         self.collision_schedule = collision_schedule
         self.update_every = update_every
+
+        self._i_step = 0
+        self._working_on_bunch = None
+        self._particles_slice_index = None
 
 
 
