@@ -173,7 +173,10 @@ dtk_part = dtk.TestParticles(
 part = xp.Particles(_context=context, **dtk_part.to_dict())
 part.name = 'beam1_bunch1'
 
-bb.track(part)
+ret = bb.track(part, _force_suspend=True)
+assert ret.on_hold
+ret = bb.track(part)
+assert ret is None
 
 print('------------------------')
 

@@ -413,45 +413,67 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.num_slices_other_beam = len(params["charge_slices"])
 
     # For pipeline (untested)
-    def _track_collective(self, particles):
+    def _track_collective(self, particles, _force_suspend=False):
 
-        if particles._num_active_particles == 0:
-            return # All particles are lost
+        if self.config_for_update._working_on_bunch is not None:
+            # I am resuming a suspended calculation
 
-        # Check that the element is not occupied by a bunch
-        assert self.config_for_update._i_step == 0
-        assert self.config_for_update._particles_slice_index is None
-        assert self.config_for_update._working_on_bunch is None
-        assert particles.name in self.config_for_update.collision_schedule.keys()
+            assert self.config_for_update._working_on_bunch == particles.name
 
-        self.config_for_update._working_on_bunch = particles.name
+            # Beam beam interaction in the boosted frame
+            ret = self._apply_bb_kicks_in_boosted_frame(particles)
 
-        # Slice bunch (in the lab frame)
-        self.config_for_update._particles_slice_index = (
-                        self.config_for_update.slicer.get_slice_indices(particles))
-        self.config_for_update._other_beam_slice_index_for_particles = np.zeros_like(
-            self.config_for_update._particles_slice_index)
+            if ret is not None:
+                return ret # PipelineStatus
+            else:
+                # Back to line reference frame
+                self.change_back_ref_frame_and_subtract_dipolar(particles)
+                return None
 
-        # Handle update frequency
-        at_turn = particles._xobject.at_turn[0] # On CPU there is always an active particle in position 0
-        if (self.config_for_update.update_every is not None
-                and at_turn % self.config_for_update.update_every == 0):
-            self.config_for_update._do_update = True
         else:
-            self.config_for_update._do_update = False
+            # I am working on a new bunch
 
-        # Change reference frame
-        self.change_ref_frame(particles)
+            if particles._num_active_particles == 0:
+                return # All particles are lost
 
-        # Beam beam interaction in the boosted frame
-        ret = self._apply_bb_kicks_in_boosted_frame(particles)
+            # Check that the element is not occupied by a bunch
+            assert self.config_for_update._i_step == 0
+            assert self.config_for_update._particles_slice_index is None
+            assert self.config_for_update._working_on_bunch is None
+            assert particles.name in self.config_for_update.collision_schedule.keys()
 
-        if ret is not None:
-            return ret # PipelineStatus
-        else:
-            # Back to line reference frame
-            self.change_back_ref_frame_and_subtract_dipolar(particles)
-            return None
+            self.config_for_update._working_on_bunch = particles.name
+
+            # Slice bunch (in the lab frame)
+            self.config_for_update._particles_slice_index = (
+                            self.config_for_update.slicer.get_slice_indices(particles))
+            self.config_for_update._other_beam_slice_index_for_particles = np.zeros_like(
+                self.config_for_update._particles_slice_index)
+
+            # Handle update frequency
+            at_turn = particles._xobject.at_turn[0] # On CPU there is always an active particle in position 0
+            if (self.config_for_update.update_every is not None
+                    and at_turn % self.config_for_update.update_every == 0):
+                self.config_for_update._do_update = True
+            else:
+                self.config_for_update._do_update = False
+
+            # Change reference frame
+            self.change_ref_frame(particles)
+
+            # Can be used to test the resume without pipeline
+            if _force_suspend:
+                return xt.PipelineStatus(on_hold=True)
+
+            # Beam beam interaction in the boosted frame
+            ret = self._apply_bb_kicks_in_boosted_frame(particles)
+
+            if ret is not None:
+                return ret # PipelineStatus
+            else:
+                # Back to line reference frame
+                self.change_back_ref_frame_and_subtract_dipolar(particles)
+                return None
 
     # For pipeline (untested)
     def _apply_bb_kicks_in_boosted_frame(self, particles):
@@ -475,7 +497,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 data_received = self.pipeline_manager.receive_data(etc___)
 
                 if data_received == 'not_ready':
-                    return PipelineStatus(on_hold=True)
+                    return xt.PipelineStatus(on_hold=True)
                 else:
                     # Remember that here one needs to make a transformation between
                     # the coordinates of the the two beams (positions and sigma matrix)
@@ -498,11 +520,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 break
 
         return None
-
-    # For pipeline (untested)
-    def resume(self):
-        raise NotImplementedError
-
 
     @property
     def sin_phi(self):
