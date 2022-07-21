@@ -143,7 +143,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     old_interface=None,
 
-                    update_config=None,
+                    config_for_update=None,
 
                     **kwargs):
 
@@ -152,9 +152,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             return
 
         # For pipeline (untested)
-        if update_config is not None:
+        if config_for_update is not None:
 
-            self.update_config = update_config
+            self.config_for_update = config_for_update
             self.iscollective = True
             self.track = self._track_with_collective # switch to specific track method
 
@@ -419,25 +419,25 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             return # All particles are lost
 
         # Check that the element is not occupied by a bunch
-        assert self.update_config._i_step == 0
-        assert self.update_config._particles_slice_index is None
-        assert self.update_config._working_on_bunch is None
-        assert particles.name in self.update_config.collision_schedule.keys()
+        assert self.config_for_update._i_step == 0
+        assert self.config_for_update._particles_slice_index is None
+        assert self.config_for_update._working_on_bunch is None
+        assert particles.name in self.config_for_update.collision_schedule.keys()
 
-        self.update_config._working_on_bunch = particles.name
+        self.config_for_update._working_on_bunch = particles.name
 
         # Slice bunch (in the lab frame)
-        self.update_config._particles_slice_index = (
-                        self.update_config.slicer.get_slice_indices(particles))
-        self.update_config._other_beam_slice_index_for_particles = np.zeros_like(
-            self.update_config._particles_slice_index)
+        self.config_for_update._particles_slice_index = (
+                        self.config_for_update.slicer.get_slice_indices(particles))
+        self.config_for_update._other_beam_slice_index_for_particles = np.zeros_like(
+            self.config_for_update._particles_slice_index)
 
         # Handle update frequency
         at_turn = particles._xobject.at_turn[0] # On CPU there is always an active particle in position 0
-        if at_turn % self.update_config.update_every == 0:
-            self.update_config._do_update = True
+        if at_turn % self.config_for_update.update_every == 0:
+            self.config_for_update._do_update = True
         else:
-            self.update_config._do_update = False
+            self.config_for_update._do_update = False
 
         # Change reference frame
         self.change_ref_frame(particles)
@@ -459,12 +459,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         while True:
 
-            if self.update_config._do_update:
+            if self.config_for_update._do_update:
 
-                pipeline_manager = self.update_config.pipeline_manager
+                pipeline_manager = self.config_for_update.pipeline_manager
 
                 # Compute momenta
-                momenta_self = self.update_config.compute_slice_momenta(
+                momenta_self = self.config_for_update.compute_slice_momenta(
                                                     particles, self.slice_index)
 
                 # Send momenta (I invent a bit for now...)
@@ -479,17 +479,17 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     # Remember that here one needs to make a transformation between
                     # the coordinates of the the two beams (positions and sigma matrix)
                     # Here how it is done in the mask: https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
-                    self.update_config._update_from_received_data(
+                    self.config_for_update._update_from_received_data(
                         beambeam_element=self,
                         data_received=data_received) # Method to be written
 
-            self.update_config._other_beam_slice_index_for_particles[:] =(
-                 self.update_config.i_step - self.update_config._particles_slice_index)
-            self.update_config._other_beam_slice_index_for_particles[
-                             self.update_config._particles_slice_index < 0] = -1
+            self.config_for_update._other_beam_slice_index_for_particles[:] =(
+                 self.config_for_update.i_step - self.config_for_update._particles_slice_index)
+            self.config_for_update._other_beam_slice_index_for_particles[
+                             self.config_for_update._particles_slice_index < 0] = -1
             self.synchro_beam_kick(particles,
                     i_slice_for_particles=
-                        self.update_config._other_beam_slice_index_for_particles)
+                        self.config_for_update._other_beam_slice_index_for_particles)
 
             self.i_step += 1
             if self.i_step == (n_slices_self_beam + self.num_slices_other_beam):
