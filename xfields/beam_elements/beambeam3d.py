@@ -151,7 +151,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.xoinitialize(**kwargs)
             return
 
-        # For pipeline (untested)
+        # Collective mode (pipeline update)
         if config_for_update is not None:
 
             self.config_for_update = config_for_update
@@ -191,7 +191,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self._allocate_xobject(n_slices, **kwargs)
 
-        # For pipeline (untested)
         if self.iscollective:
             if not isinstance(self._buffer.context, xo.ContextCpu):
                 raise NotImplementedError(
@@ -412,7 +411,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.num_slices_other_beam = len(params["charge_slices"])
 
-    # For pipeline (untested)
     def _track_collective(self, particles, _force_suspend=False):
 
         if self.config_for_update._working_on_bunch is not None:
@@ -475,7 +473,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 self.change_back_ref_frame_and_subtract_dipolar(particles)
                 return None
 
-    # For pipeline (untested)
     def _apply_bb_kicks_in_boosted_frame(self, particles):
 
         n_slices_self_beam = self.config_for_update.slicer.num_slices
@@ -486,25 +483,27 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                 pipeline_manager = self.config_for_update.pipeline_manager
 
-                # Compute momenta
-                momenta_self = self.config_for_update.compute_slice_momenta(
-                                                    particles, self.slice_index)
+                # Pipeline update --> still to be developed
 
-                # Send momenta (I invent a bit for now...)
-                pipeline_manager.send_data(momenta_self, etc___)
+                # # Compute momenta
+                # momenta_self = self.config_for_update.compute_slice_momenta(
+                #                                     particles, self.slice_index)
 
-                # Receive momenta (I invent a bit for now...)
-                data_received = self.pipeline_manager.receive_data(etc___)
+                # # Send momenta (I invent a bit for now...)
+                # pipeline_manager.send_data(momenta_self, etc___)
 
-                if data_received == 'not_ready':
-                    return xt.PipelineStatus(on_hold=True)
-                else:
-                    # Remember that here one needs to make a transformation between
-                    # the coordinates of the the two beams (positions and sigma matrix)
-                    # Here how it is done in the mask: https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
-                    self.config_for_update._update_from_received_data(
-                        beambeam_element=self,
-                        data_received=data_received) # Method to be written
+                # # Receive momenta (I invent a bit for now...)
+                # data_received = self.pipeline_manager.receive_data(etc___)
+
+                # if data_received == 'not_ready':
+                #     return xt.PipelineStatus(on_hold=True)
+                # else:
+                #     # Remember that here one needs to make a transformation between
+                #     # the coordinates of the the two beams (positions and sigma matrix)
+                #     # Here how it is done in the mask: https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
+                #     self.config_for_update._update_from_received_data(
+                #         beambeam_element=self,
+                #         data_received=data_received) # Method to be written
 
             self.config_for_update._other_beam_slice_index_for_particles[:] =(
                  self.config_for_update._i_step - self.config_for_update._particles_slice_index)
