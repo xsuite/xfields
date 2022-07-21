@@ -159,16 +159,17 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.track = self._track_with_collective # switch to specific track method
 
             assert slices_other_beam_zeta_center is not None
-            assert not np.iscalar(slices_other_beam_num_particles)
+            assert not np.isscalar(slices_other_beam_num_particles)
 
             # Some dummy values just to initialize the object
-            slices_other_beam_Sigma_11 = 1.
-            slices_other_beam_Sigma_12 = 1.
-            slices_other_beam_Sigma_22 = 1.
-            slices_other_beam_Sigma_33 = 1.
-            slices_other_beam_Sigma_34 = 1.
-            slices_other_beam_Sigma_44 = 1.
-            slices_other_beam_num_particles = np.zeros_like(
+            if slices_other_beam_Sigma_11 is None: slices_other_beam_Sigma_11 = 1.
+            if slices_other_beam_Sigma_12 is None: slices_other_beam_Sigma_12 = 1.
+            if slices_other_beam_Sigma_22 is None: slices_other_beam_Sigma_22 = 1.
+            if slices_other_beam_Sigma_33 is None: slices_other_beam_Sigma_33 = 1.
+            if slices_other_beam_Sigma_34 is None: slices_other_beam_Sigma_34 = 1.
+            if slices_other_beam_Sigma_44 is None: slices_other_beam_Sigma_44 = 1.
+            if slices_other_beam_num_particles is None:
+                slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
 
         if old_interface is not None:
@@ -441,24 +442,15 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # Change reference frame
         self.change_ref_frame(particles)
 
-        ARRIVATO_QUA
+        # Beam beam interaction in the boosted frame
+        ret = self._apply_bb_kicks_in_boosted_frame(self, particles)
 
-        particles_slice_indices = self.slicer.get_slice_indices(particles)
-        n_slices_self_beam = self.slicer.num_slices
-
-        self.change_ref_frame(particles)
-
-        i_slice_for_particles = np.zeros_like(particles.zeta, dtype=np.int64)
-        for ii in range(self.num_slices_other_beam + n_slices_self_beam):
-
-            # Strong-strong logic
-
-            i_slice_for_particles[:] = ii - particles_slice_indices
-            i_slice_for_particles[particles_slice_indices < 0] = -1
-            self.synchro_beam_kick(particles,
-                                   i_slice_for_particles=i_slice_for_particles)
-
-        self.change_back_ref_frame_and_subtract_dipolar(particles)
+        if ret is not None:
+            return ret # PipelineStatus
+        else:
+            # Back to line reference frame
+            self.change_back_ref_frame_and_subtract_dipolar(particles)
+            return None
 
     # For pipeline (untested)
     def _apply_bb_kicks_in_boosted_frame(self, particles):
