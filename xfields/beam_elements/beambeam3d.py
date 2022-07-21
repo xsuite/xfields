@@ -990,3 +990,23 @@ class TempSlicer:
         indices[particles.state <=0 ] = -1
 
         return np.array(indices, dtype=np.int64)
+
+class ConfigForUpdateBeamBeamBiGaussian3D:
+
+    def __init__(self,
+        pipeline_manager,
+        element_name,
+        partner_element_name,
+        slicer,
+        collision_schedule,
+        update_every):
+
+        self.pipeline_manager = pipeline_manager
+        self.element_name = element_name
+        self.partner_element_name = partner_element_name
+        self.slicer = slicer
+        self.collision_schedule = collision_schedule
+        self.update_every = update_every
+
+
+
