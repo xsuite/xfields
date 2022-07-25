@@ -65,7 +65,7 @@ void BeamBeamBiGaussian2D_track_local_particle(
         }
         else{
             sintheta = 0;
-            costheta = 0;
+            costheta = 1;
             x_hat = x_bar;
             y_hat = y_bar;
             Sig_11_hat = other_beam_Sigma_11;
@@ -81,7 +81,7 @@ void BeamBeamBiGaussian2D_track_local_particle(
 
         const double charge_mass_ratio = part_chi*QELEM*part_q0
                     /(part_mass0*QELEM/(C_LIGHT*C_LIGHT));
-        const double factor = -(charge_mass_ratio
+        const double factor = (charge_mass_ratio
                     * other_beam_num_particles * q0_other_beam * QELEM
                     / (part_gamma0*part_beta0*C_LIGHT*C_LIGHT)
                     * (1+beta0_other_beam * part_beta0)

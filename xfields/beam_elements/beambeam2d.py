@@ -111,8 +111,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             other_beam_Sigma_13 = 0
 
         if np.abs(other_beam_Sigma_13) > 0:
-            raise NotImplementedError(
-                "Coupled case not tested yet.")
+            raise NotImplementedError("Coupled case not tested yet.")
 
         assert other_beam_num_particles is not None, ("`other_beam_num_particles` must be provided")
         self.other_beam_num_particles = other_beam_num_particles
