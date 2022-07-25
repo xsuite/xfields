@@ -23,14 +23,15 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         'post_subtract_px': xo.Float64,
         'post_subtract_py': xo.Float64,
 
+        # TODO this could become other_beam_q0, other_beam_beta0 (to be done also in 6D)
         'q0_other_beam': xo.Float64,
         'beta0_other_beam': xo.Float64,
 
         'other_beam_num_particles': xo.Float64,
 
-        'other_beam_Sigma_11_star': xo.Float64,
-        'other_beam_Sigma_13_star': xo.Float64,
-        'other_beam_Sigma_33_star': xo.Float64,
+        'other_beam_Sigma_11': xo.Float64,
+        'other_beam_Sigma_13': xo.Float64,
+        'other_beam_Sigma_33': xo.Float64,
 
         'min_sigma_diff': xo.Float64,
 
@@ -102,6 +103,10 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         # Coupling between transverse planes
         if other_beam_Sigma_13 is None:
             other_beam_Sigma_13 = 0
+
+        if np.abs(other_beam_Sigma_13) > 0:
+            raise NotImplementedError(
+                "Coupled case not tested yet.")
 
         assert other_beam_num_particles is not None, ("`other_beam_num_particles` must be provided")
         self.other_beam_num_particles = other_beam_num_particles

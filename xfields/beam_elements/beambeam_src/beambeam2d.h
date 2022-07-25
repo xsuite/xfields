@@ -6,44 +6,93 @@
 #ifndef XFIELDS_BEAMBEAM_H
 #define XFIELDS_BEAMBEAM_H
 
+#if !defined(mysign)
+    #define mysign(a) (((a) >= 0) - ((a) < 0))
+#endif
+
 /*gpufun*/
 void BeamBeamBiGaussian2D_track_local_particle(
         BeamBeamBiGaussian2DData el, LocalParticle* part0){
 
-    double const bb_q0 = BeamBeamBiGaussian2DData_get_q0_other_beam(el);
-    double const bb_n_particles = 
-            BeamBeamBiGaussian2DData_get_other_beam_num_particles(el);
+    double const ref_shift_x = BeamBeamBiGaussian2DData_get_ref_shift_x(el);
+    double const ref_shift_y = BeamBeamBiGaussian2DData_get_ref_shift_y(el);
 
+    double const other_beam_shift_x = BeamBeamBiGaussian2DData_get_other_beam_shift_x(el);
+    double const other_beam_shift_y = BeamBeamBiGaussian2DData_get_other_beam_shift_y(el);
 
-    ARRIVATO QUA
+    double const post_subtract_x = BeamBeamBiGaussian2DData_get_post_subtract_x(el);
+    double const post_subtract_y = BeamBeamBiGaussian2DData_get_post_subtract_y(el);
 
-        
-    double const bb_beta0 = BeamBeamBiGaussian2DData_get_beta0_other_beam(el);
-    double const bb_d_px = BeamBeamBiGaussian2DData_get_d_px(el);
-    double const bb_d_py = BeamBeamBiGaussian2DData_get_d_py(el);
+    double const q0_other_beam = BeamBeamBiGaussian2DData_get_q0_other_beam(el);
+    double const beta0_other_beam = BeamBeamBiGaussian2DData_get_beta0_other_beam(el);
+
+    double const other_beam_num_particles = BeamBeamBiGaussian2DData_get_other_beam_num_particles(el);
+
+    double const other_beam_Sigma_11 = BeamBeamBiGaussian2DData_get_other_beam_Sigma_11(el);
+    double const other_beam_Sigma_13 = BeamBeamBiGaussian2DData_get_other_beam_Sigma_13(el);
+    double const other_beam_Sigma_33 = BeamBeamBiGaussian2DData_get_other_beam_Sigma_33(el);
+
+    double const min_sigma_diff = BeamBeamBiGaussian2DData_get_min_sigma_diff(el);
 
     //start_per_particle_block (part0->part)
-    double const x = LocalParticle_get_x(part);
-    double const y = LocalParticle_get_y(part);
-    double const part_q0 = LocalParticle_get_q0(part);
-    double const part_mass0 = LocalParticle_get_mass0(part);
-    double const part_chi = LocalParticle_get_chi(part);
-    double const part_beta0 = LocalParticle_get_beta0(part);
-    double const part_gamma0 = LocalParticle_get_gamma0(part);
 
-       double dphi_dx, dphi_dy;
+        double const x = LocalParticle_get_x(part);
+        double const y = LocalParticle_get_y(part);
+        double const part_q0 = LocalParticle_get_q0(part);
+        double const part_mass0 = LocalParticle_get_mass0(part);
+        double const part_chi = LocalParticle_get_chi(part);
+        double const part_beta0 = LocalParticle_get_beta0(part);
+        double const part_gamma0 = LocalParticle_get_gamma0(part);
 
-    BiGaussianFieldMap_get_dphi_dx_dphi_dy(fmap, x, y,
-                          &dphi_dx, &dphi_dy);
+        double const x_bar = x - ref_shift_x - other_beam_shift_x;
+        double const y_bar = y - ref_shift_y - other_beam_shift_y;
+
+        // Move to rotated frame to account for transverse coupling (if needed)
+        double x_hat, y_hat, cos_theta, sin_theta, Sig_11_hat, Sig_33_hat;
+        if (fabs(other_beam_Sigma_13) > 1e-13) {
+            double const R = other_beam_Sigma_11-other_beam_Sigma_33;
+            double const T = R*R+4*other_beam_Sigma_13*other_beam_Sigma_13;
+            double const sqrtT = sqrt(T);
+            cos2theta = signR*R/sqrtT;
+            costheta = sqrt(0.5*(1.+cos2theta));
+            sintheta = signR*mysign(Sig_13)*sqrt(0.5*(1.-cos2theta));
+            x_hat = x_bar*costheta +y_bar*sintheta;
+            y_hat = -x_bar*sintheta +y_bar*costheta;
+            Sig_11_hat = 0.5*(W+signR*sqrtT);
+            Sig_33_hat = 0.5*(W-signR*sqrtT);
+        }
+        else{
+            sintheta = 0;
+            costheta = 0;
+            x_hat = x_bar;
+            y_hat = y_bar;
+            Sig_11_hat = other_beam_Sigma_11;
+            Sig_33_hat = other_beam_Sigma_33;
+        }
+
+        // Get transverse fields
+        double Ex, Ey; // Ex = -dphi/dx, Ey = -dphi/dy
+        get_Ex_Ey_gauss(x_hat, y_hat,
+            sqrt(Sig_11_hat), sqrt(Sig_33_hat),
+            min_sigma_diff,
+            &Ex, &Ey);
 
         const double charge_mass_ratio = part_chi*QELEM*part_q0
                     /(part_mass0*QELEM/(C_LIGHT*C_LIGHT));
-        const double factor = -(charge_mass_ratio*bb_n_particles*bb_q0* QELEM
-                    /(part_gamma0*part_beta0*C_LIGHT*C_LIGHT)
-                    *(1+bb_beta0*part_beta0)/(bb_beta0 + part_beta0));
+        const double factor = -(charge_mass_ratio
+                    * other_beam_num_particles * q0_other_beam * QELEM
+                    / (part_gamma0*part_beta0*C_LIGHT*C_LIGHT)
+                    * (1+beta0_other_beam * part_beta0)
+                    / (beta0_other_beam + part_beta0));
 
-    LocalParticle_add_to_px(part, factor*dphi_dx-bb_d_px);
-    LocalParticle_add_to_py(part, factor*dphi_dy-bb_d_py);
+        double const dpx_hat = factor * Ex;
+        double const dpy_hat = factor * Ey;
+
+        double const dpx = dpx_hat*costheta - dpy_hat*sintheta;
+        double const dpy = dpx_hat*sintheta + dpy_hat*costheta;
+
+        LocalParticle_add_to_px(part, dpx - post_subtract_x);
+        LocalParticle_add_to_py(part, dpy - post_subtract_y);
 
     //end_per_particle_block
 

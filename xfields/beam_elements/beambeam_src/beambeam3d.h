@@ -82,7 +82,7 @@ void synchrobeam_kick(
     const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
     const double dS_y_bar_hat_star = -x_bar_star*dS_sintheta +y_bar_star*dS_costheta;
 
-    // Get transverse fieds
+    // Get transverse fields
     double Ex, Ey;
     get_Ex_Ey_gauss(x_bar_hat_star, y_bar_hat_star,
         sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
