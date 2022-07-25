@@ -256,18 +256,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # Initialize slice positions in the boosted frame
         self._init_starred_positions(
-            slices_other_beam_x_center,
-            slices_other_beam_px_center,
-            slices_other_beam_y_center,
-            slices_other_beam_py_center,
-            slices_other_beam_zeta_center,
-            slices_other_beam_pzeta_center,
-            slices_other_beam_x_center_star,
-            slices_other_beam_px_center_star,
-            slices_other_beam_y_center_star,
-            slices_other_beam_py_center_star,
-            slices_other_beam_zeta_center_star,
-            slices_other_beam_pzeta_center_star)
+            slices_other_beam_x_center, slices_other_beam_px_center,
+            slices_other_beam_y_center, slices_other_beam_py_center,
+            slices_other_beam_zeta_center, slices_other_beam_pzeta_center,
+            slices_other_beam_x_center_star, slices_other_beam_px_center_star,
+            slices_other_beam_y_center_star, slices_other_beam_py_center_star,
+            slices_other_beam_zeta_center_star, slices_other_beam_pzeta_center_star)
 
         assert q0_other_beam is not None
         self.q0_other_beam = q0_other_beam
