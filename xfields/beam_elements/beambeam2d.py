@@ -3,6 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
+from sqlite3 import paramstyle
 import numpy as np
 
 import xobjects as xo
@@ -78,16 +79,10 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
         # Collective mode (pipeline update)
         if config_for_update is not None:
+            raise NotImplementedError
+            # To be implemented based on 6d implementation
 
-            self.config_for_update = config_for_update
-            self.iscollective = True
-            self.track = self._track_collective # switch to specific track method
-
-            # Some dummy values just to initialize the object
-            if other_beam_Sigma_11 is None: other_beam_Sigma_11 = 1.
-            if other_beam_Sigma_33 is None: other_beam_Sigma_33 = 1.
-            if other_beam_num_particles is None:
-                other_beam_num_particles = 0.
+        params = self._handle_init_old_interface(kwargs)
 
         self.xoinitialize(**kwargs)
 
@@ -129,6 +124,47 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
         self.min_sigma_diff = min_sigma_diff
 
+    def _handle_init_old_interface(self, kwargs):
+
+        params = {}
+
+        if 'n_particles' in kwargs.keys():
+            params['other_beam_num_particles'] = kwargs['n_particles']
+            del kwargs['n_particles']
+
+        if 'q0' in kwargs.keys():
+            params['q0_other_beam'] = kwargs['q0']
+            del kwargs['q0']
+
+        if 'beta0' in kwargs.keys():
+            params['beta0_other_beam'] = kwargs['beta0']
+            del kwargs['beta0']
+
+        if 'mean_x' in kwargs.keys():
+            params['other_beam_shift_x'] = kwargs['mean_x']
+            del kwargs['mean_x']
+
+        if 'mean_y' in kwargs.keys():
+            params['other_beam_shift_y'] = kwargs['mean_y']
+            del kwargs['mean_y']
+
+        if 'sigma_x' in kwargs.keys():
+            params['other_beam_Sigma_11'] = kwargs['sigma_x']**2
+            del kwargs['sigma_x']
+
+        if 'sigma_y' in kwargs.keys():
+            params['other_beam_Sigma_33'] = kwargs['sigma_y']**2
+            del kwargs['sigma_y']
+
+        if 'd_px' in kwargs.keys():
+            params['post_subtract_px'] = kwargs['d_px']
+            del kwargs['d_px']
+
+        if 'd_py' in kwargs.keys():
+            params['post_subtract_py'] = kwargs['d_py']
+            del kwargs['d_py']
+
+        return params
 
 
 
