@@ -102,12 +102,19 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     slices_other_beam_num_particles=None,
 
-                    slices_other_beam_x_center=0,
-                    slices_other_beam_px_center=0,
-                    slices_other_beam_y_center=0,
-                    slices_other_beam_py_center=0,
+                    slices_other_beam_x_center=0.,
+                    slices_other_beam_px_center=0.,
+                    slices_other_beam_y_center=0.,
+                    slices_other_beam_py_center=0.,
                     slices_other_beam_zeta_center=None,
-                    slices_other_beam_pzeta_center=0,
+                    slices_other_beam_pzeta_center=0.,
+
+                    slices_other_beam_x_center_star=None,
+                    slices_other_beam_px_center_star=None,
+                    slices_other_beam_y_center_star=None,
+                    slices_other_beam_py_center_star=None,
+                    slices_other_beam_zeta_center_star=None,
+                    slices_other_beam_pzeta_center_star=None,
 
                     slices_other_beam_Sigma_11=None,
                     slices_other_beam_Sigma_12=None,
@@ -119,6 +126,17 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_Sigma_33=None,
                     slices_other_beam_Sigma_34=None,
                     slices_other_beam_Sigma_44=None,
+
+                    slices_other_beam_Sigma_11_star=None,
+                    slices_other_beam_Sigma_12_star=None,
+                    slices_other_beam_Sigma_13_star=None,
+                    slices_other_beam_Sigma_14_star=None,
+                    slices_other_beam_Sigma_22_star=None,
+                    slices_other_beam_Sigma_23_star=None,
+                    slices_other_beam_Sigma_24_star=None,
+                    slices_other_beam_Sigma_33_star=None,
+                    slices_other_beam_Sigma_34_star=None,
+                    slices_other_beam_Sigma_44_star=None,
 
                     ref_shift_x=0,
                     ref_shift_px=0,
@@ -176,18 +194,26 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self._init_from_old_interface(old_interface=old_interface, **kwargs)
             return
 
-        assert slices_other_beam_zeta_center is not None
+        assert (slices_other_beam_zeta_center is not None
+                or slices_other_beam_zeta_center_star is not None)
         assert slices_other_beam_num_particles is not None
 
-        assert not np.isscalar(slices_other_beam_zeta_center), (
-                        'slices_other_beam_zeta_center must be an array')
         assert not np.isscalar(slices_other_beam_num_particles), (
                         'slices_other_beam_num_particles must be an array')
 
-        assert (len(slices_other_beam_zeta_center)
-                    == len(slices_other_beam_num_particles))
+        if slices_other_beam_zeta_center is not None:
+            assert not np.isscalar(slices_other_beam_zeta_center), (
+                            'slices_other_beam_zeta_center must be an array')
+            assert (len(slices_other_beam_zeta_center)
+                        == len(slices_other_beam_num_particles))
 
-        n_slices = len(slices_other_beam_zeta_center)
+        if slices_other_beam_zeta_center_star is not None:
+            assert not np.isscalar(slices_other_beam_zeta_center_star), (
+                            'slices_other_beam_zeta_center_star must be an array')
+            assert (len(slices_other_beam_zeta_center_star)
+                        == len(slices_other_beam_num_particles))
+
+        n_slices = len(slices_other_beam_num_particles)
 
         self._allocate_xobject(n_slices, **kwargs)
 
@@ -206,70 +232,104 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._cos_alpha = np.cos(alpha)
 
         # Mandatory sigmas
-        assert slices_other_beam_Sigma_11 is not None, ("`slices_other_beam_Sigma_11` must be provided")
-        assert slices_other_beam_Sigma_12 is not None, ("`slices_other_beam_Sigma_12` must be provided")
-        assert slices_other_beam_Sigma_22 is not None, ("`slices_other_beam_Sigma_22` must be provided")
-        assert slices_other_beam_Sigma_33 is not None, ("`slices_other_beam_Sigma_33` must be provided")
-        assert slices_other_beam_Sigma_34 is not None, ("`slices_other_beam_Sigma_34` must be provided")
-        assert slices_other_beam_Sigma_44 is not None, ("`slices_other_beam_Sigma_44` must be provided")
+        assert (slices_other_beam_Sigma_11 is not None or slices_other_beam_Sigma_11_star is not None), (
+            "`slices_other_beam_Sigma_11` must be provided")
+        assert (slices_other_beam_Sigma_12 is not None or slices_other_beam_Sigma_12_star is not None), (
+            "`slices_other_beam_Sigma_12` must be provided")
+        assert (slices_other_beam_Sigma_22 is not None or slices_other_beam_Sigma_22_star is not None), (
+            "`slices_other_beam_Sigma_22` must be provided")
+        assert (slices_other_beam_Sigma_33 is not None or slices_other_beam_Sigma_33_star is not None), (
+            "`slices_other_beam_Sigma_33` must be provided")
+        assert (slices_other_beam_Sigma_34 is not None or slices_other_beam_Sigma_34_star is not None), (
+            "`slices_other_beam_Sigma_34` must be provided")
+        assert (slices_other_beam_Sigma_44 is not None or slices_other_beam_Sigma_44_star is not None), (
+            "`slices_other_beam_Sigma_44` must be provided")
 
         # Coupling between transverse planes
-        if slices_other_beam_Sigma_13 is None:
+        if slices_other_beam_Sigma_13 is None and slices_other_beam_Sigma_13_star is None:
             slices_other_beam_Sigma_13 = 0
-        if slices_other_beam_Sigma_14 is None:
+        if slices_other_beam_Sigma_14 is None and slices_other_beam_Sigma_14_star is None:
             slices_other_beam_Sigma_14 = 0
-        if slices_other_beam_Sigma_23 is None:
+        if slices_other_beam_Sigma_23 is None and slices_other_beam_Sigma_23_star is None:
             slices_other_beam_Sigma_23 = 0
-        if slices_other_beam_Sigma_24 is None:
+        if slices_other_beam_Sigma_24 is None and slices_other_beam_Sigma_24_star is None:
             slices_other_beam_Sigma_24 = 0
 
         self.num_slices_other_beam = n_slices
         self.slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
 
         # Trigger properties to set corresponding starred quantities
-        self.slices_other_beam_Sigma_11 = slices_other_beam_Sigma_11
-        self.slices_other_beam_Sigma_12 = slices_other_beam_Sigma_12
-        self.slices_other_beam_Sigma_13 = slices_other_beam_Sigma_13
-        self.slices_other_beam_Sigma_14 = slices_other_beam_Sigma_14
-        self.slices_other_beam_Sigma_22 = slices_other_beam_Sigma_22
-        self.slices_other_beam_Sigma_23 = slices_other_beam_Sigma_23
-        self.slices_other_beam_Sigma_24 = slices_other_beam_Sigma_24
-        self.slices_other_beam_Sigma_33 = slices_other_beam_Sigma_33
-        self.slices_other_beam_Sigma_34 = slices_other_beam_Sigma_34
-        self.slices_other_beam_Sigma_44 = slices_other_beam_Sigma_44
+        self._init_Sigmas(
+            slices_other_beam_Sigma_11, slices_other_beam_Sigma_12,
+            slices_other_beam_Sigma_13, slices_other_beam_Sigma_14,
+            slices_other_beam_Sigma_22, slices_other_beam_Sigma_23,
+            slices_other_beam_Sigma_24, slices_other_beam_Sigma_33,
+            slices_other_beam_Sigma_34, slices_other_beam_Sigma_44,
+            slices_other_beam_Sigma_11_star, slices_other_beam_Sigma_12_star,
+            slices_other_beam_Sigma_13_star, slices_other_beam_Sigma_14_star,
+            slices_other_beam_Sigma_22_star, slices_other_beam_Sigma_23_star,
+            slices_other_beam_Sigma_24_star, slices_other_beam_Sigma_33_star,
+            slices_other_beam_Sigma_34_star, slices_other_beam_Sigma_44_star,
+            )
 
         # Check correct according to z, head at the first position in the arrays
         assert np.all(slices_other_beam_zeta_center[:-1]
                         >= slices_other_beam_zeta_center[1:]), (
                         'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
 
-        # Initialize slice positions in the boosted frame
-        (
-        x_slices_star,
-        px_slices_star,
-        y_slices_star,
-        py_slices_star,
-        zeta_slices_star,
-        pzeta_slices_star,
-        ) = _python_boost(
-            x=slices_other_beam_x_center,
-            px=slices_other_beam_px_center,
-            y=slices_other_beam_y_center,
-            py=slices_other_beam_py_center,
-            zeta=slices_other_beam_zeta_center,
-            pzeta=slices_other_beam_pzeta_center,
-            sphi=self.sin_phi,
-            cphi=self.cos_phi,
-            tphi=self.tan_phi,
-            salpha=self.sin_alpha,
-            calpha=self.cos_alpha,
-        )
-        self.slices_other_beam_x_center_star = x_slices_star
-        self.slices_other_beam_px_center_star = px_slices_star
-        self.slices_other_beam_y_center_star = y_slices_star
-        self.slices_other_beam_py_center_star = py_slices_star
-        self.slices_other_beam_zeta_center_star = zeta_slices_star
-        self.slices_other_beam_pzeta_center_star = pzeta_slices_star
+        if slices_other_beam_zeta_center is not None:
+            # Initialize slice positions in the boosted frame
+            (
+            x_slices_star,
+            px_slices_star,
+            y_slices_star,
+            py_slices_star,
+            zeta_slices_star,
+            pzeta_slices_star,
+            ) = _python_boost(
+                x=slices_other_beam_x_center,
+                px=slices_other_beam_px_center,
+                y=slices_other_beam_y_center,
+                py=slices_other_beam_py_center,
+                zeta=slices_other_beam_zeta_center,
+                pzeta=slices_other_beam_pzeta_center,
+                sphi=self.sin_phi,
+                cphi=self.cos_phi,
+                tphi=self.tan_phi,
+                salpha=self.sin_alpha,
+                calpha=self.cos_alpha,
+            )
+
+        # User-provided value has priority
+        if slices_other_beam_x_center_star is not None:
+            self.slices_other_beam_x_center_star = slices_other_beam_x_center_star
+        else:
+            self.slices_other_beam_x_center_star = x_slices_star
+
+        if slices_other_beam_px_center_star is not None:
+            self.slices_other_beam_px_center_star = slices_other_beam_px_center_star
+        else:
+            self.slices_other_beam_px_center_star = px_slices_star
+
+        if slices_other_beam_y_center_star is not None:
+            self.slices_other_beam_y_center_star = slices_other_beam_y_center_star
+        else:
+            self.slices_other_beam_y_center_star = y_slices_star
+
+        if slices_other_beam_py_center_star is not None:
+            self.slices_other_beam_py_center_star = slices_other_beam_py_center_star
+        else:
+            self.slices_other_beam_py_center_star = py_slices_star
+
+        if slices_other_beam_zeta_center_star is not None:
+            self.slices_other_beam_zeta_center_star = slices_other_beam_zeta_center_star
+        else:
+            self.slices_other_beam_zeta_center_star = zeta_slices_star
+
+        if slices_other_beam_pzeta_center_star is not None:
+            self.slices_other_beam_pzeta_center_star = slices_other_beam_pzeta_center_star
+        else:
+            self.slices_other_beam_pzeta_center_star = pzeta_slices_star
 
         assert q0_other_beam is not None
         self.q0_other_beam = q0_other_beam
@@ -588,22 +648,96 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         return x_slices, px_slices, y_slices, py_slices, zeta_slices, pzeta_slices
 
-        # The following properties are generate by this code:
-        ## for nn in 'x px y py zeta pzeta'.split():
-        ##     print(f'''
-        ##     @property
-        ##     def slices_other_beam_{nn}_center(self):
-        ##         (x_slices, px_slices, y_slices, py_slices,
-        ##             zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+    def _init_Sigmas(self,
+            slices_other_beam_Sigma_11,
+            slices_other_beam_Sigma_12,
+            slices_other_beam_Sigma_13,
+            slices_other_beam_Sigma_14,
+            slices_other_beam_Sigma_22,
+            slices_other_beam_Sigma_23,
+            slices_other_beam_Sigma_24,
+            slices_other_beam_Sigma_33,
+            slices_other_beam_Sigma_34,
+            slices_other_beam_Sigma_44,
 
-        ##         return self._buffer.context.linked_array_type.from_array(
-        ##             {nn}_slices,
-        ##             mode="readonly")
+            slices_other_beam_Sigma_11_star,
+            slices_other_beam_Sigma_12_star,
+            slices_other_beam_Sigma_13_star,
+            slices_other_beam_Sigma_14_star,
+            slices_other_beam_Sigma_22_star,
+            slices_other_beam_Sigma_23_star,
+            slices_other_beam_Sigma_24_star,
+            slices_other_beam_Sigma_33_star,
+            slices_other_beam_Sigma_34_star,
+            slices_other_beam_Sigma_44_star,
+            ):
 
-        ##     @slices_other_beam_{nn}_center.setter
-        ##     def slices_other_beam_{nn}_center(self, value):
-        ##         raise NotImplementedError(
-        ##             "Setting slices_other_beam_{nn}_center is not implemented yet")\n''')
+        if slices_other_beam_Sigma_11 is not None:
+            self.slices_other_beam_Sigma_11 = slices_other_beam_Sigma_11
+        else:
+            self.slices_other_beam_Sigma_11_star = slices_other_beam_Sigma_11_star
+
+        if slices_other_beam_Sigma_12 is not None:
+            self.slices_other_beam_Sigma_12 = slices_other_beam_Sigma_12
+        else:
+            self.slices_other_beam_Sigma_12_star = slices_other_beam_Sigma_12_star
+
+        if slices_other_beam_Sigma_13 is not None:
+            self.slices_other_beam_Sigma_13 = slices_other_beam_Sigma_13
+        else:
+            self.slices_other_beam_Sigma_13_star = slices_other_beam_Sigma_13_star
+
+        if slices_other_beam_Sigma_14 is not None:
+            self.slices_other_beam_Sigma_14 = slices_other_beam_Sigma_14
+        else:
+            self.slices_other_beam_Sigma_14_star = slices_other_beam_Sigma_14_star
+
+        if slices_other_beam_Sigma_22 is not None:
+            self.slices_other_beam_Sigma_22 = slices_other_beam_Sigma_22
+        else:
+            self.slices_other_beam_Sigma_22_star = slices_other_beam_Sigma_22_star
+
+        if slices_other_beam_Sigma_23 is not None:
+            self.slices_other_beam_Sigma_23 = slices_other_beam_Sigma_23
+        else:
+            self.slices_other_beam_Sigma_23_star = slices_other_beam_Sigma_23_star
+
+        if slices_other_beam_Sigma_24 is not None:
+            self.slices_other_beam_Sigma_24 = slices_other_beam_Sigma_24
+        else:
+            self.slices_other_beam_Sigma_24_star = slices_other_beam_Sigma_24_star
+
+        if slices_other_beam_Sigma_33 is not None:
+            self.slices_other_beam_Sigma_33 = slices_other_beam_Sigma_33
+        else:
+            self.slices_other_beam_Sigma_33_star = slices_other_beam_Sigma_33_star
+
+        if slices_other_beam_Sigma_34 is not None:
+            self.slices_other_beam_Sigma_34 = slices_other_beam_Sigma_34
+        else:
+            self.slices_other_beam_Sigma_34_star = slices_other_beam_Sigma_34_star
+
+        if slices_other_beam_Sigma_44 is not None:
+            self.slices_other_beam_Sigma_44 = slices_other_beam_Sigma_44
+        else:
+            self.slices_other_beam_Sigma_44_star = slices_other_beam_Sigma_44_star
+
+    # The following properties are generate by this code:
+    ## for nn in 'x px y py zeta pzeta'.split():
+    ##     print(f'''
+    ##     @property
+    ##     def slices_other_beam_{nn}_center(self):
+    ##         (x_slices, px_slices, y_slices, py_slices,
+    ##             zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
+
+    ##         return self._buffer.context.linked_array_type.from_array(
+    ##             {nn}_slices,
+    ##             mode="readonly")
+
+    ##     @slices_other_beam_{nn}_center.setter
+    ##     def slices_other_beam_{nn}_center(self, value):
+    ##         raise NotImplementedError(
+    ##             "Setting slices_other_beam_{nn}_center is not implemented yet")\n''')
 
 
     @property
