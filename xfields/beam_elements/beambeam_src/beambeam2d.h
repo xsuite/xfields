@@ -20,8 +20,8 @@ void BeamBeamBiGaussian2D_track_local_particle(
     double const other_beam_shift_x = BeamBeamBiGaussian2DData_get_other_beam_shift_x(el);
     double const other_beam_shift_y = BeamBeamBiGaussian2DData_get_other_beam_shift_y(el);
 
-    double const post_subtract_x = BeamBeamBiGaussian2DData_get_post_subtract_x(el);
-    double const post_subtract_y = BeamBeamBiGaussian2DData_get_post_subtract_y(el);
+    double const post_subtract_px = BeamBeamBiGaussian2DData_get_post_subtract_px(el);
+    double const post_subtract_py = BeamBeamBiGaussian2DData_get_post_subtract_py(el);
 
     double const q0_other_beam = BeamBeamBiGaussian2DData_get_q0_other_beam(el);
     double const beta0_other_beam = BeamBeamBiGaussian2DData_get_beta0_other_beam(el);
@@ -48,14 +48,16 @@ void BeamBeamBiGaussian2D_track_local_particle(
         double const y_bar = y - ref_shift_y - other_beam_shift_y;
 
         // Move to rotated frame to account for transverse coupling (if needed)
-        double x_hat, y_hat, cos_theta, sin_theta, Sig_11_hat, Sig_33_hat;
+        double x_hat, y_hat, costheta, sintheta, Sig_11_hat, Sig_33_hat;
         if (fabs(other_beam_Sigma_13) > 1e-13) {
-            double const R = other_beam_Sigma_11-other_beam_Sigma_33;
-            double const T = R*R+4*other_beam_Sigma_13*other_beam_Sigma_13;
+            double const R = other_beam_Sigma_11 - other_beam_Sigma_33;
+            double const W = other_beam_Sigma_11 + other_beam_Sigma_33;
+            double const T = R * R + 4 * other_beam_Sigma_13 * other_beam_Sigma_13;
             double const sqrtT = sqrt(T);
-            cos2theta = signR*R/sqrtT;
+            double const signR = mysign(R);
+            double const cos2theta = signR*R/sqrtT;
             costheta = sqrt(0.5*(1.+cos2theta));
-            sintheta = signR*mysign(Sig_13)*sqrt(0.5*(1.-cos2theta));
+            sintheta = signR*mysign(other_beam_Sigma_13)*sqrt(0.5*(1.-cos2theta));
             x_hat = x_bar*costheta +y_bar*sintheta;
             y_hat = -x_bar*sintheta +y_bar*costheta;
             Sig_11_hat = 0.5*(W+signR*sqrtT);
@@ -91,8 +93,8 @@ void BeamBeamBiGaussian2D_track_local_particle(
         double const dpx = dpx_hat*costheta - dpy_hat*sintheta;
         double const dpy = dpx_hat*sintheta + dpy_hat*costheta;
 
-        LocalParticle_add_to_px(part, dpx - post_subtract_x);
-        LocalParticle_add_to_py(part, dpy - post_subtract_y);
+        LocalParticle_add_to_px(part, dpx - post_subtract_px);
+        LocalParticle_add_to_py(part, dpy - post_subtract_py);
 
     //end_per_particle_block
 
