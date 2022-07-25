@@ -254,59 +254,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                         >= slices_other_beam_zeta_center[1:]), (
                         'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
 
-        if slices_other_beam_zeta_center is not None:
-            # Initialize slice positions in the boosted frame
-            (
-            x_slices_star,
-            px_slices_star,
-            y_slices_star,
-            py_slices_star,
-            zeta_slices_star,
-            pzeta_slices_star,
-            ) = _python_boost(
-                x=slices_other_beam_x_center,
-                px=slices_other_beam_px_center,
-                y=slices_other_beam_y_center,
-                py=slices_other_beam_py_center,
-                zeta=slices_other_beam_zeta_center,
-                pzeta=slices_other_beam_pzeta_center,
-                sphi=self.sin_phi,
-                cphi=self.cos_phi,
-                tphi=self.tan_phi,
-                salpha=self.sin_alpha,
-                calpha=self.cos_alpha,
-            )
-
-        # User-provided value has priority
-        if slices_other_beam_x_center_star is not None:
-            self.slices_other_beam_x_center_star = slices_other_beam_x_center_star
-        else:
-            self.slices_other_beam_x_center_star = x_slices_star
-
-        if slices_other_beam_px_center_star is not None:
-            self.slices_other_beam_px_center_star = slices_other_beam_px_center_star
-        else:
-            self.slices_other_beam_px_center_star = px_slices_star
-
-        if slices_other_beam_y_center_star is not None:
-            self.slices_other_beam_y_center_star = slices_other_beam_y_center_star
-        else:
-            self.slices_other_beam_y_center_star = y_slices_star
-
-        if slices_other_beam_py_center_star is not None:
-            self.slices_other_beam_py_center_star = slices_other_beam_py_center_star
-        else:
-            self.slices_other_beam_py_center_star = py_slices_star
-
-        if slices_other_beam_zeta_center_star is not None:
-            self.slices_other_beam_zeta_center_star = slices_other_beam_zeta_center_star
-        else:
-            self.slices_other_beam_zeta_center_star = zeta_slices_star
-
-        if slices_other_beam_pzeta_center_star is not None:
-            self.slices_other_beam_pzeta_center_star = slices_other_beam_pzeta_center_star
-        else:
-            self.slices_other_beam_pzeta_center_star = pzeta_slices_star
+        # Initialize slice positions in the boosted frame
+        self._init_starred_positions(
+            slices_other_beam_x_center,
+            slices_other_beam_px_center,
+            slices_other_beam_y_center,
+            slices_other_beam_py_center,
+            slices_other_beam_zeta_center,
+            slices_other_beam_pzeta_center,
+            slices_other_beam_x_center_star,
+            slices_other_beam_px_center_star,
+            slices_other_beam_y_center_star,
+            slices_other_beam_py_center_star,
+            slices_other_beam_zeta_center_star,
+            slices_other_beam_pzeta_center_star)
 
         assert q0_other_beam is not None
         self.q0_other_beam = q0_other_beam
@@ -722,6 +683,73 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.slices_other_beam_Sigma_44 = slices_other_beam_Sigma_44
         else:
             self.slices_other_beam_Sigma_44_star = slices_other_beam_Sigma_44_star
+
+    def _init_starred_positions(self,
+            slices_other_beam_x_center,
+            slices_other_beam_px_center,
+            slices_other_beam_y_center,
+            slices_other_beam_py_center,
+            slices_other_beam_zeta_center,
+            slices_other_beam_pzeta_center,
+            slices_other_beam_x_center_star,
+            slices_other_beam_px_center_star,
+            slices_other_beam_y_center_star,
+            slices_other_beam_py_center_star,
+            slices_other_beam_zeta_center_star,
+            slices_other_beam_pzeta_center_star):
+
+        if slices_other_beam_zeta_center is not None:
+            (
+            x_slices_star,
+            px_slices_star,
+            y_slices_star,
+            py_slices_star,
+            zeta_slices_star,
+            pzeta_slices_star,
+            ) = _python_boost(
+                x=slices_other_beam_x_center,
+                px=slices_other_beam_px_center,
+                y=slices_other_beam_y_center,
+                py=slices_other_beam_py_center,
+                zeta=slices_other_beam_zeta_center,
+                pzeta=slices_other_beam_pzeta_center,
+                sphi=self.sin_phi,
+                cphi=self.cos_phi,
+                tphi=self.tan_phi,
+                salpha=self.sin_alpha,
+                calpha=self.cos_alpha,
+            )
+
+        # User-provided value has priority
+        if slices_other_beam_x_center_star is not None:
+            self.slices_other_beam_x_center_star = slices_other_beam_x_center_star
+        else:
+            self.slices_other_beam_x_center_star = x_slices_star
+
+        if slices_other_beam_px_center_star is not None:
+            self.slices_other_beam_px_center_star = slices_other_beam_px_center_star
+        else:
+            self.slices_other_beam_px_center_star = px_slices_star
+
+        if slices_other_beam_y_center_star is not None:
+            self.slices_other_beam_y_center_star = slices_other_beam_y_center_star
+        else:
+            self.slices_other_beam_y_center_star = y_slices_star
+
+        if slices_other_beam_py_center_star is not None:
+            self.slices_other_beam_py_center_star = slices_other_beam_py_center_star
+        else:
+            self.slices_other_beam_py_center_star = py_slices_star
+
+        if slices_other_beam_zeta_center_star is not None:
+            self.slices_other_beam_zeta_center_star = slices_other_beam_zeta_center_star
+        else:
+            self.slices_other_beam_zeta_center_star = zeta_slices_star
+
+        if slices_other_beam_pzeta_center_star is not None:
+            self.slices_other_beam_pzeta_center_star = slices_other_beam_pzeta_center_star
+        else:
+            self.slices_other_beam_pzeta_center_star = pzeta_slices_star
 
     # The following properties are generate by this code:
     ## for nn in 'x px y py zeta pzeta'.split():
