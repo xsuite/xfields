@@ -163,6 +163,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     config_for_update=None,
 
+                    _sin_phi=None, _cos_phi=None, _tan_phi=None,
+                    _sin_alpha=None, _cos_alpha=None,
+
                     **kwargs):
 
         if '_xobject' in kwargs.keys():
@@ -222,15 +225,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 raise NotImplementedError(
                     'BeamBeamBiGaussian3D only works with CPU context for now')
 
-        assert phi is not None
-        assert alpha is not None
+        if phi is None:
+            assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
+                'phi must be specified if _sin_phi, _cos_phi, _tan_phi are not')
+        else:
+            self._sin_phi = np.sin(phi)
+            self._cos_phi = np.cos(phi)
+            self._tan_phi = np.tan(phi)
 
-        self._sin_phi = np.sin(phi)
-        self._cos_phi = np.cos(phi)
-        self._tan_phi = np.tan(phi)
-        self._sin_alpha = np.sin(alpha)
-        self._cos_alpha = np.cos(alpha)
-
+        if alpha is None:
+            assert _sin_alpha is not None and _cos_alpha is not None, (
+                'alpha must be specified if _sin_alpha, _cos_alpha are not')
+        else:
+            self._sin_alpha = np.sin(alpha)
+            self._cos_alpha = np.cos(alpha)
 
         self.num_slices_other_beam = n_slices
         self.slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
