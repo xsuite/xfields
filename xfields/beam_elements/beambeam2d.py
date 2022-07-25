@@ -91,6 +91,17 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                 raise NotImplementedError(
                     'BeamBeamBiGaussian3D only works with CPU context for now')
 
+        # Handle old interface
+        if 'other_beam_num_particles' in params.keys(): other_beam_num_particles = params['other_beam_num_particles']
+        if 'q0_other_beam' in params.keys(): q0_other_beam = params['q0_other_beam']
+        if 'beta0_other_beam' in params.keys(): beta0_other_beam = params['beta0_other_beam']
+        if 'other_beam_shift_x' in params.keys(): other_beam_shift_x = params['other_beam_shift_x']
+        if 'other_beam_shift_y' in params.keys(): other_beam_shift_y = params['other_beam_shift_y']
+        if 'other_beam_Sigma_11' in params.keys(): other_beam_Sigma_11 = params['other_beam_Sigma_11']
+        if 'other_beam_Sigma_33' in params.keys(): other_beam_Sigma_33 = params['other_beam_Sigma_33']
+        if 'post_subtract_px' in params.keys(): post_subtract_px = params['post_subtract_px']
+        if 'post_subtract_py' in params.keys(): post_subtract_py = params['post_subtract_py']
+
         # Mandatory sigmas
         assert other_beam_Sigma_11 is not None, ("`other_beam_Sigma_11` must be provided")
         assert other_beam_Sigma_33 is not None, ("`other_beam_Sigma_33` must be provided")
@@ -112,6 +123,9 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
         assert q0_other_beam is not None
         self.q0_other_beam = q0_other_beam
+
+        assert beta0_other_beam is not None
+        self.beta0_other_beam = beta0_other_beam
 
         self.ref_shift_x = ref_shift_x
         self.ref_shift_y = ref_shift_y
@@ -165,6 +179,81 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             del kwargs['d_py']
 
         return params
+
+    # Properties to mimic the old interfece (to be removed)
+    @property
+    def n_particles(self):
+        return self.other_beam_num_particles
+
+    @n_particles.setter
+    def n_particles(self, value):
+        self.other_beam_num_particles = value
+
+    @property
+    def q0(self):
+        return self.q0_other_beam
+
+    @q0.setter
+    def q0(self, value):
+        self.q0_other_beam = value
+
+    @property
+    def beta0(self):
+        return self.beta0_other_beam
+
+    @beta0.setter
+    def beta0(self, value):
+        self.beta0_other_beam = value
+
+    @property
+    def mean_x(self):
+        return self.other_beam_shift_x
+
+    @mean_x.setter
+    def mean_x(self, value):
+        self.other_beam_shift_x = value
+
+    @property
+    def mean_y(self):
+        return self.other_beam_shift_y
+
+    @mean_y.setter
+    def mean_y(self, value):
+        self.other_beam_shift_y = value
+
+    @property
+    def sigma_x(self):
+        return np.sqrt(self.other_beam_Sigma_11)
+
+    @sigma_x.setter
+    def sigma_x(self, value):
+        self.other_beam_Sigma_11 = value**2
+
+    @property
+    def sigma_y(self):
+        return np.sqrt(self.other_beam_Sigma_33)
+
+    @sigma_y.setter
+    def sigma_y(self, value):
+        self.other_beam_Sigma_33 = value**2
+
+    @property
+    def d_px(self):
+        return self.post_subtract_px
+
+    @d_px.setter
+    def d_px(self, value):
+        self.post_subtract_px = value
+
+    @property
+    def d_py(self):
+        return self.post_subtract_py
+
+    @d_py.setter
+    def d_py(self, value):
+        self.post_subtract_py = value
+
+
 
 
 
