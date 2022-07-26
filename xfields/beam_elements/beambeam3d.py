@@ -41,7 +41,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'post_subtract_zeta': xo.Float64,
         'post_subtract_pzeta': xo.Float64,
 
-        'q0_other_beam': xo.Float64,
+        'other_beam_q0': xo.Float64,
 
         'num_slices_other_beam': xo.Int64,
 
@@ -98,7 +98,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     }
 
     def __init__(self,
-                    phi=None, alpha=None, q0_other_beam=None,
+                    phi=None, alpha=None, other_beam_q0=None,
 
                     slices_other_beam_num_particles=None,
 
@@ -271,8 +271,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_y_center_star, slices_other_beam_py_center_star,
             slices_other_beam_zeta_center_star, slices_other_beam_pzeta_center_star)
 
-        assert q0_other_beam is not None
-        self.q0_other_beam = q0_other_beam
+        assert other_beam_q0 is not None
+        self.other_beam_q0 = other_beam_q0
 
         self.ref_shift_x = ref_shift_x
         self.ref_shift_px = ref_shift_px
@@ -327,7 +327,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self._allocate_xobject(n_slices, **kwargs)
 
-        self.q0_other_beam = 1., # TODO: handle ions
+        self.other_beam_q0 = 1., # TODO: handle ions
 
         phi = params["phi"]
         alpha = params["alpha"]

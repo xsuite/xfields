@@ -3,7 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from sqlite3 import paramstyle
 import numpy as np
 
 import xobjects as xo
@@ -25,8 +24,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         'post_subtract_py': xo.Float64,
 
         # TODO this could become other_beam_q0, other_beam_beta0 (to be done also in 6D)
-        'q0_other_beam': xo.Float64,
-        'beta0_other_beam': xo.Float64,
+        'other_beam_q0': xo.Float64,
+        'other_beam_beta0': xo.Float64,
 
         'other_beam_num_particles': xo.Float64,
 
@@ -50,8 +49,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
 
     def __init__(self,
-                    q0_other_beam=None,
-                    beta0_other_beam=None,
+                    other_beam_q0=None,
+                    other_beam_beta0=None,
 
                     other_beam_num_particles=None,
 
@@ -94,8 +93,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
         # Handle old interface
         if 'other_beam_num_particles' in params.keys(): other_beam_num_particles = params['other_beam_num_particles']
-        if 'q0_other_beam' in params.keys(): q0_other_beam = params['q0_other_beam']
-        if 'beta0_other_beam' in params.keys(): beta0_other_beam = params['beta0_other_beam']
+        if 'other_beam_q0' in params.keys(): other_beam_q0 = params['other_beam_q0']
+        if 'other_beam_beta0' in params.keys(): other_beam_beta0 = params['other_beam_beta0']
         if 'other_beam_shift_x' in params.keys(): other_beam_shift_x = params['other_beam_shift_x']
         if 'other_beam_shift_y' in params.keys(): other_beam_shift_y = params['other_beam_shift_y']
         if 'other_beam_Sigma_11' in params.keys(): other_beam_Sigma_11 = params['other_beam_Sigma_11']
@@ -121,11 +120,11 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         self.other_beam_Sigma_13 = other_beam_Sigma_13
         self.other_beam_Sigma_33 = other_beam_Sigma_33
 
-        assert q0_other_beam is not None
-        self.q0_other_beam = q0_other_beam
+        assert other_beam_q0 is not None
+        self.other_beam_q0 = other_beam_q0
 
-        assert beta0_other_beam is not None
-        self.beta0_other_beam = beta0_other_beam
+        assert other_beam_beta0 is not None
+        self.other_beam_beta0 = other_beam_beta0
 
         self.ref_shift_x = ref_shift_x
         self.ref_shift_y = ref_shift_y
@@ -147,11 +146,11 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             del kwargs['n_particles']
 
         if 'q0' in kwargs.keys():
-            params['q0_other_beam'] = kwargs['q0']
+            params['other_beam_q0'] = kwargs['q0']
             del kwargs['q0']
 
         if 'beta0' in kwargs.keys():
-            params['beta0_other_beam'] = kwargs['beta0']
+            params['other_beam_beta0'] = kwargs['beta0']
             del kwargs['beta0']
 
         if 'mean_x' in kwargs.keys():
@@ -191,19 +190,19 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     @property
     def q0(self):
-        return self.q0_other_beam
+        return self.other_beam_q0
 
     @q0.setter
     def q0(self, value):
-        self.q0_other_beam = value
+        self.other_beam_q0 = value
 
     @property
     def beta0(self):
-        return self.beta0_other_beam
+        return self.other_beam_beta0
 
     @beta0.setter
     def beta0(self, value):
-        self.beta0_other_beam = value
+        self.other_beam_beta0 = value
 
     @property
     def mean_x(self):

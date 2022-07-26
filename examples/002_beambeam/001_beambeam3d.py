@@ -111,7 +111,7 @@ bb_dtk = dtk.elements.BeamBeam6D(
         )
 
 bb = xf.BeamBeamBiGaussian3D(
-        phi=phi, alpha=alpha, q0_other_beam=1,
+        phi=phi, alpha=alpha, other_beam_q0=1,
 
         slices_other_beam_num_particles=charge_slices[::-1],
         slices_other_beam_zeta_center=z_slices[::-1],

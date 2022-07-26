@@ -23,8 +23,8 @@ void BeamBeamBiGaussian2D_track_local_particle(
     double const post_subtract_px = BeamBeamBiGaussian2DData_get_post_subtract_px(el);
     double const post_subtract_py = BeamBeamBiGaussian2DData_get_post_subtract_py(el);
 
-    double const q0_other_beam = BeamBeamBiGaussian2DData_get_q0_other_beam(el);
-    double const beta0_other_beam = BeamBeamBiGaussian2DData_get_beta0_other_beam(el);
+    double const other_beam_q0 = BeamBeamBiGaussian2DData_get_other_beam_q0(el);
+    double const other_beam_beta0 = BeamBeamBiGaussian2DData_get_other_beam_beta0(el);
 
     double const other_beam_num_particles = BeamBeamBiGaussian2DData_get_other_beam_num_particles(el);
 
@@ -82,10 +82,10 @@ void BeamBeamBiGaussian2D_track_local_particle(
         const double charge_mass_ratio = part_chi*QELEM*part_q0
                     /(part_mass0*QELEM/(C_LIGHT*C_LIGHT));
         const double factor = (charge_mass_ratio
-                    * other_beam_num_particles * q0_other_beam * QELEM
+                    * other_beam_num_particles * other_beam_q0 * QELEM
                     / (part_gamma0*part_beta0*C_LIGHT*C_LIGHT)
-                    * (1+beta0_other_beam * part_beta0)
-                    / (beta0_other_beam + part_beta0));
+                    * (1+other_beam_beta0 * part_beta0)
+                    / (other_beam_beta0 + part_beta0));
 
         double const dpx_hat = factor * Ex;
         double const dpy_hat = factor * Ey;

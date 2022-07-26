@@ -72,10 +72,10 @@ bbeamIP1_b1 = xf.BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
             beta0=particles_b2.beta0[0],
-            sigma_x=None, # needs to be specified only for weak-strong
-            sigma_y=None, # needs to be specified only for weak-strong
-            mean_x=None, # needs to be specified only for weak-strong
-            mean_y=None, # needs to be specified only for weak-strong
+            sigma_x=1., # dummy
+            sigma_y=1., # dummy
+            mean_x=1., # dummy
+            mean_y=1., # dummy
             min_sigma_diff=1e-10)
 
 bbeamIP1_b2 = xf.BeamBeamBiGaussian2D(
@@ -83,10 +83,10 @@ bbeamIP1_b2 = xf.BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b1,
             q0 = particles_b1.q0,
             beta0=particles_b1.beta0[0],
-            sigma_x=None, # needs to be specified only for weak-strong
-            sigma_y=None, # needs to be specified only for weak-strong
-            mean_x=None, # needs to be specified only for weak-strong
-            mean_y=None, # needs to be specified only for weak-strong
+            sigma_x=1., # dummy
+            sigma_y=1., # dummy
+            mean_x=1., # dummy
+            mean_y=1., # dummy
             min_sigma_diff=1e-10)
 
 bbeamIP2_b1 = xf.BeamBeamBiGaussian2D(
@@ -94,10 +94,10 @@ bbeamIP2_b1 = xf.BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
             beta0=particles_b2.beta0[0],
-            sigma_x=None, # needs to be specified only for weak-strong
-            sigma_y=None, # needs to be specified only for weak-strong
-            mean_x=None, # needs to be specified only for weak-strong
-            mean_y=None, # needs to be specified only for weak-strong
+            sigma_x=1., # dummy
+            sigma_y=1., # dummy
+            mean_x=1., # dummy
+            mean_y=1., # dummy
             min_sigma_diff=1e-10)
 
 bbeamIP2_b2 = xf.BeamBeamBiGaussian2D(
@@ -105,10 +105,10 @@ bbeamIP2_b2 = xf.BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b1,
             q0 = particles_b1.q0,
             beta0=particles_b1.beta0[0],
-            sigma_x=None, # needs to be specified only for weak-strong
-            sigma_y=None, # needs to be specified only for weak-strong
-            mean_x=None, # needs to be specified only for weak-strong
-            mean_y=None, # needs to be specified only for weak-strong
+            sigma_x=1., # dummy
+            sigma_y=1., # dummy
+            mean_x=1., # dummy
+            mean_y=1., # dummy
             min_sigma_diff=1e-10)
 
 #################################################################
@@ -158,10 +158,14 @@ for turn in range(nTurn):
     positions_x_b2[turn] = mean_x_meas_b2
     positions_y_b2[turn] = mean_y_meas_b2
     # Update bb lens with measured properties of the other beam
-    bbeamIP1_b1.update(sigma_x=sigma_x_meas_b2, mean_x=mean_x_meas_b2,
-                    sigma_y=sigma_y_meas_b2, mean_y=mean_y_meas_b2)
-    bbeamIP1_b2.update(sigma_x=sigma_x_meas_b1, mean_x=mean_x_meas_b1,
-                    sigma_y=sigma_y_meas_b1, mean_y=mean_y_meas_b1)
+    bbeamIP1_b1.sigma_x = sigma_x_meas_b2
+    bbeamIP1_b1.mean_x = mean_x_meas_b2
+    bbeamIP1_b1.sigma_y = sigma_y_meas_b2
+    bbeamIP1_b1.mean_y = mean_y_meas_b2
+    bbeamIP1_b2.sigma_x = sigma_x_meas_b1
+    bbeamIP1_b2.mean_x = mean_x_meas_b1
+    bbeamIP1_b2.sigma_y = sigma_y_meas_b1
+    bbeamIP1_b2.mean_y = mean_y_meas_b1
     #track beam-beam at IP1
     bbeamIP1_b1.track(particles_b1)
     bbeamIP1_b2.track(particles_b2)
@@ -174,10 +178,14 @@ for turn in range(nTurn):
     mean_x_meas_b2, sigma_x_meas_b2 = xf.mean_and_std(particles_b2.x)
     mean_y_meas_b2, sigma_y_meas_b2 = xf.mean_and_std(particles_b2.y)
     # Update bb lens with measured properties of the other beam
-    bbeamIP2_b1.update(sigma_x=sigma_x_meas_b2, mean_x=mean_x_meas_b2,
-                    sigma_y=sigma_y_meas_b2, mean_y=mean_y_meas_b2)
-    bbeamIP2_b2.update(sigma_x=sigma_x_meas_b1, mean_x=mean_x_meas_b1,
-                    sigma_y=sigma_y_meas_b1, mean_y=mean_y_meas_b1)
+    bbeamIP2_b1.sigma_x = sigma_x_meas_b2
+    bbeamIP2_b1.mean_x = mean_x_meas_b2
+    bbeamIP2_b1.sigma_y = sigma_y_meas_b2
+    bbeamIP2_b1.mean_y = mean_y_meas_b2
+    bbeamIP2_b2.sigma_x = sigma_x_meas_b1
+    bbeamIP2_b2.mean_x = mean_x_meas_b1
+    bbeamIP2_b2.sigma_y = sigma_y_meas_b1
+    bbeamIP2_b2.mean_y = mean_y_meas_b1
     #track beam-beam at IP2
     bbeamIP2_b1.track(particles_b1)
     bbeamIP2_b2.track(particles_b2)

@@ -19,7 +19,7 @@ void synchrobeam_kick(
         double* pzeta_star){
 
     // Get data from memory
-    const double q0_bb  = BeamBeamBiGaussian3DData_get_q0_other_beam(el);
+    const double q0_bb  = BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
 
