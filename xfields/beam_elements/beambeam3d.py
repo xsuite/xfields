@@ -228,6 +228,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         if phi is None:
             assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
                 'phi must be specified if _sin_phi, _cos_phi, _tan_phi are not')
+            self._sin_phi = _sin_phi
+            self._cos_phi = _cos_phi
+            self._tan_phi = _tan_phi
         else:
             self._sin_phi = np.sin(phi)
             self._cos_phi = np.cos(phi)
@@ -236,6 +239,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         if alpha is None:
             assert _sin_alpha is not None and _cos_alpha is not None, (
                 'alpha must be specified if _sin_alpha, _cos_alpha are not')
+            self._sin_alpha = _sin_alpha
+            self._cos_alpha = _cos_alpha
         else:
             self._sin_alpha = np.sin(alpha)
             self._cos_alpha = np.cos(alpha)
@@ -256,11 +261,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_Sigma_24_star, slices_other_beam_Sigma_33_star,
             slices_other_beam_Sigma_34_star, slices_other_beam_Sigma_44_star,
             )
-
-        # Check correct according to z, head at the first position in the arrays
-        assert np.all(slices_other_beam_zeta_center[:-1]
-                        >= slices_other_beam_zeta_center[1:]), (
-                        'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
 
         # Initialize slice positions in the boosted frame
         self._init_starred_positions(
@@ -701,6 +701,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_pzeta_center_star):
 
         if slices_other_beam_zeta_center is not None:
+
+            # Check correct according to z, head at the first position in the arrays
+            assert np.all(slices_other_beam_zeta_center[:-1]
+                            >= slices_other_beam_zeta_center[1:]), (
+                            'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
+
             (
             x_slices_star,
             px_slices_star,

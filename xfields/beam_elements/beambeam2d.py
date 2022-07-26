@@ -51,6 +51,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     def __init__(self,
                     q0_other_beam=None,
+                    beta0_other_beam=None,
 
                     other_beam_num_particles=None,
 
