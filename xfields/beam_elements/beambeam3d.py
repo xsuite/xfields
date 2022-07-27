@@ -729,37 +729,37 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 salpha=self.sin_alpha,
                 calpha=self.cos_alpha,
             )
-
+        np2ctx = self._buffer.context.nparray_to_context_array
         # User-provided value has priority
         if slices_other_beam_x_center_star is not None:
             self.slices_other_beam_x_center_star = slices_other_beam_x_center_star
         else:
-            self.slices_other_beam_x_center_star = x_slices_star
+            self.slices_other_beam_x_center_star = np2ctx(x_slices_star)
 
         if slices_other_beam_px_center_star is not None:
             self.slices_other_beam_px_center_star = slices_other_beam_px_center_star
         else:
-            self.slices_other_beam_px_center_star = px_slices_star
+            self.slices_other_beam_px_center_star = np2ctx(px_slices_star)
 
         if slices_other_beam_y_center_star is not None:
             self.slices_other_beam_y_center_star = slices_other_beam_y_center_star
         else:
-            self.slices_other_beam_y_center_star = y_slices_star
+            self.slices_other_beam_y_center_star = np2ctx(y_slices_star)
 
         if slices_other_beam_py_center_star is not None:
             self.slices_other_beam_py_center_star = slices_other_beam_py_center_star
         else:
-            self.slices_other_beam_py_center_star = py_slices_star
+            self.slices_other_beam_py_center_star = np2ctx(py_slices_star)
 
         if slices_other_beam_zeta_center_star is not None:
             self.slices_other_beam_zeta_center_star = slices_other_beam_zeta_center_star
         else:
-            self.slices_other_beam_zeta_center_star = zeta_slices_star
+            self.slices_other_beam_zeta_center_star = np2ctx(zeta_slices_star)
 
         if slices_other_beam_pzeta_center_star is not None:
             self.slices_other_beam_pzeta_center_star = slices_other_beam_pzeta_center_star
         else:
-            self.slices_other_beam_pzeta_center_star = pzeta_slices_star
+            self.slices_other_beam_pzeta_center_star = np2ctx(pzeta_slices_star)
 
     # The following properties are generate by this code:
     ## for nn in 'x px y py zeta pzeta'.split():
