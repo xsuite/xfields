@@ -246,7 +246,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self._cos_alpha = np.cos(alpha)
 
         self.num_slices_other_beam = n_slices
-        self.slices_other_beam_num_particles = self._np2ctx(np.array(
+        self.slices_other_beam_num_particles = self._arr2ctx(np.array(
                                     slices_other_beam_num_particles))
 
         # Trigger properties to set corresponding starred quantities
@@ -638,54 +638,54 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_Sigma_24 = 0
 
         if slices_other_beam_Sigma_11 is not None:
-            self.slices_other_beam_Sigma_11 = slices_other_beam_Sigma_11
+            self.slices_other_beam_Sigma_11 = self._arr2ctx(slices_other_beam_Sigma_11)
         else:
-            self.slices_other_beam_Sigma_11_star = slices_other_beam_Sigma_11_star
+            self.slices_other_beam_Sigma_11_star = self._arr2ctx(slices_other_beam_Sigma_11_star)
 
         if slices_other_beam_Sigma_12 is not None:
-            self.slices_other_beam_Sigma_12 = slices_other_beam_Sigma_12
+            self.slices_other_beam_Sigma_12 = self._arr2ctx(slices_other_beam_Sigma_12)
         else:
-            self.slices_other_beam_Sigma_12_star = slices_other_beam_Sigma_12_star
+            self.slices_other_beam_Sigma_12_star = self._arr2ctx(slices_other_beam_Sigma_12_star)
 
         if slices_other_beam_Sigma_13 is not None:
-            self.slices_other_beam_Sigma_13 = slices_other_beam_Sigma_13
+            self.slices_other_beam_Sigma_13 = self._arr2ctx(slices_other_beam_Sigma_13)
         else:
-            self.slices_other_beam_Sigma_13_star = slices_other_beam_Sigma_13_star
+            self.slices_other_beam_Sigma_13_star = self._arr2ctx(slices_other_beam_Sigma_13_star)
 
         if slices_other_beam_Sigma_14 is not None:
-            self.slices_other_beam_Sigma_14 = slices_other_beam_Sigma_14
+            self.slices_other_beam_Sigma_14 = self._arr2ctx(slices_other_beam_Sigma_14)
         else:
-            self.slices_other_beam_Sigma_14_star = slices_other_beam_Sigma_14_star
+            self.slices_other_beam_Sigma_14_star = self._arr2ctx(slices_other_beam_Sigma_14_star)
 
         if slices_other_beam_Sigma_22 is not None:
-            self.slices_other_beam_Sigma_22 = slices_other_beam_Sigma_22
+            self.slices_other_beam_Sigma_22 = self._arr2ctx(slices_other_beam_Sigma_22)
         else:
-            self.slices_other_beam_Sigma_22_star = slices_other_beam_Sigma_22_star
+            self.slices_other_beam_Sigma_22_star = self._arr2ctx(slices_other_beam_Sigma_22_star)
 
         if slices_other_beam_Sigma_23 is not None:
-            self.slices_other_beam_Sigma_23 = slices_other_beam_Sigma_23
+            self.slices_other_beam_Sigma_23 = self._arr2ctx(slices_other_beam_Sigma_23)
         else:
-            self.slices_other_beam_Sigma_23_star = slices_other_beam_Sigma_23_star
+            self.slices_other_beam_Sigma_23_star = self._arr2ctx(slices_other_beam_Sigma_23_star)
 
         if slices_other_beam_Sigma_24 is not None:
-            self.slices_other_beam_Sigma_24 = slices_other_beam_Sigma_24
+            self.slices_other_beam_Sigma_24 = self._arr2ctx(slices_other_beam_Sigma_24)
         else:
-            self.slices_other_beam_Sigma_24_star = slices_other_beam_Sigma_24_star
+            self.slices_other_beam_Sigma_24_star = self._arr2ctx(slices_other_beam_Sigma_24_star)
 
         if slices_other_beam_Sigma_33 is not None:
-            self.slices_other_beam_Sigma_33 = slices_other_beam_Sigma_33
+            self.slices_other_beam_Sigma_33 = self._arr2ctx(slices_other_beam_Sigma_33)
         else:
-            self.slices_other_beam_Sigma_33_star = slices_other_beam_Sigma_33_star
+            self.slices_other_beam_Sigma_33_star = self._arr2ctx(slices_other_beam_Sigma_33_star)
 
         if slices_other_beam_Sigma_34 is not None:
-            self.slices_other_beam_Sigma_34 = slices_other_beam_Sigma_34
+            self.slices_other_beam_Sigma_34 = self._arr2ctx(slices_other_beam_Sigma_34)
         else:
-            self.slices_other_beam_Sigma_34_star = slices_other_beam_Sigma_34_star
+            self.slices_other_beam_Sigma_34_star = self._arr2ctx(slices_other_beam_Sigma_34_star)
 
         if slices_other_beam_Sigma_44 is not None:
-            self.slices_other_beam_Sigma_44 = slices_other_beam_Sigma_44
+            self.slices_other_beam_Sigma_44 = self._arr2ctx(slices_other_beam_Sigma_44)
         else:
-            self.slices_other_beam_Sigma_44_star = slices_other_beam_Sigma_44_star
+            self.slices_other_beam_Sigma_44_star = self._arr2ctx(slices_other_beam_Sigma_44_star)
 
     def _init_starred_positions(self,
             slices_other_beam_x_center,
@@ -732,32 +732,32 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         if slices_other_beam_x_center_star is not None:
             self.slices_other_beam_x_center_star = slices_other_beam_x_center_star
         else:
-            self.slices_other_beam_x_center_star = self._np2ctx(x_slices_star)
+            self.slices_other_beam_x_center_star = self._arr2ctx(x_slices_star)
 
         if slices_other_beam_px_center_star is not None:
             self.slices_other_beam_px_center_star = slices_other_beam_px_center_star
         else:
-            self.slices_other_beam_px_center_star = self._np2ctx(px_slices_star)
+            self.slices_other_beam_px_center_star = self._arr2ctx(px_slices_star)
 
         if slices_other_beam_y_center_star is not None:
             self.slices_other_beam_y_center_star = slices_other_beam_y_center_star
         else:
-            self.slices_other_beam_y_center_star = self._np2ctx(y_slices_star)
+            self.slices_other_beam_y_center_star = self._arr2ctx(y_slices_star)
 
         if slices_other_beam_py_center_star is not None:
             self.slices_other_beam_py_center_star = slices_other_beam_py_center_star
         else:
-            self.slices_other_beam_py_center_star = self._np2ctx(py_slices_star)
+            self.slices_other_beam_py_center_star = self._arr2ctx(py_slices_star)
 
         if slices_other_beam_zeta_center_star is not None:
             self.slices_other_beam_zeta_center_star = slices_other_beam_zeta_center_star
         else:
-            self.slices_other_beam_zeta_center_star = self._np2ctx(zeta_slices_star)
+            self.slices_other_beam_zeta_center_star = self._arr2ctx(zeta_slices_star)
 
         if slices_other_beam_pzeta_center_star is not None:
             self.slices_other_beam_pzeta_center_star = slices_other_beam_pzeta_center_star
         else:
-            self.slices_other_beam_pzeta_center_star = self._np2ctx(pzeta_slices_star)
+            self.slices_other_beam_pzeta_center_star = self._arr2ctx(pzeta_slices_star)
 
     # The following properties are generate by this code:
     ## for nn in 'x px y py zeta pzeta'.split():
