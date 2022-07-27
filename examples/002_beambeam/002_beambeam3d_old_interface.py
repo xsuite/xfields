@@ -15,8 +15,6 @@ import ducktrack as dtk
 
 context = xo.ContextCpu()
 
-# TODO: change q0 from Coulomb to elementary charges
-
 # crossing plane
 alpha = 0.7
 

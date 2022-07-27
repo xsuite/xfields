@@ -4,7 +4,6 @@
 # ########################################### #
 
 import numpy as np
-from scipy.constants import e as qe
 
 import xobjects as xo
 import xtrack as xt
@@ -14,8 +13,6 @@ import xpart as xp
 import ducktrack as dtk
 
 context = xo.ContextCpu()
-
-# TODO: change q0 from Coulomb to elementary charges
 
 # crossing plane
 alpha = 0.7
@@ -28,9 +25,6 @@ x_bb_co=5e-3
 y_bb_co=-4e-3
 charge_slices=np.array([1e16, 2e16, 5e16])
 z_slices=np.array([-60., 2., 55.])
-
-# Single particle properties
-q_part = qe
 
 # strong beam shape at the IP (decoupled round beam)
 (Sig_11_0, Sig_12_0, Sig_13_0,
