@@ -3,7 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from email.errors import ObsoleteHeaderDefect
 import numpy as np
 from scipy.constants import e as qe
 
