@@ -84,6 +84,17 @@ def test_beambeam3d():
             (Sig_11_0, Sig_12_0, Sig_13_0, Sig_14_0, Sig_22_0, Sig_23_0, Sig_24_0,
                     Sig_33_0, Sig_34_0, Sig_44_0) = ss
 
+            Sig_11_0 = Sig_11_0 + np.zeros_like(charge_slices)
+            Sig_12_0 = Sig_12_0 + np.zeros_like(charge_slices)
+            Sig_13_0 = Sig_13_0 + np.zeros_like(charge_slices)
+            Sig_14_0 = Sig_14_0 + np.zeros_like(charge_slices)
+            Sig_22_0 = Sig_22_0 + np.zeros_like(charge_slices)
+            Sig_23_0 = Sig_23_0 + np.zeros_like(charge_slices)
+            Sig_24_0 = Sig_24_0 + np.zeros_like(charge_slices)
+            Sig_33_0 = Sig_33_0 + np.zeros_like(charge_slices)
+            Sig_34_0 = Sig_34_0 + np.zeros_like(charge_slices)
+            Sig_44_0 = Sig_44_0 + np.zeros_like(charge_slices)
+
             print('------------------------')
 
             print(ss)
