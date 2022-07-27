@@ -185,10 +185,7 @@ def test_beambeam3d():
 
             part.name = 'beam1_bunch1'
 
-            ret = bb.track(part, _force_suspend=True)
-            assert ret.on_hold
             ret = bb.track(part)
-            assert ret is None
 
             bb_dtk.track(dtk_part)
 
