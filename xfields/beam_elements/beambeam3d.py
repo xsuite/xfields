@@ -338,16 +338,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._sin_alpha = np.sin(alpha)
         self._cos_alpha = np.cos(alpha)
 
-        self.slices_other_beam_Sigma_11 = params['sigma_11']
-        self.slices_other_beam_Sigma_12 = params['sigma_12']
-        self.slices_other_beam_Sigma_13 = params['sigma_13']
-        self.slices_other_beam_Sigma_14 = params['sigma_14']
-        self.slices_other_beam_Sigma_22 = params['sigma_22']
-        self.slices_other_beam_Sigma_23 = params['sigma_23']
-        self.slices_other_beam_Sigma_24 = params['sigma_24']
-        self.slices_other_beam_Sigma_33 = params['sigma_33']
-        self.slices_other_beam_Sigma_34 = params['sigma_34']
-        self.slices_other_beam_Sigma_44 = params['sigma_44']
+        self.slices_other_beam_Sigma_11 = self._arr2ctx(params['sigma_11'])
+        self.slices_other_beam_Sigma_12 = self._arr2ctx(params['sigma_12'])
+        self.slices_other_beam_Sigma_13 = self._arr2ctx(params['sigma_13'])
+        self.slices_other_beam_Sigma_14 = self._arr2ctx(params['sigma_14'])
+        self.slices_other_beam_Sigma_22 = self._arr2ctx(params['sigma_22'])
+        self.slices_other_beam_Sigma_23 = self._arr2ctx(params['sigma_23'])
+        self.slices_other_beam_Sigma_24 = self._arr2ctx(params['sigma_24'])
+        self.slices_other_beam_Sigma_33 = self._arr2ctx(params['sigma_33'])
+        self.slices_other_beam_Sigma_34 = self._arr2ctx(params['sigma_34'])
+        self.slices_other_beam_Sigma_44 = self._arr2ctx(params['sigma_44'])
 
         # Sort according to z, head at the first position in the arrays
         z_slices = np.array(params["zeta_slices"]).copy()
@@ -377,14 +377,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             calpha = self.cos_alpha,
         )
 
-        self.slices_other_beam_num_particles = N_part_per_slice
+        self.slices_other_beam_num_particles = self._arr2ctx(N_part_per_slice)
 
-        self.slices_other_beam_x_center_star = x_slices_star
-        self.slices_other_beam_px_center_star = px_slices_star
-        self.slices_other_beam_y_center_star = y_slices_star
-        self.slices_other_beam_py_center_star = py_slices_star
-        self.slices_other_beam_zeta_center_star = zeta_slices_star
-        self.slices_other_beam_pzeta_center_star = pzeta_slices_star
+        self.slices_other_beam_x_center_star = self._arr2ctx(x_slices_star)
+        self.slices_other_beam_px_center_star = self._arr2ctx(px_slices_star)
+        self.slices_other_beam_y_center_star = self._arr2ctx(y_slices_star)
+        self.slices_other_beam_py_center_star = self._arr2ctx(py_slices_star)
+        self.slices_other_beam_zeta_center_star = self._arr2ctx(zeta_slices_star)
+        self.slices_other_beam_pzeta_center_star = self._arr2ctx(pzeta_slices_star)
 
         self.ref_shift_x = params['x_co']
         self.ref_shift_px = params['px_co']
