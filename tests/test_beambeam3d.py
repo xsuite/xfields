@@ -1,3 +1,4 @@
+from tkinter import W
 import numpy as np
 
 import xobjects as xo
@@ -482,6 +483,7 @@ def test_beambeam3d_old_interface():
 
             bb_dtk.track(dtk_part)
 
+            part._move_to(_context=xo.ContextCpu())
             for cc in 'x px y py zeta delta'.split():
                 val_test = getattr(part, cc)[0]
                 val_ref = getattr(dtk_part, cc)
