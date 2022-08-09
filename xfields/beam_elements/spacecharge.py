@@ -12,7 +12,6 @@ from xfields import TriLinearInterpolatedFieldMap
 from ..longitudinal_profiles import LongitudinalProfileQGaussianData
 from ..longitudinal_profiles import LongitudinalProfileQGaussian
 from ..fieldmaps import BiGaussianFieldMapData
-from ..fieldmaps import TriLinearInterpolatedFieldMapData
 from ..general import _pkg_root
 
 import xobjects as xo
@@ -75,7 +74,7 @@ class SpaceCharge3D(xt.BeamElement):
         (SpaceCharge3D): A space-charge 3D beam element.
     """
     _xofields = {
-        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMapData),
+        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap.XoStruct),
         'length': xo.Float64,
         }
 
