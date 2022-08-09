@@ -111,6 +111,7 @@ class TriCubicInterpolatedFieldMap(xo.DressedStruct):
                  _context=None,
                  _buffer=None,
                  _offset=None,
+                 _xobject=None,
                  x_range=None, y_range=None, z_range=None,
                  nx=None, ny=None, nz=None,
                  dx=None, dy=None, dz=None,
@@ -122,6 +123,11 @@ class TriCubicInterpolatedFieldMap(xo.DressedStruct):
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
                  ):
+
+        if _xobject is not None:
+            self.xoinitialize(_xobject=_xobject, _context=_context,
+                             _buffer=_buffer, _offset=_offset)
+            return
 
         self.updatable = updatable
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
