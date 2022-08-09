@@ -177,4 +177,3 @@ class BiGaussianFieldMap(xo.DressedStruct):
         raise ValueError('solver cannot be generated'
                          'for BiGaussianFieldMap')
 
-BiGaussianFieldMapData = BiGaussianFieldMap.XoStruct

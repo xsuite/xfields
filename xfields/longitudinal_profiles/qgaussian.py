@@ -57,6 +57,7 @@ class LongitudinalProfileQGaussian(xo.DressedStruct):
             _context=None,
             _buffer=None,
             _offset=None,
+            _xobject=None,
             number_of_particles=None,
             sigma_z=None,
             z0=0.,
@@ -64,6 +65,11 @@ class LongitudinalProfileQGaussian(xo.DressedStruct):
             z_min = -1e10,
             z_max = 1e10,
             q_tol=1e-6):
+
+        if _xobject is not None:
+            self.xoinitialize(_context=_context, _buffer=_buffer, _offset=_offset,
+                              _xobject=_xobject)
+            return
 
 
         assert number_of_particles is not None
