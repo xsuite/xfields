@@ -9,7 +9,6 @@ from scipy.constants import c as clight
 
 from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
-from ..longitudinal_profiles import LongitudinalProfileQGaussianData
 from ..longitudinal_profiles import LongitudinalProfileQGaussian
 from ..fieldmaps import BiGaussianFieldMapData
 from ..general import _pkg_root
@@ -183,7 +182,7 @@ SpaceCharge3D.XoStruct.extra_sources = srcs
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {
-        'longitudinal_profile': LongitudinalProfileQGaussianData, # TODO: Will become unionref
+        'longitudinal_profile': LongitudinalProfileQGaussian.XoStruct, # TODO: Will become unionref
         'fieldmap': BiGaussianFieldMapData,
         'length': xo.Float64,
         }

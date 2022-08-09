@@ -12,32 +12,31 @@ from scipy.special import gamma
 
 from ..general import _pkg_root
 
-class LongitudinalProfileQGaussianData(xo.Struct):
-    number_of_particles = xo.Float64
-    _q_tol = xo.Float64
-    _z0 = xo.Float64
-    _sigma_z = xo.Float64
-    _q_param = xo.Float64
-    _cq_param = xo.Float64
-    _beta_param = xo.Float64
-    _sqrt_beta_param = xo.Float64
-    _support_min = xo.Float64
-    _support_max = xo.Float64
-
-LongitudinalProfileQGaussianData.extra_sources = [
-    _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
-    ]
-LongitudinalProfileQGaussianData.custom_kernels = {'line_density_qgauss':
-        xo.Kernel(args=[xo.Arg(LongitudinalProfileQGaussianData, name='prof'),
-                        xo.Arg(xo.Int64, name='n'),
-                        xo.Arg(xo.Float64, pointer=True, name='z'),
-                        xo.Arg(xo.Float64, pointer=True, name='res')],
-                  n_threads='n')}
 
 
 
 
-class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
+
+
+
+class LongitudinalProfileQGaussian(xo.DressedStruct):
+
+    _xofields = {
+        'number_of_particles': xo.Float64,
+        '_q_tol': xo.Float64,
+        '_z0': xo.Float64,
+        '_sigma_z': xo.Float64,
+        '_q_param': xo.Float64,
+        '_cq_param': xo.Float64,
+        '_beta_param': xo.Float64,
+        '_sqrt_beta_param': xo.Float64,
+        '_support_min': xo.Float64,
+        '_support_max': xo.Float64,
+    }
+
+    extra_sources = [
+        _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
+        ]
 
     @staticmethod
     def cq_from_q(q, q_tol):
@@ -173,3 +172,9 @@ class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
 
         return res
 
+LongitudinalProfileQGaussian.XoStruct.custom_kernels = {'line_density_qgauss':
+        xo.Kernel(args=[xo.Arg(LongitudinalProfileQGaussian.XoStruct, name='prof'),
+                        xo.Arg(xo.Int64, name='n'),
+                        xo.Arg(xo.Float64, pointer=True, name='z'),
+                        xo.Arg(xo.Float64, pointer=True, name='res')],
+                  n_threads='n')}
