@@ -13,7 +13,7 @@ from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
 from ..general import _pkg_root
 
 
-class TriLinearInterpolatedFieldMap(xo.DressedStruct):
+class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
     """
     Builds a linear interpolator for a 3D field map. The map can be updated

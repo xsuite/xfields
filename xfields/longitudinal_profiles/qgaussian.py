@@ -19,7 +19,7 @@ from ..general import _pkg_root
 
 
 
-class LongitudinalProfileQGaussian(xo.DressedStruct):
+class LongitudinalProfileQGaussian(xo.HybridClass):
 
     _xofields = {
         'number_of_particles': xo.Float64,

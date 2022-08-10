@@ -13,7 +13,7 @@ from .interpolated import _configure_grid
 from ..general import _pkg_root
 
 
-class TriCubicInterpolatedFieldMap(xo.DressedStruct):
+class TriCubicInterpolatedFieldMap(xo.HybridClass):
 
     """
     Builds a cubic interpolator for a 3D field map.
