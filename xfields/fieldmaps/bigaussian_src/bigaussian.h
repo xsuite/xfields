@@ -164,7 +164,12 @@ void get_Ex_Ey_gauss(
     *Gy_ptr = Gy;
 }
 
+#endif
+
 #ifndef NOFIELDMAP
+
+#ifndef XFIEDLS_BIGUASSIIAN_H_FIELDMAP
+#define XFIEDLS_BIGUASSIIAN_H_FIELDMAP
 
 /*gpufun*/
 void BiGaussianFieldMap_get_dphi_dx_dphi_dy(
@@ -194,5 +199,4 @@ void BiGaussianFieldMap_get_dphi_dx_dphi_dy(
     *dphi_dy = -Ey;
 }
 #endif
-
 #endif

@@ -11,8 +11,7 @@ import xtrack as xt
 from ..fieldmaps import TriLinearInterpolatedFieldMap
 from ..fieldmaps import TriCubicInterpolatedFieldMap
 
-from ..fieldmaps import TriCubicInterpolatedFieldMapData
-from ..fieldmaps import TriLinearInterpolatedFieldMapData
+from ..fieldmaps import TriCubicInterpolatedFieldMap
 from ..general import _pkg_root
 
 class ElectronLensInterpolated(xt.BeamElement):
@@ -21,7 +20,7 @@ class ElectronLensInterpolated(xt.BeamElement):
                'current':  xo.Float64,
                'length':   xo.Float64,
                'voltage':  xo.Float64,
-               "fieldmap": TriCubicInterpolatedFieldMapData,
+               "fieldmap": TriCubicInterpolatedFieldMap.XoStruct,
               }
 
     def __init__(self,

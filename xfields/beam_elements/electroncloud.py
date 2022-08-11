@@ -3,7 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from ..fieldmaps import TriCubicInterpolatedFieldMapData
+from ..fieldmaps import TriCubicInterpolatedFieldMap
 from ..general import _pkg_root
 
 import xobjects as xo
@@ -55,7 +55,7 @@ class ElectronCloud(xt.BeamElement):
         'dipolar_ptau_kick': xo.Float64,
         'length': xo.Float64,
         #'fieldmap': TriCubicInterpolatedFieldMapData,
-        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMapData),
+        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap.XoStruct),
         }
 
     def __init__(self,
