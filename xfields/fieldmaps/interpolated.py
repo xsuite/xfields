@@ -12,6 +12,76 @@ import xtrack as xt
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
 from ..general import _pkg_root
 
+_TriLinearInterpolatedFielmap_kernels = {
+    'central_diff': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nelem'),
+            xo.Arg(xo.Int32,   pointer=False, name='row_size'),
+            xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
+            xo.Arg(xo.Float64, pointer=False, name='factor'),
+            xo.Arg(xo.Int8,    pointer=True,  name='matrix_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='matrix_offset'),
+            xo.Arg(xo.Int8,    pointer=True,  name='res_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='res_offset'),
+            ],
+        n_threads='nelem'
+        ),
+    'p2m_rectmesh3d_xparticles': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
+            ],
+        n_threads='nparticles'
+        ),
+    'p2m_rectmesh3d': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xo.Float64, pointer=True, name='x'),
+            xo.Arg(xo.Float64, pointer=True, name='y'),
+            xo.Arg(xo.Float64, pointer=True, name='z'),
+            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
+            xo.Arg(xo.Int64,   pointer=True, name='part_state'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
+            ],
+        n_threads='nparticles'
+        ),
+    'TriLinearInterpolatedFieldMap_interpolate_3d_map_vector': xo.Kernel(
+        args=[
+            xo.Arg(xo.ThisClass, pointer=False, name='fmap'),
+            xo.Arg(xo.Int64,   pointer=False, name='n_points'),
+            xo.Arg(xo.Float64, pointer=True,  name='x'),
+            xo.Arg(xo.Float64, pointer=True,  name='y'),
+            xo.Arg(xo.Float64, pointer=True,  name='z'),
+            xo.Arg(xo.Int64,   pointer=False, name='n_quantities'),
+            xo.Arg(xo.Int8,    pointer=True,  name='buffer_mesh_quantities'),
+            xo.Arg(xo.Int64,   pointer=True,  name='offsets_mesh_quantities'),
+            xo.Arg(xo.Float64, pointer=True,  name='particles_quantities'),
+            ],
+        n_threads='n_points'
+        ),
+    }
+
 
 class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
@@ -95,6 +165,8 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
     _depends_on = [xp.Particles.XoStruct]
 
+    _kernels = _TriLinearInterpolatedFielmap_kernels
+
     def __init__(self,
                  _context=None,
                  _buffer=None,
@@ -143,7 +215,7 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                  dphi_dy = nelem,
                  dphi_dz = nelem)
 
-        self.compile_custom_kernels(only_if_needed=True)
+        self.compile_kernels(only_if_needed=True)
 
         if isinstance(solver, str):
             self.solver = self.generate_solver(solver, fftplan)
@@ -580,72 +652,3 @@ def _configure_grid(vname, v_grid, dv, v_range, nv):
     return v_grid
 
 
-TriLinearInterpolatedFieldMap.XoStruct.custom_kernels = {
-    'central_diff': xo.Kernel(
-        args=[
-            xo.Arg(xo.Int32,   pointer=False, name='nelem'),
-            xo.Arg(xo.Int32,   pointer=False, name='row_size'),
-            xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
-            xo.Arg(xo.Float64, pointer=False, name='factor'),
-            xo.Arg(xo.Int8,    pointer=True,  name='matrix_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='matrix_offset'),
-            xo.Arg(xo.Int8,    pointer=True,  name='res_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='res_offset'),
-            ],
-        n_threads='nelem'
-        ),
-    'p2m_rectmesh3d_xparticles': xo.Kernel(
-        args=[
-            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
-            xo.Arg(xo.Float64, pointer=False, name='x0'),
-            xo.Arg(xo.Float64, pointer=False, name='y0'),
-            xo.Arg(xo.Float64, pointer=False, name='z0'),
-            xo.Arg(xo.Float64, pointer=False, name='dx'),
-            xo.Arg(xo.Float64, pointer=False, name='dy'),
-            xo.Arg(xo.Float64, pointer=False, name='dz'),
-            xo.Arg(xo.Int32,   pointer=False, name='nx'),
-            xo.Arg(xo.Int32,   pointer=False, name='ny'),
-            xo.Arg(xo.Int32,   pointer=False, name='nz'),
-            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
-            ],
-        n_threads='nparticles'
-        ),
-    'p2m_rectmesh3d': xo.Kernel(
-        args=[
-            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xo.Float64, pointer=True, name='x'),
-            xo.Arg(xo.Float64, pointer=True, name='y'),
-            xo.Arg(xo.Float64, pointer=True, name='z'),
-            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
-            xo.Arg(xo.Int64,   pointer=True, name='part_state'),
-            xo.Arg(xo.Float64, pointer=False, name='x0'),
-            xo.Arg(xo.Float64, pointer=False, name='y0'),
-            xo.Arg(xo.Float64, pointer=False, name='z0'),
-            xo.Arg(xo.Float64, pointer=False, name='dx'),
-            xo.Arg(xo.Float64, pointer=False, name='dy'),
-            xo.Arg(xo.Float64, pointer=False, name='dz'),
-            xo.Arg(xo.Int32,   pointer=False, name='nx'),
-            xo.Arg(xo.Int32,   pointer=False, name='ny'),
-            xo.Arg(xo.Int32,   pointer=False, name='nz'),
-            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
-            ],
-        n_threads='nparticles'
-        ),
-    'TriLinearInterpolatedFieldMap_interpolate_3d_map_vector': xo.Kernel(
-        args=[
-            xo.Arg(TriLinearInterpolatedFieldMap.XoStruct, pointer=False, name='fmap'),
-            xo.Arg(xo.Int64,   pointer=False, name='n_points'),
-            xo.Arg(xo.Float64, pointer=True,  name='x'),
-            xo.Arg(xo.Float64, pointer=True,  name='y'),
-            xo.Arg(xo.Float64, pointer=True,  name='z'),
-            xo.Arg(xo.Int64,   pointer=False, name='n_quantities'),
-            xo.Arg(xo.Int8,    pointer=True,  name='buffer_mesh_quantities'),
-            xo.Arg(xo.Int64,   pointer=True,  name='offsets_mesh_quantities'),
-            xo.Arg(xo.Float64, pointer=True,  name='particles_quantities'),
-            ],
-        n_threads='n_points'
-        ),
-    }

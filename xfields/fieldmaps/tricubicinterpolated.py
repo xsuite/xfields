@@ -11,6 +11,62 @@ import xpart as xp
 from .interpolated import _configure_grid
 from ..general import _pkg_root
 
+_TriCubicInterpolatedFieldMap_kernels = {
+    'central_diff': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nelem'),
+            xo.Arg(xo.Int32,   pointer=False, name='row_size'),
+            xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
+            xo.Arg(xo.Float64, pointer=False, name='factor'),
+            xo.Arg(xo.Int8,    pointer=True,  name='matrix_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='matrix_offset'),
+            xo.Arg(xo.Int8,    pointer=True,  name='res_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='res_offset'),
+            ],
+        n_threads='nelem'
+        ),
+    'p2m_rectmesh3d_xparticles': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
+            ],
+        n_threads='nparticles'
+        ),
+    'p2m_rectmesh3d': xo.Kernel(
+        args=[
+            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
+            xo.Arg(xo.Float64, pointer=True, name='x'),
+            xo.Arg(xo.Float64, pointer=True, name='y'),
+            xo.Arg(xo.Float64, pointer=True, name='z'),
+            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
+            xo.Arg(xo.Int64,   pointer=True, name='part_state'),
+            xo.Arg(xo.Float64, pointer=False, name='x0'),
+            xo.Arg(xo.Float64, pointer=False, name='y0'),
+            xo.Arg(xo.Float64, pointer=False, name='z0'),
+            xo.Arg(xo.Float64, pointer=False, name='dx'),
+            xo.Arg(xo.Float64, pointer=False, name='dy'),
+            xo.Arg(xo.Float64, pointer=False, name='dz'),
+            xo.Arg(xo.Int32,   pointer=False, name='nx'),
+            xo.Arg(xo.Int32,   pointer=False, name='ny'),
+            xo.Arg(xo.Int32,   pointer=False, name='nz'),
+            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
+            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
+            ],
+        n_threads='nparticles'
+        ),
+    }
+
 
 class TriCubicInterpolatedFieldMap(xo.HybridClass):
 
@@ -107,6 +163,8 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
 
     _depends_on = [xp.Particles.XoStruct]
 
+    _kernels = _TriCubicInterpolatedFieldMap_kernels
+
 
     def __init__(self,
                  _context=None,
@@ -157,7 +215,8 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
                  phi_taylor = nelem
                  )
 
-        self.compile_custom_kernels(only_if_needed=True)
+        self.compile_kernels(only_if_needed=True)
+
         if phi_taylor is not None:
             self.phi_taylor = phi_taylor
         else:
@@ -459,58 +518,4 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
         """
         return self.z_grid[1] - self.z_grid[0]
 
-TriCubicInterpolatedFieldMap.XoStruct.custom_kernels = {
-    'central_diff': xo.Kernel(
-        args=[
-            xo.Arg(xo.Int32,   pointer=False, name='nelem'),
-            xo.Arg(xo.Int32,   pointer=False, name='row_size'),
-            xo.Arg(xo.Int32,   pointer=False, name='stride_in_dbl'),
-            xo.Arg(xo.Float64, pointer=False, name='factor'),
-            xo.Arg(xo.Int8,    pointer=True,  name='matrix_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='matrix_offset'),
-            xo.Arg(xo.Int8,    pointer=True,  name='res_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='res_offset'),
-            ],
-        n_threads='nelem'
-        ),
-    'p2m_rectmesh3d_xparticles': xo.Kernel(
-        args=[
-            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
-            xo.Arg(xo.Float64, pointer=False, name='x0'),
-            xo.Arg(xo.Float64, pointer=False, name='y0'),
-            xo.Arg(xo.Float64, pointer=False, name='z0'),
-            xo.Arg(xo.Float64, pointer=False, name='dx'),
-            xo.Arg(xo.Float64, pointer=False, name='dy'),
-            xo.Arg(xo.Float64, pointer=False, name='dz'),
-            xo.Arg(xo.Int32,   pointer=False, name='nx'),
-            xo.Arg(xo.Int32,   pointer=False, name='ny'),
-            xo.Arg(xo.Int32,   pointer=False, name='nz'),
-            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
-            ],
-        n_threads='nparticles'
-        ),
-    'p2m_rectmesh3d': xo.Kernel(
-        args=[
-            xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xo.Float64, pointer=True, name='x'),
-            xo.Arg(xo.Float64, pointer=True, name='y'),
-            xo.Arg(xo.Float64, pointer=True, name='z'),
-            xo.Arg(xo.Float64, pointer=True, name='part_weights'),
-            xo.Arg(xo.Int64,   pointer=True, name='part_state'),
-            xo.Arg(xo.Float64, pointer=False, name='x0'),
-            xo.Arg(xo.Float64, pointer=False, name='y0'),
-            xo.Arg(xo.Float64, pointer=False, name='z0'),
-            xo.Arg(xo.Float64, pointer=False, name='dx'),
-            xo.Arg(xo.Float64, pointer=False, name='dy'),
-            xo.Arg(xo.Float64, pointer=False, name='dz'),
-            xo.Arg(xo.Int32,   pointer=False, name='nx'),
-            xo.Arg(xo.Int32,   pointer=False, name='ny'),
-            xo.Arg(xo.Int32,   pointer=False, name='nz'),
-            xo.Arg(xo.Int8,    pointer=True,  name='grid1d_buffer'),
-            xo.Arg(xo.Int64,   pointer=False, name='grid1d_offset'),
-            ],
-        n_threads='nparticles'
-        ),
-    }
+
