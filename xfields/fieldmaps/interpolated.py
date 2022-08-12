@@ -86,12 +86,14 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
     # properties
     _rename = {nn: '_'+nn for nn in _xofields}
 
-    extra_sources = [
+    _extra_c_source = [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
         ]
+
+    _depends_on = [xp.Particles.XoStruct]
 
     def __init__(self,
                  _context=None,

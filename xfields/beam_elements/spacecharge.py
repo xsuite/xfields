@@ -77,6 +77,12 @@ class SpaceCharge3D(xt.BeamElement):
         'length': xo.Float64,
         }
 
+    _extra_c_source = [
+        _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
+        _pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'),
+    ]
+
     def copy(self, _context=None, _buffer=None, _offset=None):
         if _buffer is not self._buffer:
             raise NotImplementedError
@@ -170,12 +176,7 @@ class SpaceCharge3D(xt.BeamElement):
         super().track(particles)
 
 
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
 
-SpaceCharge3D.XoStruct.extra_sources = srcs
 
 
 
@@ -186,6 +187,16 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'fieldmap': BiGaussianFieldMap.XoStruct,
         'length': xo.Float64,
         }
+
+    _extra_c_source = [
+        _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('headers/sincos.h'),
+        _pkg_root.joinpath('headers/power_n.h'),
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'),
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
+        _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'),
+        _pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'),
+    ]
 
     def to_dict(self):
         dct = super().to_dict()
@@ -341,13 +352,4 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         self.fieldmap.sigma_y = value
 
 
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('headers/sincos.h'))
-srcs.append(_pkg_root.joinpath('headers/power_n.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
 
-SpaceChargeBiGaussian.XoStruct.extra_sources = srcs

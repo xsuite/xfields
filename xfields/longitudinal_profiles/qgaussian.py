@@ -12,13 +12,6 @@ from scipy.special import gamma
 
 from ..general import _pkg_root
 
-
-
-
-
-
-
-
 class LongitudinalProfileQGaussian(xo.HybridClass):
 
     _xofields = {
@@ -34,7 +27,7 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
         '_support_max': xo.Float64,
     }
 
-    extra_sources = [
+    _extra_c_source = [
         _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
         ]
 
