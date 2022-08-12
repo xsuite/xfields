@@ -21,7 +21,7 @@ class ElectronLensInterpolated(xt.BeamElement):
                'current':  xo.Float64,
                'length':   xo.Float64,
                'voltage':  xo.Float64,
-               "fieldmap": TriCubicInterpolatedFieldMap._XoStruct,
+               "fieldmap": TriCubicInterpolatedFieldMap,
               }
 
     _extra_c_sources = [

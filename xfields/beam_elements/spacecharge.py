@@ -183,8 +183,8 @@ class SpaceCharge3D(xt.BeamElement):
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {
-        'longitudinal_profile': LongitudinalProfileQGaussian._XoStruct, # TODO: Will become unionref
-        'fieldmap': BiGaussianFieldMap._XoStruct,
+        'longitudinal_profile': LongitudinalProfileQGaussian, # TODO: Will become unionref
+        'fieldmap': BiGaussianFieldMap,
         'length': xo.Float64,
         }
 
