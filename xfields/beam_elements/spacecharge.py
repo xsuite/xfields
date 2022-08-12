@@ -77,7 +77,7 @@ class SpaceCharge3D(xt.BeamElement):
         'length': xo.Float64,
         }
 
-    _extra_c_source = [
+    _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
         _pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'),
@@ -188,7 +188,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'length': xo.Float64,
         }
 
-    _extra_c_source = [
+    _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),

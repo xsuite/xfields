@@ -24,7 +24,7 @@ class ElectronLensInterpolated(xt.BeamElement):
                "fieldmap": TriCubicInterpolatedFieldMap.XoStruct,
               }
 
-    _extra_c_source = [
+    _extra_c_sources = [
         _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
         _pkg_root.joinpath('beam_elements/electronlens_src/electronlens_interpolated.h'),

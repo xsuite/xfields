@@ -58,7 +58,7 @@ class ElectronCloud(xt.BeamElement):
         'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap.XoStruct),
         }
 
-    _extra_c_source = [
+    _extra_c_sources = [
         _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
         _pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'),

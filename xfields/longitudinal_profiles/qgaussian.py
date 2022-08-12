@@ -27,7 +27,7 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
         '_support_max': xo.Float64,
     }
 
-    _extra_c_source = [
+    _extra_c_sources = [
         _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
         ]
 

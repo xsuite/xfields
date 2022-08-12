@@ -153,7 +153,7 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
     # properties
     _rename = {nn: '_'+nn for nn in _xofields}
 
-    _extra_c_source = [
+    _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
