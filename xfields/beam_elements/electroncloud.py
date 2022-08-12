@@ -55,7 +55,7 @@ class ElectronCloud(xt.BeamElement):
         'dipolar_ptau_kick': xo.Float64,
         'length': xo.Float64,
         #'fieldmap': TriCubicInterpolatedFieldMapData,
-        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap.XoStruct),
+        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap._XoStruct),
         }
 
     _extra_c_sources = [

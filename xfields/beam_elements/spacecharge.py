@@ -73,7 +73,7 @@ class SpaceCharge3D(xt.BeamElement):
         (SpaceCharge3D): A space-charge 3D beam element.
     """
     _xofields = {
-        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap.XoStruct),
+        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap._XoStruct),
         'length': xo.Float64,
         }
 
@@ -183,8 +183,8 @@ class SpaceCharge3D(xt.BeamElement):
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {
-        'longitudinal_profile': LongitudinalProfileQGaussian.XoStruct, # TODO: Will become unionref
-        'fieldmap': BiGaussianFieldMap.XoStruct,
+        'longitudinal_profile': LongitudinalProfileQGaussian._XoStruct, # TODO: Will become unionref
+        'fieldmap': BiGaussianFieldMap._XoStruct,
         'length': xo.Float64,
         }
 

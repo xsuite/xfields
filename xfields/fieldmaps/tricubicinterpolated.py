@@ -28,7 +28,7 @@ _TriCubicInterpolatedFieldMap_kernels = {
     'p2m_rectmesh3d_xparticles': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
+            xo.Arg(xp.Particles._XoStruct, pointer=False, name='particles'),
             xo.Arg(xo.Float64, pointer=False, name='x0'),
             xo.Arg(xo.Float64, pointer=False, name='y0'),
             xo.Arg(xo.Float64, pointer=False, name='z0'),
@@ -161,7 +161,7 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
         _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
         ]
 
-    _depends_on = [xp.Particles.XoStruct]
+    _depends_on = [xp.Particles._XoStruct]
 
     _kernels = _TriCubicInterpolatedFieldMap_kernels
 
