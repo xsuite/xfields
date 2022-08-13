@@ -70,7 +70,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     }
 
-    extra_sources= [
+    _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
@@ -84,7 +84,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
     ]
 
-    per_particle_kernels={
+    _per_particle_kernels={
         'synchro_beam_kick': xo.Kernel(
             c_name='BeamBeam3D_selective_apply_synchrobeam_kick_local_particle',
             args=[

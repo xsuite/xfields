@@ -7,6 +7,7 @@ import numpy as np
 
 import xobjects as xo
 import xtrack as xt
+import xpart as xp
 
 from ..fieldmaps import TriLinearInterpolatedFieldMap
 from ..fieldmaps import TriCubicInterpolatedFieldMap
@@ -20,8 +21,14 @@ class ElectronLensInterpolated(xt.BeamElement):
                'current':  xo.Float64,
                'length':   xo.Float64,
                'voltage':  xo.Float64,
-               "fieldmap": TriCubicInterpolatedFieldMap.XoStruct,
+               "fieldmap": TriCubicInterpolatedFieldMap,
               }
+
+    _extra_c_sources = [
+        _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
+        _pkg_root.joinpath('beam_elements/electronlens_src/electronlens_interpolated.h'),
+    ]
 
     def __init__(self,
                  _context=None,
@@ -128,11 +135,3 @@ class ElectronLensInterpolated(xt.BeamElement):
                  voltage=voltage,
                  fieldmap=tc_fieldmap)
 
-
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/electronlens_src/electronlens_interpolated.h'))
-
-ElectronLensInterpolated.XoStruct.extra_sources = srcs

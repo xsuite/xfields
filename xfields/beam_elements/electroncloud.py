@@ -55,8 +55,14 @@ class ElectronCloud(xt.BeamElement):
         'dipolar_ptau_kick': xo.Float64,
         'length': xo.Float64,
         #'fieldmap': TriCubicInterpolatedFieldMapData,
-        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap.XoStruct),
+        'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap._XoStruct),
         }
+
+    _extra_c_sources = [
+        _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
+        _pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'),
+    ]
 
     def __init__(self,
                  _context=None,
@@ -97,12 +103,3 @@ class ElectronCloud(xt.BeamElement):
                  dipolar_ptau_kick=dipolar_ptau_kick,
                  length=length,
                  fieldmap=fieldmap)
-
-
-
-srcs = []
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'))
-
-ElectronCloud.XoStruct.extra_sources = srcs

@@ -37,7 +37,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     }
 
-    extra_sources= [
+    _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
