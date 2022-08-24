@@ -6,11 +6,6 @@
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
 
-
-#if !defined(profiler_path)
-    #define profiler_path "/Users/pkicsiny/phd/cern/PySBC/outputs" 
-#endif
-
 /*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, const int i_slice,
@@ -123,6 +118,7 @@ void synchrobeam_kick(
     *py_star = *py_star + Fy_star;
 
     }
+
 
 
 /*gpufun*/

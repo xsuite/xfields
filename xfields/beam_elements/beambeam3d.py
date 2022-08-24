@@ -11,30 +11,6 @@ import xpart as xp
 
 from ..general import _pkg_root
 
-"""
-15/8/21: add delta_px, delta_py
-"""
-
-class BoostParameters(xo.Struct):
-    sphi = xo.Float64
-    cphi = xo.Float64
-    tphi = xo.Float64
-    salpha = xo.Float64
-    calpha = xo.Float64
-
-class Sigmas(xo.Struct):
-    Sig_11 = xo.Float64
-    Sig_12 = xo.Float64
-    Sig_13 = xo.Float64
-    Sig_14 = xo.Float64
-    Sig_22 = xo.Float64
-    Sig_23 = xo.Float64
-    Sig_24 = xo.Float64
-    Sig_33 = xo.Float64
-    Sig_34 = xo.Float64
-    Sig_44 = xo.Float64
-
-
 class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
@@ -92,6 +68,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
+
     }
 
     _extra_c_sources= [

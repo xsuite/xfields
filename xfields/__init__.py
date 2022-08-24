@@ -16,19 +16,8 @@ from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 
-from .beam_elements.beambeam3d_base import BeamBeamBiGaussian3DBase
-from .beam_elements.boost3d import Boost3D
-from .beam_elements.boostinv3d import BoostInv3D
-from .beam_elements.iptocp3d import IPToCP3D
-from .beam_elements.iptocp3d_empty import IPToCP3D_empty
-from .beam_elements.cptoip3d import CPToIP3D
-from .beam_elements.strongstrong3d import StrongStrong3D
-from .beam_elements.sbc6d import Sbc6D
-from .beam_elements.sbc6d_full import Sbc6D_full
-
 from .beam_elements.beambeam3d import TempSlicer
 from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
-
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
 
