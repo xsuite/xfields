@@ -12,32 +12,31 @@ from scipy.special import gamma
 
 from ..general import _pkg_root
 
-class LongitudinalProfileQGaussianData(xo.Struct):
-    number_of_particles = xo.Float64
-    _q_tol = xo.Float64
-    _z0 = xo.Float64
-    _sigma_z = xo.Float64
-    _q_param = xo.Float64
-    _cq_param = xo.Float64
-    _beta_param = xo.Float64
-    _sqrt_beta_param = xo.Float64
-    _support_min = xo.Float64
-    _support_max = xo.Float64
+class LongitudinalProfileQGaussian(xo.HybridClass):
 
-LongitudinalProfileQGaussianData.extra_sources = [
-    _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
-    ]
-LongitudinalProfileQGaussianData.custom_kernels = {'line_density_qgauss':
-        xo.Kernel(args=[xo.Arg(LongitudinalProfileQGaussianData, name='prof'),
+    _xofields = {
+        'number_of_particles': xo.Float64,
+        '_q_tol': xo.Float64,
+        '_z0': xo.Float64,
+        '_sigma_z': xo.Float64,
+        '_q_param': xo.Float64,
+        '_cq_param': xo.Float64,
+        '_beta_param': xo.Float64,
+        '_sqrt_beta_param': xo.Float64,
+        '_support_min': xo.Float64,
+        '_support_max': xo.Float64,
+    }
+
+    _extra_c_sources = [
+        _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
+        ]
+
+    _kernels = {'line_density_qgauss':
+        xo.Kernel(args=[xo.Arg(xo.ThisClass, name='prof'),
                         xo.Arg(xo.Int64, name='n'),
                         xo.Arg(xo.Float64, pointer=True, name='z'),
                         xo.Arg(xo.Float64, pointer=True, name='res')],
                   n_threads='n')}
-
-
-
-
-class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
 
     @staticmethod
     def cq_from_q(q, q_tol):
@@ -58,6 +57,7 @@ class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
             _context=None,
             _buffer=None,
             _offset=None,
+            _xobject=None,
             number_of_particles=None,
             sigma_z=None,
             z0=0.,
@@ -65,6 +65,11 @@ class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
             z_min = -1e10,
             z_max = 1e10,
             q_tol=1e-6):
+
+        if _xobject is not None:
+            self.xoinitialize(_context=_context, _buffer=_buffer, _offset=_offset,
+                              _xobject=_xobject)
+            return
 
 
         assert number_of_particles is not None
@@ -167,7 +172,7 @@ class LongitudinalProfileQGaussian(xo.dress(LongitudinalProfileQGaussianData)):
         res = context.zeros(len(z), dtype=np.float64)
 
         if 'line_density_q_gauss' not in context.kernels.keys():
-            self.compile_custom_kernels()
+            self.compile_kernels()
 
         context.kernels.line_density_qgauss(prof=self._xobject, n=len(z), z=z, res=res)
 

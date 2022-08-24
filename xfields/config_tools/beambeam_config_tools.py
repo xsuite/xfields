@@ -34,28 +34,28 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
               temp_particles.py -= ee.d_py
 
         elif ee.__class__.__name__ == 'BeamBeamBiGaussian3D':
-            ee.x_CO = temp_particles.x[0]
-            ee.px_CO = temp_particles.px[0]
-            ee.y_CO = temp_particles.y[0]
-            ee.py_CO = temp_particles.py[0]
-            ee.sigma_CO = temp_particles.zeta[0]
-            ee.delta_CO = temp_particles.delta[0]
+            ee.ref_shift_x = temp_particles.x[0]
+            ee.ref_shift_px = temp_particles.px[0]
+            ee.ref_shift_y = temp_particles.y[0]
+            ee.ref_shift_py = temp_particles.py[0]
+            ee.ref_shift_zeta = temp_particles.zeta[0]
+            ee.ref_shift_pzeta = temp_particles.delta[0] # Element assumes beta0=1 anyhow
 
             ee.track(temp_particles)
 
-            ee.Dx_sub = temp_particles.x[0] - ee.x_CO
-            ee.Dpx_sub = temp_particles.px[0] - ee.px_CO
-            ee.Dy_sub = temp_particles.y[0] - ee.y_CO
-            ee.Dpy_sub = temp_particles.py[0] - ee.py_CO
-            ee.Dsigma_sub = temp_particles.zeta[0] - ee.sigma_CO
-            ee.Ddelta_sub = temp_particles.delta[0] - ee.delta_CO
+            ee.post_subtract_x = temp_particles.x[0] - ee.ref_shift_x
+            ee.post_subtract_px = temp_particles.px[0] - ee.ref_shift_px
+            ee.post_subtract_y = temp_particles.y[0] - ee.ref_shift_y
+            ee.post_subtract_py = temp_particles.py[0] - ee.ref_shift_py
+            ee.post_subtract_zeta = temp_particles.zeta[0] - ee.ref_shift_zeta
+            ee.post_subtract_pzeta = temp_particles.delta[0] - ee.ref_shift_pzeta
 
-            temp_particles.x[0] = ee.x_CO
-            temp_particles.px[0] = ee.px_CO
-            temp_particles.y[0] = ee.y_CO
-            temp_particles.py[0] = ee.py_CO
-            temp_particles.zeta[0] = ee.sigma_CO
-            temp_particles.delta[0] = ee.delta_CO
+            temp_particles.x[0] = ee.ref_shift_x
+            temp_particles.px[0] = ee.ref_shift_px
+            temp_particles.y[0] = ee.ref_shift_y
+            temp_particles.py[0] = ee.ref_shift_py
+            temp_particles.zeta[0] = ee.ref_shift_zeta
+            temp_particles.delta[0] = ee.ref_shift_pzeta # Element assumes beta0=1 anyhow
 
         else:
             ee.track(temp_particles)

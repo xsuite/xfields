@@ -88,7 +88,7 @@ def replace_spacecharge_with_quasi_frozen(
     spch_elements = []
     for ii, ee in enumerate(line.elements):
         if isinstance(ee, SpaceChargeBiGaussian):
-            ee._move_to(_buffer=_buffer)
+            ee.move(_buffer=_buffer)
             ee.update_mean_x_on_track = update_mean_x_on_track
             ee.update_mean_y_on_track = update_mean_y_on_track
             ee.update_sigma_x_on_track = update_sigma_x_on_track

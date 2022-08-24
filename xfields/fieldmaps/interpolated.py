@@ -12,30 +12,7 @@ import xtrack as xt
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
 from ..general import _pkg_root
 
-class TriLinearInterpolatedFieldMapData(xo.Struct):
-    x_min = xo.Float64
-    y_min = xo.Float64
-    z_min = xo.Float64
-    nx = xo.Int64
-    ny = xo.Int64
-    nz = xo.Int64
-    dx = xo.Float64
-    dy = xo.Float64
-    dz = xo.Float64
-    rho = xo.Float64[:]
-    phi = xo.Float64[:]
-    dphi_dx = xo.Float64[:]
-    dphi_dy = xo.Float64[:]
-    dphi_dz = xo.Float64[:]
-
-TriLinearInterpolatedFieldMapData.extra_sources = [
-    _pkg_root.joinpath('headers/constants.h'),
-    _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
-    _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
-    _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
-    ]
-
-TriLinearInterpolatedFieldMapData.custom_kernels = {
+_TriLinearInterpolatedFielmap_kernels = {
     'central_diff': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nelem'),
@@ -52,7 +29,7 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
     'p2m_rectmesh3d_xparticles': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xp.Particles.XoStruct, pointer=False, name='particles'),
+            xo.Arg(xp.Particles, pointer=False, name='particles'),
             xo.Arg(xo.Float64, pointer=False, name='x0'),
             xo.Arg(xo.Float64, pointer=False, name='y0'),
             xo.Arg(xo.Float64, pointer=False, name='z0'),
@@ -91,7 +68,7 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
         ),
     'TriLinearInterpolatedFieldMap_interpolate_3d_map_vector': xo.Kernel(
         args=[
-            xo.Arg(TriLinearInterpolatedFieldMapData, pointer=False, name='fmap'),
+            xo.Arg(xo.ThisClass, pointer=False, name='fmap'),
             xo.Arg(xo.Int64,   pointer=False, name='n_points'),
             xo.Arg(xo.Float64, pointer=True,  name='x'),
             xo.Arg(xo.Float64, pointer=True,  name='y'),
@@ -105,11 +82,8 @@ TriLinearInterpolatedFieldMapData.custom_kernels = {
         ),
     }
 
-# I add undescores in front of the names so that I can define custom properties
-rename_trilinear = {ff.name:'_'+ff.name for ff
-                in TriLinearInterpolatedFieldMapData._fields}
-class TriLinearInterpolatedFieldMap(xo.dress(TriLinearInterpolatedFieldMapData,
-                                             rename=rename_trilinear)):
+
+class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
     """
     Builds a linear interpolator for a 3D field map. The map can be updated
@@ -161,10 +135,43 @@ class TriLinearInterpolatedFieldMap(xo.dress(TriLinearInterpolatedFieldMapData,
         (TriLinearInterpolatedFieldMap): Interpolator object.
     """
 
+    _xofields = {
+        'x_min': xo.Float64,
+        'y_min': xo.Float64,
+        'z_min': xo.Float64,
+        'nx': xo.Int64,
+        'ny': xo.Int64,
+        'nz': xo.Int64,
+        'dx': xo.Float64,
+        'dy': xo.Float64,
+        'dz': xo.Float64,
+        'rho': xo.Float64[:],
+        'phi': xo.Float64[:],
+        'dphi_dx': xo.Float64[:],
+        'dphi_dy': xo.Float64[:],
+        'dphi_dz': xo.Float64[:],
+    }
+
+    # I add undescores in front of the names so that I can define custom
+    # properties
+    _rename = {nn: '_'+nn for nn in _xofields}
+
+    _extra_c_sources = [
+        _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
+        ]
+
+    _depends_on = [xp.Particles]
+
+    _kernels = _TriLinearInterpolatedFielmap_kernels
+
     def __init__(self,
                  _context=None,
                  _buffer=None,
                  _offset=None,
+                 _xobject=None,
                  x_range=None, y_range=None, z_range=None,
                  nx=None, ny=None, nz=None,
                  dx=None, dy=None, dz=None,
@@ -176,6 +183,10 @@ class TriLinearInterpolatedFieldMap(xo.dress(TriLinearInterpolatedFieldMapData,
                  fftplan=None
                  ):
 
+        if _xobject is not None:
+            self.xoinitialize(_xobject=_xobject, _context=_context,
+                             _buffer=_buffer, _offset=_offset)
+            return
 
         self.updatable = updatable
         self.scale_coordinates_in_solver = scale_coordinates_in_solver
@@ -204,7 +215,7 @@ class TriLinearInterpolatedFieldMap(xo.dress(TriLinearInterpolatedFieldMapData,
                  dphi_dy = nelem,
                  dphi_dz = nelem)
 
-        self.compile_custom_kernels(only_if_needed=True)
+        self.compile_kernels(only_if_needed=True)
 
         if isinstance(solver, str):
             self.solver = self.generate_solver(solver, fftplan)
@@ -639,4 +650,5 @@ def _configure_grid(vname, v_grid, dv, v_range, nv):
             v_grid = np.linspace(v_range[0], v_range[1], nv)
 
     return v_grid
+
 
