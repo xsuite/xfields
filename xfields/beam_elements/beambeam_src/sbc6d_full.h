@@ -9,6 +9,10 @@
     #define dump_path "/Users/pkicsiny/phd/cern/xsuite/outputs/n34_xsuite" 
 #endif
 
+#if !defined(profiler_path)
+    #define profiler_path "/Users/pkicsiny/phd/cern/PySBC/outputs" 
+#endif
+
 //20/05/2022: changed Sig_13_ip to Sig_13_cp in dS_T computation to match beambeam3d
 
 /*gpufun*/
@@ -262,7 +266,10 @@ void MacropartToIP(double Sx_i, double Sy_i, double Sz_i, double px1, double py1
 
 /*gpufun*/
 void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
-	
+  //  clock_t tt;
+  //  double time_taken;
+  //  tt = clock(); 
+
     // conventions with old code
     // part0 = single macropart
     // el    = beambeam element (other beam)	
@@ -311,13 +318,19 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_force.txt");
-    //FILE *f1 = fopen(dump_file, "a");
+    FILE *f1 = fopen(dump_file, "a");
+    //char profiler_file[1024];
+    //sprintf(profiler_file, "%s/%s", profiler_path, "profiler_sbc6d_full.txt");
+    // FILE *f1 = fopen(profiler_file, "a");
+
 
     //start_per_particle_block (part0->part)
         // macropart state: 0=dead, 1=alive
         int64_t state       = LocalParticle_get_state(part);
         int64_t slice_id    = LocalParticle_get_slice_id(part);
         int64_t slice_id_bb = timestep - slice_id;  // need to use sigma of this slice
+        //printf("slice_id: %.2e\n", slice_id);
+        //printf("slice_id_bb: %.2e\n", slice_id_bb);
 
 /*
         if (record){
@@ -333,10 +346,13 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         }
 */
 
+//        tt = clock();
+
         // code is executed only if macropart is alive and interacts with a valid slice 
         if(slice_id_bb>=0 && slice_id_bb<n_slices){
             const double n_macroparts_bb = n_macroparts_bb_per_slice_arr[slice_id_bb];
             if(n_macroparts_bb > 2){
+                //tt = clock();
 
                 // get moments of colliding slice
                 const double n_bb         =      n_bb_per_slice_arr[slice_id_bb];
@@ -364,6 +380,11 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
         	double py    = LocalParticle_get_py(part);
         	double z     = LocalParticle_get_zeta(part);
         	double delta = LocalParticle_get_delta(part);
+
+//                tt = clock() - tt;
+//                time_taken = ((double)tt)/CLOCKS_PER_SEC;
+                //printf("load [s]: %.4e\n", time_taken);
+//                fprintf(f1, "%.4e\n", time_taken);
 
 /* 
                 printf("[sbc6d_full] [%d] at ip:\n", part->ipart);
@@ -406,13 +427,18 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                 // get thetas from the sigma matrix
         	double Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, costheta, sintheta;
         	double dS_Sig_11_boosted_cp_uncoupled, dS_Sig_33_boosted_cp_uncoupled, dS_costheta, dS_sintheta;
-    
+ 
+//                tt = clock();  
+
                 uncouple_xy_plane(var_x_bb, cov_x_xp_bb, cov_x_y_bb, cov_x_yp_bb, var_xp_bb, cov_xp_y_bb, cov_xp_yp_bb, var_y_bb, cov_y_yp_bb, var_yp_bb,
                 Sz_i, threshold_singular, 1,
                 &Sig_11_boosted_cp_uncoupled, &Sig_33_boosted_cp_uncoupled, &costheta, &sintheta,
                 &dS_Sig_11_boosted_cp_uncoupled, &dS_Sig_33_boosted_cp_uncoupled, &dS_costheta, &dS_sintheta);
 
-
+//                tt = clock() - tt;
+//                time_taken = ((double)tt)/CLOCKS_PER_SEC;
+                //printf("uncouple [s]: %.4e\n", time_taken);
+//                fprintf(f1, "%.4e\n", time_taken);
   
                 // Move to the uncoupled reference frame and the derivatives of the tranformation
         	const double Sx_i_uncoupled =  Sx_i*costheta + Sy_i*sintheta;
@@ -430,23 +456,26 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 	        printf("\ty=%.10e\n", Sy_i_uncoupled);
 */
 
-        	// Get transverse fields using soft Gausiian of beam 2 slice
-        	double Ex, Ey;
-        	get_Ex_Ey_gauss(Sx_i_uncoupled, Sy_i_uncoupled, 
-        	sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled),
-    		min_sigma_diff, &Ex, &Ey);
+                double Ex, Ey, Gx, Gy;
 
+ //               tt = clock();
+
+//                for(int l=0;l<100000;l++){
+        	  get_Ex_Ey_gauss(Sx_i_uncoupled, Sy_i_uncoupled, 
+        	  sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled),
+    		  min_sigma_diff, &Ex, &Ey);
+
+    	          compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled,
+                      sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff,
+                      Ex, Ey, &Gx, &Gy);
+  //              }
+    //            tt = clock() - tt;
+      //          time_taken = ((double)tt)/CLOCKS_PER_SEC;
+                //printf("forces [s]: %.4e\n", time_taken);
+        //        fprintf(f1, "%.4e\n", time_taken);
 /*  
   	        printf("\tEx=%.10e\n", Ex);
 	        printf("\tEy=%.10e\n", Ey);
-*/
-	
-    	        double Gx, Gy;
-    	        compute_Gx_Gy(Sx_i_uncoupled, Sy_i_uncoupled,
-                    sqrt(Sig_11_boosted_cp_uncoupled), sqrt(Sig_33_boosted_cp_uncoupled), min_sigma_diff,
-                    Ex, Ey, &Gx, &Gy);
-
-/*    	    
                 printf("\tGx=%.10e\n", Gx);
 	        printf("\tGy=%.10e\n", Gy);
 */
@@ -482,8 +511,9 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
                     energy_loss = synrad(part, Fr, dz);
                     //printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
                     //printf(     "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
-                    //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
-                   
+                    if(part->ipart==0){
+                      fprintf(f1, "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n", part->ipart, x, px, y, py, z, Fx_boosted, Fy_boosted, dz, n_bb);
+                    }
                     // BS rescales these, so load again before kick 
         	    delta = LocalParticle_get_delta(part);  
                 }
@@ -495,6 +525,8 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
 
                     delta = LocalParticle_get_delta(part);  
                 }
+
+//                tt = clock();
 
                 //printf("[sbc6d] [%d] before delta kick of slice %d\n", part->ipart, slice_id_bb);
                 //printf("\tdelta: %.20e\n", delta);               
@@ -525,12 +557,20 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
    	        printf("\tdelta_star=%.20e\n", delta);
  */
 
+//                tt = clock();
+
       	        LocalParticle_set_x(part, x);
     	        LocalParticle_set_px(part, px);
     	        LocalParticle_set_y(part, y);
     	        LocalParticle_set_py(part, py);
       	        LocalParticle_set_zeta(part, z);
     	        LocalParticle_update_delta(part, delta);
+
+
+//                tt = clock() - tt;
+//                time_taken = ((double)tt)/CLOCKS_PER_SEC;
+                //printf("set [s]: %.4e\n", time_taken);
+//                fprintf(f1, "%.4e\n", time_taken);
 	
 /*
          	LocalParticle_add_to_px(part, Fx_boosted);
@@ -539,12 +579,30 @@ void Sbc6D_full_track_local_particle(Sbc6D_fullData el, LocalParticle* part0){
          	LocalParticle_add_to_x(part, -Sz_i*Fx_boosted);
          	LocalParticle_add_to_y(part, -Sz_i*Fy_boosted);
 */
+             //   tt = clock() - tt;
+              //  time_taken = ((double)tt)/CLOCKS_PER_SEC;
+                //printf("pass [s]: %.4e\n", time_taken);
+              //  fprintf(f1, "%.4e\n", time_taken);
+
             }
+
+//            tt = clock() - tt;
+//            time_taken = ((double)tt)/CLOCKS_PER_SEC;
+            //printf("pass [s]: %.4e\n", time_taken);
+//            fprintf(f1, "%.4e\n", time_taken);
+
+
         }
     //end_per_particle_block
 
-    //fclose(f1);
+   // tt = clock();
 
+  //  tt = clock() - tt;
+  //  time_taken = ((double)tt)/CLOCKS_PER_SEC;
+    //printf("total [s]: %.4e\n", time_taken);
+  //  fprintf(f1, "%.4e\n", time_taken);
+
+    fclose(f1);
 
 }
 #endif

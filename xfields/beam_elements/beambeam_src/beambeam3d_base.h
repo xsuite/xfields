@@ -4,6 +4,9 @@
 #if !defined(mysign)
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
+#if !defined(profiler_path)
+    #define profiler_path "/Users/pkicsiny/phd/cern/PySBC/outputs" 
+#endif
 
 /*gpufun*/
 void Sigmas_propagate(
@@ -346,7 +349,11 @@ void BoostParameters_boost_coordinates_inv(
 /*gpufun*/
 void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData el, 
 		 	   LocalParticle* part0){
-	
+
+    clock_t tt;
+    double time_taken;
+   // tt = clock();
+ 
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DBaseData_get_q0(el);     
     const BoostParameters bpar = BeamBeamBiGaussian3DBaseData_getp_boost_parameters(el);
@@ -378,13 +385,26 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     /*gpuglmem*/ const double* sigma_slices_star_arr = 
 	    BeamBeamBiGaussian3DBaseData_getp1_sigma_slices_star(el, 0);
 
+    char profiler_file[1024];
+    sprintf(profiler_file, "%s/%s", profiler_path, "profiler_beambeam3d_base.txt");
+  //  FILE *f1 = fopen(profiler_file, "a");
+
     //start_per_particle_block (part0->part)
+
+
+        //tt = clock(); 
+
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
     	double y = LocalParticle_get_y(part);
     	double py = LocalParticle_get_py(part);
     	double zeta = LocalParticle_get_zeta(part);
     	double delta = LocalParticle_get_delta(part);
+
+//        tt = clock() - tt;
+//        time_taken = ((double)tt)/CLOCKS_PER_SEC;
+        //printf("load [s]: %.4e\n", time_taken);
+//        fprintf(f1, "%.4e\n", time_taken);
 
     	const double q0 = LocalParticle_get_q0(part); 
     	const double p0c = LocalParticle_get_p0c(part); // eV
@@ -408,11 +428,21 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     	printf("\tsigma_star=%.10e\n", sigma_star);
 	printf("\tdelta_star=%.20e\n", delta_star);
 */
+        //tt = clock() - tt;
+        //time_taken = ((double)tt)/CLOCKS_PER_SEC;
+        //printf("load [s]: %.10f\n", time_taken);
+
+        //tt = clock();
 
     	// Boost coordinates of the weak beam
 	BoostParameters_boost_coordinates(bpar,
     	    &x_star, &px_star, &y_star, &py_star,
     	    &sigma_star, &delta_star);
+
+        //tt = clock() - tt;
+        //time_taken = ((double)tt)/CLOCKS_PER_SEC;
+        //printf("boost [s]: %.10f\n", time_taken);
+
 /*
         printf("[beambeam3d] [%d] after boost:\n", part->ipart);
     	printf("\t_star=%.10e\n", x_star);
@@ -423,9 +453,13 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
 	printf("\tdelta_star=%.20e\n", delta_star);
 */
 
+//        tt = clock();
+
     	// Synchro beam
     	for (int i_slice=0; i_slice<N_slices; i_slice++)
     	{
+            //tt = clock();         
+
     	    const double sigma_slice_star = sigma_slices_star_arr[i_slice];
     	    const double x_slice_star = x_slices_star_arr[i_slice];
     	    const double y_slice_star = y_slices_star_arr[i_slice];
@@ -449,12 +483,19 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     	    double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
     	    double dS_Sig_11_hat_star, dS_Sig_33_hat_star, dS_costheta, dS_sintheta;
 
+//            tt = clock();
+
     	    // Get strong beam shape at the CP
 	    Sigmas_propagate(Sigmas_0_star, S, threshold_singular, 1,
     	        &Sig_11_hat_star, &Sig_33_hat_star,
     	        &costheta, &sintheta,
     	        &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
     	        &dS_costheta, &dS_sintheta);
+
+//            tt = clock() - tt;
+//            time_taken = ((double)tt)/CLOCKS_PER_SEC;
+            //printf("uncouple [s]: %.4e\n", time_taken);
+//            fprintf(f1, "%.4e\n", time_taken);
 
     	    //printf("Sig_11_hat_star=%.10e\n",Sig_11_hat_star);
 	    //printf("Sig_33_hat_star=%.10e\n",Sig_33_hat_star);
@@ -477,24 +518,31 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     	    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
     	    const double dS_y_bar_hat_star = -x_bar_star*dS_sintheta +y_bar_star*dS_costheta;
 
-    	    // Get transverse fieds
-    	    double Ex, Ey;
-    	    get_Ex_Ey_gauss(x_bar_hat_star, y_bar_hat_star,
+    	    double Ex, Ey, Gx, Gy;
+
+//            tt = clock();            
+
+ //           for(int l=0;l<100000;l++){
+      	      get_Ex_Ey_gauss(x_bar_hat_star, y_bar_hat_star,
     	        sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
 		min_sigma_diff,
     	        &Ex, &Ey);
 
-	    //printf("\tEx=%.10e\n", Ex);
-	    //printf("\tEy=%.10e\n", Ey);
-	
-	    //compute Gs
-	    double Gx, Gy;
-	    compute_Gx_Gy(x_bar_hat_star, y_bar_hat_star,
+	      compute_Gx_Gy(x_bar_hat_star, y_bar_hat_star,
 			  sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
                           min_sigma_diff, Ex, Ey, &Gx, &Gy);
-	    
-	    //printf("\tGx=%.10e\n", Gx);
-	    //printf("\tGy=%.10e\n", Gy);
+   //         }
+     //       tt = clock() - tt;
+       //     time_taken = ((double)tt)/CLOCKS_PER_SEC;
+            //printf("forces [s]: %.4e\n", time_taken);
+         //   fprintf(f1, "%.4e\n", time_taken); 
+
+/*
+	    printf("\tEx=%.10e\n", Ex);
+	    printf("\tEy=%.10e\n", Ey);	
+	    printf("\tGx=%.10e\n", Gx);
+	    printf("\tGy=%.10e\n", Gy);
+*/
 
     	    // Compute kicks
     	    double Fx_hat_star = Ksl*Ex;
@@ -531,12 +579,29 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     	    y_star = y_star - S*Fy_star;
     	    py_star = py_star + Fy_star;
 
+            //tt = clock() - tt;
+            //time_taken = ((double)tt)/CLOCKS_PER_SEC;
+            //printf("pass [s]: %.4e\n", time_taken);
+            //fprintf(f1, "%.4e\n", time_taken);
+
+
     	}
+
+//        tt = clock() - tt;
+//        time_taken = ((double)tt)/CLOCKS_PER_SEC;
+        //printf("kick [s]: %.10f\n", time_taken);
+//        fprintf(f1, "%.4e\n", time_taken);
+
+        //tt = clock();
 
     	// Inverse boost on the coordinates of the weak beam
 	BoostParameters_boost_coordinates_inv(bpar,
     	    &x_star, &px_star, &y_star, &py_star,
     	    &sigma_star, &delta_star);
+
+        //tt = clock() - tt;
+        //time_taken = ((double)tt)/CLOCKS_PER_SEC;
+        //printf("boostinv [s]: %.10f\n", time_taken);
 
 	//printf("delta_ret=%.10e\n", delta_star);
 
@@ -548,6 +613,7 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     	zeta =  sigma_star + sigma_CO         - Dsigma_sub;
     	delta = delta_star + delta_CO         - Ddelta_sub;
 
+ //       tt = clock();
 
     	LocalParticle_set_x(part, x);
     	LocalParticle_set_px(part, px);
@@ -555,9 +621,22 @@ void BeamBeamBiGaussian3DBase_track_local_particle(BeamBeamBiGaussian3DBaseData 
     	LocalParticle_set_py(part, py);
     	LocalParticle_set_zeta(part, zeta);
     	LocalParticle_update_delta(part, delta);
-	
+
+//        tt = clock() - tt;
+//        time_taken = ((double)tt)/CLOCKS_PER_SEC;
+        //printf("set [s]: %.4e\n", time_taken);
+//        fprintf(f1, "%.4e\n", time_taken);
+
     //end_per_particle_block
 
+//    tt = clock();
+
+//    tt = clock() - tt;
+//    time_taken = ((double)tt)/CLOCKS_PER_SEC;
+    //printf("total [s]: %.4e\n", time_taken);
+//    fprintf(f1, "%.4e\n", time_taken);
+
+//    fclose(f1);
 }
 
 

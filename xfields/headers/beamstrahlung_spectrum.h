@@ -70,9 +70,9 @@ int synrad_0(LocalParticle *part,
    
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_synrad0.txt");
-    //FILE *f1 = fopen(dump_file, "a");
-    //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e\n", c1, xcrit, (*ecrit), p0, g);
-    //fclose(f1);
+    FILE *f1 = fopen(dump_file, "a");
+    fprintf(f1, "%.6e %.6e %.6e %.6e\n", xcrit, (*ecrit), p0, g);
+    fclose(f1);
 
     // region C (emit photon) if p<p0*g, region B (no photon) if p>=p0*g, p0=1 bc. of normalization above
     if (p<g){
@@ -134,7 +134,7 @@ double synrad(LocalParticle *part,
 
     char dump_file[1024];
     sprintf(dump_file, "%s/%s", dump_path, "xsuite_photons.txt");
-    //FILE *f1 = fopen(dump_file, "a");
+    FILE *f1 = fopen(dump_file, "a");
     //FILE *f2 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_rho_inv.txt", "a");
     //FILE *f3 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_tmp.txt", "a");
     //FILE *f4 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_fr.txt", "a");
@@ -160,7 +160,7 @@ double synrad(LocalParticle *part,
         if (synrad_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
 
-            //fprintf(f1, "%d %d %.10e %.10e %.10e %.10e %.10e %.10e %d\n", part->ipart, j, e_photon*1e9, ecrit*1e9, energy, rho_inv, dz, initial_energy, max_photons);  // save photon ID and energy, all in [ev]
+            fprintf(f1, "%d %d %.6e %.6e %.6e %.6e %.6e %.6e %d\n", part->ipart, j, e_photon*1e9, ecrit*1e9, energy, rho_inv, dz, initial_energy, max_photons);  // save photon ID and energy, all in [ev]
 
             // update bending radius, macropart energy and gamma
             rho_inv *= energy/(energy - e_photon*1e9);
@@ -192,7 +192,7 @@ double synrad(LocalParticle *part,
     double energy_loss = energy-initial_energy;
     //fprintf(f7, "%.10e\n", energy_loss);
 
-    //fclose(f1);
+    fclose(f1);
     //fclose(f2);
     //fclose(f3);
     //fclose(f4);

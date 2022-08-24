@@ -6,6 +6,12 @@
 #ifndef XFIEDLS_BIGUASSIIAN_H
 #define XFIEDLS_BIGUASSIIAN_H
 
+
+#if !defined(profiler_path)
+    #define profiler_path "/Users/pkicsiny/phd/cern/PySBC/outputs" 
+#endif
+
+
 // for quick test with gcc
 #include "constants.h" //only_for_context none
 #include "complex_error_function.h" //only_for_context none
@@ -52,6 +58,9 @@ void get_transv_field_gauss_ellip(
   double w_etaBE_re, w_etaBE_im, w_zetaBE_re, w_zetaBE_im;
   double expBE;
 
+  clock_t tt;
+  double time_taken;
+
   if (sigmax>sigmay){
     S = sqrt(2.*(sigmax*sigmax-sigmay*sigmay));
     factBE = 1./(2.*EPSILON_0*SQRT_PI*S);
@@ -62,10 +71,34 @@ void get_transv_field_gauss_ellip(
     zetaBE_re = abx;
     zetaBE_im = aby;
 
+
+//    char profiler_file_first[1024];
+//    sprintf(profiler_file_first, "%s/%s", profiler_path, "profiler_sbc6d_full_first.txt");
+//     char profiler_file_second[1024];
+//    sprintf(profiler_file_second, "%s/%s", profiler_path, "profiler_sbc6d_full_second.txt");
+//    FILE *f1 = fopen(profiler_file_first, "a");
+//    FILE *f2 = fopen(profiler_file_second, "a");
+
+//    tt = clock();
+//    for(int l=0;l<100000;l++){
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+        cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+//    }
+//    tt = clock() - tt;
+//    time_taken = ((double)tt)/CLOCKS_PER_SEC;
+//    fprintf(f1, "%.4e\n", time_taken);
+
+//    tt = clock();
+//    for(int l=0;l<100000;l++){
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+        cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+//    }
+//    tt = clock() - tt;
+//    time_taken = ((double)tt)/CLOCKS_PER_SEC;
+//    fprintf(f2, "%.4e\n", time_taken);
+
+//    fclose(f1);
+//    fclose(f2);
 
     expBE = exp(-abx*abx/(2*sigmax*sigmax)-aby*aby/(2*sigmay*sigmay));
 

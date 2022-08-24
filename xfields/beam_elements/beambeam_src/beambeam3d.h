@@ -10,6 +10,10 @@
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
 
+#if !defined(profiler_path)
+    #define profiler_path "/Users/pkicsiny/phd/cern/PySBC/outputs" 
+#endif
+
 /*gpufun*/
 void Sigmas_propagate(
 	Sigmas sigmas_0,
@@ -392,7 +396,6 @@ void BoostParameters_boost_coordinates_inv(
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, 
 		 	   LocalParticle* part0){
-
     // Get data from memory
     const double do_beamstrahlung  = BeamBeamBiGaussian3DData_get_do_beamstrahlung(el);   
     const double q0_bb  = BeamBeamBiGaussian3DData_get_q0(el);     
@@ -428,6 +431,14 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	    BeamBeamBiGaussian3DData_getp1_sigma_slices_star(el, 0);
 
     double energy_loss;
+
+    //char dump_file[1024];
+    //sprintf(dump_file, "%s/%s", dump_path, "xsuite_force.txt");
+    //FILE *f1 = fopen(dump_file, "a");
+    char profiler_file[1024];
+    sprintf(profiler_file, "%s/%s", profiler_path, "xsuite_beambeam3d_profiler.txt");
+    //FILE *f1 = fopen(profiler_file, "a");
+
     //start_per_particle_block (part0->part)
     	double x = LocalParticle_get_x(part);
     	double px = LocalParticle_get_px(part);
@@ -461,8 +472,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 */
 
     	// Boost coordinates of the weak beam
-	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &delta_star);
-    	LocalParticle_update_delta(part, delta_star);  // this updates energy variables, which are used in beamstrahlung generation
+	BoostParameters_boost_coordinates(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &pzeta_star);
+    	LocalParticle_update_pzeta(part, pzeta_star);  // this updates energy variables, which are used in beamstrahlung generation
 
 /*
         printf("[beambeam3d] [%d] after boost:\n", part->ipart);
@@ -479,7 +490,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     	{
 
             // new: reload boosted delta after each slice kick to compare with sbc6d; these are boosted
-       	    delta_star = LocalParticle_get_delta(part);
+       	    pzeta_star = LocalParticle_get_pzeta(part);
 
 /*
             printf("[beambeam3d] [%d] at ip:\n", part->ipart);
@@ -563,7 +574,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	    compute_Gx_Gy(x_bar_hat_star, y_bar_hat_star,
 			  sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), 
                           min_sigma_diff, Ex, Ey, &Gx, &Gy);
-	    
+	   
 	    //printf("\tGx=%.10e\n", Gx);
 	    //printf("\tGy=%.10e\n", Gy);
 
@@ -602,21 +613,21 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                 //printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
 
                 // BS rescales these, so load again before kick 
-                delta_star = LocalParticle_get_delta(part);  
+                pzeta_star = LocalParticle_get_pzeta(part);  
             }
             else if(do_beamstrahlung==2){
                double var_z_bb = 0.00345;
                energy_loss = synrad_avg(part, N_part_per_slice_arr[i_slice], sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
                //printf("n_bb: %.20e, sigma_11: %.20e, sigma_33: %.20e, energy_loss: %.20e\n", N_part_per_slice_arr[i_slice], sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), energy_loss);
  
-               delta_star = LocalParticle_get_delta(part);  
+               pzeta_star = LocalParticle_get_pzeta(part);  
            }
  
     	    // Apply the kicks (Hirata's synchro-beam)
 
             //printf("[beambeam3d] [%d] before delta kick of slice %d\n", part->ipart, i_slice);
             //printf("\tdelta_star=%.20e\n", delta_star);  
-    	   delta_star = delta_star + Fz_star+0.5*(
+    	   pzeta_star = pzeta_star + Fz_star+0.5*(
     	                Fx_star*(px_star+0.5*Fx_star)+
     	                Fy_star*(py_star+0.5*Fy_star));
 
@@ -630,7 +641,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             printf("\tpy_star=%.20e\n", py_star);
 */ 
 
-	        x_star = x_star - S*Fx_star;
+	    x_star = x_star - S*Fx_star;
     	    px_star = px_star + Fx_star;
     	    y_star = y_star - S*Fy_star;
     	    py_star = py_star + Fy_star;
@@ -645,16 +656,13 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
    	    printf("\tdelta_star=%.20e\n", delta_star);
 */            
             // new: update boosted delta after each ss interaction, like in sbc6d_full; this updates energy vars, like rpp
-            LocalParticle_update_delta(part, delta_star);
-
-
-
+            LocalParticle_update_pzeta(part, pzeta_star);
 
     	}
 
     	// Inverse boost on the coordinates of the weak beam
 
-	BoostParameters_boost_coordinates_inv(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &delta_star);
+	BoostParameters_boost_coordinates_inv(bpar, &x_star, &px_star, &y_star, &py_star, &sigma_star, &pzeta_star);
 
 
 	//printf("pzeta_ret=%.10e\n", pzeta_star);
@@ -687,6 +695,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
 	
     //end_per_particle_block
 
+    //fclose(f1);
 }
 
 
