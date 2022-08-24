@@ -4,8 +4,5 @@
 # ########################################### #
 
 from .interpolated import TriLinearInterpolatedFieldMap
-from .interpolated import TriLinearInterpolatedFieldMapData
 from .tricubicinterpolated import TriCubicInterpolatedFieldMap
-from .tricubicinterpolated import TriCubicInterpolatedFieldMapData
 from .bigaussian import BiGaussianFieldMap, mean_and_std
-from .bigaussian import BiGaussianFieldMapData

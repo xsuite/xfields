@@ -13,8 +13,9 @@ from .fieldmaps import BiGaussianFieldMap, mean_and_std
 from .solvers.fftsolvers import FFTSolver3D
 
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
-from .beam_elements.beambeam import BeamBeamBiGaussian2D
+from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
+
 from .beam_elements.beambeam3d_base import BeamBeamBiGaussian3DBase
 from .beam_elements.boost3d import Boost3D
 from .beam_elements.boostinv3d import BoostInv3D
@@ -24,6 +25,10 @@ from .beam_elements.cptoip3d import CPToIP3D
 from .beam_elements.strongstrong3d import StrongStrong3D
 from .beam_elements.sbc6d import Sbc6D
 from .beam_elements.sbc6d_full import Sbc6D_full
+
+from .beam_elements.beambeam3d import TempSlicer
+from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
+
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
 

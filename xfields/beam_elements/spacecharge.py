@@ -9,10 +9,8 @@ from scipy.constants import c as clight
 
 from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
-from ..longitudinal_profiles import LongitudinalProfileQGaussianData
 from ..longitudinal_profiles import LongitudinalProfileQGaussian
-from ..fieldmaps import BiGaussianFieldMapData
-from ..fieldmaps import TriLinearInterpolatedFieldMapData
+from ..fieldmaps import BiGaussianFieldMap
 from ..general import _pkg_root
 
 import xobjects as xo
@@ -75,9 +73,15 @@ class SpaceCharge3D(xt.BeamElement):
         (SpaceCharge3D): A space-charge 3D beam element.
     """
     _xofields = {
-        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMapData),
+        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap._XoStruct),
         'length': xo.Float64,
         }
+
+    _extra_c_sources = [
+        _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
+        _pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'),
+    ]
 
     def copy(self, _context=None, _buffer=None, _offset=None):
         if _buffer is not self._buffer:
@@ -172,22 +176,27 @@ class SpaceCharge3D(xt.BeamElement):
         super().track(particles)
 
 
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'))
 
-SpaceCharge3D.XoStruct.extra_sources = srcs
 
 
 
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {
-        'longitudinal_profile': LongitudinalProfileQGaussianData, # TODO: Will become unionref
-        'fieldmap': BiGaussianFieldMapData,
+        'longitudinal_profile': LongitudinalProfileQGaussian, # TODO: Will become unionref
+        'fieldmap': BiGaussianFieldMap,
         'length': xo.Float64,
         }
+
+    _extra_c_sources = [
+        _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('headers/sincos.h'),
+        _pkg_root.joinpath('headers/power_n.h'),
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'),
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
+        _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'),
+        _pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'),
+    ]
 
     def to_dict(self):
         dct = super().to_dict()
@@ -343,13 +352,4 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         self.fieldmap.sigma_y = value
 
 
-srcs = []
-srcs.append(_pkg_root.joinpath('headers/constants.h'))
-srcs.append(_pkg_root.joinpath('headers/sincos.h'))
-srcs.append(_pkg_root.joinpath('headers/power_n.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/complex_error_function.h'))
-srcs.append(_pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'))
-srcs.append(_pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'))
-srcs.append(_pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'))
 
-SpaceChargeBiGaussian.XoStruct.extra_sources = srcs
