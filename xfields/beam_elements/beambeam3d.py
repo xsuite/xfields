@@ -99,7 +99,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     }
 
     def __init__(self,
-                    phi=None, alpha=None, other_beam_q0=None,
+                    phi=None, alpha=None, other_beam_q0=None, particles_per_macroparticle = None,
 
                     slices_other_beam_num_particles=None,
 
@@ -180,9 +180,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.iscollective = True
             self.track = self._track_collective # switch to specific track method
 
-            assert slices_other_beam_zeta_center is not None
-            assert not np.isscalar(slices_other_beam_num_particles)
+            #assert slices_other_beam_zeta_center is not None
+            #assert not np.isscalar(slices_other_beam_num_particles)
 
+            if slices_other_beam_zeta_center is None: 
+                slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers
             # Some dummy values just to initialize the object
             if slices_other_beam_Sigma_11 is None: slices_other_beam_Sigma_11 = 1.
             if slices_other_beam_Sigma_12 is None: slices_other_beam_Sigma_12 = 1.
@@ -195,7 +197,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                             slices_other_beam_zeta_center)
 
             self.moments = None
-            self.partner_moments = None
+            self.partner_moments = np.zeros(self.config_for_update.slicer.num_slices*(1+6+10),dtype=float)
+
+            assert particles_per_macroparticle is not None
+            self.particles_per_macroparticle = particles_per_macroparticle
 
 
         if old_interface is not None:
@@ -421,23 +426,23 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # reference frame transformation as in https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
         self.slices_other_beam_num_particles = self._arr2ctx(self.partner_moments[:self.num_slices_other_beam])
 
-        self.slices_other_beam_x_center = self._arr2ctx(self.partner_moments[self.num_slices_other_beam:2*self.num_slices_other_beam]) * (-1.0)
-        self.slices_other_beam_px_center = self._arr2ctx(self.partner_moments[2*self.num_slices_other_beam:3*self.num_slices_other_beam])
-        self.slices_other_beam_y_center = self._arr2ctx(self.partner_moments[3*self.num_slices_other_beam:4*self.num_slices_other_beam])
-        self.slices_other_beam_py_center = self._arr2ctx(self.partner_moments[4*self.num_slices_other_beam:5*self.num_slices_other_beam]) * (-1.0)
-        self.slices_other_beam_zeta_center = self._arr2ctx(self.partner_moments[5*self.num_slices_other_beam:6*self.num_slices_other_beam])
-        self.slices_other_beam_pzeta_center = self._arr2ctx(self.partner_moments[6*self.num_slices_other_beam:7*self.num_slices_other_beam])
+        self.slices_other_beam_x_center_star = self._arr2ctx(self.partner_moments[self.num_slices_other_beam:2*self.num_slices_other_beam]) * (-1.0)
+        self.slices_other_beam_px_center_star = self._arr2ctx(self.partner_moments[2*self.num_slices_other_beam:3*self.num_slices_other_beam])
+        self.slices_other_beam_y_center_star = self._arr2ctx(self.partner_moments[3*self.num_slices_other_beam:4*self.num_slices_other_beam])
+        self.slices_other_beam_py_center_star = self._arr2ctx(self.partner_moments[4*self.num_slices_other_beam:5*self.num_slices_other_beam]) * (-1.0)
+        self.slices_other_beam_zeta_center_star = self._arr2ctx(self.partner_moments[5*self.num_slices_other_beam:6*self.num_slices_other_beam])
+        self.slices_other_beam_pzeta_center_star = self._arr2ctx(self.partner_moments[6*self.num_slices_other_beam:7*self.num_slices_other_beam])
 
-        self.slices_other_beam_Sigma_11 = self._arr2ctx(self.partner_moments[7*self.num_slices_other_beam:8*self.num_slices_other_beam])
-        self.slices_other_beam_Sigma_12 = self._arr2ctx(self.partner_moments[8*self.num_slices_other_beam:9*self.num_slices_other_beam]) * (-1.0)
-        self.slices_other_beam_Sigma_13 = self._arr2ctx(self.partner_moments[9*self.num_slices_other_beam:10*self.num_slices_other_beam]) * (-1.0)
-        self.slices_other_beam_Sigma_14 = self._arr2ctx(self.partner_moments[10*self.num_slices_other_beam:11*self.num_slices_other_beam])
-        self.slices_other_beam_Sigma_22 = self._arr2ctx(self.partner_moments[11*self.num_slices_other_beam:12*self.num_slices_other_beam])
-        self.slices_other_beam_Sigma_23 = self._arr2ctx(self.partner_moments[12*self.num_slices_other_beam:13*self.num_slices_other_beam])
-        self.slices_other_beam_Sigma_24 = self._arr2ctx(self.partner_moments[13*self.num_slices_other_beam:14*self.num_slices_other_beam]) * (-1.0)
-        self.slices_other_beam_Sigma_33 = self._arr2ctx(self.partner_moments[14*self.num_slices_other_beam:15*self.num_slices_other_beam])
-        self.slices_other_beam_Sigma_34 = self._arr2ctx(self.partner_moments[15*self.num_slices_other_beam:16*self.num_slices_other_beam]) * (-1.0)
-        self.slices_other_beam_Sigma_44 = self._arr2ctx(self.partner_moments[16*self.num_slices_other_beam:17*self.num_slices_other_beam])
+        self.slices_other_beam_Sigma_11_star = self._arr2ctx(self.partner_moments[7*self.num_slices_other_beam:8*self.num_slices_other_beam])
+        self.slices_other_beam_Sigma_12_star = self._arr2ctx(self.partner_moments[8*self.num_slices_other_beam:9*self.num_slices_other_beam]) * (-1.0)
+        self.slices_other_beam_Sigma_13_star = self._arr2ctx(self.partner_moments[9*self.num_slices_other_beam:10*self.num_slices_other_beam]) * (-1.0)
+        self.slices_other_beam_Sigma_14_star = self._arr2ctx(self.partner_moments[10*self.num_slices_other_beam:11*self.num_slices_other_beam])
+        self.slices_other_beam_Sigma_22_star = self._arr2ctx(self.partner_moments[11*self.num_slices_other_beam:12*self.num_slices_other_beam])
+        self.slices_other_beam_Sigma_23_star = self._arr2ctx(self.partner_moments[12*self.num_slices_other_beam:13*self.num_slices_other_beam])
+        self.slices_other_beam_Sigma_24_star = self._arr2ctx(self.partner_moments[13*self.num_slices_other_beam:14*self.num_slices_other_beam]) * (-1.0)
+        self.slices_other_beam_Sigma_33_star = self._arr2ctx(self.partner_moments[14*self.num_slices_other_beam:15*self.num_slices_other_beam])
+        self.slices_other_beam_Sigma_34_star = self._arr2ctx(self.partner_moments[15*self.num_slices_other_beam:16*self.num_slices_other_beam]) * (-1.0)
+        self.slices_other_beam_Sigma_44_star = self._arr2ctx(self.partner_moments[16*self.num_slices_other_beam:17*self.num_slices_other_beam])
 
     def _track_collective(self, particles, _force_suspend=False):
 
@@ -464,7 +469,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
             # Check that the element is not occupied by a bunch
             assert self.config_for_update._i_step == 0
-            assert self.config_for_update._particles_slice_index is None
             assert self.config_for_update._working_on_bunch is None
 
             self.config_for_update._working_on_bunch = particles.name
@@ -515,13 +519,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                                      internal_tag=self.config_for_update._i_step):
                     # Compute moments
                     self.config_for_update.slicer.assign_slices(particles)
-                    self.moments = self.config_for_update.slicer.compute_slice_moments(particles,update_assigned_slices=False)
+                    self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
+                    self.moments[:self.config_for_update.slicer.num_slices] *= self.particles_per_macroparticle
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
                                                      particles.name,
                                                      self.config_for_update.partner_particles_name,
                                                      particles.at_turn[0],
-                                                     internal_tag=self.config_for_update._i_step):
+                                                     internal_tag=self.config_for_update._i_step)
 
                 if self.config_for_update.pipeline_manager.is_ready_to_recieve(self.config_for_update.element_name,
                                         self.config_for_update.partner_particles_name,
@@ -1208,12 +1213,13 @@ class TempSlicer:
 
     def get_slice_indices(self, particles):
         indices = np.digitize(particles.zeta, self.bin_edges, right=True)
+        indices -= 1 # In digitize, 0 means before the first edge
         indices[particles.state <=0 ] = -1
 
         return np.array(indices, dtype=np.int64)
 
     def assign_slices(self, particles):
-        particles.slice = get_slice_indices(particles)
+        particles.slice = self.get_slice_indices(particles)
 
     def compute_moments(self,particles,update_assigned_slices=True):
         if update_assigned_slices:
@@ -1228,22 +1234,22 @@ class TempSlicer:
             slice_moments[3*self.num_slices+i_slice] = float(particles.y[mask].sum())/slice_moments[i_slice]     # <y>
             slice_moments[4*self.num_slices+i_slice] = float(particles.py[mask].sum())/slice_moments[i_slice]    # <py>
             slice_moments[5*self.num_slices+i_slice] = float(particles.zeta[mask].sum())/slice_moments[i_slice]  # <z>
-            slice_moments[6*self.num_slices+i_slice] = float(particles.pzeta[mask].sum())/slice_moments[i_slice] # <pz>
+            slice_moments[6*self.num_slices+i_slice] = float(particles.delta[mask].sum())/slice_moments[i_slice] # <pz> # TODO mhy pzeta doesn't work?
 
             x_diff = particles.x[mask]-slice_moments[self.num_slices+i_slice]
             px_diff = particles.px[mask]-slice_moments[2*self.num_slices+i_slice]
-            y_diff = particles.y[mask]-slice_momenta_1[3*self.num_slices+i_slice]
-            py_diff = particles.py[mask]-slice_momenta_1[4*self.num_slices+i_slice]
-            slice_moments[7*self.num_slices+i_slice] = float(x_diff**2.sum())/slice_moments[i_slice]             # Sigma_11
+            y_diff = particles.y[mask]-slice_moments[3*self.num_slices+i_slice]
+            py_diff = particles.py[mask]-slice_moments[4*self.num_slices+i_slice]
+            slice_moments[7*self.num_slices+i_slice] = float((x_diff**2).sum())/slice_moments[i_slice]             # Sigma_11
             slice_moments[8*self.num_slices+i_slice] = float((x_diff*px_diff).sum())/slice_moments[i_slice]      # Sigma_12
             slice_moments[9*self.num_slices+i_slice] = float((x_diff*y_diff).sum())/slice_moments[i_slice]       # Sigma_13
             slice_moments[10*self.num_slices+i_slice] = float((x_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_14
-            slice_moments[11*self.num_slices+i_slice] = float(px_diff**2.sum())/slice_moments[i_slice]           # Sigma_22
+            slice_moments[11*self.num_slices+i_slice] = float((px_diff**2).sum())/slice_moments[i_slice]           # Sigma_22
             slice_moments[12*self.num_slices+i_slice] = float((px_diff*y_diff).sum())/slice_moments[i_slice]     # Sigma_23
             slice_moments[13*self.num_slices+i_slice] = float((px_diff*py_diff).sum())/slice_moments[i_slice]    # Sigma_24
-            slice_moments[14*self.num_slices+i_slice] = float(y_diff**2.sum())/slice_moments[i_slice]            # Sigma_33
+            slice_moments[14*self.num_slices+i_slice] = float((y_diff**2).sum())/slice_moments[i_slice]            # Sigma_33
             slice_moments[15*self.num_slices+i_slice] = float((y_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_34
-            slice_moments[16*self.num_slices+i_slice] = float(py_diff**2.sum())/slice_moments[i_slice]           # Sigma_44
+            slice_moments[16*self.num_slices+i_slice] = float((py_diff**2).sum())/slice_moments[i_slice]           # Sigma_44
         return slice_moments
 
 class ConfigForUpdateBeamBeamBiGaussian3D:

@@ -81,9 +81,8 @@ slicer = xf.TempSlicer(bin_edges = [-10, -5, 0, 5, 10])
 config_for_update=xf.ConfigForUpdateBeamBeamBiGaussian3D(
    pipeline_manager=None,
    element_name=None,
-   partner_element_name=None,
+   partner_particles_name = '',
    slicer=slicer,
-   collision_schedule={'beam1_bunch1': 'beam2_bunch1',},
    update_every=None # Never updates (test in weakstrong mode)
    )
 
@@ -168,7 +167,7 @@ dtk_part = dtk.TestParticles(
         delta = 2e-4)
 
 part = xp.Particles(_context=context, **dtk_part.to_dict())
-part.name = 'beam1_bunch1'
+part.init_pipeline(name='B1b1')
 
 ret = bb.track(part, _force_suspend=True)
 assert ret.on_hold
