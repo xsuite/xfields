@@ -11,26 +11,16 @@ from xfields.general import _pkg_root
 
 
 def test_cerrf_q1():
-
     ctx = xo.ContextCpu(omp_num_threads=0)
 
-    xx = np.logspace(-8, +8, 51, dtype=np.float64)
-    yy = np.logspace(-8, +8, 51, dtype=np.float64)
+    xx = np.concatenate(([0], np.logspace(-8, +8, 51))).astype(np.float64)
+    yy = np.concatenate(([0], np.logspace(-8, +8, 51))).astype(np.float64)
 
     n_re = len(xx)
     n_im = len(yy)
     n_z = len(yy) * len(xx)
 
-    re_absc = np.arange(n_z, dtype=np.float64).reshape(n_im, n_re)
-    im_absc = np.arange(n_z, dtype=np.float64).reshape(n_im, n_re)
-    wz_cmp_re = np.arange(n_z, dtype=np.float64).reshape(n_im, n_re)
-    wz_cmp_im = np.arange(n_z, dtype=np.float64).reshape(n_im, n_re)
-
-    for jj, y in enumerate(yy):
-        re_absc[jj, :] = xx[:]
-
-    for ii, x in enumerate(xx):
-        im_absc[:, ii] = yy[:]
+    re_absc, im_absc = np.meshgrid(xx, yy)
 
     # Using scipy's wofz implemenation of the Faddeeva method. This is
     # (at the time of this writing in 2021) based on the MIT ab-initio
@@ -39,13 +29,7 @@ def test_cerrf_q1():
     # 1e-13 across the whole of C and is thus suitable to check the accuracy
     # of the cerrf_q1 implementation which has a target accuracy of 10^{-10}
     # in the *absolute* error.
-
-    for jj, y in enumerate(yy):
-        for ii, x in enumerate(xx):
-            z = x + 1.0j * y
-            wz = wofz_scipy(z)
-            wz_cmp_re[jj, ii] = wz.real
-            wz_cmp_im[jj, ii] = wz.imag
+    wz_cmp = wofz_scipy(re_absc + 1.0j * im_absc)
 
     src_code = """
     /*gpukern*/ void eval_cerrf_q1(
@@ -55,9 +39,7 @@ def test_cerrf_q1():
         /*gpuglmem*/ double* /*restrict*/ wz_re,
         /*gpuglmem*/ double* /*restrict*/ wz_im )
     {
-        int tid = 0;
-        for( ; tid < n ; ++tid ) { //autovectorized
-
+        for(int tid = 0; ; tid < n ; ++tid ) { //vectorize_over tid n
             if( tid < n )
             {
                 double const x = re[ tid ];
@@ -69,7 +51,7 @@ def test_cerrf_q1():
                 wz_re[ tid ] = wz_x;
                 wz_im[ tid ] = wz_y;
             }
-        }
+        } //end_vectorize
     }
     """
 
@@ -112,8 +94,8 @@ def test_cerrf_q1():
     wz_re = ctx.nparray_from_context_array(wz_re_dev).reshape(n_im, n_re)
     wz_im = ctx.nparray_from_context_array(wz_im_dev).reshape(n_im, n_re)
 
-    d_abs_re = np.fabs(wz_re - wz_cmp_re)
-    d_abs_im = np.fabs(wz_im - wz_cmp_im)
+    d_abs_re = np.fabs(wz_re - wz_cmp.real)
+    d_abs_im = np.fabs(wz_im - wz_cmp.imag)
 
     # NOTE: target accuracy of cerrf_q1 is 0.5e-10 but the algorithm does
     #       not converge to within target accuracy for all arguments in C,
@@ -173,8 +155,7 @@ def test_cerrf_all_quadrants():
         /*gpuglmem*/ double* /*restrict*/ wz_re,
         /*gpuglmem*/ double* /*restrict*/ wz_im )
     {
-        int tid = 0;
-        for( ; tid < n ; ++tid ) { //autovectorized
+        for(int tid = 0 ; tid < n ; ++tid ) { //vectorize_over tid n
 
             if( tid < n )
             {
@@ -187,7 +168,7 @@ def test_cerrf_all_quadrants():
                 wz_re[ tid ] = wz_x;
                 wz_im[ tid ] = wz_y;
             }
-        }
+        }//end_vectorize
     }
     """
 
