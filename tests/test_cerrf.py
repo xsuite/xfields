@@ -111,8 +111,7 @@ def test_cerrf_all_quadrants():
     y0 = 4.29
     num_args = 10000
 
-    if xo.ContextCpu not in available:
-        return
+    assert xo.ContextCpu in available
 
     ctx = xo.ContextCpu(omp_num_threads=0)
 
