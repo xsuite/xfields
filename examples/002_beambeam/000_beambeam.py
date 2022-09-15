@@ -102,10 +102,10 @@ bbeam_b1 = BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b2,
             q0 = particles_b2.q0,
             beta0=particles_b2_gen.beta0[0],
-            sigma_x=None, # needs to be specified only for weak-strong
-            sigma_y=None, # needs to be specified only for weak-strong
-            mean_x=None, # needs to be specified only for weak-strong
-            mean_y=None, # needs to be specified only for weak-strong
+            sigma_x=1., # dummy
+            sigma_y=1., # dummy
+            mean_x=1.,  # dummy
+            mean_y=1.,  # dummy
             min_sigma_diff=1e-10)
 
 bbeam_b2 = BeamBeamBiGaussian2D(
@@ -113,18 +113,20 @@ bbeam_b2 = BeamBeamBiGaussian2D(
             n_particles=bunch_intensity_b1,
             q0 = particles_b1.q0,
             beta0=particles_b1_gen.beta0[0],
-            sigma_x=None, # needs to be specified only for weak-strong
-            sigma_y=None, # needs to be specified only for weak-strong
-            mean_x=None, # needs to be specified only for weak-strong
-            mean_y=None, # needs to be specified only for weak-strong
+            sigma_x=1., # dummy
+            sigma_y=1., # dummy
+            mean_x=1.,  # dummy
+            mean_y=1.,  # dummy
             min_sigma_diff=1e-10)
 
 # Measure beam properties
 mean_x_meas, sigma_x_meas = mean_and_std(particles_b2.x)
 mean_y_meas, sigma_y_meas = mean_and_std(particles_b2.y)
 # Update bb lens
-bbeam_b1.update(sigma_x=sigma_x_meas, mean_x=mean_x_meas,
-                sigma_y=sigma_y_meas, mean_y=mean_y_meas)
+bbeam_b1.sigma_x = sigma_x_meas
+bbeam_b1.sigma_y = sigma_y_meas
+bbeam_b1.mean_x = mean_x_meas
+bbeam_b1.mean_y = mean_y_meas
 #Track
 print('Track...')
 bbeam_b1.track(particles_b1)
