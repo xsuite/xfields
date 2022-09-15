@@ -223,18 +223,18 @@ def test_cerrf_all_quadrants():
 
 source = '''
     /*gpukern*/ void FaddeevaCalculator_compute(FaddeevaCalculatorData data) {
-        int64_t len = FaddeevaCalculatorData_len_z_re(data)
-        
-        for (int64_t ii = 0; ii < len; ii++) {
+        int64_t len = FaddeevaCalculatorData_len_z_re(data);
+
+        for (int64_t ii = 0; ii < len; ii++) {  //vectorize_over ii len
             double z_re = FaddeevaCalculatorData_get_z_re(data, ii);
             double z_im = FaddeevaCalculatorData_get_z_im(data, ii);
             double w_re, w_im;
-            
+
             cerrf(z_re, z_im, &w_re, &w_im);
-            
+
             FaddeevaCalculatorData_set_w_re(data, ii, w_re);
             FaddeevaCalculatorData_set_w_im(data, ii, w_im);
-        }
+        } //end_vectorize
     }
 '''
 
@@ -262,10 +262,23 @@ class FaddeevaCalculator(xo.HybridClass):
         )
     }
 
-    def __init__(self, z):
+    def __init__(self, z, **kwargs):
+        z = np.array(z)
+
         self.xoinitialize(
             z_re = z.real,
             z_im = z.imag,
             w_re = len(z),
             w_im = len(z),
+            **kwargs,
         )
+
+    def compute(self):
+        self._xobject.compile_kernels(only_if_needed=True)
+        import ipdb; ipdb.set_trace()
+        self._context.kernels.FaddeevaCalculator_compute.description.n_threads = len(self.z_re)
+        self._context.kernels.FaddeevaCalculator_compute(data=self)
+
+context = xo.ContextCupy()
+fc = FaddeevaCalculator(z=[1+1j, 2+2j, 3+3j] * 256, _context=context)
+fc.compute()
