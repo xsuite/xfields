@@ -219,3 +219,53 @@ def test_cerrf_all_quadrants():
 
     assert d_abs_re.max() < 0.5e-9
     assert d_abs_im.max() < 0.5e-9
+
+
+source = '''
+    /*gpukern*/ void FaddeevaCalculator_compute(FaddeevaCalculatorData data) {
+        int64_t len = FaddeevaCalculatorData_len_z_re(data)
+        
+        for (int64_t ii = 0; ii < len; ii++) {
+            double z_re = FaddeevaCalculatorData_get_z_re(data, ii);
+            double z_im = FaddeevaCalculatorData_get_z_im(data, ii);
+            double w_re, w_im;
+            
+            cerrf(z_re, z_im, &w_re, &w_im);
+            
+            FaddeevaCalculatorData_set_w_re(data, ii, w_re);
+            FaddeevaCalculatorData_set_w_im(data, ii, w_im);
+        }
+    }
+'''
+
+class FaddeevaCalculator(xo.HybridClass):
+    _xofields = {
+        'z_re': xo.Float64[:],
+        'z_im': xo.Float64[:],
+        'w_re': xo.Float64[:],
+        'w_im': xo.Float64[:],
+    }
+
+    _extra_c_sources = [
+        _pkg_root.joinpath("headers/constants.h"),
+        _pkg_root.joinpath("headers/sincos.h"),
+        _pkg_root.joinpath("headers/power_n.h"),
+        _pkg_root.joinpath("fieldmaps/bigaussian_src/complex_error_function.h"),
+        source,
+    ]
+
+    _kernels = {
+        'FaddeevaCalculator_compute': xo.Kernel(
+            args=[
+                xo.Arg(xo.ThisClass, name='data'),
+            ],
+        )
+    }
+
+    def __init__(self, z):
+        self.xoinitialize(
+            z_re = z.real,
+            z_im = z.imag,
+            w_re = len(z),
+            w_im = len(z),
+        )
