@@ -135,7 +135,7 @@ class SpaceCharge3D(xt.BeamElement):
             if _buffer is None:
                 if _context is None:
                     _context = xo.context_default
-                _buffer = _context.new_buffer(_capacity=64)
+                _buffer = _context.new_buffer(capacity=64)
 
         if fieldmap is None:
             fieldmap = TriLinearInterpolatedFieldMap(
