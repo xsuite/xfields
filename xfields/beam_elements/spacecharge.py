@@ -73,7 +73,7 @@ class SpaceCharge3D(xt.BeamElement):
         (SpaceCharge3D): A space-charge 3D beam element.
     """
     _xofields = {
-        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap._XoStruct),
+        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap),
         'length': xo.Float64,
         }
 
