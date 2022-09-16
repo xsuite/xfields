@@ -4,8 +4,6 @@
 # ########################################### #
 
 import numpy as np
-from scipy.constants import e as qe
-from scipy.constants import c as clight
 
 from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
@@ -134,7 +132,10 @@ class SpaceCharge3D(xt.BeamElement):
                     'SpaceCharge3D object must be the same')
             _buffer = fieldmap._buffer
         else:
-            _buffer = xo.get_a_buffer(size=8, buffer=_buffer, context=_context)
+            if _buffer is None:
+                if _context is None:
+                    _context = xo.context_default
+                _buffer = _context.new_buffer(_capacity=64)
 
         if fieldmap is None:
             fieldmap = TriLinearInterpolatedFieldMap(
