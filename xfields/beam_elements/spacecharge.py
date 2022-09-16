@@ -134,7 +134,7 @@ class SpaceCharge3D(xt.BeamElement):
                     'SpaceCharge3D object must be the same')
             _buffer = fieldmap._buffer
         else:
-            _buffer = xo.get_a_buffer(buffer=_buffer, context=_context)
+            _buffer = xo.get_a_buffer(size=8, buffer=_buffer, context=_context)
 
         if fieldmap is None:
             fieldmap = TriLinearInterpolatedFieldMap(
