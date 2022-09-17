@@ -58,8 +58,8 @@ def faddeeva_calculator():
             z = np.array(z)
 
             self.xoinitialize(
-                z_re=z.real,
-                z_im=z.imag,
+                z_re=z.real.copy(),
+                z_im=z.imag.copy(),
                 w_re=len(z),
                 w_im=len(z),
                 **kwargs,
