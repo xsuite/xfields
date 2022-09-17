@@ -199,7 +199,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.moments = None
             self.partner_moments = np.zeros(self.config_for_update.slicer.num_slices*(1+6+10),dtype=float)
 
-            assert particles_per_macroparticle is not None
             self.particles_per_macroparticle = particles_per_macroparticle
 
 
@@ -1255,11 +1254,11 @@ class TempSlicer:
 class ConfigForUpdateBeamBeamBiGaussian3D:
 
     def __init__(self,
-        pipeline_manager,
-        element_name,
-        slicer,
-        partner_particles_name,
-        update_every):
+        pipeline_manager=None,
+        element_name=None,
+        slicer=None,
+        partner_particles_name=None,
+        update_every=None):
 
         self.pipeline_manager = pipeline_manager
         self.element_name = element_name
