@@ -94,6 +94,7 @@ class SpaceCharge3D(xt.BeamElement):
     def __init__(self,
                  _context=None,
                  _buffer=None,
+                 _offset=None
                  update_on_track=True,
                  length=None,
                  apply_z_kick=True,
@@ -152,6 +153,7 @@ class SpaceCharge3D(xt.BeamElement):
 
         self.xoinitialize(
                  _buffer=_buffer,
+                 _offset=_offset,
                  fieldmap=fieldmap,
                  length=length)
 
