@@ -1,4 +1,3 @@
-from tkinter import W
 import numpy as np
 
 import xobjects as xo
