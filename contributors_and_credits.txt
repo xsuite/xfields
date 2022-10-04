@@ -3,9 +3,10 @@ The following people contributed to the development of this package:
 CERN contributors:
  - H. Bartosik
  - X. Buffat
- - G. Iadarola
- - K. Parachou
- - M. Schwinzerl
  - R. De Maria
+ - G. Iadarola
+ - S. Lopaciuk
+ - K. Paraschou
+ - M. Schwinzerl
 
-The Particle In Cell implementation is largely based on the PyPIC package (https://github.com/pycomplete/pypic) 
+The Particle In Cell implementation is largely based on the PyPIC package (https://github.com/pycomplete/pypic)

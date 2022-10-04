@@ -1,4 +1,3 @@
-from tkinter import W
 import numpy as np
 
 import xobjects as xo
@@ -310,10 +309,8 @@ def test_beambeam3d_collective():
             config_for_update=xf.ConfigForUpdateBeamBeamBiGaussian3D(
                 pipeline_manager=None,
                 element_name=None,
-                partner_element_name=None,
                 slicer=slicer,
-                collision_schedule={'beam1_bunch1': 'beam2_bunch1',},
-                update_every=None # Never updates (test in weakstrong mode)
+                update_every=None, # Never updates (test in weakstrong mode)
                 )
 
 

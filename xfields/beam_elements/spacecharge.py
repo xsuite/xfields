@@ -4,8 +4,6 @@
 # ########################################### #
 
 import numpy as np
-from scipy.constants import e as qe
-from scipy.constants import c as clight
 
 from xfields import BiGaussianFieldMap, mean_and_std
 from xfields import TriLinearInterpolatedFieldMap
@@ -73,7 +71,7 @@ class SpaceCharge3D(xt.BeamElement):
         (SpaceCharge3D): A space-charge 3D beam element.
     """
     _xofields = {
-        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap._XoStruct),
+        'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap),
         'length': xo.Float64,
         }
 
@@ -124,18 +122,27 @@ class SpaceCharge3D(xt.BeamElement):
         else:
             scale_coordinates_in_solver=(1.,1.,1.)
 
-        if _buffer is not None:
-            _context = _buffer.context
-        if _context is None:
-            _context = xo.context_default
+        if fieldmap is not None:
+            if _buffer is not None:
+                assert _buffer is fieldmap._buffer, (
+                    'The buffer of the fieldmap and the buffer of the '
+                    'SpaceCharge3D object must be the same')
+            if _context is not None:
+                assert _context is fieldmap._context, (
+                    'The context of the fieldmap and the context of the '
+                    'SpaceCharge3D object must be the same')
+            _buffer = fieldmap._buffer
+        else:
+            if _buffer is None:
+                if _context is None:
+                    _context = xo.context_default
+                _buffer = _context.new_buffer(capacity=64)
 
         if fieldmap is None:
-            # I build the fieldmap on a temporary buffer
-            temp_buff = _context.new_buffer()
             fieldmap = TriLinearInterpolatedFieldMap(
-                        _buffer=temp_buff,
+                        _buffer=_buffer,
                         rho=rho, phi=phi,
-                        x_grid=z_grid, y_grid=y_grid, z_grid=z_grid,
+                        x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
                         x_range=x_range, y_range=y_range, z_range=z_range,
                         dx=dx, dy=dy, dz=dz,
                         nx=nx, ny=ny, nz=nz,
@@ -145,7 +152,6 @@ class SpaceCharge3D(xt.BeamElement):
                         fftplan=fftplan)
 
         self.xoinitialize(
-                 _context=_context,
                  _buffer=_buffer,
                  _offset=_offset,
                  fieldmap=fieldmap,
