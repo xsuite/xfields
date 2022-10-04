@@ -133,9 +133,7 @@ double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, Record
                 // Get a slot in the record (this is thread safe)
                 int64_t i_slot = RecordIndex_get_slot(table_index);
                 // The returned slot id is negative if record is NULL or if record is full
-                printf("in record ");
                 if (i_slot>=0){
-                    printf("%d", i_slot);
                     BeamstrahlungTableData_set_particle_id(           table, i_slot, LocalParticle_get_particle_id(part));
                     BeamstrahlungTableData_set_photon_id(             table, i_slot, j);
                     BeamstrahlungTableData_set_photon_energy(         table, i_slot, e_photon*1e9);
