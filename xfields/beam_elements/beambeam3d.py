@@ -11,6 +11,41 @@ import xpart as xp
 
 from ..general import _pkg_root
 
+"""
+class BeamstrahlungTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'photon_id': xo.Float64[:], 
+      'photon_energy': xo.Float64[:],
+      'photon_critical_energy': xo.Float64[:],
+      'primary_energy': xo.Float64[:],
+    }
+
+class BeamBeamBiGaussian3DRecord(xo.HybridClass):
+    _xofields = {
+        'beamstrahlungtable': BeamstrahlungTable,
+      }
+"""
+class BeamstrahlungTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'photon_id': xo.Float64[:], 
+      'photon_energy': xo.Float64[:],
+      'photon_critical_energy': xo.Float64[:],
+      'primary_energy': xo.Float64[:],
+        }
+
+class BeamBeamBiGaussian3DRecord(xo.HybridClass):
+    _xofields = {
+        'beamstrahlungtable': BeamstrahlungTable,
+        }
+
 class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
@@ -69,7 +104,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
 
+        # beamstrahlung 
+        'do_beamstrahlung': xo.Int64,
+        'slices_other_beam_zeta_bin_width_star': xo.Float64[:],
     }
+
+    _internal_record_class = BeamBeamBiGaussian3DRecord
 
     _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
@@ -81,9 +121,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         '#undef NOFIELDMAP', #TODO Remove this workaround
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_transport_sigmas.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
+
+        # beamstrahlung
+        xp.general._pkg_root.joinpath('random_number_generator/rng_src/base_rng.h'),
+        xp.general._pkg_root.joinpath('random_number_generator/rng_src/local_particle_rng.h'),
+        _pkg_root.joinpath('headers/beamstrahlung_spectrum.h'),
+
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
-    ]
+
+   ]
 
     _per_particle_kernels={
         'synchro_beam_kick': xo.Kernel(
@@ -110,6 +157,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_py_center=0.,
                     slices_other_beam_zeta_center=None,
                     slices_other_beam_pzeta_center=0.,
+
+                    # beamstrahlung 
+                    do_beamstrahlung=0,
+                    slices_other_beam_zeta_bin_width_star=None,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -202,6 +253,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         assert (slices_other_beam_zeta_center is not None
                 or slices_other_beam_zeta_center_star is not None)
         assert slices_other_beam_num_particles is not None
+        assert slices_other_beam_zeta_bin_width_star is not None  # beamstrahlung
 
         assert not np.isscalar(slices_other_beam_num_particles), (
                         'slices_other_beam_num_particles must be an array')
@@ -217,6 +269,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                             'slices_other_beam_zeta_center_star must be an array')
             assert (len(slices_other_beam_zeta_center_star)
                         == len(slices_other_beam_num_particles))
+
+        # beamstrahlung
+        if slices_other_beam_zeta_bin_width_star is not None:
+            assert not np.isscalar(slices_other_beam_zeta_bin_width_star), (
+                            'slices_other_beam_zeta_bin_width_star must be an array')
+            assert (len(slices_other_beam_zeta_bin_width_star)
+                        == len(slices_other_beam_num_particles))
+
 
         n_slices = len(slices_other_beam_num_particles)
 
@@ -274,6 +334,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_y_center_star, slices_other_beam_py_center_star,
             slices_other_beam_zeta_center_star, slices_other_beam_pzeta_center_star)
 
+
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
 
@@ -301,6 +362,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.min_sigma_diff = min_sigma_diff
         self.threshold_singular = threshold_singular
 
+        # beamstrahlung 
+        self.do_beamstrahlung = do_beamstrahlung
+        self.slices_other_beam_zeta_bin_width_star = slices_other_beam_zeta_bin_width_star
+
     def _allocate_xobject(self, n_slices, **kwargs):
         self.xoinitialize(
             slices_other_beam_Sigma_11_star=n_slices,
@@ -320,6 +385,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_py_center_star=n_slices,
             slices_other_beam_zeta_center_star=n_slices,
             slices_other_beam_pzeta_center_star=n_slices,
+            slices_other_beam_zeta_bin_width_star=n_slices,  # beamstrahlung
+
             **kwargs
             )
 
@@ -705,9 +772,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         if slices_other_beam_zeta_center is not None:
 
-            # Check correct according to z, head at the first position in the arrays
-            assert np.all(slices_other_beam_zeta_center[:-1]
-                            >= slices_other_beam_zeta_center[1:]), (
+            # Check correct according to z, head at the first position in the arrays. Remove 0s that represent empty slices.
+            assert np.all(slices_other_beam_zeta_center[slices_other_beam_zeta_center!=0][:-1]
+                            >= slices_other_beam_zeta_center[slices_other_beam_zeta_center!=0][1:]), (
                             'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
 
             (
@@ -761,6 +828,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         else:
             self.slices_other_beam_pzeta_center_star = self._arr2ctx(pzeta_slices_star)
 
+            
     # The following properties are generate by this code:
     ## for nn in 'x px y py zeta pzeta'.split():
     ##     print(f'''
@@ -867,6 +935,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def slices_other_beam_pzeta_center(self, value):
         raise NotImplementedError(
             "Setting slices_other_beam_pzeta_center is not implemented yet")
+
 
     # The following properties are generate by this code:
     ## for nn, factor in (

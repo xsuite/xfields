@@ -8,7 +8,7 @@
 
 /*gpufun*/
 void synchrobeam_kick(
-        BeamBeamBiGaussian3DData el, const int i_slice,
+        BeamBeamBiGaussian3DData el, LocalParticle *part, BeamBeamBiGaussian3DRecordData record, RecordIndex table_index, BeamstrahlungTableData table, const int i_slice,
         double const q0, double const p0c,
         double* x_star,
         double* px_star,
@@ -21,6 +21,7 @@ void synchrobeam_kick(
     const double q0_bb  = BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
+    const int64_t do_beamstrahlung         = BeamBeamBiGaussian3DData_get_do_beamstrahlung(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -73,6 +74,23 @@ void synchrobeam_kick(
     const double x_bar_star = *x_star + *px_star * S - x_slice_star;
     const double y_bar_star = *y_star + *py_star * S - y_slice_star;
 
+
+/*
+    printf("[beambeam3d] at cp:\n");
+    printf("\tx=%.10e\n", x_bar_star);
+    printf("\ty=%.10e\n", y_bar_star);
+    printf("\tpx=%.10e\n", *px_star);
+    printf("\tpy=%.10e\n", *py_star);
+    printf("\tz=%.10e\n", S);
+    printf("\tpzeta=%.20e\n", *pzeta_star);
+    printf("\tKsl=%.10e, q0: %.12f, q0_bb: %.12f, n_bb: %.12f\n", Ksl, q0, q0_bb, num_part_slice);
+
+    printf("\tx_c=%.10e\n", x_slice_star);
+    printf("\ty_c=%.10e\n", y_slice_star);
+    printf("\tz_c=%.10e\n", zeta_slice_star);
+    printf("\tenergy0: %.20f, ptau: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_ptau(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
+*/
+    
     // Move to the uncoupled reference frame
     const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
     const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
@@ -107,6 +125,41 @@ void synchrobeam_kick(
     // Compute longitudinal kick
     double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
+
+/*
+    printf("\tEx=%.10e\n", Ex);
+    printf("\tEy=%.10e\n", Ey);
+    printf("\tGx=%.10e\n", Gx);
+    printf("\tGy=%.10e\n", Gy);
+    printf("\tFx_boosted=%.10e\n", Fx_star);
+    printf("\tFy_boosted=%.10e\n", Fy_star);
+    printf("\tFz_boosted=%.10e\n", Fz_star);
+    printf("\trpp=%.20e\n", LocalParticle_get_rpp(part));
+*/
+
+    // emit beamstrahlung photons from single macropart
+    if (do_beamstrahlung==1){
+        // total kick
+        double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // rad
+
+        // bending radius is over this distance (half slice length)
+        /*gpuglmem*/ double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star(el, i_slice);
+
+        double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); 
+        double energy_loss = synrad(part, record, table_index, table, Fr, dz);
+        //printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
+        //printf(     "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
+        //if(part->ipart==0){
+        //  fprintf(f1, "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n", part->ipart, x, px, y, py, z, Fx_boosted, Fy_boosted, dz, n_bb);
+        //}
+        // BS rescales these, so load again before kick 
+        *pzeta_star = LocalParticle_get_pzeta(part);  
+    }
+    else if(do_beamstrahlung==2){
+        double var_z_bb = 0.00345;
+        double energy_loss = synrad_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
+        *pzeta_star = LocalParticle_get_pzeta(part);  
+    }
 
     // Apply the kicks (Hirata's synchro-beam)
     *pzeta_star = *pzeta_star + Fz_star+0.5*(
@@ -154,6 +207,18 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const double post_subtract_zeta = BeamBeamBiGaussian3DData_get_post_subtract_zeta(el);
     const double post_subtract_pzeta = BeamBeamBiGaussian3DData_get_post_subtract_pzeta(el);
 
+    // Extract the record and record_index
+    BeamBeamBiGaussian3DRecordData record = BeamBeamBiGaussian3DData_getp_internal_record(el, part0);
+    BeamstrahlungTableData table = NULL;
+    RecordIndex table_index = NULL;
+    if (record){
+        table = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(record);
+        table_index = BeamstrahlungTableData_getp__index(table);
+    }
+
+
+
+
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
@@ -161,27 +226,67 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         double py = LocalParticle_get_py(part);
         double zeta = LocalParticle_get_zeta(part);
         double pzeta = LocalParticle_get_pzeta(part);
+        double delta = LocalParticle_get_delta(part);
 
         const double q0 = LocalParticle_get_q0(part);
         const double p0c = LocalParticle_get_p0c(part); // eV
 
-
+/*
+        printf("[beambeam3d] [%d] before boost:\n", part->ipart);
+        printf("\tx=%.10e\n", x);
+        printf("\ty=%.10e\n", y);
+        printf("\tpx=%.10e\n", px);
+        printf("\tpy=%.10e\n", py);
+        printf("\tz=%.10e\n", zeta);
+        printf("\tpzeta=%.20e\n", pzeta);   
+        printf("\tdelta=%.20e\n", delta);   
+*/
         // Change reference frame
         change_ref_frame_coordinates(
             &x, &px, &y, &py, &zeta, &pzeta,
             shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
 
+/*
+        printf("[beambeam3d] [%d] after boost:\n", part->ipart);
+        printf("\tx=%.10e\n", x);
+        printf("\ty=%.10e\n", y);
+        printf("\tpx=%.10e\n", px);
+        printf("\tpy=%.10e\n", py);
+        printf("\tz=%.10e\n", zeta);
+        printf("\tpzeta=%.20e\n", pzeta);   
+*/
+
+        // here pzeta is not updated but has to be! changes delta
+        LocalParticle_update_pzeta(part, pzeta);
+
         // Synchro beam
         for (int i_slice=0; i_slice<N_slices; i_slice++)
         {
-            synchrobeam_kick(el, i_slice, q0, p0c,
+            // new: reload boosted pzeta after each slice kick to compare with sbc6d; these are boosted
+       	    pzeta = LocalParticle_get_pzeta(part);
+            delta = LocalParticle_get_delta(part);
+/*
+            printf("[beambeam3d] [%d] at ip:\n", part->ipart);
+            printf("\tslice_id_bb: %d\n", i_slice);
+            printf("\tx=%.10e\n", x);
+            printf("\ty=%.10e\n", y);
+            printf("\tpx=%.10e\n", px);
+            printf("\tpy=%.10e\n", py);
+            printf("\tz=%.10e\n", zeta);
+            printf("\tpzeta=%.20e\n", pzeta);   
+            printf("\tdelta=%.20e\n", delta);   
+*/
+            synchrobeam_kick(el, part, record, table_index, table, i_slice, q0, p0c,
                              &x,
                              &px,
                              &y,
                              &py,
                              &zeta,
                              &pzeta);
+
+            // here pzeta is not updated but has to be! changes delta
+            LocalParticle_update_pzeta(part, pzeta);
 
         }
 

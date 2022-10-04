@@ -123,6 +123,15 @@ void BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_parti
 void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussian3DData el,
                 LocalParticle* part0,
                 /*gpuglmem*/ int64_t* i_slice_for_particles){
+    // Extract the record and record_index
+    BeamBeamBiGaussian3DRecordData record = BeamBeamBiGaussian3DData_getp_internal_record(el, part0);
+    BeamstrahlungTableData table = NULL;
+    RecordIndex table_index = NULL;
+    if (record){
+        table = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(record);
+        table_index = BeamstrahlungTableData_getp__index(table);
+    }
+
 
 
     //start_per_particle_block (part0->part)
@@ -143,7 +152,7 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
             const double p0c = LocalParticle_get_p0c(part); // eV
 
             synchrobeam_kick(
-                el, i_slice,
+                el, part, record, table_index, table, i_slice,
                 q0, p0c,
                 &x_star,
                 &px_star,

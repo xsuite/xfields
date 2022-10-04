@@ -68,12 +68,6 @@ int synrad_0(LocalParticle *part,
     // g normalized (g(v=0, xcrit)=1=p0), g(v, xcrit) gives the no. of emitted photons in a fiven delta v interval
     double g = v2 / pow(denom, 2.0) * ( g1 + ( pow(xcrit, 2.0) * pow(y, 2.0) ) / ( 1.0 + xcrit * y ) * g2 );  // g (w.o. normalization above) splits the unit rectangle p0*g-v to A,B,C regions
    
-    char dump_file[1024];
-    sprintf(dump_file, "%s/%s", dump_path, "xsuite_synrad0.txt");
-    FILE *f1 = fopen(dump_file, "a");
-    fprintf(f1, "%.6e %.6e %.6e %.6e\n", xcrit, (*ecrit), p0, g);
-    fclose(f1);
-
     // region C (emit photon) if p<p0*g, region B (no photon) if p>=p0*g, p0=1 bc. of normalization above
     if (p<g){
         (*e_photon) = (*ecrit) * v3 / denom;
@@ -86,7 +80,8 @@ int synrad_0(LocalParticle *part,
 
 
 /*gpufun*/
-double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double sigma_y, double sigma_z){
+double synrad_avg(LocalParticle *part, 
+                  const double n_bb, double sigma_x, double sigma_y, double sigma_z){
 
     double r              = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
     const double c1       = 2.59*(5.0/6.0)*(r*r)/(REDUCED_COMPTON);
@@ -101,16 +96,6 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
     double u_avg        = delta_avg/n_avg;  // Average photon energy normalized to electron energy before emission [1]
     double e_photon_avg = u_avg*initial_energy;  // Average photon energy [eV]
 
-/*
-    printf("[synrad_avg] energy0: %.20f, ptau: %.20f, p0c: %.20f, beta0: %.20f\n", LocalParticle_get_energy0(part), LocalParticle_get_ptau(part), LocalParticle_get_p0c(part), LocalParticle_get_beta0(part));
-    printf("[synrad_avg] c2: %.20f, sigma_x: %.20f, sigma_y: %.20f, sigma_z: %.20f, gamma: %.20f, delta_avg: %.20f, initial_energy: %.20f\n", c2, sigma_x, sigma_y, sigma_z, gamma, delta_avg, initial_energy);
-*/
-    char dump_file[1024];
-    sprintf(dump_file, "%s/%s", dump_path, "xsuite_photons_avg.txt");
-    //FILE *f1 = fopen(dump_file, "a");
-    //fprintf(f1, "%d %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", part->ipart, initial_energy, sigma_x, sigma_y, sigma_z, n_avg, delta_avg, U_BS);  // save photon ID and energy, all in [ev]
-    //fprintf(f1, "%d %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", part->ipart, initial_energy, n_bb, sigma_x, sigma_y, sigma_z, r, c1, c2, n_avg, delta_avg, U_BS);  // save photon ID and energy, all in [ev]
-    //fclose(f1);
     LocalParticle_add_to_energy(part, -U_BS, 0);
     double energy_loss = -U_BS;
     return energy_loss;
@@ -118,7 +103,7 @@ double synrad_avg(LocalParticle *part, const double n_bb, double sigma_x, double
 
 
 /*gpufun*/
-double synrad(LocalParticle *part,
+double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, RecordIndex table_index, BeamstrahlungTableData table,
        	    double Fr,  // [1] sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	    double dz  // [m] z step between 2 slices ((z_max - z_min) / 2)
 ){
@@ -132,22 +117,6 @@ double synrad(LocalParticle *part,
     double tmp = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
     int max_photons = (int)(tmp*10.0)+1;
 
-    char dump_file[1024];
-    sprintf(dump_file, "%s/%s", dump_path, "xsuite_photons.txt");
-    FILE *f1 = fopen(dump_file, "a");
-    //FILE *f2 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_rho_inv.txt", "a");
-    //FILE *f3 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_tmp.txt", "a");
-    //FILE *f4 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_fr.txt", "a");
-    //FILE *f5 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_max_photons.txt", "a");
-    //FILE *f6 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_dz.txt", "a");
-    //FILE *f7 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_eloss.txt", "a");
-
-    //fprintf(f2, "%.10e\n", rho_inv);
-    //fprintf(f3, "%.10e\n", tmp);
-    //fprintf(f4, "%.10e\n", Fr);
-    //fprintf(f5, "%d\n", max_photons);
-    //fprintf(f6, "%.10e\n", dz);
-
     // photons are emitted uniformly in space along dz (between 2 slice interactions)
     dz /= (double)max_photons;
 
@@ -160,7 +129,20 @@ double synrad(LocalParticle *part,
         if (synrad_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
 
-            fprintf(f1, "%d %d %.6e %.6e %.6e %.6e %.6e %.6e %d\n", part->ipart, j, e_photon*1e9, ecrit*1e9, energy, rho_inv, dz, initial_energy, max_photons);  // save photon ID and energy, all in [ev]
+            if (record){
+                // Get a slot in the record (this is thread safe)
+                int64_t i_slot = RecordIndex_get_slot(table_index);
+                // The returned slot id is negative if record is NULL or if record is full
+                printf("in record ");
+                if (i_slot>=0){
+                    printf("%d", i_slot);
+                    BeamstrahlungTableData_set_particle_id(           table, i_slot, LocalParticle_get_particle_id(part));
+                    BeamstrahlungTableData_set_photon_id(             table, i_slot, j);
+                    BeamstrahlungTableData_set_photon_energy(         table, i_slot, e_photon*1e9);
+                    BeamstrahlungTableData_set_photon_critical_energy(table, i_slot, ecrit*1e9);
+                    BeamstrahlungTableData_set_primary_energy(        table, i_slot, energy);
+                }
+            }
 
             // update bending radius, macropart energy and gamma
             rho_inv *= energy/(energy - e_photon*1e9);
@@ -190,18 +172,8 @@ double synrad(LocalParticle *part,
         LocalParticle_add_to_energy(part, energy-initial_energy, 0);
     }
     double energy_loss = energy-initial_energy;
-    //fprintf(f7, "%.10e\n", energy_loss);
 
-    fclose(f1);
-    //fclose(f2);
-    //fclose(f3);
-    //fclose(f4);
-    //fclose(f5);
-    //fclose(f6);
-    //fclose(f7);
     return energy_loss;
 }
-
-
 
 #endif /* XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H */

@@ -1,1 +1,5 @@
 numpy>=1.0
+scipy
+pandas
+xobjects>=0.0.4
+xtrack>=0.0.1
