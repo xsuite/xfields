@@ -82,6 +82,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'num_slices_other_beam': xo.Int64,
 
         'slices_other_beam_num_particles': xo.Float64[:],
+        'slices_other_beam_num_macroparticles': xo.Float64[:],
 
         'slices_other_beam_x_center_star': xo.Float64[:],
         'slices_other_beam_px_center_star': xo.Float64[:],
@@ -150,6 +151,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     phi=None, alpha=None, other_beam_q0=None, particles_per_macroparticle = None,
 
                     slices_other_beam_num_particles=None,
+                    slices_other_beam_num_macroparticles=None,
 
                     slices_other_beam_x_center=0.,
                     slices_other_beam_px_center=0.,
@@ -261,10 +263,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         assert (slices_other_beam_zeta_center is not None
                 or slices_other_beam_zeta_center_star is not None)
         assert slices_other_beam_num_particles is not None
+        assert slices_other_beam_num_macroparticles is not None
         assert slices_other_beam_zeta_bin_width_star is not None  # beamstrahlung
 
         assert not np.isscalar(slices_other_beam_num_particles), (
                         'slices_other_beam_num_particles must be an array')
+
+        assert not np.isscalar(slices_other_beam_num_macroparticles), (
+                        'slices_other_beam_num_macroparticles must be an array')
+
+        if slices_other_beam_num_macroparticles is not None:
+            assert not np.isscalar(slices_other_beam_num_macroparticles), (
+                            'slices_other_beam_num_macroparticles must be an array')
+            assert (len(slices_other_beam_num_macroparticles)
+                        == len(slices_other_beam_num_particles))
 
         if slices_other_beam_zeta_center is not None:
             assert not np.isscalar(slices_other_beam_zeta_center), (
@@ -318,6 +330,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.num_slices_other_beam = n_slices
         self.slices_other_beam_num_particles = self._arr2ctx(np.array(
                                     slices_other_beam_num_particles))
+        self.slices_other_beam_num_macroparticles = self._arr2ctx(np.array(
+                                    slices_other_beam_num_macroparticles))
+
 
         # Trigger properties to set corresponding starred quantities
         self._init_Sigmas(
@@ -387,6 +402,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_Sigma_34_star=n_slices,
             slices_other_beam_Sigma_44_star=n_slices,
             slices_other_beam_num_particles=n_slices,
+            slices_other_beam_num_macroparticles=n_slices,
             slices_other_beam_x_center_star=n_slices,
             slices_other_beam_px_center_star=n_slices,
             slices_other_beam_y_center_star=n_slices,

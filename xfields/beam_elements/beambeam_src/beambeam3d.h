@@ -277,7 +277,10 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
             printf("\tpzeta=%.20e\n", pzeta);   
             printf("\tdelta=%.20e\n", delta);   
 */
-            synchrobeam_kick(el, part, record, table_index, table, i_slice, q0, p0c,
+            // only apply kick if the strong slice is not empty
+            double const num_macroparts_slice = BeamBeamBiGaussian3DData_get_slices_other_beam_num_macroparticles(el, i_slice);
+            if(num_macroparts_slice>2){
+                synchrobeam_kick(el, part, record, table_index, table, i_slice, q0, p0c,
                              &x,
                              &px,
                              &y,
@@ -285,9 +288,9 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                              &zeta,
                              &pzeta);
 
-            // here pzeta is not updated but has to be! changes delta
-            LocalParticle_update_pzeta(part, pzeta);
-
+                // here pzeta is not updated but has to be! changes delta
+                LocalParticle_update_pzeta(part, pzeta);
+            }
         }
 
         // Go back to original reference frame and remove dipolar effect
