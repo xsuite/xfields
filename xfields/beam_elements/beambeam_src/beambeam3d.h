@@ -84,7 +84,6 @@ void synchrobeam_kick(
     printf("\tz=%.10e\n", S);
     printf("\tpzeta=%.20e\n", *pzeta_star);
     printf("\tKsl=%.10e, q0: %.12f, q0_bb: %.12f, n_bb: %.12f\n", Ksl, q0, q0_bb, num_part_slice);
-
     printf("\tx_c=%.10e\n", x_slice_star);
     printf("\ty_c=%.10e\n", y_slice_star);
     printf("\tz_c=%.10e\n", zeta_slice_star);
@@ -144,20 +143,14 @@ void synchrobeam_kick(
 
         // bending radius is over this distance (half slice length)
         /*gpuglmem*/ double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star(el, i_slice);
+        double _energy_loss = synrad(part, record, table_index, table, Fr, dz);
 
-        double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); 
-        double energy_loss = synrad(part, record, table_index, table, Fr, dz);
-        //printf("\tFr: %.20e, eloss: %.20e\n", Fr, energy_loss); 
-        //printf(     "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", x, y, z, Sx_i, Sy_i, Sz_i, Sig_11_boosted_cp_uncoupled, Sig_33_boosted_cp_uncoupled, Ksl, Fx_boosted, Fy_boosted, px, py, px+Fx_boosted, py+Fy_boosted, dz, initial_energy, Fx_boosted_cp_uncoupled, Fy_boosted_cp_uncoupled, sintheta, costheta, n_bb);
-        //if(part->ipart==0){
-        //  fprintf(f1, "%d %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n", part->ipart, x, px, y, py, z, Fx_boosted, Fy_boosted, dz, n_bb);
-        //}
         // BS rescales these, so load again before kick 
         *pzeta_star = LocalParticle_get_pzeta(part);  
     }
     else if(do_beamstrahlung==2){
-        double var_z_bb = 0.00345;
-        double energy_loss = synrad_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
+        double var_z_bb = 0.0121;
+        double _energy_loss = synrad_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
         *pzeta_star = LocalParticle_get_pzeta(part);  
     }
 
@@ -215,9 +208,6 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         table = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(record);
         table_index = BeamstrahlungTableData_getp__index(table);
     }
-
-
-
 
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
@@ -311,8 +301,6 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         LocalParticle_update_pzeta(part, pzeta);
 
     //end_per_particle_block
-
-    //fclose(f1);
 }
 
 

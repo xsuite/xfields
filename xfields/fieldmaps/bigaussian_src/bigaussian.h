@@ -51,15 +51,11 @@ void get_transv_field_gauss_ellip(
   double abx = fabs(x - Delta_x);
   double aby = fabs(y - Delta_y);
 
-  //printf("x = %.2e y = %.2e abx = %.2e aby = %.2e", xx, yy, abx, aby);
-
   double S, factBE, Ex, Ey;
   double etaBE_re, etaBE_im, zetaBE_re, zetaBE_im;
   double w_etaBE_re, w_etaBE_im, w_zetaBE_re, w_zetaBE_im;
   double expBE;
 
-  clock_t tt;
-  double time_taken;
 
   if (sigmax>sigmay){
     S = sqrt(2.*(sigmax*sigmax-sigmay*sigmay));
@@ -71,43 +67,16 @@ void get_transv_field_gauss_ellip(
     zetaBE_re = abx;
     zetaBE_im = aby;
 
-
-//    char profiler_file_first[1024];
-//    sprintf(profiler_file_first, "%s/%s", profiler_path, "profiler_sbc6d_full_first.txt");
-//     char profiler_file_second[1024];
-//    sprintf(profiler_file_second, "%s/%s", profiler_path, "profiler_sbc6d_full_second.txt");
-//    FILE *f1 = fopen(profiler_file_first, "a");
-//    FILE *f2 = fopen(profiler_file_second, "a");
-
-//    tt = clock();
-//    for(int l=0;l<100000;l++){
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-        cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
-//    }
-//    tt = clock() - tt;
-//    time_taken = ((double)tt)/CLOCKS_PER_SEC;
-//    fprintf(f1, "%.4e\n", time_taken);
+    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
 
-//    tt = clock();
-//    for(int l=0;l<100000;l++){
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-        cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
-//    }
-//    tt = clock() - tt;
-//    time_taken = ((double)tt)/CLOCKS_PER_SEC;
-//    fprintf(f2, "%.4e\n", time_taken);
-
-//    fclose(f1);
-//    fclose(f2);
+    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-abx*abx/(2*sigmax*sigmax)-aby*aby/(2*sigmay*sigmay));
 
     Ex = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ey = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
-
-    //FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/xsuite_ellip.txt", "a");
-    //fprintf(f1, "%.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e %.10e\n", S, factBE, etaBE_re, etaBE_im, zetaBE_re, zetaBE_im, expBE, w_zetaBE_re, w_zetaBE_im, w_etaBE_re, w_etaBE_im, sigmax, sigmay, Ex, Ey);
-    //fclose(f1);
 
   }
   else if (sigmax<sigmay){
@@ -133,8 +102,6 @@ void get_transv_field_gauss_ellip(
 
   }
   else{
-    //printf("Round beam not implemented!\n");
-    //exit(1);
     Ex = Ey = 0.;
   }
 

@@ -33,8 +33,8 @@ int synrad_0(LocalParticle *part,
     double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEVPERC, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
     double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
     (*ecrit) = xcrit * energy*1e-9;  // [GeV]
-    double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
-    double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);  // [1] beamstrahlung parameter for single macropart
+    //double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
+    //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);  // [1] beamstrahlung parameter for single macropart
     double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
  
     // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
@@ -84,17 +84,17 @@ double synrad_avg(LocalParticle *part,
                   const double n_bb, double sigma_x, double sigma_y, double sigma_z){
 
     double r              = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
-    const double c1       = 2.59*(5.0/6.0)*(r*r)/(REDUCED_COMPTON);
+    //const double c1       = 2.59*(5.0/6.0)*(r*r)/(REDUCED_COMPTON);
     const double c2       =  1.2*(25.0/36.0)*(r*r*r*r)/(REDUCED_COMPTON)*137.0;
     const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
     double gamma          = initial_energy / m0; // [1] 
 
-    double n_avg        = c1*n_bb/(sigma_x + sigma_y);  // Avg. number of emitted photons from 1 macroparticle in one collision [1]
+    //double n_avg        = c1*n_bb/(sigma_x + sigma_y);  // Avg. number of emitted photons from 1 macroparticle in one collision [1]
     double delta_avg    = c2*gamma/sigma_z * (n_bb/(sigma_x + sigma_y))*(n_bb/(sigma_x + sigma_y));  // Avg. rel. E loss for 1 macroparticle in one collision [1]
     double U_BS         = delta_avg*initial_energy;  // Average energy loss per macropart per IP. [eV]
-    double u_avg        = delta_avg/n_avg;  // Average photon energy normalized to electron energy before emission [1]
-    double e_photon_avg = u_avg*initial_energy;  // Average photon energy [eV]
+    //double u_avg        = delta_avg/n_avg;  // Average photon energy normalized to electron energy before emission [1]
+    //double e_photon_avg = u_avg*initial_energy;  // Average photon energy [eV]
 
     LocalParticle_add_to_energy(part, -U_BS, 0);
     double energy_loss = -U_BS;
@@ -112,8 +112,8 @@ double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, Record
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
     double energy = initial_energy;  // [eV]
     double gamma = energy / m0; // [1] 
-    double r = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
-    double rho_inv = Fr / dz;  // [1/m] macropart bending radius from bb kick: dz/rho = dz/E*sqrt((px' - px)**2 + (py' - py)**2) = Fr * dz / E
+    //double r = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
+    double rho_inv = Fr / dz;  // [1/m] macropart inverse bending radius
     double tmp = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
     int max_photons = (int)(tmp*10.0)+1;
 
@@ -154,9 +154,13 @@ double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, Record
 
             // increment photon counter
             j++;
+
+            // break loop and flag part as dead
        	    if (j>=1000){
-		printf("too many photons produced by one particle (photon ID: %d)\n", j);
-		exit(-1);
+	    	printf("too many photons produced by one particle (photon ID: %d)\n", j);
+	    	//exit(-1);  // doesnt work on GPU
+                LocalParticle_set_state(part, -12); // used to flag this kind of loss
+                break;
 	    }
 
         }
@@ -165,7 +169,7 @@ double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, Record
 
     // update electron energy
     if (energy == 0.0){
-        LocalParticle_set_state(part, -10); // used to flag this kind of loss
+        LocalParticle_set_state(part, -12); // used to flag this kind of loss
     }else{
         LocalParticle_add_to_energy(part, energy-initial_energy, 0);
     }

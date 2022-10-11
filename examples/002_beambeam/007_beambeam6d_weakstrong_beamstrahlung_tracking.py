@@ -10,34 +10,6 @@ import xfields as xf
 import xpart as xp
 from matplotlib import pyplot as plt
 
-def stat_emittance(beam, alpha_x=0, alpha_y=0, beta_x=0, beta_y=0):
-    """
-    compute statistical emittances. First normalize coordinates by using (263) then (130) from
-    https://arxiv.org/pdf/2107.02614.pdf
-    """
-        
-    x_norm     = beam.x / np.sqrt(beta_x)
-    y_norm     = beam.y / np.sqrt(beta_y)
-    px_norm    = alpha_x / beta_x * beam.x + beta_x * beam.px
-    py_norm    = alpha_y / beta_y * beam.y + beta_y * beam.py   
-    
-    emit_x = np.sqrt(np.mean(( x_norm -  np.mean(x_norm))**2) *\
-                     np.mean((px_norm - np.mean(px_norm))**2) -\
-                     np.mean(( x_norm -  np.mean(x_norm)) *\
-                             (px_norm - np.mean(px_norm)))**2)
-        
-    emit_y = np.sqrt(np.mean(( y_norm -  np.mean(y_norm))**2) *\
-                     np.mean((py_norm - np.mean(py_norm))**2) -\
-                     np.mean(( y_norm -  np.mean(y_norm)) *\
-                             (py_norm - np.mean(py_norm)))**2)
-        
-    emit_s = np.sqrt(np.mean(( beam.zeta -  np.mean(beam.zeta))**2) *\
-                     np.mean((beam.delta - np.mean(beam.delta))**2) -\
-                     np.mean(( beam.zeta -  np.mean(beam.zeta)) *\
-                             (beam.delta - np.mean(beam.delta)))**2)
-        
-    return emit_x, emit_y, emit_s
-
 context = xo.ContextCpu(omp_num_threads=0)
 
 ###########
@@ -78,7 +50,7 @@ n_macroparticles_b2 = int(1e6)
 
 #e-
 particles_b1 = xp.Particles(
-            _context = context, 
+            _context = context,
             q0        = -1,
             p0c       = p0c,
             mass0     = mass0,
@@ -92,7 +64,7 @@ particles_b1 = xp.Particles(
 
 # e+
 particles_b2 = xp.Particles(
-            _context = context, 
+            _context = context,
             q0        = 1,
             p0c       = p0c,
             mass0     = mass0,
@@ -158,7 +130,7 @@ el_arc_left_b1 = xt.LinearTransferMatrix(_context=context,
 
 # between 2 sextupoles
 el_arc_mid_b1 = xt.LinearTransferMatrix(_context=context,
-    Q_x =  qx, 
+    Q_x =  qx,
     Q_y =  qy - 0.5, # subtract .25*2 phase advance from small arcs
     Q_s = -qs,
     beta_x_0 = beta_x_sext_left,
@@ -173,8 +145,8 @@ el_arc_mid_b1 = xt.LinearTransferMatrix(_context=context,
     damping_rate_x = damping_rate_x,
     damping_rate_y = damping_rate_y,
     damping_rate_s = damping_rate_s,
-    equ_emit_x = physemit_x, 
-    equ_emit_y = physemit_y, 
+    equ_emit_x = physemit_x,
+    equ_emit_y = physemit_y,
     equ_emit_s = physemit_s, # only here i need sigma_z delta SR
     energy_increment = u_bs*1e9, # U_BS for one IP
 )
@@ -217,41 +189,27 @@ n_slices = 100
 
 bin_edges = sigma_z_tot*np.linspace(-3.0,3.0,n_slices+1)
 slicer = xf.TempSlicer(bin_edges=bin_edges)
+strong_slice_moments = slicer.compute_moments(particles_b2)
 
 # slice intensity [num. real particles] n_slices inferred from length of this
-slices_other_beam_num_particles = np.zeros(n_slices)
-# unboosted strong beam moments  
-slices_other_beam_x_center    = np.zeros_like(slices_other_beam_num_particles)
-slices_other_beam_zeta_center = np.zeros_like(slices_other_beam_num_particles)
-slices_other_beam_Sigma_11    = np.zeros_like(slices_other_beam_num_particles)
-slices_other_beam_Sigma_22    = np.zeros_like(slices_other_beam_num_particles)
-slices_other_beam_Sigma_33    = np.zeros_like(slices_other_beam_num_particles)
-slices_other_beam_Sigma_44    = np.zeros_like(slices_other_beam_num_particles)
+slices_other_beam_num_particles = strong_slice_moments[:n_slices]
+# unboosted strong beam moments
+slices_other_beam_x_center    = strong_slice_moments[n_slices:2*n_slices]
+slices_other_beam_zeta_center = strong_slice_moments[5*n_slices:6*n_slices]
+slices_other_beam_Sigma_11    = strong_slice_moments[7*n_slices:8*n_slices]
+slices_other_beam_Sigma_22    = strong_slice_moments[11*n_slices:12*n_slices]
+slices_other_beam_Sigma_33    = strong_slice_moments[14*n_slices:15*n_slices]
+slices_other_beam_Sigma_44    = strong_slice_moments[16*n_slices:17*n_slices]
 # only if BS on
 slices_other_beam_zeta_bin_width = np.abs(np.diff(slicer.bin_edges))
 
-for i in range(n_slices):
-    particles_in_slice = np.argwhere(slicer.get_slice_indices(particles_b2)==i)
-    
-    slices_other_beam_num_particles[i] = int(len(particles_in_slice))
-    
-    # nan if 0 particles in slice
-    slices_other_beam_x_center     [i] = particles_b2.x   [particles_in_slice].mean()  
-    slices_other_beam_zeta_center  [i] = particles_b2.zeta[particles_in_slice].mean()
-    
-    # nan if 0 particles in slice, 0 if 1 particle in slice
-    slices_other_beam_Sigma_11     [i] = particles_b2.x   [particles_in_slice].std()
-    slices_other_beam_Sigma_22     [i] = particles_b2.px  [particles_in_slice].std()
-    slices_other_beam_Sigma_33     [i] = particles_b2.y   [particles_in_slice].std()
-    slices_other_beam_Sigma_44     [i] = particles_b2.py  [particles_in_slice].std()
-
-    # change nans to 0
-    slices_other_beam_x_center[np.isnan(slices_other_beam_x_center)] = 0
-    slices_other_beam_zeta_center[np.isnan(slices_other_beam_zeta_center)] = 0
-    slices_other_beam_Sigma_11[np.isnan(slices_other_beam_Sigma_11)] = 0
-    slices_other_beam_Sigma_22[np.isnan(slices_other_beam_Sigma_22)] = 0
-    slices_other_beam_Sigma_33[np.isnan(slices_other_beam_Sigma_33)] = 0
-    slices_other_beam_Sigma_44[np.isnan(slices_other_beam_Sigma_44)] = 0
+# change nans to 0
+slices_other_beam_x_center[np.isnan(slices_other_beam_x_center)] = 0
+slices_other_beam_zeta_center[np.isnan(slices_other_beam_zeta_center)] = 0
+slices_other_beam_Sigma_11[np.isnan(slices_other_beam_Sigma_11)] = 0
+slices_other_beam_Sigma_22[np.isnan(slices_other_beam_Sigma_22)] = 0
+slices_other_beam_Sigma_33[np.isnan(slices_other_beam_Sigma_33)] = 0
+slices_other_beam_Sigma_44[np.isnan(slices_other_beam_Sigma_44)] = 0
     
 el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         _context=context,
@@ -264,17 +222,17 @@ el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         # slice intensity [num. real particles] n_slices inferred from length of this
         slices_other_beam_num_particles      = bunch_intensity/n_macroparticles_b2*slices_other_beam_num_particles,
         slices_other_beam_num_macroparticles = slices_other_beam_num_particles,
-        # unboosted strong beam moments  
+        # unboosted strong beam moments
         slices_other_beam_x_center    = slices_other_beam_x_center,
         slices_other_beam_zeta_center = slices_other_beam_zeta_center,
-        slices_other_beam_Sigma_11    = slices_other_beam_Sigma_11**2,
-        slices_other_beam_Sigma_22    = slices_other_beam_Sigma_22**2,
-        slices_other_beam_Sigma_33    = slices_other_beam_Sigma_33**2,
-        slices_other_beam_Sigma_44    = slices_other_beam_Sigma_44**2,
+        slices_other_beam_Sigma_11    = slices_other_beam_Sigma_11,
+        slices_other_beam_Sigma_22    = slices_other_beam_Sigma_22,
+        slices_other_beam_Sigma_33    = slices_other_beam_Sigma_33,
+        slices_other_beam_Sigma_44    = slices_other_beam_Sigma_44,
         # only if BS on
         do_beamstrahlung = 1,
         slices_other_beam_zeta_bin_width_star = slices_other_beam_zeta_bin_width*np.cos(phi),  # boosted dz
-        # that has to be set
+        # has to be set
         slices_other_beam_Sigma_12_star    = n_slices*[0],
         slices_other_beam_Sigma_13_star    = n_slices*[0],
         slices_other_beam_Sigma_14_star    = n_slices*[0],
@@ -294,50 +252,79 @@ x_std_arr  = np.zeros_like(emit_x_arr)
 y_std_arr  = np.zeros_like(emit_x_arr)
 z_std_arr  = np.zeros_like(emit_x_arr)
 
-empty_tracker_b1 = xt.Tracker(line=xt.Line())
+monitor_emits  = xt.ParticlesMonitor(start_at_turn=0, stop_at_turn=n_turns, particle_id_range=(0,n_macroparticles_b1))
+monitor_coords = xt.ParticlesMonitor(start_at_turn=0, stop_at_turn=n_turns, particle_id_range=(0,n_macroparticles_b1))
 
 el_inject_b1.track(particles_b1)
-for turn in range(n_turns):
-    
-    # observe emittances    
-    emit_x_stat_b1, emit_y_stat_b1, emit_s_stat_b1 = stat_emittance(particles_b1,
-                                                alpha_x=alpha_x_sext_right,
-                                                alpha_y=alpha_y_sext_right,
-                                                beta_x=beta_x_sext_right,
-                                                beta_y=beta_y_sext_right
-                                               )
-    emit_x_arr[turn] = np.mean(emit_x_stat_b1)
-    emit_y_arr[turn] = np.mean(emit_y_stat_b1)
-    emit_s_arr[turn] = np.mean(emit_s_stat_b1)
-    
-    # from right sextupole to ip
-    el_sextupole_right.track(particles_b1)
-    el_arc_right_b1.track(particles_b1)
+line = xt.Line(elements = [monitor_emits,
+                           el_sextupole_right,
+                           el_arc_right_b1,
+                           monitor_coords,
+                           el_beambeam_b1,
+                           el_arc_left_b1,
+                           el_sextupole_left,
+                           el_arc_mid_b1])
 
-    # observe coordinates
-    x_std_arr[turn] = particles_b1.x.std(axis=0)  
-    y_std_arr[turn] = particles_b1.y.std(axis=0)  
-    z_std_arr[turn] = particles_b1.zeta.std(axis=0)    
-    
-    # ip
-    particles_b1.slice_id = slicer.get_slice_indices(particles_b1)
-    el_beambeam_b1.track(particles_b1)
-
-    # from ip to right sectupole
-    el_arc_left_b1.track(particles_b1)
-    el_sextupole_left.track(particles_b1)
-    el_arc_mid_b1.track(particles_b1)
-    
-    # increment at_turn 
-    empty_tracker_b1.track(particles_b1)  
-    print("Turn [{}/{}]: sigma z: {:.2e} [m]".format(turn+1, n_turns, z_std_arr[turn]))
+tracker = xt.Tracker(line=line)
+record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
+tracker.track(particles_b1, num_turns=n_turns)
+tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
 #########
-# plots #
+# plots #
 #########
+def stat_emittance_from_monitor(emits_dict, n_macroparticles, n_turns, alpha_x=0, alpha_y=0, beta_x=0, beta_y=0):
+    """
+    compute statistical emittances. First normalize coordinates by using (263) then (130) from
+    https://arxiv.org/pdf/2107.02614.pdf
+    """
+        
+    x     = np.reshape(emits_dict["x"],     (n_macroparticles, n_turns))
+    px    = np.reshape(emits_dict["px"],    (n_macroparticles, n_turns))
+    y     = np.reshape(emits_dict["y"],     (n_macroparticles, n_turns))
+    py    = np.reshape(emits_dict["py"],    (n_macroparticles, n_turns))
+    z     = np.reshape(emits_dict["zeta"],  (n_macroparticles, n_turns))
+    delta = np.reshape(emits_dict["delta"], (n_macroparticles, n_turns))
+        
+    x_norm     = x / np.sqrt(beta_x)
+    y_norm     = y / np.sqrt(beta_y)
+    px_norm    = alpha_x / beta_x * x + beta_x * px
+    py_norm    = alpha_y / beta_y * y + beta_y * py
+    
+    emit_x = np.sqrt(np.mean(( x_norm -  np.mean(x_norm, axis=0))**2, axis=0) *\
+                     np.mean((px_norm - np.mean(px_norm, axis=0))**2, axis=0) -\
+                     np.mean(( x_norm -  np.mean(x_norm, axis=0)) *\
+                             (px_norm - np.mean(px_norm, axis=0)), axis=0)**2)
+        
+    emit_y = np.sqrt(np.mean(( y_norm -  np.mean(y_norm, axis=0))**2, axis=0) *\
+                     np.mean((py_norm - np.mean(py_norm, axis=0))**2, axis=0) -\
+                     np.mean(( y_norm -  np.mean(y_norm, axis=0)) *\
+                             (py_norm - np.mean(py_norm, axis=0)), axis=0)**2)
+        
+    emit_s = np.sqrt(np.mean((    z - np.mean(    z, axis=0))**2, axis=0) *\
+                     np.mean((delta - np.mean(delta, axis=0))**2, axis=0) -\
+                     np.mean((    z - np.mean(    z, axis=0)) *\
+                             (delta - np.mean(delta, axis=0)), axis=0)**2)
+        
+    return emit_x, emit_y, emit_s
+    
+# get emittances and RMS beam sizes
+coords_dict = monitor_coords.to_dict()["data"]
+emits_dict  = monitor_emits.to_dict()["data"]
 
+emit_x_arr, emit_y_arr, emit_s_arr = stat_emittance_from_monitor(emits_dict, n_macroparticles_b1, n_turns,
+                            alpha_x=alpha_x_sext_right,
+                            alpha_y=alpha_y_sext_right,
+                            beta_x=beta_x_sext_right,
+                            beta_y=beta_y_sext_right)
+
+x_std_arr = np.std(np.reshape(coords_dict["x"],    (n_macroparticles_b1, n_turns)), axis=0)
+y_std_arr = np.std(np.reshape(coords_dict["y"],    (n_macroparticles_b1, n_turns)), axis=0)
+z_std_arr = np.std(np.reshape(coords_dict["zeta"], (n_macroparticles_b1, n_turns)), axis=0)
+
+# bunch size evolution
 turns_arr = np.arange(n_turns)
-w = int(n_turns/2)
+w = 500
 
 fig, ax = plt.subplots(3,2, figsize=(20,10))
 
@@ -364,4 +351,13 @@ ax[0,1].legend()
 ax[1,1].legend()
 ax[2,1].legend()
 
-plt.show()  
+plt.show()
+
+# beamstrahlung photon spectrum
+fig, ax = plt.subplots(1,1,figsize=(12,8))
+ax.hist(record.beamstrahlungtable.photon_energy/1e9, bins=np.logspace(np.log10(1e-14), np.log10(1e1), 100), histtype="step");
+ax.set_xscale("log")
+ax.set_yscale("log")
+ax.set_xlabel("E [GeV]")
+ax.set_ylabel("Count [1]")
+plt.show()
