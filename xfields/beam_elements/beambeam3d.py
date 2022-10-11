@@ -11,24 +11,6 @@ import xpart as xp
 
 from ..general import _pkg_root
 
-"""
-class BeamstrahlungTable(xo.HybridClass):
-    _xofields = {
-      '_index': xt.RecordIndex,
-      'at_element': xo.Int64[:],
-      'at_turn': xo.Int64[:],
-      'particle_id': xo.Int64[:],
-      'photon_id': xo.Float64[:], 
-      'photon_energy': xo.Float64[:],
-      'photon_critical_energy': xo.Float64[:],
-      'primary_energy': xo.Float64[:],
-    }
-
-class BeamBeamBiGaussian3DRecord(xo.HybridClass):
-    _xofields = {
-        'beamstrahlungtable': BeamstrahlungTable,
-      }
-"""
 class BeamstrahlungTable(xo.HybridClass):
     _xofields = {
       '_index': xt.RecordIndex,

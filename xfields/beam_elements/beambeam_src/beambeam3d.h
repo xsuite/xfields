@@ -21,7 +21,7 @@ void synchrobeam_kick(
     const double q0_bb  = BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
-    const int64_t do_beamstrahlung         = BeamBeamBiGaussian3DData_get_do_beamstrahlung(el);
+    const int64_t do_beamstrahlung = BeamBeamBiGaussian3DData_get_do_beamstrahlung(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
