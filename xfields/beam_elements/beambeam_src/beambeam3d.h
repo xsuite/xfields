@@ -143,14 +143,14 @@ void synchrobeam_kick(
 
         // bending radius is over this distance (half slice length)
         /*gpuglmem*/ double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star(el, i_slice);
-        double _energy_loss = synrad(part, record, table_index, table, Fr, dz);
+        synrad(part, record, table_index, table, Fr, dz);
 
         // BS rescales these, so load again before kick 
         *pzeta_star = LocalParticle_get_pzeta(part);  
     }
     else if(do_beamstrahlung==2){
         double var_z_bb = 0.0121;
-        double _energy_loss = synrad_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
+        synrad_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), var_z_bb);  // slice intensity and RMS slice sizes
         *pzeta_star = LocalParticle_get_pzeta(part);  
     }
 
@@ -216,7 +216,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         double py = LocalParticle_get_py(part);
         double zeta = LocalParticle_get_zeta(part);
         double pzeta = LocalParticle_get_pzeta(part);
-        double delta = LocalParticle_get_delta(part);
+        //double delta = LocalParticle_get_delta(part);
 
         const double q0 = LocalParticle_get_q0(part);
         const double p0c = LocalParticle_get_p0c(part); // eV
@@ -255,7 +255,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         {
             // new: reload boosted pzeta after each slice kick to compare with sbc6d; these are boosted
        	    pzeta = LocalParticle_get_pzeta(part);
-            delta = LocalParticle_get_delta(part);
+            //delta = LocalParticle_get_delta(part);
 /*
             printf("[beambeam3d] [%d] at ip:\n", part->ipart);
             printf("\tslice_id_bb: %d\n", i_slice);
