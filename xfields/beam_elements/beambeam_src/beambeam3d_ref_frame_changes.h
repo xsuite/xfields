@@ -36,7 +36,8 @@ void boost_coordinates(
     double const py_st = py/cphi-h*salpha*tphi/cphi;
     double const delta_st = delta -px*calpha*tphi-py*salpha*tphi+h*tphi*tphi;
 
-    double const pz_st = sqrt((1.+delta_st)*(1.+delta_st)-px_st*px_st-py_st*py_st);
+    double const pz_st = 
+        sqrt((1.+delta_st)*(1.+delta_st)-px_st*px_st-py_st*py_st);
 
     double const hx_st = px_st/pz_st;
     double const hy_st = py_st/pz_st;

@@ -4,10 +4,6 @@
 #define SQRT3 1.732050807568877
 #define ALPHA_EM 0.0072973525693
 
-#if !defined(dump_path)
-    #define dump_path "/Users/pkicsiny/phd/cern/xsuite/outputs/n34_xsuite" 
-#endif
-
 /*gpufun*/
 int synrad_0(LocalParticle *part,
              double energy,  // [eV]

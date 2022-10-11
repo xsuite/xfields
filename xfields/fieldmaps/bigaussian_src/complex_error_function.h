@@ -12,8 +12,6 @@
 
 #include <stdbool.h>  //only_for_context cpu_serial cpu_openmp
 #include <math.h>     //only_for_context cpu_serial cpu_openmp
-//#include "/Users/pkicsiny/phd/cern/git/xfields/xfields/headers/power_n.h"
-//#include "/Users/pkicsiny/phd/cern/git/xfields/xfields/headers/sincos.h"
 
 /* These parameters correspond to the original algorithm developed by Gautschi
  * with a target accuracy of < 0.5 x 10^{-10} in the *absolute* error. Upstream

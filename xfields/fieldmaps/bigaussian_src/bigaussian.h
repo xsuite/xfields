@@ -7,11 +7,6 @@
 #define XFIEDLS_BIGUASSIIAN_H
 
 
-#if !defined(profiler_path)
-    #define profiler_path "/Users/pkicsiny/phd/cern/PySBC/outputs" 
-#endif
-
-
 // for quick test with gcc
 #include "constants.h" //only_for_context none
 #include "complex_error_function.h" //only_for_context none
