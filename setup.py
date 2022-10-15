@@ -50,6 +50,6 @@ setup(
             "Source Code": "https://github.com/xsuite/xfields",
         },
     extras_require={
-        'tests': ['pytest'],
+            'tests': ['gpyfft', 'pytest']
         },
     )
