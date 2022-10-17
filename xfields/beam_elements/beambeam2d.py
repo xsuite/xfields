@@ -14,6 +14,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     _xofields = {
 
+        'scale_strength': xo.Float64,
+
         'ref_shift_x': xo.Float64,
         'ref_shift_y': xo.Float64,
 
@@ -50,6 +52,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
 
     def __init__(self,
+                    scale_strength=1,
+
                     other_beam_q0=None,
                     other_beam_beta0=None,
 
@@ -93,6 +97,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                     'BeamBeamBiGaussian3D only works with CPU context for now')
 
         # Handle old interface
+        if 'scale_strength' in params.keys(): scale_strength = params['scale_strength']
         if 'other_beam_num_particles' in params.keys(): other_beam_num_particles = params['other_beam_num_particles']
         if 'other_beam_q0' in params.keys(): other_beam_q0 = params['other_beam_q0']
         if 'other_beam_beta0' in params.keys(): other_beam_beta0 = params['other_beam_beta0']
@@ -103,6 +108,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         if 'post_subtract_px' in params.keys(): post_subtract_px = params['post_subtract_px']
         if 'post_subtract_py' in params.keys(): post_subtract_py = params['post_subtract_py']
 
+        self.scale_strength = scale_strength
+        
         # Mandatory sigmas
         assert other_beam_Sigma_11 is not None, ("`other_beam_Sigma_11` must be provided")
         assert other_beam_Sigma_33 is not None, ("`other_beam_Sigma_33` must be provided")

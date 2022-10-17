@@ -14,6 +14,8 @@
 void BeamBeamBiGaussian2D_track_local_particle(
         BeamBeamBiGaussian2DData el, LocalParticle* part0){
 
+    double const scale_strength = BeamBeamBiGaussian2DData_get_scale_strength(el);
+
     double const ref_shift_x = BeamBeamBiGaussian2DData_get_ref_shift_x(el);
     double const ref_shift_y = BeamBeamBiGaussian2DData_get_ref_shift_y(el);
 
@@ -93,8 +95,8 @@ void BeamBeamBiGaussian2D_track_local_particle(
         double const dpx = dpx_hat*costheta - dpy_hat*sintheta;
         double const dpy = dpx_hat*sintheta + dpy_hat*costheta;
 
-        LocalParticle_add_to_px(part, dpx - post_subtract_px);
-        LocalParticle_add_to_py(part, dpy - post_subtract_py);
+        LocalParticle_add_to_px(part, scale_strength*(dpx - post_subtract_px));
+        LocalParticle_add_to_py(part, scale_strength*(dpy - post_subtract_py));
 
     //end_per_particle_block
 
