@@ -149,3 +149,13 @@ def test_beambeam():
             p2np(particles_b1.py[:n_probes]),
             atol=2e-2*np.max(np.abs(p_dtk.py)))
 
+        # Check scale strength
+        p_before = particles_b1.copy()
+        bbeam_b1.scale_strength = 0
+        bbeam_b1.track(particles_b1)
+
+        p_before.move(_context=xo.context_default)
+        particles_b1.move(_context=xo.context_default)
+        assert np.all(p_before.px == particles_b1.px)
+        assert np.all(p_before.py == particles_b1.py)
+
