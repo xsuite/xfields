@@ -20,11 +20,10 @@ void BeamBeamBiGaussian2D_track_local_particle(
     double const other_beam_shift_x = BeamBeamBiGaussian2DData_get_other_beam_shift_x(el);
     double const other_beam_shift_y = BeamBeamBiGaussian2DData_get_other_beam_shift_y(el);
 
-    double const scale_strength = BeamBeamBiGaussian2DData_get_scale_strength(el);
-    double const post_subtract_px = scale_strength*BeamBeamBiGaussian2DData_get_post_subtract_px(el);
-    double const post_subtract_py = scale_strength*BeamBeamBiGaussian2DData_get_post_subtract_py(el);
+    double const post_subtract_px = BeamBeamBiGaussian2DData_get_post_subtract_px(el);
+    double const post_subtract_py = BeamBeamBiGaussian2DData_get_post_subtract_py(el);
 
-    double const other_beam_q0 = scale_strength*BeamBeamBiGaussian2DData_get_other_beam_q0(el);
+    double const other_beam_q0 = BeamBeamBiGaussian2DData_get_other_beam_q0(el);
     double const other_beam_beta0 = BeamBeamBiGaussian2DData_get_other_beam_beta0(el);
 
     double const other_beam_num_particles = BeamBeamBiGaussian2DData_get_other_beam_num_particles(el);
