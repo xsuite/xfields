@@ -22,7 +22,7 @@ def faddeeva_calculator():
                 double z_im = FaddeevaCalculatorData_get_z_im(data, ii);
                 double w_re, w_im;
 
-                cerrf(z_re, z_im, &w_re, &w_im);
+                faddeeva_w(z_re, z_im, &w_re, &w_im);
 
                 FaddeevaCalculatorData_set_w_re(data, ii, w_re);
                 FaddeevaCalculatorData_set_w_im(data, ii, w_im);
@@ -42,7 +42,7 @@ def faddeeva_calculator():
             _pkg_root.joinpath("headers/constants.h"),
             _pkg_root.joinpath("headers/sincos.h"),
             _pkg_root.joinpath("headers/power_n.h"),
-            _pkg_root.joinpath("fieldmaps/bigaussian_src/complex_error_function.h"),
+            _pkg_root.joinpath("fieldmaps/bigaussian_src/faddeeva.h"),
             source,
         ]
 
@@ -85,7 +85,7 @@ def faddeeva_calculator():
     xo.context.get_test_contexts(),
     ids=[str(ctx) for ctx in xo.context.get_test_contexts()],
 )
-def test_cerrf_q1(faddeeva_calculator, context):
+def test_faddeeva_w_q1(faddeeva_calculator, context):
     FaddeevaCalculator = faddeeva_calculator
 
     # Generate the test grid
@@ -108,7 +108,7 @@ def test_cerrf_q1(faddeeva_calculator, context):
     # implementation using a combination of Algorithm 680 for large |z| and
     # Algorithm 916 for the remainder fo C. It claims a relative accuracy of
     # 1e-13 across the whole of C and is thus suitable to check the accuracy
-    # of the cerrf_q1 implementation which has a target accuracy of 10^{-10}
+    # of the faddeeva_w_q1 implementation which has a target accuracy of 10^{-10}
     # in the *absolute* error.
     wz_cmp = wofz_scipy(re_absc + 1.0j * im_absc)
 
@@ -118,7 +118,7 @@ def test_cerrf_q1(faddeeva_calculator, context):
     d_abs_re = np.fabs(wz_re - wz_cmp.real)
     d_abs_im = np.fabs(wz_im - wz_cmp.imag)
 
-    # NOTE: target accuracy of cerrf_q1 is 0.5e-10 but the algorithm does
+    # NOTE: target accuracy of faddeeva_w_q1 is 0.5e-10 but the algorithm does
     #       not converge to within target accuracy for all arguments in C,
     #       especially close to the real axis. We therfore require that
     #       d_abs_re.max(), d_abs_im.max() < 0.5e-9
@@ -132,7 +132,7 @@ def test_cerrf_q1(faddeeva_calculator, context):
     xo.context.get_test_contexts(),
     ids=[str(ctx) for ctx in xo.context.get_test_contexts()],
 )
-def test_cerrf_all_quadrants(faddeeva_calculator, context):
+def test_faddeeva_w_all_quadrants(faddeeva_calculator, context):
     FaddeevaCalculator = faddeeva_calculator
 
     x0 = 5.33
@@ -166,8 +166,8 @@ def test_cerrf_all_quadrants(faddeeva_calculator, context):
     calculator = FaddeevaCalculator(z=z, _context=context)
     calculator.compute()
 
-    # Create comparison data for veryfing the correctness of cerrf().
-    # Cf. the comments about scipy's wofz implementation in test_cerrf_q1()
+    # Create comparison data for veryfing the correctness of faddeeva_w().
+    # Cf. the comments about scipy's wofz implementation in test_faddeeva_w_q1()
     # for details!
     wz_cmp = wofz_scipy(z)
 

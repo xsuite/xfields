@@ -8,7 +8,7 @@
 
 // for quick test with gcc
 #include "constants.h" //only_for_context none
-#include "complex_error_function.h" //only_for_context none
+#include "faddeeva.h" //only_for_context none
 
 /*gpufun*/
 void get_transv_field_gauss_round(
@@ -63,9 +63,9 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = aby;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    faddeeva_w(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    faddeeva_w(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-abx*abx/(2*sigmax*sigmax)-aby*aby/(2*sigmay*sigmay));
 
@@ -83,9 +83,9 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = abx;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    faddeeva_w(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    faddeeva_w(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-aby*aby/(2*sigmay*sigmay)-abx*abx/(2*sigmax*sigmax));
 

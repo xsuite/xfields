@@ -3,8 +3,8 @@
 // Copyright (c) CERN, 2021.                   //
 // ########################################### //
 
-#ifndef XFIELDS_COMPLEX_ERROR_FUNCTION_H
-#define XFIELDS_COMPLEX_ERROR_FUNCTION_H
+#ifndef XFIELDS_FADDEEVA_H
+#define XFIELDS_FADDEEVA_H
 
 /** \file complex_error_function.h
   * \note always include headers/constants.h, headers/power_n.h, and
@@ -57,7 +57,7 @@
 
 /* ************************************************************************* */
 
-/** \fn void cerrf_q1( double const, double const, double*, double* )
+/** \fn void faddeeva_w_q1( double const, double const, double*, double* )
  *  \brief calculates the Faddeeva function w(z) for z = x + i * y in Q1
  *
  *  \param[in] x real component of argument z
@@ -66,7 +66,7 @@
  *  \param[out] out_y pointer to imanginary component of result
  *
  *  \warning This function assumes that x and y are > 0 i.e., that z is
- *           from the first quadrant Q1 of the complex plane. Use cerrf if
+ *           from the first quadrant Q1 of the complex plane. Use faddeeva_w if
  *           you need a more general function
  *
  *  \note    Based upon the algorithm developed by W. Gautschi 1970,
@@ -75,7 +75,7 @@
  *           pages 187-198, https://epubs.siam.org/doi/10.1137/0707012
  */
 
-/*gpufun*/ void cerrf_q1(
+/*gpufun*/ void faddeeva_w_q1(
     double const x, double const y,
     double* /*restrict*/ out_x,
     double* /*restrict*/ out_y )
@@ -197,10 +197,10 @@
     *out_y = Wy;
 }
 
-/** \fn void cerrf( double const x, double const y, double* out_x, double* out_y )
+/** \fn void faddeeva_w( double const x, double const y, double* out_x, double* out_y )
  *  \brief calculates the Faddeeva function w(z) for general z = x + i * y
  *
- *   Calls cerrf_q1 internally for |x| and |y| on quadrant Q1 and
+ *   Calls faddeeva_w_q1 internally for |x| and |y| on quadrant Q1 and
  *   transforms the result to Q2, Q3, and Q4 before returning them via
  *   out_x and out_y.
  *
@@ -211,7 +211,7 @@
  *
  */
 
-/*gpufun*/ void cerrf( double x, double y,
+/*gpufun*/ void faddeeva_w( double x, double y,
     double* /*restrict*/ out_x, double* /*restrict*/ out_y )
 {
     double const sign_x = ( double )( ( x >= ( double )0. ) - ( x < ( double )0. ) );
@@ -221,7 +221,7 @@
     x *= sign_x;
     y *= sign_y;
 
-    cerrf_q1( x, y, &Wx, &Wy );
+    faddeeva_w_q1( x, y, &Wx, &Wy );
 
     if( sign_y < ( double )0.0 )  /* Quadrants Q3 and Q4 */
     {
@@ -239,5 +239,5 @@
     *out_y = sign_x * Wy; /* Takes care of Quadrants Q2 and Q3 */
 }
 
-#endif /* XFIELDS_COMPLEX_ERROR_FUNCTION_H */
+#endif /* XFIELDS_FADDEEVA_H */
 
