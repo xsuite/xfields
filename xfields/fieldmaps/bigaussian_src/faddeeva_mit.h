@@ -193,30 +193,30 @@
 
 
 // compute w(z) = exp(-z^2) erfc(-iz) [ Faddeeva / scaled complex error func ]
-static inline double complex Faddeeva_w(double complex z, double relerr);
-double Faddeeva_w_im(double x); // special-case code for Im[w(x)] of real x
+static inline double complex Faddeeva_MIT_w(double complex z, double relerr);
+double Faddeeva_MIT_w_im(double x); // special-case code for Im[w(x)] of real x
 
 // Various functions that we can compute with the help of w(z)
 
 // compute erfcx(z) = exp(z^2) erfc(z)
-double complex Faddeeva_erfcx(double complex z, double relerr);
-double Faddeeva_erfcx_re(double x); // special case for real x
+double complex Faddeeva_MIT_erfcx(double complex z, double relerr);
+double Faddeeva_MIT_erfcx_re(double x); // special case for real x
 
 // compute erf(z), the error function of complex arguments
-double complex Faddeeva_erf(double complex z, double relerr);
-double Faddeeva_erf_re(double x); // special case for real x
+double complex Faddeeva_MIT_erf(double complex z, double relerr);
+double Faddeeva_MIT_erf_re(double x); // special case for real x
 
 // compte erfi(z) = -i erf(iz), the imaginary error function
-double complex Faddeeva_erfi(double complex z, double relerr);
-double Faddeeva_erfi_re(double x); // special case for real x
+double complex Faddeeva_MIT_erfi(double complex z, double relerr);
+double Faddeeva_MIT_erfi_re(double x); // special case for real x
 
 // compute erfc(z) = 1 - erf(z), the complementary error function
-double complex Faddeeva_erfc(double complex z, double relerr);
-double Faddeeva_erfc_re(double x); // special case for real x
+double complex Faddeeva_MIT_erfc(double complex z, double relerr);
+double Faddeeva_MIT_erfc_re(double x); // special case for real x
 
 // compute Dawson(z) = sqrt(pi)/2  *  exp(-z^2) * erfi(z)
-double complex Faddeeva_Dawson(double complex z, double relerr);
-double Faddeeva_Dawson_re(double x); // special case for real x
+double complex Faddeeva_MIT_Dawson(double complex z, double relerr);
+double Faddeeva_MIT_Dawson_re(double x); // special case for real x
 
 
 /*gpufun*/ void faddeeva_w( double x, double y,
@@ -224,7 +224,7 @@ double Faddeeva_Dawson_re(double x); // special case for real x
 {
     double complex z, W;
     z = x + I * y;
-    W = Faddeeva_w(z, 0);
+    W = Faddeeva_MIT_w(z, 0);
     *out_x = creal(W);
     *out_y = cimag(W);
 }
@@ -243,8 +243,8 @@ double Faddeeva_Dawson_re(double x); // special case for real x
 
 typedef double complex cmplx;
 
-#  define FADDEEVA(name) Faddeeva_ ## name
-#  define FADDEEVA_RE(name) Faddeeva_ ## name ## _re
+#  define FADDEEVA(name) Faddeeva_MIT_ ## name
+#  define FADDEEVA_RE(name) Faddeeva_MIT_ ## name ## _re
 
 /* Constructing complex numbers like 0+i*NaN is problematic in C99
    without the C11 CMPLX macro, because 0.+I*NAN may give NaN+i*NAN if
