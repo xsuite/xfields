@@ -342,6 +342,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._allocate_xobject(n_slices, **kwargs)
 
         self.other_beam_q0 = 1., # TODO: handle ions
+        self.scale_strength = 1.
 
         phi = params["phi"]
         alpha = params["alpha"]
