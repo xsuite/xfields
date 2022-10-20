@@ -141,12 +141,19 @@ void get_Ex_Ey_gauss(
     double Gx, Gy;
 
     if (fabs(sigma_x-sigma_y) < min_sigma_diff){
+	    
 
         const double sigma = 0.5*(sigma_x+sigma_y);
-        Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
-                            *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
-        Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
-                            *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+	if ((x*x+y*y)<1e-14){
+            Gx = 1./(8*PI*EPSILON_0*sigma*sigma);
+	    Gy = Gx;
+	}
+	else{
+            Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
+                                *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+            Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
+                                *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+	}
     }
     else{
 
