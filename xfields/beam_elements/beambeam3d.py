@@ -14,6 +14,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
 
+        'scale_strength': xo.Float64,
+
         '_sin_phi': xo.Float64,
         '_cos_phi': xo.Float64,
         '_tan_phi': xo.Float64,
@@ -100,6 +102,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     def __init__(self,
                     phi=None, alpha=None, other_beam_q0=None, particles_per_macroparticle = None,
+                    scale_strength = 1.,
 
                     slices_other_beam_num_particles=None,
 
@@ -283,6 +286,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
+        self.scale_strength = scale_strength
 
         self.ref_shift_x = ref_shift_x
         self.ref_shift_px = ref_shift_px
@@ -338,6 +342,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._allocate_xobject(n_slices, **kwargs)
 
         self.other_beam_q0 = 1., # TODO: handle ions
+        self.scale_strength = 1.
 
         phi = params["phi"]
         alpha = params["alpha"]

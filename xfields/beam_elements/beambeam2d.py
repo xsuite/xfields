@@ -14,6 +14,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     _xofields = {
 
+        'scale_strength': xo.Float64,
+
         'ref_shift_x': xo.Float64,
         'ref_shift_y': xo.Float64,
 
@@ -50,6 +52,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
 
     def __init__(self,
+                    scale_strength=1.,
+
                     other_beam_q0=None,
                     other_beam_beta0=None,
 
@@ -103,6 +107,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         if 'post_subtract_px' in params.keys(): post_subtract_px = params['post_subtract_px']
         if 'post_subtract_py' in params.keys(): post_subtract_py = params['post_subtract_py']
 
+        
         # Mandatory sigmas
         assert other_beam_Sigma_11 is not None, ("`other_beam_Sigma_11` must be provided")
         assert other_beam_Sigma_33 is not None, ("`other_beam_Sigma_33` must be provided")
@@ -137,6 +142,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         self.post_subtract_py = post_subtract_py
 
         self.min_sigma_diff = min_sigma_diff
+
+        self.scale_strength = scale_strength
 
     def _handle_init_old_interface(self, kwargs):
 
