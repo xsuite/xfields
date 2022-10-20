@@ -141,8 +141,6 @@ void get_Ex_Ey_gauss(
     double Gx, Gy;
 
     if (fabs(sigma_x-sigma_y) < min_sigma_diff){
-	    
-
         const double sigma = 0.5*(sigma_x+sigma_y);
 	if ((x*x+y*y)<1e-14){
             Gx = 1./(8*PI*EPSILON_0*sigma*sigma);
