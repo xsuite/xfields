@@ -619,6 +619,7 @@ def test_beambeam3d_old_interface():
              # Scaling down bb:
             bb.scale_strength = 0
             part_before_tracking = part.copy()
+            part.move(_context=context)
             bb.track(part)
 
             for cc in 'x px y py zeta delta'.split():
