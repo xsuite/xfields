@@ -621,6 +621,7 @@ def test_beambeam3d_old_interface():
             part_before_tracking = part.copy()
             part.move(_context=context)
             bb.track(part)
+            part.move(_context=xo.ContextCpu())
 
             for cc in 'x px y py zeta delta'.split():
                 val_test = getattr(part, cc)[0]
