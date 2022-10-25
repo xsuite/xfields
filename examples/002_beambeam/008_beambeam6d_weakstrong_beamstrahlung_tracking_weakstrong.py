@@ -217,12 +217,13 @@ el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         config_for_update = None,
         other_beam_q0=1,
         phi=phi,
+        turn=0,
         alpha=0,
         # decide between round or elliptical kick formula
         min_sigma_diff     = 1e-28,
         # slice intensity [num. real particles] n_slices inferred from length of this
         slices_other_beam_num_particles      = bunch_intensity/n_macroparticles_b2*slices_other_beam_num_particles,
-        slices_other_beam_num_macroparticles = slices_other_beam_num_particles,
+#        slices_other_beam_num_macroparticles = slices_other_beam_num_particles,
         # unboosted strong beam moments
         slices_other_beam_x_center    = slices_other_beam_x_center,
         slices_other_beam_zeta_center = slices_other_beam_zeta_center,
@@ -231,7 +232,7 @@ el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         slices_other_beam_Sigma_33    = slices_other_beam_Sigma_33,
         slices_other_beam_Sigma_44    = slices_other_beam_Sigma_44,
         # only if BS on
-        do_beamstrahlung = 1,
+        flag_beamstrahlung = 1,
         slices_other_beam_zeta_bin_width_star = slices_other_beam_zeta_bin_width*np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12_star    = n_slices*[0],
@@ -253,6 +254,7 @@ x_std_arr  = np.zeros_like(emit_x_arr)
 y_std_arr  = np.zeros_like(emit_x_arr)
 z_std_arr  = np.zeros_like(emit_x_arr)
 
+
 monitor_emits  = xt.ParticlesMonitor(start_at_turn=0, stop_at_turn=n_turns, particle_id_range=(0,n_macroparticles_b1))
 monitor_coords = xt.ParticlesMonitor(start_at_turn=0, stop_at_turn=n_turns, particle_id_range=(0,n_macroparticles_b1))
 
@@ -267,7 +269,7 @@ line = xt.Line(elements = [monitor_emits,
                            el_arc_mid_b1])
 
 tracker = xt.Tracker(line=line)
-record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
+record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5), "luminositytable": int(0)})
 tracker.track(particles_b1, num_turns=n_turns)
 tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 

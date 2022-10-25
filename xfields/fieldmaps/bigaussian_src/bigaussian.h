@@ -12,6 +12,29 @@
 #include "complex_error_function.h" //only_for_context none
 
 /*gpufun*/
+void get_rho_charge(
+                        const double x_offset, 
+                        const double y_offset,
+                        const double sigma_x, 
+                        const double sigma_y,
+                        const double cov_xy, 
+                        double* charge_density
+){
+
+    //printf("x_offset: %6e, y_offset: %6e, sigma_x: %6e, sigma_y: %6e, cov_xy: %6e\n", x_offset, y_offset, sigma_x, sigma_y, cov_xy);
+    const double rho = cov_xy / (sigma_x * sigma_y); // correlation coefficient
+    const double prefactor = 1. / (2. * PI * sigma_x * sigma_y * sqrt(1. - rho * rho));
+    const double exp_x = x_offset / sigma_x;
+    const double exp_y = y_offset / sigma_y;
+    const double exponent = - 1. / (2. * (1. - rho * rho)) * (exp_x * exp_x - 2. * rho * exp_x * exp_y + exp_y * exp_y);
+
+    // charge density seen by the macroparticle at x,y coordinates, assuming soft-Gaussian approximation
+    *charge_density = prefactor * exponent;
+
+}
+
+
+/*gpufun*/
 void get_transv_field_gauss_round(
     double sigma, double Delta_x, double Delta_y,
     double x, double y,
@@ -72,6 +95,7 @@ void get_transv_field_gauss_ellip(
 
     Ex = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ey = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
+    //printf("factBE: %6e, w_zetaBE_re: %6e, w_zetaBE_im: %6e, w_etaBE_re: %6e, w_etaBE_im: %6e, expBE: %6e\n", factBE, w_zetaBE_re, w_zetaBE_im, w_etaBE_re, w_etaBE_im, expBE);
 
   }
   else if (sigmax<sigmay){
@@ -164,7 +188,6 @@ void get_Ex_Ey_gauss(
                    *(sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
         Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*
                       (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-
     }
 
     *Gx_ptr = Gx;
@@ -205,5 +228,6 @@ void BiGaussianFieldMap_get_dphi_dx_dphi_dy(
     *dphi_dx = -Ex;
     *dphi_dy = -Ey;
 }
+
 #endif
 #endif

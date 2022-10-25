@@ -36,12 +36,12 @@
     #define QELEM (1.60217662e-19)
 #endif
 
-#if !defined( MPROTON_GEVPERC )
-    #define MPROTON_GEVPERC (0.93827208816)
+#if !defined( MPROTON_GEV )
+    #define MPROTON_GEV (0.93827208816)
 #endif
 
-#if !defined( MELECTRON_GEVPERC )
-    #define MELECTRON_GEVPERC (0.00051099895000)
+#if !defined( MELECTRON_GEV )
+    #define MELECTRON_GEV (0.00051099895000)
 #endif
 
 #if !defined( MELECTRON_KG )

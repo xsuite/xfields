@@ -5,7 +5,7 @@
 #define ALPHA_EM 0.0072973525693
 
 /*gpufun*/
-int synrad_0(LocalParticle *part,
+int beamstrahlung_0(LocalParticle *part,
              double energy,  // [eV]
              double dz,  // [m]
              double rho_inv,  // [1/m] changes after each photon emission
@@ -18,7 +18,7 @@ int synrad_0(LocalParticle *part,
     return 0: no photon
     return 1: emit 1 photon, energy stored in photon_energy
     */
-    // constants for approximating synrad spectrum
+    // constants for approximating beamstrahlung spectrum
     const double g1_a[5] = {1.0, -0.8432885317, 0.1835132767, -0.0527949659, 0.0156489316};
     const double g2_a[5] = {0.4999456517, -0.5853467515, 0.3657833336, -0.0695055284, 0.019180386};
     const double g1_b[7] = {2.066603927, -0.5718025331, 0.04243170587, -0.9691386396, 5.651947051, -0.6903991322, 1.0};
@@ -26,7 +26,7 @@ int synrad_0(LocalParticle *part,
     const double g1_c[4] = {1.0174394594, 0.5831679349, 0.9949036186, 1.0};
     const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
 
-    double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEVPERC, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
+    double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEV, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
     double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
     (*ecrit) = xcrit * energy*1e-9;  // [GeV]
     //double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
@@ -45,7 +45,7 @@ int synrad_0(LocalParticle *part,
     double y = v3 / (1.0 - v3);
     double denom = 1.0 - ( 1.0 - xcrit ) * v3;
 
-    // calculate synrad spectrum coefficients, depending the value of y
+    // calculate beamstrahlung spectrum coefficients, depending the value of y
     double g1, g2;
     if (y <= 1.54){
         g1 = pow(y, -2.0/3.0) * (g1_a[0] + g1_a[1]*pow(y, 2.0/3.0) + g1_a[2]*pow(y, 2.0) + g1_a[3]*pow(y, 10.0/3.0) + g1_a[4]*pow(y, 4.0));
@@ -76,7 +76,7 @@ int synrad_0(LocalParticle *part,
 
 
 /*gpufun*/
-double synrad_avg(LocalParticle *part, 
+double beamstrahlung_avg(LocalParticle *part, 
                   const double n_bb, double sigma_x, double sigma_y, double sigma_z){
 
     double r              = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
@@ -84,6 +84,7 @@ double synrad_avg(LocalParticle *part,
     const double c2       =  1.2*(25.0/36.0)*(r*r*r*r)/(REDUCED_COMPTON)*137.0;
     const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
+
     double gamma          = initial_energy / m0; // [1] 
 
     //double n_avg        = c1*n_bb/(sigma_x + sigma_y);  // Avg. number of emitted photons from 1 macroparticle in one collision [1]
@@ -99,13 +100,16 @@ double synrad_avg(LocalParticle *part,
 
 
 /*gpufun*/
-double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, RecordIndex table_index, BeamstrahlungTableData table,
+double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
        	    double Fr,  // [1] sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	    double dz  // [m] z step between 2 slices ((z_max - z_min) / 2)
+//            ,double pzeta_star
 ){
 
     const double m0 = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
+//    double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_beta0(part)*pzeta_star*LocalParticle_get_p0c(part); // [eV]
+
     double energy = initial_energy;  // [eV]
     double gamma = energy / m0; // [1] 
     //double r = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
@@ -122,19 +126,19 @@ double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, Record
     for (int i=0; i<max_photons; i++){
     
         double e_photon, ecrit;  // [GeV]
-        if (synrad_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
+        if (beamstrahlung_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
 
-            if (record){
+            if (beamstrahlung_record){
                 // Get a slot in the record (this is thread safe)
-                int64_t i_slot = RecordIndex_get_slot(table_index);
+                int64_t i_slot = RecordIndex_get_slot(beamstrahlung_table_index);
                 // The returned slot id is negative if record is NULL or if record is full
                 if (i_slot>=0){
-                    BeamstrahlungTableData_set_particle_id(           table, i_slot, LocalParticle_get_particle_id(part));
-                    BeamstrahlungTableData_set_photon_id(             table, i_slot, j);
-                    BeamstrahlungTableData_set_photon_energy(         table, i_slot, e_photon*1e9);
-                    BeamstrahlungTableData_set_photon_critical_energy(table, i_slot, ecrit*1e9);
-                    BeamstrahlungTableData_set_primary_energy(        table, i_slot, energy);
+                    BeamstrahlungTableData_set_particle_id(           beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
+                    BeamstrahlungTableData_set_photon_id(             beamstrahlung_table, i_slot, j);
+                    BeamstrahlungTableData_set_photon_energy(         beamstrahlung_table, i_slot, e_photon*1e9);
+                    BeamstrahlungTableData_set_photon_critical_energy(beamstrahlung_table, i_slot, ecrit*1e9);
+                    BeamstrahlungTableData_set_primary_energy(        beamstrahlung_table, i_slot, energy);
                 }
             }
 
@@ -167,7 +171,8 @@ double synrad(LocalParticle *part, BeamBeamBiGaussian3DRecordData record, Record
     if (energy == 0.0){
         LocalParticle_set_state(part, -12); // used to flag this kind of loss
     }else{
-        LocalParticle_add_to_energy(part, energy-initial_energy, 0);
+       LocalParticle_add_to_energy(part, energy-initial_energy, 0);
+//       LocalParticle_add_to_energy(part, 0.00001*initial_energy, 0);
     }
     double energy_loss = energy-initial_energy;
 
