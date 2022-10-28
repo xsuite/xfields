@@ -52,8 +52,6 @@ void Sigmas_propagate(
     double const W = Sig_11+Sig_33;
     double const T = R*R+4*Sig_13*Sig_13;
 
-    //printf("S: %6e, R: %6e, W: %.20e, T: %.20e, WW: %.20e Sig_11: %6e, Sig_33: %6e, Sig_13: %6e\n",S, R, W, T, W*W, Sig_11, Sig_33, Sig_13);
-
     //evaluate derivatives
     double const dS_R = 2.*(Sig_12_0-Sig_34_0)+2*S*(Sig_22_0-Sig_44_0);
     double const dS_W = 2.*(Sig_12_0+Sig_34_0)+2*S*(Sig_22_0+Sig_44_0);
@@ -67,7 +65,6 @@ void Sigmas_propagate(
 
 
     if (T<threshold_singular && handle_singularities){
-        //printf("case 1\n");
         double const a = Sig_12-Sig_34;
         double const b = Sig_22-Sig_44;
         double const c = Sig_14+Sig_23;
@@ -76,15 +73,12 @@ void Sigmas_propagate(
         double sqrt_a2_c2 = sqrt(a*a+c*c);
 
         if (sqrt_a2_c2*sqrt_a2_c2*sqrt_a2_c2 < threshold_singular){
-        //printf("case 11\n");
         //equivalent to: if np.abs(c)<threshold_singular and np.abs(a)<threshold_singular:
 
             if (fabs(d)> threshold_singular){
-                //printf("case 111\n");
                 cos2theta = fabs(b)/sqrt(b*b+4*d*d);
                 }
             else{
-                //printf("case 112\n");
                 cos2theta = 1.;
                 } // Decoupled beam
 
@@ -101,7 +95,6 @@ void Sigmas_propagate(
             dS_Sig_33_hat = 0.5*dS_W;
         }
         else{
-            //printf("case 12\n");
             //~ printf("I am here\n");
             //~ printf("a=%.2e c=%.2e\n", a, c);
             sqrt_a2_c2 = sqrt(a*a+c*c); //repeated?
@@ -114,11 +107,9 @@ void Sigmas_propagate(
             dS_costheta = 1./(4.*costheta)*dS_cos2theta;
             if (fabs(sintheta)>threshold_singular){
             //equivalent to: if np.abs(c)>threshold_singular:
-                //printf("case 121\n");
                 dS_sintheta = -1./(4.*sintheta)*dS_cos2theta;
             }
             else{
-                //printf("case 122");
                 dS_sintheta = d/(2.*a);
             }
 
@@ -130,7 +121,6 @@ void Sigmas_propagate(
         }
     }
     else{
-        //printf("case 2\n");
         double const sqrtT = sqrt(T);
         cos2theta = signR*R/sqrtT;
         costheta = sqrt(0.5*(1.+cos2theta));
@@ -146,13 +136,11 @@ void Sigmas_propagate(
         }else{
             Sig_33_hat = 0.5*(W-signR*sqrtT);
         }
-        //printf("W: %.30f, signR: %6e, T: %6e, sqrtT: %.30f, 0.5*(W-signR*sqrtT): %.30e, Sig_11_hat: %6e, Sig_33_hat: %6e\n", W, signR, T, sqrtT,0.5*(W-signR*sqrtT), Sig_11_hat, Sig_33_hat);
 
         dS_cos2theta = signR*(dS_R/sqrtT - R/(2*sqrtT*sqrtT*sqrtT)*dS_T);
         dS_costheta = 1./(4.*costheta)*dS_cos2theta;
 
         if (fabs(sintheta)<threshold_singular && handle_singularities){
-            //printf("case 21\n");
         //equivalent to to np.abs(Sig_13)<threshold_singular
             dS_sintheta = (Sig_14+Sig_23)/R;
         }

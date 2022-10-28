@@ -130,25 +130,10 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
     BeamstrahlungTableData beamstrahlung_table          = NULL;
     RecordIndex beamstrahlung_table_index               = NULL;
     if (flag_beamstrahlung > 0) {
-      printf("flag\n");
       beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part0);
-      printf("record: %s\n", beamstrahlung_record);
       if (beamstrahlung_record){
         beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
         beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
-        printf("flag2\n");
-      }
-    }
-
-    const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
-    BeamBeamBiGaussian3DRecordData luminosity_record = NULL;
-    LuminosityTableData luminosity_table             = NULL;
-    RecordIndex luminosity_table_index               = NULL;
-    if (flag_luminosity > 0) {
-      luminosity_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part0);
-      if (luminosity_record){
-        luminosity_table       = BeamBeamBiGaussian3DRecordData_getp_luminositytable(luminosity_record);
-        luminosity_table_index =                      LuminosityTableData_getp__index(luminosity_table);
       }
     }
 
@@ -168,7 +153,6 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
 
             const double q0 = LocalParticle_get_q0(part);
             const double p0c = LocalParticle_get_p0c(part); // eV
-
             synchrobeam_kick(
                 el, part,
                 flag_beamstrahlung, flag_luminosity,

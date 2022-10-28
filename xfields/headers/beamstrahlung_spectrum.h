@@ -103,12 +103,10 @@ double beamstrahlung_avg(LocalParticle *part,
 double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
        	    double Fr,  // [1] sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	    double dz  // [m] z step between 2 slices ((z_max - z_min) / 2)
-//            ,double pzeta_star
 ){
 
     const double m0 = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
-//    double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_beta0(part)*pzeta_star*LocalParticle_get_p0c(part); // [eV]
 
     double energy = initial_energy;  // [eV]
     double gamma = energy / m0; // [1] 
@@ -128,7 +126,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
         double e_photon, ecrit;  // [GeV]
         if (beamstrahlung_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
-
+           
             if (beamstrahlung_record){
                 // Get a slot in the record (this is thread safe)
                 int64_t i_slot = RecordIndex_get_slot(beamstrahlung_table_index);
@@ -172,7 +170,6 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
         LocalParticle_set_state(part, -12); // used to flag this kind of loss
     }else{
        LocalParticle_add_to_energy(part, energy-initial_energy, 0);
-//       LocalParticle_add_to_energy(part, 0.00001*initial_energy, 0);
     }
     double energy_loss = energy-initial_energy;
 
