@@ -263,7 +263,7 @@ line = xt.Line(elements = [monitor_emits,
                            el_arc_mid_b1])
 
 tracker = xt.Tracker(line=line)
-record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5), "luminositytable": int(0)})
+record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
 tracker.track(particles_b1, num_turns=n_turns)
 tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 

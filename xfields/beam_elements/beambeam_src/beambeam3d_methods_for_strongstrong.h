@@ -155,9 +155,8 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
             const double p0c = LocalParticle_get_p0c(part); // eV
             synchrobeam_kick(
                 el, part,
-                flag_beamstrahlung, flag_luminosity,
+                flag_beamstrahlung,
                 beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
-                luminosity_record, luminosity_table_index, luminosity_table,
                 i_slice, q0, p0c,
                 &x_star,
                 &px_star,

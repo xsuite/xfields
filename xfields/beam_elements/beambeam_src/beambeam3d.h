@@ -9,9 +9,8 @@
 /*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part, 
-        const int64_t flag_beamstrahlung, const int64_t flag_luminosity,
+        const int64_t flag_beamstrahlung,
         BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
-        BeamBeamBiGaussian3DRecordData luminosity_record, RecordIndex luminosity_table_index, LuminosityTableData luminosity_table,
         const int i_slice,
         double const q0, double const p0c,
         double* x_star,
@@ -214,9 +213,8 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         {
                 synchrobeam_kick(
                              el, part, 
-                             flag_beamstrahlung, flag_luminosity,
+                             flag_beamstrahlung,
                              beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
-                             luminosity_record, luminosity_table_index, luminosity_table,
                              i_slice, q0, p0c,
                              &x,
                              &px,

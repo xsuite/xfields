@@ -139,7 +139,7 @@ def test_beambeam3d_beamstrahlung_single_collision():
         line = xt.Line(elements = [el_beambeam_b1])
         
         tracker = xt.Tracker(line=line)
-        record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5), "luminositytable": int(0)})
+        record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5)})
         tracker.track(particles_b1, num_turns=1)
         tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -305,7 +305,7 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         line = xt.Line(elements = [el_beambeam_b1])
         
         tracker = xt.Tracker(line=line)
-        record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5), "luminositytable": int(0)})
+        record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5)})
         tracker.track(particles_b1, num_turns=1)
         tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
