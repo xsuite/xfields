@@ -19,7 +19,7 @@ void synchrobeam_kick(
         double* y_star,
         double* py_star,
         double* zeta_star,
-        double* pzeta_star, double const tan_phi){
+        double* pzeta_star){
 
     // Get data from memory
     const double q0_bb  = BeamBeamBiGaussian3DData_get_other_beam_q0(el);
@@ -222,7 +222,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
                              &y,
                              &py,
                              &zeta,
-                             &pzeta, tan_phi);
+                             &pzeta);
         }
 
         // Go back to original reference frame and remove dipolar effect

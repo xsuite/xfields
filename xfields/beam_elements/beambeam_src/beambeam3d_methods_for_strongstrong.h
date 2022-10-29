@@ -164,7 +164,7 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 &y_star,
                 &py_star,
                 &zeta_star,
-                &pzeta_star, 0);
+                &pzeta_star);
 
             LocalParticle_set_x(part, x_star);
             LocalParticle_set_px(part, px_star);

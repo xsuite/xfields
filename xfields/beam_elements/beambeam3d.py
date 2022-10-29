@@ -217,9 +217,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.iscollective = True
             self.track = self._track_collective # switch to specific track method
 
-            #assert slices_other_beam_zeta_center is not None
-            #assert not np.isscalar(slices_other_beam_num_particles)
-
             if slices_other_beam_zeta_center is None: 
                 slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers
             # Some dummy values just to initialize the object
@@ -608,10 +605,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.config_for_update._other_beam_slice_index_for_particles[:] =(
                  self.config_for_update._i_step - self.config_for_update._particles_slice_index)
 
-            #self.config_for_update._other_beam_slice_index_for_particles[
-            #                 self.config_for_update._particles_slice_index < 0] = -1 
-
-            #print("[bb3d.py] turn: {}, istep: {}, b1_slice_id: {}, b2_slice_id: {}\n".format(self.turn, self.config_for_update._i_step, self.config_for_update._particles_slice_index, self.config_for_update._other_beam_slice_index_for_particles))
             self.synchro_beam_kick(particles=particles,
                         i_slice_for_particles=self.config_for_update._other_beam_slice_index_for_particles)
 
@@ -862,25 +855,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         else:
             self.slices_other_beam_pzeta_center_star = self._arr2ctx(pzeta_slices_star)
 
-            
-    # The following properties are generate by this code:
-    ## for nn in 'x px y py zeta pzeta'.split():
-    ##     print(f'''
-    ##     @property
-    ##     def slices_other_beam_{nn}_center(self):
-    ##         (x_slices, px_slices, y_slices, py_slices,
-    ##             zeta_slices, pzeta_slices) = self._inv_boost_slice_centers()
-
-    ##         return self._buffer.context.linked_array_type.from_array(
-    ##             {nn}_slices,
-    ##             mode="readonly")
-
-    ##     @slices_other_beam_{nn}_center.setter
-    ##     def slices_other_beam_{nn}_center(self, value):
-    ##         raise NotImplementedError(
-    ##             "Setting slices_other_beam_{nn}_center is not implemented yet")\n''')
-
-
     @property
     def slices_other_beam_x_center(self):
         (x_slices, px_slices, y_slices, py_slices,
@@ -969,37 +943,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def slices_other_beam_pzeta_center(self, value):
         raise NotImplementedError(
             "Setting slices_other_beam_pzeta_center is not implemented yet")
-
-
-    # The following properties are generate by this code:
-    ## for nn, factor in (
-    ##     ('11', '1.'),
-    ##     ('12', 'self.cos_phi'),
-    ##     ('13', '1.'),
-    ##     ('14', 'self.cos_phi'),
-    ##     ('22', '(self.cos_phi * self.cos_phi)'),
-    ##     ('23', 'self.cos_phi'),
-    ##     ('24', '(self.cos_phi * self.cos_phi)'),
-    ##     ('33', '1.'),
-    ##     ('34', 'self.cos_phi'),
-    ##     ('44', '(self.cos_phi * self.cos_phi)')):
-
-    ##     print(f"""
-    ##     @property
-    ##     def slices_other_beam_Sigma_{nn}(self):
-    ##         return self._buffer.context.linked_array_type.from_array(
-    ##               self.slices_other_beam_Sigma_{nn}_star * {factor},
-    ##               mode='setitem_from_container',
-    ##               container=self,
-    ##               container_setitem_name='_Sigma_{nn}_setitem')
-
-    ##     def _Sigma_{nn}_setitem(self, indx, val):
-    ##         self.slices_other_beam_Sigma_{nn}_star[indx] = val / {factor}
-    ##
-    ##     @slices_other_beam_Sigma_{nn}.setter
-    ##     def slices_other_beam_Sigma_{nn}(self, value):
-    ##         self.slices_other_beam_Sigma_{nn}[:] = value\n""")
-
 
     @property
     def slices_other_beam_Sigma_11(self):
