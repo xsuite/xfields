@@ -73,7 +73,7 @@ void synchrobeam_kick(
             &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
             &dS_costheta, &dS_sintheta);
 
-    // apply kick only if Sig_11_hat_star > 0 and Sig_33_hat_star > 0 (corresponds to num_macroparts_in_slice > 2)
+    // apply kick only if Sig_11_hat_star > 0 and Sig_33_hat_star > 0 (corresponds to sufficient macrparicle population)
     if (Sig_11_hat_star<=0 || Sig_33_hat_star<=0){
         return;    
     } 
@@ -125,10 +125,11 @@ void synchrobeam_kick(
         beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
         *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick 
     }
+    // averaged beamstrahlung using approximate formulas
     else if(flag_beamstrahlung==2){
-        double Sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_Sigma_55_star(el);
+        double sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_sigma_55_star(el);  // boosted bunch length
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
-        beamstrahlung_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), Sigma_55_0);  // slice intensity and RMS slice sizes
+        beamstrahlung_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), sigma_55_0);  // slice intensity and RMS slice sizes
         *pzeta_star = LocalParticle_get_pzeta(part);  
     }
 

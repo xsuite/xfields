@@ -89,7 +89,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # beamstrahlung 
         'flag_beamstrahlung': xo.Int64,
         'slices_other_beam_zeta_bin_width_star': xo.Float64[:],
-        'other_beam_Sigma_55_star': xo.Float64,
+        'other_beam_sigma_55_star': xo.Float64,
 
     }
 
@@ -145,7 +145,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     flag_beamstrahlung=0,
  
                     slices_other_beam_zeta_bin_width_star=None,
-                    other_beam_Sigma_55_star=None,
+                    other_beam_sigma_55_star=None,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -271,8 +271,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_zeta_bin_width_star)
                         == len(slices_other_beam_num_particles))
         elif flag_beamstrahlung == 2:
-            assert other_beam_Sigma_55_star is not None, (
-                'other_beam_Sigma_55_star must be provided if flag_beamstrahlung = 2')
+            assert other_beam_sigma_55_star is not None, (
+                'other_beam_sigma_55_star must be provided if flag_beamstrahlung = 2')
 
         n_slices = len(slices_other_beam_num_particles)
 
@@ -361,7 +361,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # beamstrahlung
         self.flag_beamstrahlung = flag_beamstrahlung
         self.slices_other_beam_zeta_bin_width_star = slices_other_beam_zeta_bin_width_star
-        self.other_beam_Sigma_55_star = other_beam_Sigma_55_star       
+        self.other_beam_sigma_55_star = other_beam_sigma_55_star       
  
     def _allocate_xobject(self, n_slices, **kwargs):
         self.xoinitialize(
