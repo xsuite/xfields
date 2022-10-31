@@ -220,12 +220,25 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             if slices_other_beam_zeta_center is None: 
                 slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers
             # Some dummy values just to initialize the object
-            if slices_other_beam_Sigma_11 is None: slices_other_beam_Sigma_11 = 1.
-            if slices_other_beam_Sigma_12 is None: slices_other_beam_Sigma_12 = 1.
-            if slices_other_beam_Sigma_22 is None: slices_other_beam_Sigma_22 = 1.
-            if slices_other_beam_Sigma_33 is None: slices_other_beam_Sigma_33 = 1.
-            if slices_other_beam_Sigma_34 is None: slices_other_beam_Sigma_34 = 1.
-            if slices_other_beam_Sigma_44 is None: slices_other_beam_Sigma_44 = 1.
+            if (slices_other_beam_Sigma_11 is None
+                    and slices_other_beam_Sigma_11_star is None):
+                slices_other_beam_Sigma_11 = 1.
+            if (slices_other_beam_Sigma_12 is None
+                    and slices_other_beam_Sigma_12_star is None):
+                slices_other_beam_Sigma_12 = 0.
+            if (slices_other_beam_Sigma_22 is None
+                    and slices_other_beam_Sigma_22_star is None):
+                slices_other_beam_Sigma_22 = 1.
+            if (slices_other_beam_Sigma_33 is None
+                    and slices_other_beam_Sigma_33_star is None):
+                slices_other_beam_Sigma_33 = 1.
+            if (slices_other_beam_Sigma_34 is None
+                    and slices_other_beam_Sigma_34_star is None):
+                slices_other_beam_Sigma_34 = 0.
+            if (slices_other_beam_Sigma_44 is None
+                    and slices_other_beam_Sigma_44_star is None):
+                slices_other_beam_Sigma_44 = 1.
+
             if slices_other_beam_num_particles is None:
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
