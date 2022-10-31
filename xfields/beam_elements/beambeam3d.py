@@ -709,18 +709,24 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             ):
 
         # Mandatory sigmas
-        assert (slices_other_beam_Sigma_11 is not None or slices_other_beam_Sigma_11_star is not None), (
-            "`slices_other_beam_Sigma_11` must be provided")
-        assert (slices_other_beam_Sigma_12 is not None or slices_other_beam_Sigma_12_star is not None), (
-            "`slices_other_beam_Sigma_12` must be provided")
-        assert (slices_other_beam_Sigma_22 is not None or slices_other_beam_Sigma_22_star is not None), (
-            "`slices_other_beam_Sigma_22` must be provided")
-        assert (slices_other_beam_Sigma_33 is not None or slices_other_beam_Sigma_33_star is not None), (
-            "`slices_other_beam_Sigma_33` must be provided")
-        assert (slices_other_beam_Sigma_34 is not None or slices_other_beam_Sigma_34_star is not None), (
-            "`slices_other_beam_Sigma_34` must be provided")
-        assert (slices_other_beam_Sigma_44 is not None or slices_other_beam_Sigma_44_star is not None), (
-            "`slices_other_beam_Sigma_44` must be provided")
+        assert ((slices_other_beam_Sigma_11 is None or slices_other_beam_Sigma_11_star is not None)
+                or (slices_other_beam_Sigma_11 is not None or slices_other_beam_Sigma_11_star is None)), (
+            "Either `slices_other_beam_Sigma_11` or `slices_other_beam_Sigma_11_star` must be provided")
+        assert ((slices_other_beam_Sigma_12 is None or slices_other_beam_Sigma_12_star is not None)
+                or (slices_other_beam_Sigma_12 is not None or slices_other_beam_Sigma_12_star is None)), (
+            "Either `slices_other_beam_Sigma_12` or `slices_other_beam_Sigma_12_star` must be provided")
+        assert ((slices_other_beam_Sigma_22 is None or slices_other_beam_Sigma_22_star is not None)
+                or (slices_other_beam_Sigma_22 is not None or slices_other_beam_Sigma_22_star is None)), (
+            "Either `slices_other_beam_Sigma_22` or `slices_other_beam_Sigma_22_star` must be provided")
+        assert ((slices_other_beam_Sigma_33 is None or slices_other_beam_Sigma_33_star is not None)
+                or (slices_other_beam_Sigma_33 is not None or slices_other_beam_Sigma_33_star is None)), (
+            "Either `slices_other_beam_Sigma_33` or `slices_other_beam_Sigma_33_star` must be provided")
+        assert ((slices_other_beam_Sigma_34 is None or slices_other_beam_Sigma_34_star is not None)
+                or (slices_other_beam_Sigma_34 is not None or slices_other_beam_Sigma_34_star is None)), (
+            "Either `slices_other_beam_Sigma_34` or `slices_other_beam_Sigma_34_star` must be provided")
+        assert ((slices_other_beam_Sigma_44 is None or slices_other_beam_Sigma_44_star is not None)
+                or (slices_other_beam_Sigma_44 is not None or slices_other_beam_Sigma_44_star is None)), (
+            "Either `slices_other_beam_Sigma_44` or `slices_other_beam_Sigma_44_star` must be provided")
 
         # Coupling between transverse planes
         if slices_other_beam_Sigma_13 is None and slices_other_beam_Sigma_13_star is None:
