@@ -12,29 +12,6 @@
 #include "complex_error_function.h" //only_for_context none
 
 /*gpufun*/
-void get_rho_charge(
-                        const double x_offset, 
-                        const double y_offset,
-                        const double sigma_x, 
-                        const double sigma_y,
-                        const double cov_xy, 
-                        double* charge_density
-){
-
-    //printf("x_offset: %6e, y_offset: %6e, sigma_x: %6e, sigma_y: %6e, cov_xy: %6e\n", x_offset, y_offset, sigma_x, sigma_y, cov_xy);
-    const double rho = cov_xy / (sigma_x * sigma_y); // correlation coefficient
-    const double prefactor = 1. / (2. * PI * sigma_x * sigma_y * sqrt(1. - rho * rho));
-    const double exp_x = x_offset / sigma_x;
-    const double exp_y = y_offset / sigma_y;
-    const double exponent = - 1. / (2. * (1. - rho * rho)) * (exp_x * exp_x - 2. * rho * exp_x * exp_y + exp_y * exp_y);
-
-    // charge density seen by the macroparticle at x,y coordinates, assuming soft-Gaussian approximation
-    *charge_density = prefactor * exponent;
-
-}
-
-
-/*gpufun*/
 void get_transv_field_gauss_round(
     double sigma, double Delta_x, double Delta_y,
     double x, double y,
@@ -95,7 +72,6 @@ void get_transv_field_gauss_ellip(
 
     Ex = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ey = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
-    //printf("factBE: %6e, w_zetaBE_re: %6e, w_zetaBE_im: %6e, w_etaBE_re: %6e, w_etaBE_im: %6e, expBE: %6e\n", factBE, w_zetaBE_re, w_zetaBE_im, w_etaBE_re, w_etaBE_im, expBE);
 
   }
   else if (sigmax<sigmay){
@@ -110,6 +86,7 @@ void get_transv_field_gauss_ellip(
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
     cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
     cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
@@ -117,7 +94,6 @@ void get_transv_field_gauss_ellip(
 
     Ey = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ex = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
-
 
   }
   else{
@@ -143,14 +119,12 @@ void get_Ex_Ey_gauss(
 
         // round beam
 	if (fabs(sigma_x-sigma_y)< min_sigma_diff){
-            //printf("Using round beam\n");
 	    double sigma = 0.5*(sigma_x+sigma_y);
 	    	get_transv_field_gauss_round(sigma, 0., 0., x, y, Ex_ptr, Ey_ptr);
 	}
        
         // elliptical beam
 	else{
-            //printf("Using elliptical beam\nsigma_x: %.20f\nsigma_y: %.20f\nx: %.20f\ny: %.20f\n", sigma_x, sigma_y, x, y);
 	    get_transv_field_gauss_ellip(
 	            sigma_x, sigma_y, 0., 0., x, y, Ex_ptr, Ey_ptr);
 

@@ -95,8 +95,6 @@ void Sigmas_propagate(
             dS_Sig_33_hat = 0.5*dS_W;
         }
         else{
-            //~ printf("I am here\n");
-            //~ printf("a=%.2e c=%.2e\n", a, c);
             sqrt_a2_c2 = sqrt(a*a+c*c); //repeated?
             cos2theta = fabs(2.*a)/(2*sqrt_a2_c2);
             costheta = sqrt(0.5*(1.+cos2theta));
@@ -126,16 +124,10 @@ void Sigmas_propagate(
         costheta = sqrt(0.5*(1.+cos2theta));
         sintheta = signR*mysign(Sig_13)*sqrt(0.5*(1.-cos2theta));
 
-        //in sixtrack this line seems to be different different
+        //in sixtrack this line seems to be different
         // sintheta = -mysign((Sig_11-Sig_33))*np.sqrt(0.5*(1.-cos2theta))
        Sig_11_hat = 0.5*(W+signR*sqrtT);
-
-       // if sigma was computed from only 2 macroparticles this should be 0 but it may not be due to numerics
-       if (fabs(T - W*W)<threshold_singular){
-            Sig_33_hat = 0.0;
-        }else{
-            Sig_33_hat = 0.5*(W-signR*sqrtT);
-        }
+       Sig_33_hat = 0.5*(W-signR*sqrtT);
 
         dS_cos2theta = signR*(dS_R/sqrtT - R/(2*sqrtT*sqrtT*sqrtT)*dS_T);
         dS_costheta = 1./(4.*costheta)*dS_cos2theta;
@@ -145,7 +137,6 @@ void Sigmas_propagate(
             dS_sintheta = (Sig_14+Sig_23)/R;
         }
         else{
-            //printf("case 22\n");
             dS_sintheta = -1./(4.*sintheta)*dS_cos2theta;
         }
 

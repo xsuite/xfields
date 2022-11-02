@@ -124,19 +124,6 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 LocalParticle* part0,
                 /*gpuglmem*/ int64_t* i_slice_for_particles){
 
-    // Extract the record and record_index
-    const int64_t flag_beamstrahlung = BeamBeamBiGaussian3DData_get_flag_beamstrahlung(el);
-    BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL; 
-    BeamstrahlungTableData beamstrahlung_table          = NULL;
-    RecordIndex beamstrahlung_table_index               = NULL;
-    if (flag_beamstrahlung > 0) {
-      beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part0);
-      if (beamstrahlung_record){
-        beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-        beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
-      }
-    }
-
     //start_per_particle_block (part0->part)
 
         const int64_t i_slice = i_slice_for_particles[part->ipart];
@@ -155,8 +142,6 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
             const double p0c = LocalParticle_get_p0c(part); // eV
             synchrobeam_kick(
                 el, part,
-                flag_beamstrahlung,
-                beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
                 i_slice, q0, p0c,
                 &x_star,
                 &px_star,

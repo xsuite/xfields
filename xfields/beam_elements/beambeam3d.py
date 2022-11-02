@@ -88,8 +88,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # beamstrahlung 
         'flag_beamstrahlung': xo.Int64,
-        'slices_other_beam_zeta_bin_width_star': xo.Float64[:],
-        'other_beam_sigma_55_star': xo.Float64,
+        'slices_other_beam_zeta_bin_width_star_beamstrahlung': xo.Float64[:],
+        'other_beam_sigma_55_star_beamstrahlung': xo.Float64,
 
     }
 
@@ -144,8 +144,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     flag_beamstrahlung=0,
  
-                    slices_other_beam_zeta_bin_width_star=None,
-                    other_beam_sigma_55_star=None,
+                    slices_other_beam_zeta_bin_width_star_beamstrahlung=None,
+                    other_beam_sigma_55_star_beamstrahlung=None,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -243,8 +243,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
             # beamstrahlung
-            if slices_other_beam_zeta_bin_width_star is None and flag_beamstrahlung > 0:
-                slices_other_beam_zeta_bin_width_star = np.abs(np.diff(self.config_for_update.slicer.bin_edges))/np.cos(self.phi)
+            if slices_other_beam_zeta_bin_width_star_beamstrahlung is None and flag_beamstrahlung == 1:
+                slices_other_beam_zeta_bin_width_star_beamstrahlung = np.abs(np.diff(self.config_for_update.slicer.bin_edges))/np.cos(self.phi)
 
             self.moments = None
             self.partner_moments = np.zeros(self.config_for_update.slicer.num_slices*(1+6+10),dtype=float)
@@ -277,15 +277,15 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # beamstrahlung
         if flag_beamstrahlung == 1:
-            assert slices_other_beam_zeta_bin_width_star is not None, (
-                'slices_other_beam_zeta_bin_width_star must be provided if flag_beamstrahlung = 1')
-            assert not np.isscalar(slices_other_beam_zeta_bin_width_star), (
-                            'slices_other_beam_zeta_bin_width_star must be an array')
-            assert (len(slices_other_beam_zeta_bin_width_star)
+            assert slices_other_beam_zeta_bin_width_star_beamstrahlung is not None, (
+                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be provided if flag_beamstrahlung = 1')
+            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
+                            'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
+            assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
                         == len(slices_other_beam_num_particles))
         elif flag_beamstrahlung == 2:
-            assert other_beam_sigma_55_star is not None, (
-                'other_beam_sigma_55_star must be provided if flag_beamstrahlung = 2')
+            assert other_beam_sigma_55_star_beamstrahlung is not None, (
+                'other_beam_sigma_55_star_beamstrahlung must be provided if flag_beamstrahlung = 2')
 
         n_slices = len(slices_other_beam_num_particles)
 
@@ -336,6 +336,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # Initialize slice positions in the boosted frame
         self._init_starred_positions(
+            slices_other_beam_num_particles,
             slices_other_beam_x_center, slices_other_beam_px_center,
             slices_other_beam_y_center, slices_other_beam_py_center,
             slices_other_beam_zeta_center, slices_other_beam_pzeta_center,
@@ -373,8 +374,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # beamstrahlung
         self.flag_beamstrahlung = flag_beamstrahlung
-        self.slices_other_beam_zeta_bin_width_star = slices_other_beam_zeta_bin_width_star
-        self.other_beam_sigma_55_star = other_beam_sigma_55_star       
+        self.slices_other_beam_zeta_bin_width_star_beamstrahlung = slices_other_beam_zeta_bin_width_star_beamstrahlung
+        self.other_beam_sigma_55_star_beamstrahlung = other_beam_sigma_55_star_beamstrahlung
  
     def _allocate_xobject(self, n_slices, **kwargs):
         self.xoinitialize(
@@ -395,7 +396,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_py_center_star=n_slices,
             slices_other_beam_zeta_center_star=n_slices,
             slices_other_beam_pzeta_center_star=n_slices,
-            slices_other_beam_zeta_bin_width_star=n_slices,  # beamstrahlung
+            slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
             **kwargs
             )
 
@@ -544,11 +545,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             # Slice bunch (in the lab frame)
             self.config_for_update._particles_slice_index = (
                             self.config_for_update.slicer.get_slice_indices(particles))
-            self.config_for_update._particles_slice_index[
-                self.config_for_update._particles_slice_index == -1] = 0  # ID=-1 change to ID=0 to include head of bunch from outside bins
-            n_slices_self_beam = self.config_for_update.slicer.num_slices
-            self.config_for_update._particles_slice_index[
-                self.config_for_update._particles_slice_index == n_slices_self_beam] = n_slices_self_beam - 1  # ID=N_slices change to ID=N_slices to include tail of bunch from outside bins
             self.config_for_update._other_beam_slice_index_for_particles = np.zeros_like(
                 self.config_for_update._particles_slice_index)
 
@@ -622,7 +618,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                         i_slice_for_particles=self.config_for_update._other_beam_slice_index_for_particles)
 
             self.config_for_update._i_step += 1
-            if self.config_for_update._i_step == (n_slices_self_beam + self.num_slices_other_beam - 1): # new: -1 
+            if self.config_for_update._i_step == (n_slices_self_beam + self.num_slices_other_beam - 1): 
                 self.config_for_update._i_step = 0
                 self.config_for_update._working_on_bunch = None
                 break
@@ -802,6 +798,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.slices_other_beam_Sigma_44_star = self._arr2ctx(slices_other_beam_Sigma_44_star)
 
     def _init_starred_positions(self,
+            slices_other_beam_num_particles,
             slices_other_beam_x_center,
             slices_other_beam_px_center,
             slices_other_beam_y_center,
@@ -817,9 +814,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         if slices_other_beam_zeta_center is not None:
 
-            # Check correct according to z, head at the first position in the arrays. Remove 0s that represent empty slices.
-            assert np.all(slices_other_beam_zeta_center[slices_other_beam_zeta_center!=0][:-1]
-                            >= slices_other_beam_zeta_center[slices_other_beam_zeta_center!=0][1:]), (
+            # Check correct according to z, head at the first position in the arrays. Only sort non-empty slices.
+            assert np.all(slices_other_beam_zeta_center[slices_other_beam_num_particles!=0][:-1]
+                            >= slices_other_beam_zeta_center[slices_other_beam_num_particles!=0][1:]), (
                             'slices_other_beam_zeta_center must be sorted from to tail (descending zeta)')
 
             (
@@ -1253,35 +1250,36 @@ class TempSlicer:
     def assign_slices(self, particles):
         particles.slice = self.get_slice_indices(particles)
 
-    def compute_moments(self,particles,update_assigned_slices=True):
+    def compute_moments(self, particles, update_assigned_slices=True, threshold_num_macroparticles=20):
         if update_assigned_slices:
             self.assign_slices(particles)
 
         slice_moments = np.zeros(self.num_slices*(1+6+10),dtype=float)
         for i_slice in range(self.num_slices):
             mask = particles.slice == i_slice
-            slice_moments[i_slice] = len(particles.x[mask])                                                      # nb part
-            slice_moments[self.num_slices+i_slice] = float(particles.x[mask].sum())/slice_moments[i_slice]       # <x>
-            slice_moments[2*self.num_slices+i_slice] = float(particles.px[mask].sum())/slice_moments[i_slice]    # <px>
-            slice_moments[3*self.num_slices+i_slice] = float(particles.y[mask].sum())/slice_moments[i_slice]     # <y>
-            slice_moments[4*self.num_slices+i_slice] = float(particles.py[mask].sum())/slice_moments[i_slice]    # <py>
-            slice_moments[5*self.num_slices+i_slice] = float(particles.zeta[mask].sum())/slice_moments[i_slice]  # <z>
-            slice_moments[6*self.num_slices+i_slice] = float(particles.delta[mask].sum())/slice_moments[i_slice] # <pz> # TODO mhy pzeta doesn't work?
+            slice_moments[i_slice]                   = 0 if len(particles.x[mask]) < threshold_num_macroparticles else len(particles.x[mask])                                    # nb part
+            slice_moments[self.num_slices+i_slice]   = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.x[mask].sum())/slice_moments[i_slice]     # <x>
+            slice_moments[2*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.px[mask].sum())/slice_moments[i_slice]    # <px>
+            slice_moments[3*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.y[mask].sum())/slice_moments[i_slice]     # <y>
+            slice_moments[4*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.py[mask].sum())/slice_moments[i_slice]    # <py>
+            slice_moments[5*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.zeta[mask].sum())/slice_moments[i_slice]  # <z>
+            slice_moments[6*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.delta[mask].sum())/slice_moments[i_slice] # <pz> # TODO mhy pzeta doesn't work?
 
-            x_diff = particles.x[mask]-slice_moments[self.num_slices+i_slice]
-            px_diff = particles.px[mask]-slice_moments[2*self.num_slices+i_slice]
-            y_diff = particles.y[mask]-slice_moments[3*self.num_slices+i_slice]
-            py_diff = particles.py[mask]-slice_moments[4*self.num_slices+i_slice]
-            slice_moments[7*self.num_slices+i_slice] = float((x_diff**2).sum())/slice_moments[i_slice]             # Sigma_11
-            slice_moments[8*self.num_slices+i_slice] = float((x_diff*px_diff).sum())/slice_moments[i_slice]      # Sigma_12
-            slice_moments[9*self.num_slices+i_slice] = float((x_diff*y_diff).sum())/slice_moments[i_slice]       # Sigma_13
-            slice_moments[10*self.num_slices+i_slice] = float((x_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_14
-            slice_moments[11*self.num_slices+i_slice] = float((px_diff**2).sum())/slice_moments[i_slice]           # Sigma_22
-            slice_moments[12*self.num_slices+i_slice] = float((px_diff*y_diff).sum())/slice_moments[i_slice]     # Sigma_23
-            slice_moments[13*self.num_slices+i_slice] = float((px_diff*py_diff).sum())/slice_moments[i_slice]    # Sigma_24
-            slice_moments[14*self.num_slices+i_slice] = float((y_diff**2).sum())/slice_moments[i_slice]            # Sigma_33
-            slice_moments[15*self.num_slices+i_slice] = float((y_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_34
-            slice_moments[16*self.num_slices+i_slice] = float((py_diff**2).sum())/slice_moments[i_slice]           # Sigma_44
+            x_diff  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.x[mask]-slice_moments[self.num_slices+i_slice]
+            px_diff = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.px[mask]-slice_moments[2*self.num_slices+i_slice]
+            y_diff  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.y[mask]-slice_moments[3*self.num_slices+i_slice]
+            py_diff = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.py[mask]-slice_moments[4*self.num_slices+i_slice]
+            slice_moments[7*self.num_slices+i_slice]  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff**2).sum())/slice_moments[i_slice]             # Sigma_11
+            slice_moments[8*self.num_slices+i_slice]  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff*px_diff).sum())/slice_moments[i_slice]      # Sigma_12
+            slice_moments[9*self.num_slices+i_slice]  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff*y_diff).sum())/slice_moments[i_slice]       # Sigma_13
+            slice_moments[10*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_14
+            slice_moments[11*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((px_diff**2).sum())/slice_moments[i_slice]           # Sigma_22
+            slice_moments[12*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((px_diff*y_diff).sum())/slice_moments[i_slice]     # Sigma_23
+            slice_moments[13*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((px_diff*py_diff).sum())/slice_moments[i_slice]    # Sigma_24
+            slice_moments[14*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((y_diff**2).sum())/slice_moments[i_slice]            # Sigma_33
+            slice_moments[15*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((y_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_34
+            slice_moments[16*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((py_diff**2).sum())/slice_moments[i_slice]           # Sigma_44
+
         return slice_moments
 
 class ConfigForUpdateBeamBeamBiGaussian3D:

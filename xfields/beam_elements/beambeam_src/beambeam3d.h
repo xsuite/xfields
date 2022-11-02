@@ -9,8 +9,6 @@
 /*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part, 
-        const int64_t flag_beamstrahlung,
-        BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
         const int i_slice,
         double const q0, double const p0c,
         double* x_star,
@@ -37,6 +35,11 @@ void synchrobeam_kick(
     double const Sig_44_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_44_star(el, i_slice);
 
     double const num_part_slice = BeamBeamBiGaussian3DData_get_slices_other_beam_num_particles(el, i_slice);
+
+    // no kick if not sufficient macroparticles; should be taken care of when slicing
+    if (num_part_slice == 0){
+        return;
+    }
 
     const double x_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_x_center_star(el, i_slice);
     const double y_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_y_center_star(el, i_slice);
@@ -72,11 +75,6 @@ void synchrobeam_kick(
             &dS_Sig_11_hat_star, &dS_Sig_33_hat_star,
             &dS_costheta, &dS_sintheta);
 
-    // apply kick only if Sig_11_hat_star > 0 and Sig_33_hat_star > 0 (corresponds to sufficient macrparicle population)
-    if (Sig_11_hat_star<=0 || Sig_33_hat_star<=0){
-        return;    
-    } 
-
     // Evaluate transverse coordinates of the weak baem w.r.t. the strong beam centroid
     const double x_bar_star = *x_star + *px_star * S - x_slice_star;
     const double y_bar_star = *y_star + *py_star * S - y_slice_star;
@@ -108,7 +106,7 @@ void synchrobeam_kick(
     double Gx_hat_star = Ksl*Gx;
     double Gy_hat_star = Ksl*Gy;
 
-    // Move kisks to coupled reference frame
+    // Move kicks to coupled reference frame
     double Fx_star = Fx_hat_star*costheta - Fy_hat_star*sintheta;
     double Fy_star = Fx_hat_star*sintheta + Fy_hat_star*costheta;
 
@@ -117,16 +115,28 @@ void synchrobeam_kick(
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
 
     // emit beamstrahlung photons from single macropart
+    const int64_t flag_beamstrahlung = BeamBeamBiGaussian3DData_get_flag_beamstrahlung(el);
     if (flag_beamstrahlung==1){
+        BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL; 
+        BeamstrahlungTableData beamstrahlung_table          = NULL;
+        RecordIndex beamstrahlung_table_index               = NULL;
+        if (flag_beamstrahlung > 0) {
+          beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+          if (beamstrahlung_record){
+            beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
+            beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
+          }
+        }
+
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
         double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // total kick [1]
-        /*gpuglmem*/ double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star(el, i_slice);  // bending radius [m]
+        double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star_beamstrahlung(el, i_slice);  // bending radius [m]
         beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
         *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick 
     }
     // averaged beamstrahlung using approximate formulas
     else if(flag_beamstrahlung==2){
-        double sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_sigma_55_star(el);  // boosted bunch length
+        double sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_sigma_55_star_beamstrahlung(el);  // boosted bunch length
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
         beamstrahlung_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), sigma_55_0);  // slice intensity and RMS slice sizes
         *pzeta_star = LocalParticle_get_pzeta(part);  
@@ -178,19 +188,6 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const double post_subtract_zeta = BeamBeamBiGaussian3DData_get_post_subtract_zeta(el);
     const double post_subtract_pzeta = BeamBeamBiGaussian3DData_get_post_subtract_pzeta(el);
 
-    // Extract the record and record_index
-    const int64_t flag_beamstrahlung = BeamBeamBiGaussian3DData_get_flag_beamstrahlung(el);
-    BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL; 
-    BeamstrahlungTableData beamstrahlung_table          = NULL;
-    RecordIndex beamstrahlung_table_index               = NULL;
-    if (flag_beamstrahlung > 0) {
-      beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part0);
-      if (beamstrahlung_record){
-        beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-        beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
-      }
-    }
-
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
@@ -213,8 +210,6 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         {
                 synchrobeam_kick(
                              el, part, 
-                             flag_beamstrahlung,
-                             beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
                              i_slice, q0, p0c,
                              &x,
                              &px,
