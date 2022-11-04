@@ -24,7 +24,6 @@ void ElectronCloud_track_local_particle(
     const double zeta = LocalParticle_get_zeta(part);
 
     double const beta0 = LocalParticle_get_beta0(part);
-    double const rvv = LocalParticle_get_rvv(part);
 
     double const tau = zeta / beta0;
 
