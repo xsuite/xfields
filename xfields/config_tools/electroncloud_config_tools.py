@@ -119,7 +119,7 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
                 fieldmap=fieldmap, p0c=line.particle_ref.p0c)
 
     length_factor = ecloud_strength / \
-        (line.particle_ref.p0c * line.particle_ref.beta0)
+        (line.particle_ref.p0c[0] * line.particle_ref.beta0[0])
     part = twiss["particle_on_co"].copy()
     for ii, el_name in enumerate(twiss["name"]):
         if 'ecloud' in el_name:
