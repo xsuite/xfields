@@ -74,7 +74,7 @@ def get_electroncloud_fieldmap_from_h5(
         len_slice = phi_slice.shape[0] * \
             phi_slice.shape[1] * phi_slice.shape[2]
         fieldmap._phi_taylor[index_offset:index_offset +
-                             len_slice] = phi_slice.flatten()
+                             len_slice] = fieldmap._context.nparray_to_context_array(phi_slice.flatten())
     ##########################################################################
     # for iz in range(iz1, iz2):
     #     if (iz-iz1)/nz > kk:
@@ -150,7 +150,7 @@ def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
     assert p0c is not None
     assert fieldmap is not None
 
-    part = xp.Particles(p0c=p0c)
+    part = xp.Particles(_context=fieldmap._context, p0c=p0c)
     ecloud = xf.ElectronCloud(
         length=1,
         fieldmap=fieldmap,
