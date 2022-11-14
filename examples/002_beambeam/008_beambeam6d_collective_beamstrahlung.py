@@ -49,7 +49,7 @@ n_macroparticles_b2 = int(1e6)
 n_turns = 1000
 n_slices = 100
 
-# strong bunch intenisites
+# strong bunch intenisities, generated from 1e8 gaussian distributed particles. See test_data/beamstrahlung/gen_nbb.py
 n_bb = np.array([6.6884000e+07, 7.9522500e+07, 9.5608700e+07, 1.1205830e+08,
        1.3225230e+08, 1.5601820e+08, 1.8134120e+08, 2.1465900e+08,
        2.4764560e+08, 2.8871670e+08, 3.3381510e+08, 3.8250380e+08,
@@ -111,10 +111,10 @@ damping_rate_s = u_sr/energy # Usr/E ~ 1e-3
 damping_rate_x = damping_rate_s / 2
 damping_rate_y = damping_rate_s / 2
 
-beta_x_sext_left  = 1
-beta_y_sext_left  = 1
-beta_x_sext_right = 1
-beta_y_sext_right = 1
+beta_x_sext_left  = 3
+beta_y_sext_left  = 5000
+beta_x_sext_right = 3
+beta_y_sext_right = 5000
 
 alpha_x_sext_left  = 0
 alpha_y_sext_left  = 0

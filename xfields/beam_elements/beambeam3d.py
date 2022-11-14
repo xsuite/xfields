@@ -21,6 +21,7 @@ class BeamstrahlungTable(xo.HybridClass):
       'photon_energy': xo.Float64[:],
       'photon_critical_energy': xo.Float64[:],
       'primary_energy': xo.Float64[:],
+      'rho_inv': xo.Float64[:],
         }
 
 class BeamBeamBiGaussian3DRecord(xo.HybridClass):

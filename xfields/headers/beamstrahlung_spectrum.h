@@ -137,6 +137,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
                     BeamstrahlungTableData_set_photon_energy(         beamstrahlung_table, i_slot, e_photon*1e9);
                     BeamstrahlungTableData_set_photon_critical_energy(beamstrahlung_table, i_slot, ecrit*1e9);
                     BeamstrahlungTableData_set_primary_energy(        beamstrahlung_table, i_slot, energy);
+                    BeamstrahlungTableData_set_rho_inv(               beamstrahlung_table, i_slot, rho_inv);
                 }
             }
 
