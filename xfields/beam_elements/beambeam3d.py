@@ -379,7 +379,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # beamstrahlung
         self.flag_beamstrahlung = flag_beamstrahlung
-        self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(slices_other_beam_zeta_bin_width_star_beamstrahlung)
+        self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
         self.other_beam_sigma_55_star_beamstrahlung = other_beam_sigma_55_star_beamstrahlung
  
     def _allocate_xobject(self, n_slices, **kwargs):
