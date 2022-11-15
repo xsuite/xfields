@@ -19,9 +19,11 @@ void synchrobeam_kick(
         double* pzeta_star){
 
     // Get data from memory
-    const double q0_bb  = BeamBeamBiGaussian3DData_get_other_beam_q0(el);
+    double const scale_strength = BeamBeamBiGaussian3DData_get_scale_strength(el);
+    const double q0_bb  = scale_strength*BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
+    
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -181,12 +183,13 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
     const double shift_pzeta = BeamBeamBiGaussian3DData_get_ref_shift_pzeta(el)
                             + BeamBeamBiGaussian3DData_get_other_beam_shift_pzeta(el);
 
-    const double post_subtract_x = BeamBeamBiGaussian3DData_get_post_subtract_x(el);
-    const double post_subtract_px = BeamBeamBiGaussian3DData_get_post_subtract_px(el);
-    const double post_subtract_y = BeamBeamBiGaussian3DData_get_post_subtract_y(el);
-    const double post_subtract_py = BeamBeamBiGaussian3DData_get_post_subtract_py(el);
-    const double post_subtract_zeta = BeamBeamBiGaussian3DData_get_post_subtract_zeta(el);
-    const double post_subtract_pzeta = BeamBeamBiGaussian3DData_get_post_subtract_pzeta(el);
+    double const scale_strength = BeamBeamBiGaussian3DData_get_scale_strength(el);
+    const double post_subtract_x = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_x(el);
+    const double post_subtract_px = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_px(el);
+    const double post_subtract_y = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_y(el);
+    const double post_subtract_py = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_py(el);
+    const double post_subtract_zeta = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_zeta(el);
+    const double post_subtract_pzeta = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_pzeta(el);
 
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);

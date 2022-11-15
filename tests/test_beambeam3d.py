@@ -220,6 +220,133 @@ def test_beambeam3d():
                 print(f'xsuite:    {cc} = {val_test:.12e}')
                 assert np.isclose(val_test, val_ref, rtol=0, atol=5e-12)
 
+            # Scaling down bb:
+            bb.scale_strength = 0
+            part_before_tracking = part.copy()
+            bb.track(part)
+
+
+            for cc in 'x px y py zeta delta'.split():
+                val_test = getattr(part, cc)[0]
+                val_ref = getattr(part_before_tracking, cc)[0]
+                print('')
+                print(f'before: {cc} = {val_ref:.12e}')
+                print(f'after bb off:    {cc} = {val_test:.12e}')
+                assert np.allclose(val_test, val_ref, rtol=0, atol=1e-14)
+
+
+def test_beambeam3d_gx_gy_singularity():
+    for context in xo.context.get_test_contexts():
+
+        if not isinstance(context, xo.ContextCpu):
+            print(f'skipping test_beambeam3d_collective for context {context}')
+            continue
+
+        print(repr(context))
+
+        # crossing plane
+        alpha = 0
+
+        # crossing angle
+        phi = 0
+
+        # separations
+        x_bb_co=0
+        y_bb_co=0
+        charge_slices=np.array([1e16, 2e16, 5e16])
+        z_slices=np.array([-6., 0.2, 5.5])
+
+        x_co = 0
+        px_co = 0
+        y_co = 0
+        py_co = 0
+        zeta_co = 0
+        delta_co = 0
+
+        d_x=0
+        d_px=0
+        d_y=-0
+        d_py=0
+        d_zeta=0
+        d_delta=0
+
+        for ss in sigma_configurations():
+
+            (Sig_11_0, Sig_12_0, Sig_13_0, Sig_14_0, Sig_22_0, Sig_23_0, Sig_24_0,
+                    Sig_33_0, Sig_34_0, Sig_44_0) = ss
+
+            Sig_11_0 = Sig_11_0 + np.zeros_like(charge_slices)
+            Sig_12_0 = Sig_12_0 + np.zeros_like(charge_slices)
+            Sig_13_0 = Sig_13_0 + np.zeros_like(charge_slices)
+            Sig_14_0 = Sig_14_0 + np.zeros_like(charge_slices)
+            Sig_22_0 = Sig_22_0 + np.zeros_like(charge_slices)
+            Sig_23_0 = Sig_23_0 + np.zeros_like(charge_slices)
+            Sig_24_0 = Sig_24_0 + np.zeros_like(charge_slices)
+            Sig_33_0 = Sig_33_0 + np.zeros_like(charge_slices)
+            Sig_34_0 = Sig_34_0 + np.zeros_like(charge_slices)
+            Sig_44_0 = Sig_44_0 + np.zeros_like(charge_slices)
+
+            bb = xf.BeamBeamBiGaussian3D(
+
+                    _context=context,
+
+                    phi=phi, alpha=alpha, other_beam_q0=1,
+
+                    slices_other_beam_num_particles=charge_slices[::-1],
+                    slices_other_beam_zeta_center=z_slices[::-1],
+
+                    slices_other_beam_Sigma_11=Sig_11_0,
+                    slices_other_beam_Sigma_12=Sig_12_0,
+                    slices_other_beam_Sigma_13=Sig_13_0,
+                    slices_other_beam_Sigma_14=Sig_14_0,
+                    slices_other_beam_Sigma_22=Sig_22_0,
+                    slices_other_beam_Sigma_23=Sig_23_0,
+                    slices_other_beam_Sigma_24=Sig_24_0,
+                    slices_other_beam_Sigma_33=Sig_33_0,
+                    slices_other_beam_Sigma_34=Sig_34_0,
+                    slices_other_beam_Sigma_44=Sig_44_0,
+
+                    ref_shift_x=x_co,
+                    ref_shift_px=px_co,
+                    ref_shift_y=y_co,
+                    ref_shift_py=py_co,
+                    ref_shift_zeta=zeta_co,
+                    ref_shift_pzeta=delta_co,
+
+                    other_beam_shift_x=x_bb_co,
+                    other_beam_shift_y=y_bb_co,
+
+                    post_subtract_x=d_x,
+                    post_subtract_px=d_px,
+                    post_subtract_y=d_y,
+                    post_subtract_py=d_py,
+                    post_subtract_zeta=d_zeta,
+                    post_subtract_pzeta=d_delta,
+            )
+
+            bb.slices_other_beam_Sigma_11[1] = bb.slices_other_beam_Sigma_11[0]
+            bb.slices_other_beam_Sigma_12[1] = bb.slices_other_beam_Sigma_12[0]
+            bb.slices_other_beam_Sigma_13[1] = bb.slices_other_beam_Sigma_13[0]
+            bb.slices_other_beam_Sigma_14[1] = bb.slices_other_beam_Sigma_14[0]
+            bb.slices_other_beam_Sigma_22[1] = bb.slices_other_beam_Sigma_22[0]
+            bb.slices_other_beam_Sigma_23[1] = bb.slices_other_beam_Sigma_23[0]
+            bb.slices_other_beam_Sigma_24[1] = bb.slices_other_beam_Sigma_24[0]
+            bb.slices_other_beam_Sigma_33[1] = bb.slices_other_beam_Sigma_33[0]
+            bb.slices_other_beam_Sigma_34[1] = bb.slices_other_beam_Sigma_34[0]
+            bb.slices_other_beam_Sigma_44[1] = bb.slices_other_beam_Sigma_44[0]
+
+            part= xp.Particles(_context=context, p0c=6500e9)
+
+            part.name = 'beam1_bunch1'
+
+            bb.track(part)
+
+            part.move(xo.context_default)
+            assert not np.isnan(part.px[0])
+            assert not np.isnan(part.py[0])
+
+
+
 def test_beambeam3d_collective():
     for context in xo.context.get_test_contexts():
 
@@ -488,4 +615,19 @@ def test_beambeam3d_old_interface():
                 print(f'ducktrack: {cc} = {val_ref:.12e}')
                 print(f'xsuite:    {cc} = {val_test:.12e}')
                 assert np.isclose(val_test, val_ref, rtol=0, atol=5e-12)
+
+             # Scaling down bb:
+            bb.scale_strength = 0
+            part_before_tracking = part.copy()
+            part.move(_context=context)
+            bb.track(part)
+            part.move(_context=xo.ContextCpu())
+
+            for cc in 'x px y py zeta delta'.split():
+                val_test = getattr(part, cc)[0]
+                val_ref = getattr(part_before_tracking, cc)[0]
+                print('')
+                print(f'before: {cc} = {val_ref:.12e}')
+                print(f'after bb off:    {cc} = {val_test:.12e}')
+                assert np.allclose(val_test, val_ref, rtol=0, atol=1e-14)
 

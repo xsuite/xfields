@@ -12,7 +12,7 @@ mode = 'standard'
 ctx = xo.ContextCpu(omp_num_threads=0)
 
 src_code = """
-    /*gpukern*/ void eval_cerrf_q1(
+    /*gpukern*/ void eval_faddeeva_w_q1(
         const int n,
         /*gpuglmem*/ double const* /*restrict*/ re,
         /*gpuglmem*/ double const* /*restrict*/ im,
@@ -28,7 +28,7 @@ src_code = """
                 double const y = im[ tid ];
                 double wz_x, wz_y;
 
-                cerrf( x, y, &wz_x, &wz_y );
+                faddeeva_w( x, y, &wz_x, &wz_y );
 
                 wz_re[ tid ] = wz_x;
                 wz_im[ tid ] = wz_y;
@@ -38,7 +38,7 @@ src_code = """
     """
 
 kernel_descriptions = {
-    "eval_cerrf_q1": xo.Kernel(
+    "eval_faddeeva_w_q1": xo.Kernel(
         args=[
             xo.Arg(xo.Int32, name="n"),
             xo.Arg(xo.Float64, name="re", const=True, pointer=True),
@@ -54,7 +54,7 @@ headers = [
     _pkg_root.joinpath("headers/constants.h"),
     _pkg_root.joinpath("headers/sincos.h"),
     _pkg_root.joinpath("headers/power_n.h"),
-    _pkg_root.joinpath("fieldmaps/bigaussian_src/complex_error_function.h"),
+    _pkg_root.joinpath("fieldmaps/bigaussian_src/faddeeva.h"),
 ]
 
 assert mode in ['special_y_0', 'standard']
@@ -73,7 +73,7 @@ wz_re = 0 * z_re
 wz_im = 0 * z_re
 
 assert len(z_re) == len(z_im)
-ctx.kernels.eval_cerrf_q1(
+ctx.kernels.eval_faddeeva_w_q1(
     n=len(z_re), re=z_re, im=z_im, wz_re=wz_re, wz_im=wz_im
 )
 
@@ -104,7 +104,7 @@ wz_re = 0 * z_re
 wz_im = 0 * z_re
 
 assert len(z_re) == len(z_im)
-ctx.kernels.eval_cerrf_q1(
+ctx.kernels.eval_faddeeva_w_q1(
     n=len(z_re), re=z_re, im=z_im, wz_re=wz_re, wz_im=wz_im
 )
 
@@ -130,7 +130,7 @@ z_re = np.random.uniform(size=n_test)
 res_re = 0 * z_re
 res_im = 0 * z_re
 t1 = time.time()
-ctx.kernels.eval_cerrf_q1(
+ctx.kernels.eval_faddeeva_w_q1(
     n=len(z_re), re=z_re, im=z_im, wz_re=res_re, wz_im=res_im
 )
 t2 = time.time()

@@ -9,7 +9,7 @@
 
 // for quick test with gcc
 #include "constants.h" //only_for_context none
-#include "complex_error_function.h" //only_for_context none
+#include "faddeeva.h" //only_for_context none
 
 /*gpufun*/
 void get_transv_field_gauss_round(
@@ -63,10 +63,10 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = aby;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    faddeeva_w(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
 
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    faddeeva_w(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-abx*abx/(2*sigmax*sigmax)-aby*aby/(2*sigmay*sigmay));
 
@@ -85,10 +85,10 @@ void get_transv_field_gauss_ellip(
     zetaBE_im = abx;
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
-    cerrf(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+    faddeeva_w(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
 
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
-    cerrf(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
+    faddeeva_w(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
     expBE = exp(-aby*aby/(2*sigmay*sigmay)-abx*abx/(2*sigmax*sigmax));
 
@@ -146,12 +146,17 @@ void get_Ex_Ey_gauss(
     double Gx, Gy;
 
     if (fabs(sigma_x-sigma_y) < min_sigma_diff){
-
         const double sigma = 0.5*(sigma_x+sigma_y);
-        Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
-                            *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
-        Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
-                            *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+	      if ((x*x+y*y)<1e-14){
+            Gx = 1./(8*PI*EPSILON_0*sigma*sigma);
+	          Gy = Gx;
+	      }
+	      else{
+            Gx = 1/(2.*(x*x+y*y))*(y*Ey-x*Ex+1./(2*PI*EPSILON_0*sigma*sigma)
+                                *x*x*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+            Gy = 1./(2*(x*x+y*y))*(x*Ex-y*Ey+1./(2*PI*EPSILON_0*sigma*sigma)
+                                *y*y*exp(-(x*x+y*y)/(2.*sigma*sigma)));
+	       }
     }
     else{
 
