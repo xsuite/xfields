@@ -3,6 +3,7 @@ import numpy as np
 import xpart as xp
 import xfields as xf
 from matplotlib import pyplot as plt
+import json
 
 # generate n_bb in the tests and examples
 context = xo.ContextCpu(omp_num_threads=0)
@@ -21,7 +22,7 @@ sigma_y             = np.sqrt(physemit_y*beta_y)  # [m]
 sigma_py            = np.sqrt(physemit_y/beta_y)  # [m]
 sigma_z_tot         = .00254  # [m] sr+bs
 sigma_delta_tot     = .00192  # [m]
-n_macroparticles_b2 = int(1e2)
+n_macroparticles_b2 = int(1e8)
 n_slices = 100
 
 particles_b2 = xp.Particles(
@@ -42,3 +43,6 @@ slicer = xf.TempSlicer(bin_edges=bin_edges)
 slice_idx = slicer.get_slice_indices(particles_b2)
 counts = plt.hist(slice_idx, bins=n_slices+2)
 n_bb = counts[0][1:-1] / n_macroparticles_b2 * bunch_intensity
+
+with open("gen_nbb.json", "w") as f:
+    json.dump({"n_bb": n_bb}, f)
