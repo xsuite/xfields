@@ -44,5 +44,5 @@ slice_idx = slicer.get_slice_indices(particles_b2)
 counts = plt.hist(slice_idx, bins=n_slices+2)
 n_bb = counts[0][1:-1] / n_macroparticles_b2 * bunch_intensity
 
-with open("gen_nbb.json", "w") as f:
-    json.dump({"n_bb": n_bb}, f)
+with open("./gen_nbb.json", "w") as f:
+    json.dump({"n_bb": n_bb}, f, cls=xo.JEncoder)
