@@ -10,6 +10,7 @@ import xfields as xf
 import xpart as xp
 from matplotlib import pyplot as plt
 from scipy import constants as cst
+import json
 
 context = xo.ContextCpu(omp_num_threads=0)
 
@@ -264,7 +265,7 @@ print("Y avg. [1]:", upsilon_avg_sim)
 print("Y max. ratio [1]:", upsilon_max_sim / upsilon_max)
 print("Y avg. ratio [1]:", upsilon_avg_sim / upsilon_avg)
 
-assert np.abs(upsilon_max_sim / upsilon_max - 1) < 1e-2
+assert np.abs(upsilon_max_sim / upsilon_max - 1) < 2e-2
 assert np.abs(upsilon_avg_sim / upsilon_avg - 1) < 5e-2
 
 #########
