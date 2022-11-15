@@ -295,10 +295,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self._allocate_xobject(n_slices, **kwargs)
 
-        if self.iscollective:
-            if not isinstance(self._buffer.context, xo.ContextCpu):
-                raise NotImplementedError(
-                    'BeamBeamBiGaussian3D only works with CPU context for now')
+        #if self.iscollective:
+        #    if not isinstance(self._buffer.context, xo.ContextCpu):
+        #        raise NotImplementedError(
+        #            'BeamBeamBiGaussian3D only works with CPU context for now')
 
         if phi is None:
             assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
@@ -1247,11 +1247,20 @@ class TempSlicer:
         self.num_slices = len(bin_edges) - 1
 
     def get_slice_indices(self, particles):
-        indices = np.digitize(particles.zeta, self.bin_edges, right=True)
+        context = particles._context
+        if isinstance(context, xo.ContextPyopencl):
+            raise NotImplementedError
+ 
+        bin_edges = context.nparray_to_context_array(self.bin_edges)
+
+        digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
+        indices = digitize(particles.zeta, bin_edges, right=True)
         indices -= 1 # In digitize, 0 means before the first edge
         indices[particles.state <=0 ] = -1
 
-        return np.array(indices, dtype=np.int64)
+        indices_out = context.zeros(shape=indices.shape, dtype=np.int64)
+        indices_out[:] = indices
+        return indices_out
 
     def assign_slices(self, particles):
         particles.slice = self.get_slice_indices(particles)
@@ -1262,7 +1271,7 @@ class TempSlicer:
 
         slice_moments = np.zeros(self.num_slices*(1+6+10),dtype=float)
         for i_slice in range(self.num_slices):
-            mask = particles.slice == i_slice
+            mask = (particles.slice == i_slice) & (particles.state >0)  # skip lost particles (1: alive, 0 lost)
             slice_moments[i_slice]                   = 0 if len(particles.x[mask]) < threshold_num_macroparticles else len(particles.x[mask])                                    # nb part
             slice_moments[self.num_slices+i_slice]   = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.x[mask].sum())/slice_moments[i_slice]     # <x>
             slice_moments[2*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.px[mask].sum())/slice_moments[i_slice]    # <px>

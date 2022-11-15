@@ -11,9 +11,9 @@ import json
 def test_beambeam3d_beamstrahlung_single_collision():
     for context in xo.context.get_test_contexts():
 
-        if not isinstance(context, xo.ContextCpu):
-            print(f'skipping test_beambeam3d_beamstrahlung_single_collision for context {context}')
-            continue
+        #if not isinstance(context, xo.ContextCpu):
+        #    print(f'skipping test_beambeam3d_beamstrahlung_single_collision for context {context}')
+        #    continue
 
         ###########
         # ttbar 2 #
@@ -108,10 +108,12 @@ def test_beambeam3d_beamstrahlung_single_collision():
         
         line = xt.Line(elements = [el_beambeam_b1])
         
-        tracker = xt.Tracker(line=line)
+        tracker = xt.Tracker(_context=context, line=line)
         record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5)})
         tracker.track(particles_b1, num_turns=1)
         tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+
+        record.move(_context=xo.context_default)
 
         ###########################################
         # test 1: compare spectrum with guineapig #
@@ -164,9 +166,9 @@ def test_beambeam3d_beamstrahlung_single_collision():
 def test_beambeam3d_collective_beamstrahlung_single_collision():
     for context in xo.context.get_test_contexts():
 
-        if not isinstance(context, xo.ContextCpu):
-            print(f'skipping test_beambeam3d_collective_beamstrahlung_single_collision for context {context}')
-            continue
+        #if not isinstance(context, xo.ContextCpu):
+        #    print(f'skipping test_beambeam3d_collective_beamstrahlung_single_collision for context {context}')
+        #    continue
     
         ###########
         # ttbar 2 #
@@ -271,10 +273,12 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         
         line = xt.Line(elements = [el_beambeam_b1])
         
-        tracker = xt.Tracker(line=line)
+        tracker = xt.Tracker(_context=context, line=line)
         record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5)})
         tracker.track(particles_b1, num_turns=1)
         tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+
+        record.move(_context=xo.context_default)
 
         ###########################################
         # test 1: compare spectrum with guineapig #
