@@ -16,6 +16,8 @@ def test_beambeam3d_beamstrahlung_single_collision():
         #    print(f'skipping test_beambeam3d_beamstrahlung_single_collision for context {context}')
         #    continue
 
+        print(repr(context))
+
         ###########
         # ttbar 2 #
         ###########
@@ -165,7 +167,9 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         #if not isinstance(context, xo.ContextCpu):
         #    print(f'skipping test_beambeam3d_collective_beamstrahlung_single_collision for context {context}')
         #    continue
-    
+
+        print(repr(context))
+
         ###########
         # ttbar 2 #
         ###########

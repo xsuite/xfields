@@ -13,7 +13,9 @@ def test_compute_moments():
         #if not isinstance(context, xo.ContextCpu):
         #    print(f'skipping test_beambeam3d_beamstrahlung_single_collision for context {context}')
         #    continue
-            
+
+        print(repr(context))
+
         ###########
         # ttbar 2 #
         ###########
