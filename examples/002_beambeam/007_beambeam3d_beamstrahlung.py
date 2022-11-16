@@ -49,10 +49,6 @@ n_macroparticles_b2 = int(1e6)
 n_turns = 1000
 n_slices = 100
 
-# strong bunch intenisities, generated from 1e8 gaussian distributed particles. See test_data/beamstrahlung/gen_nbb.py
-n_bb_json = json.load(open('../../test_data/beamstrahlung/gen_nbb.json'))
-n_bb = np.array(n_bb_json["n_bb"])
-
 #############
 # particles #
 #############
@@ -177,9 +173,8 @@ el_inject_b1 = xt.LinearTransferMatrix(_context=context,
 # weakstrong beambeam with beamstrahlung #
 ##########################################
 
-bin_edges = sigma_z_tot*np.linspace(-3.0,3.0,n_slices+1)
-slicer = xf.TempSlicer(bin_edges=bin_edges)
-    
+slicer = xf.Slicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="improved")
+
 el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         _context=context,
         config_for_update = None,
@@ -189,16 +184,16 @@ el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         # decide between round or elliptical kick formula
         min_sigma_diff     = 1e-28,
         # slice intensity [num. real particles] n_slices inferred from length of this
-        slices_other_beam_num_particles = n_bb,
+        slices_other_beam_num_particles = slicer.bin_weights * bunch_intensity,
         # unboosted strong beam moments
-        slices_other_beam_zeta_center = slicer.bin_centers,
+        slices_other_beam_zeta_center = slicer.bin_centers * slicer.sigma_z,
         slices_other_beam_Sigma_11    = n_slices*[sigma_x**2],
         slices_other_beam_Sigma_22    = n_slices*[sigma_px**2],
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
         # only if BS on
         flag_beamstrahlung = 1,
-        slices_other_beam_zeta_bin_width_star_beamstrahlung = np.abs(np.diff(slicer.bin_edges))/np.cos(phi),  # boosted dz
+        slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung * slicer.sigma_z / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
         slices_other_beam_Sigma_34    = n_slices*[0],

@@ -40,7 +40,7 @@ def test_compute_moments():
         #############
         
         #e-
-        part_range = np.linspace(-1e-1,1e-1,n_macroparticles_b1)
+        part_range = np.linspace(-5*sigma_z_tot,5*sigma_z_tot,n_macroparticles_b1)
         particles_b0 = xp.Particles(
                     _context = context,
                     q0        = -1,
@@ -50,8 +50,8 @@ def test_compute_moments():
                     zeta      = part_range,
                     )
         
-        bin_edges = np.linspace(-1e-1,1e-1,n_slices+1)
-        slicer = xf.TempSlicer(bin_edges=bin_edges)
+        slicer = xf.Slicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unibin")
+
         
         particles_b1 = particles_b0.copy()
         particles_b2 = particles_b0.copy()
