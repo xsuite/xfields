@@ -222,8 +222,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.iscollective = True
             self.track = self._track_collective # switch to specific track method
 
-            if slices_other_beam_zeta_center is None: 
-                slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers
+            if slices_other_beam_zeta_center is None:
+                if isinstance(self.config_for_update.slicer, Slicer):
+                    slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers * self.config_for_update.slicer.sigma_z
+                else:
+                    slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers
             # Some dummy values just to initialize the object
             if (slices_other_beam_Sigma_11 is None
                     and slices_other_beam_Sigma_11_star is None):
@@ -249,8 +252,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                             slices_other_beam_zeta_center)
             # beamstrahlung
             if slices_other_beam_zeta_bin_width_star_beamstrahlung is None and flag_beamstrahlung == 1:
-                slices_other_beam_zeta_bin_width_star_beamstrahlung = np.abs(np.diff(self.config_for_update.slicer.bin_edges))/np.cos(self.phi)
-
+                if isinstance(self.config_for_update.slicer, Slicer):
+                    slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung * slicer.sigma_z / np.cos(self.phi)
+                else:
+                    slices_other_beam_zeta_bin_width_star_beamstrahlung = np.abs(np.diff(self.config_for_update.slicer.bin_edges))/np.cos(self.phi)
             self.moments = None
             self.partner_moments = np.zeros(self.config_for_update.slicer.num_slices*(1+6+10),dtype=float)
 
