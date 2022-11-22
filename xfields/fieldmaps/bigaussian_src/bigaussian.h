@@ -10,6 +10,9 @@
 // for quick test with gcc
 #include "constants.h" //only_for_context none
 #include "faddeeva.h" //only_for_context none
+#include "complex_error_function.h" //only_for_context none
+#include "compute_gx_gy.h" //only_for_context none
+//include_file compute_gx_gy.h for_context cpu_serial opencl cuda cpu_openmp
 
 /*gpufun*/
 void get_transv_field_gauss_round(
@@ -131,6 +134,7 @@ void get_Ex_Ey_gauss(
 	}
 }
 
+<<<<<<< HEAD
 
 /*gpufun*/ void compute_Gx_Gy(
         const double  x,
@@ -173,6 +177,8 @@ void get_Ex_Ey_gauss(
     *Gy_ptr = Gy;
 }
 
+=======
+>>>>>>> szymonlopaciuk/separate_compute_gx_gy
 #endif
 
 #ifndef NOFIELDMAP
