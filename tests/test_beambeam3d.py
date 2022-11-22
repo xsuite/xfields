@@ -325,6 +325,7 @@ def test_beambeam3d():
 
             bb_dtk.track(dtk_part)
 
+            part.move(_context=xo.context_default)
             for cc in 'x px y py zeta delta'.split():
                 val_test = getattr(part, cc)[0]
                 val_ref = getattr(dtk_part, cc)
@@ -332,13 +333,14 @@ def test_beambeam3d():
                 print(f'ducktrack: {cc} = {val_ref:.12e}')
                 print(f'xsuite:    {cc} = {val_test:.12e}')
                 assert np.isclose(val_test, val_ref, rtol=0, atol=5e-12)
+            part.move(_context=context)
 
             # Scaling down bb:
             bb.scale_strength = 0
             part_before_tracking = part.copy()
             bb.track(part)
 
-
+            part.move(_context=xo.context_default)
             for cc in 'x px y py zeta delta'.split():
                 val_test = getattr(part, cc)[0]
                 val_ref = getattr(part_before_tracking, cc)[0]
