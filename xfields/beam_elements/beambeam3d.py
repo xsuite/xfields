@@ -421,7 +421,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     'other_beam_sigma_55_star_beamstrahlung '
                     'needs to be correctly set')
         elif flag_beamstrahlung == 2:
-            if np.any(self.slices_other_beam_zeta_bin_width_star_beamstrahlung == 0):
+            ctx2np  = self._context.nparray_from_context_array
+            if np.any(ctx2np(
+                self.slices_other_beam_zeta_bin_width_star_beamstrahlung == 0)):
                 raise ValueError(
                     'slices_other_beam_zeta_bin_width_star_beamstrahlung '
                     'needs to be correctly set')
