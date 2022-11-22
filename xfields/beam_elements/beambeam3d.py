@@ -98,6 +98,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
 
+    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
+
     _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
@@ -147,7 +149,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_pzeta_center=0.,
 
                     flag_beamstrahlung=0,
- 
+
                     slices_other_beam_zeta_bin_width_star_beamstrahlung=None,
                     other_beam_sigma_55_star_beamstrahlung=None,
 
@@ -282,18 +284,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_zeta_center_star)
                         == len(slices_other_beam_num_particles))
 
-        # beamstrahlung
-        if flag_beamstrahlung == 1:
-            assert slices_other_beam_zeta_bin_width_star_beamstrahlung is not None, (
-                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be provided if flag_beamstrahlung = 1')
-            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
-                            'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
-            assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
-                        == len(slices_other_beam_num_particles))
-        elif flag_beamstrahlung == 2:
-            assert other_beam_sigma_55_star_beamstrahlung is not None, (
-                'other_beam_sigma_55_star_beamstrahlung must be provided if flag_beamstrahlung = 2')
-
         n_slices = len(slices_other_beam_num_particles)
 
         self._allocate_xobject(n_slices, **kwargs)
@@ -346,7 +336,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_y_center_star, slices_other_beam_py_center_star,
             slices_other_beam_zeta_center_star, slices_other_beam_pzeta_center_star)
 
-
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
@@ -376,11 +365,23 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.threshold_singular = threshold_singular
 
         # beamstrahlung
-        self.flag_beamstrahlung = flag_beamstrahlung
-        self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
-            np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
-        self.other_beam_sigma_55_star_beamstrahlung = (
+        if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
+            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
+                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
+            assert (len(self.slices_other_beam_zeta_bin_width_star_beamstrahlung)
+                == len(self.slices_other_beam_num_particles))
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+        else:
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung[:] = 0
+
+        if other_beam_sigma_55_star_beamstrahlung:
+            self.other_beam_sigma_55_star_beamstrahlung = (
                                         other_beam_sigma_55_star_beamstrahlung)
+        else:
+            self.other_beam_sigma_55_star_beamstrahlung = 0
+
+        self.flag_beamstrahlung = flag_beamstrahlung # Trigger property setter
 
     def _allocate_xobject(self, n_slices, **kwargs):
         self.xoinitialize(
@@ -404,6 +405,25 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
             **kwargs
             )
+
+    @property
+    def flag_beamstrahlung(self):
+        return self._flag_beamstrahlung
+
+    @flag_beamstrahlung.setter
+    def flag_beamstrahlung(self, flag_beamstrahlung):
+        # beamstrahlung
+        if flag_beamstrahlung == 1:
+            if np.any(self.slices_other_beam_zeta_bin_width_star_beamstrahlung == 0):
+                raise ValueError(
+                    'slices_other_beam_zeta_bin_width_star_beamstrahlung '
+                    'needs to be correctly set')
+        elif flag_beamstrahlung == 2:
+            if self.other_beam_sigma_55_star_beamstrahlung == 0 :
+                raise ValueError(
+                    'other_beam_sigma_55_star_beamstrahlung '
+                    'needs to be correctly set')
+        self._flag_beamstrahlung = flag_beamstrahlung
 
     def _init_from_old_interface(self, old_interface, **kwargs):
 
