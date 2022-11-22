@@ -416,6 +416,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def flag_beamstrahlung(self, flag_beamstrahlung):
         # beamstrahlung
         if flag_beamstrahlung == 1:
+            raise NotImplementedError('"mean" model not yet finished')
             if self.other_beam_sigma_55_star_beamstrahlung == 0 :
                 raise ValueError(
                     'other_beam_sigma_55_star_beamstrahlung '
