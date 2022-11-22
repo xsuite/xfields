@@ -296,16 +296,17 @@ def test_beambeam3d():
                     post_subtract_pzeta=d_delta,
             )
 
-            bb.slices_other_beam_Sigma_11[1] = bb.slices_other_beam_Sigma_11[0]
-            bb.slices_other_beam_Sigma_12[1] = bb.slices_other_beam_Sigma_12[0]
-            bb.slices_other_beam_Sigma_13[1] = bb.slices_other_beam_Sigma_13[0]
-            bb.slices_other_beam_Sigma_14[1] = bb.slices_other_beam_Sigma_14[0]
-            bb.slices_other_beam_Sigma_22[1] = bb.slices_other_beam_Sigma_22[0]
-            bb.slices_other_beam_Sigma_23[1] = bb.slices_other_beam_Sigma_23[0]
-            bb.slices_other_beam_Sigma_24[1] = bb.slices_other_beam_Sigma_24[0]
-            bb.slices_other_beam_Sigma_33[1] = bb.slices_other_beam_Sigma_33[0]
-            bb.slices_other_beam_Sigma_34[1] = bb.slices_other_beam_Sigma_34[0]
-            bb.slices_other_beam_Sigma_44[1] = bb.slices_other_beam_Sigma_44[0]
+            ctx2np = bb._context.nparray_from_context_array
+            bb.slices_other_beam_Sigma_11[1] = ctx2np(bb.slices_other_beam_Sigma_11)[0]
+            bb.slices_other_beam_Sigma_12[1] = ctx2np(bb.slices_other_beam_Sigma_12)[0]
+            bb.slices_other_beam_Sigma_13[1] = ctx2np(bb.slices_other_beam_Sigma_13)[0]
+            bb.slices_other_beam_Sigma_14[1] = ctx2np(bb.slices_other_beam_Sigma_14)[0]
+            bb.slices_other_beam_Sigma_22[1] = ctx2np(bb.slices_other_beam_Sigma_22)[0]
+            bb.slices_other_beam_Sigma_23[1] = ctx2np(bb.slices_other_beam_Sigma_23)[0]
+            bb.slices_other_beam_Sigma_24[1] = ctx2np(bb.slices_other_beam_Sigma_24)[0]
+            bb.slices_other_beam_Sigma_33[1] = ctx2np(bb.slices_other_beam_Sigma_33)[0]
+            bb.slices_other_beam_Sigma_34[1] = ctx2np(bb.slices_other_beam_Sigma_34)[0]
+            bb.slices_other_beam_Sigma_44[1] = ctx2np(bb.slices_other_beam_Sigma_44)[0]
 
             dtk_part = dtk.TestParticles(
                     p0c=6500e9,
