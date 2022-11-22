@@ -101,7 +101,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     }
 
     def __init__(self,
-                    phi=None, alpha=None, other_beam_q0=None, particles_per_macroparticle = None,
+                    phi=None, alpha=None, other_beam_q0=None,
                     scale_strength = 1.,
 
                     slices_other_beam_num_particles=None,
@@ -201,9 +201,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
             self.moments = None
             self.partner_moments = np.zeros(self.config_for_update.slicer.num_slices*(1+6+10),dtype=float)
-
-            self.particles_per_macroparticle = particles_per_macroparticle
-
 
         if old_interface is not None:
             self._init_from_old_interface(old_interface=old_interface, **kwargs)
@@ -524,7 +521,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     # Compute moments
                     self.config_for_update.slicer.assign_slices(particles)
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
-                    self.moments[:self.config_for_update.slicer.num_slices] *= self.particles_per_macroparticle
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
                                                      particles.name,
@@ -1232,28 +1228,29 @@ class TempSlicer:
         slice_moments = np.zeros(self.num_slices*(1+6+10),dtype=float)
         for i_slice in range(self.num_slices):
             mask = particles.slice == i_slice
-            slice_moments[i_slice] = len(particles.x[mask])                                                      # nb part
-            slice_moments[self.num_slices+i_slice] = float(particles.x[mask].sum())/slice_moments[i_slice]       # <x>
-            slice_moments[2*self.num_slices+i_slice] = float(particles.px[mask].sum())/slice_moments[i_slice]    # <px>
-            slice_moments[3*self.num_slices+i_slice] = float(particles.y[mask].sum())/slice_moments[i_slice]     # <y>
-            slice_moments[4*self.num_slices+i_slice] = float(particles.py[mask].sum())/slice_moments[i_slice]    # <py>
-            slice_moments[5*self.num_slices+i_slice] = float(particles.zeta[mask].sum())/slice_moments[i_slice]  # <z>
-            slice_moments[6*self.num_slices+i_slice] = float(particles.delta[mask].sum())/slice_moments[i_slice] # <pz> # TODO mhy pzeta doesn't work?
+            slice_moments[i_slice] = particles.weight[mask].sum()
+            num_macroparticles_slice = len(particles.x[mask])
+            slice_moments[self.num_slices+i_slice] = float(particles.x[mask].sum())/num_macroparticles_slice       # <x>
+            slice_moments[2*self.num_slices+i_slice] = float(particles.px[mask].sum())/num_macroparticles_slice    # <px>
+            slice_moments[3*self.num_slices+i_slice] = float(particles.y[mask].sum())/num_macroparticles_slice     # <y>
+            slice_moments[4*self.num_slices+i_slice] = float(particles.py[mask].sum())/num_macroparticles_slice    # <py>
+            slice_moments[5*self.num_slices+i_slice] = float(particles.zeta[mask].sum())/num_macroparticles_slice  # <z>
+            slice_moments[6*self.num_slices+i_slice] = float(particles.delta[mask].sum())/num_macroparticles_slice # <pz> # TODO mhy pzeta doesn't work?
 
             x_diff = particles.x[mask]-slice_moments[self.num_slices+i_slice]
             px_diff = particles.px[mask]-slice_moments[2*self.num_slices+i_slice]
             y_diff = particles.y[mask]-slice_moments[3*self.num_slices+i_slice]
             py_diff = particles.py[mask]-slice_moments[4*self.num_slices+i_slice]
-            slice_moments[7*self.num_slices+i_slice] = float((x_diff**2).sum())/slice_moments[i_slice]             # Sigma_11
-            slice_moments[8*self.num_slices+i_slice] = float((x_diff*px_diff).sum())/slice_moments[i_slice]      # Sigma_12
-            slice_moments[9*self.num_slices+i_slice] = float((x_diff*y_diff).sum())/slice_moments[i_slice]       # Sigma_13
-            slice_moments[10*self.num_slices+i_slice] = float((x_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_14
-            slice_moments[11*self.num_slices+i_slice] = float((px_diff**2).sum())/slice_moments[i_slice]           # Sigma_22
-            slice_moments[12*self.num_slices+i_slice] = float((px_diff*y_diff).sum())/slice_moments[i_slice]     # Sigma_23
-            slice_moments[13*self.num_slices+i_slice] = float((px_diff*py_diff).sum())/slice_moments[i_slice]    # Sigma_24
-            slice_moments[14*self.num_slices+i_slice] = float((y_diff**2).sum())/slice_moments[i_slice]            # Sigma_33
-            slice_moments[15*self.num_slices+i_slice] = float((y_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_34
-            slice_moments[16*self.num_slices+i_slice] = float((py_diff**2).sum())/slice_moments[i_slice]           # Sigma_44
+            slice_moments[7*self.num_slices+i_slice] = float((x_diff**2).sum())/num_macroparticles_slice             # Sigma_11
+            slice_moments[8*self.num_slices+i_slice] = float((x_diff*px_diff).sum())/num_macroparticles_slice        # Sigma_12
+            slice_moments[9*self.num_slices+i_slice] = float((x_diff*y_diff).sum())/num_macroparticles_slice         # Sigma_13
+            slice_moments[10*self.num_slices+i_slice] = float((x_diff*py_diff).sum())/num_macroparticles_slice       # Sigma_14
+            slice_moments[11*self.num_slices+i_slice] = float((px_diff**2).sum())/num_macroparticles_slice           # Sigma_22
+            slice_moments[12*self.num_slices+i_slice] = float((px_diff*y_diff).sum())/num_macroparticles_slice       # Sigma_23
+            slice_moments[13*self.num_slices+i_slice] = float((px_diff*py_diff).sum())/num_macroparticles_slice      # Sigma_24
+            slice_moments[14*self.num_slices+i_slice] = float((y_diff**2).sum())/num_macroparticles_slice            # Sigma_33
+            slice_moments[15*self.num_slices+i_slice] = float((y_diff*py_diff).sum())/num_macroparticles_slice       # Sigma_34
+            slice_moments[16*self.num_slices+i_slice] = float((py_diff**2).sum())/num_macroparticles_slice           # Sigma_44
         return slice_moments
 
 class ConfigForUpdateBeamBeamBiGaussian3D:

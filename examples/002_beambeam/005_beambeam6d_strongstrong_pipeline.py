@@ -7,7 +7,6 @@ import time
 
 import numpy as np
 from matplotlib import pyplot as plt
-from mpi4py import MPI
 import xobjects as xo
 import xtrack as xt
 import xfields as xf
@@ -19,6 +18,7 @@ context = xo.ContextCpu(omp_num_threads=0)
 # Pipeline manager #
 ####################
 if False: # Using MPI
+    from mpi4py import MPI
     comm = MPI.COMM_WORLD
     my_rank   = comm.Get_rank()
     if my_rank > 0:
@@ -38,7 +38,6 @@ pipeline_manager.add_element('IP2')
 
 n_macroparticles = int(1e4)
 bunch_intensity = 2.3e11
-particles_per_macroparticle = bunch_intensity/n_macroparticles
 physemit_x = 2E-6*0.938/7E3
 physemit_y = 2E-6*0.938/7E3
 beta_x_IP1 = 1.0
@@ -68,6 +67,7 @@ particles_b1 = xp.Particles(_context=context,
     py=np.sqrt(physemit_y/beta_y_IP1)*np.random.randn(n_macroparticles),
     zeta=sigma_z*np.random.randn(n_macroparticles),
     delta=sigma_delta*np.random.randn(n_macroparticles),
+    weight=bunch_intensity/n_macroparticles
 )
 particles_b1.init_pipeline('B1b1')
 particles_b2 = xp.Particles(_context=context,
@@ -78,6 +78,7 @@ particles_b2 = xp.Particles(_context=context,
     py=np.sqrt(physemit_y/beta_y_IP1)*np.random.randn(n_macroparticles),
     zeta=sigma_z*np.random.randn(n_macroparticles),
     delta=sigma_delta*np.random.randn(n_macroparticles),
+    weight=bunch_intensity/n_macroparticles
 )
 particles_b2.init_pipeline('B2b1')
 
@@ -120,27 +121,23 @@ bbeamIP1_b1 = xf.BeamBeamBiGaussian3D(
             _context=context,
             other_beam_q0 = particles_b2.q0,
             phi = 500E-6,alpha=0.0,
-            particles_per_macroparticle = particles_per_macroparticle,
             config_for_update = config_for_update_b1_IP1)
 
 bbeamIP2_b1 = xf.BeamBeamBiGaussian3D(
             _context=context,
             other_beam_q0 = particles_b2.q0,
             phi = 500E-6,alpha=np.pi/2,
-            particles_per_macroparticle = particles_per_macroparticle,
             config_for_update = config_for_update_b1_IP2)
 bbeamIP1_b2 = xf.BeamBeamBiGaussian3D(
             _context=context,
             other_beam_q0 = particles_b1.q0,
             phi = 500E-6,alpha=0.0,
-            particles_per_macroparticle = particles_per_macroparticle,
             config_for_update = config_for_update_b2_IP1)
 
 bbeamIP2_b2 = xf.BeamBeamBiGaussian3D(
             _context=context,
             other_beam_q0 = particles_b1.q0,
             phi = 500E-6,alpha=np.pi/2,
-            particles_per_macroparticle = particles_per_macroparticle,
             config_for_update = config_for_update_b2_IP2)
 
 #################################################################
