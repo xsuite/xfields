@@ -340,7 +340,7 @@ def test_beambeam3d():
             part_before_tracking = part.copy()
             bb.track(part)
 
-            part.move(_context=xo.context_default)
+            part_before_tracking.move(_context=xo.context_default)
             for cc in 'x px y py zeta delta'.split():
                 val_test = getattr(part, cc)[0]
                 val_ref = getattr(part_before_tracking, cc)[0]
