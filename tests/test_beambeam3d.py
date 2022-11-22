@@ -166,10 +166,6 @@ def sigma_configurations():
 def test_beambeam3d():
     for context in xo.context.get_test_contexts():
 
-        if not isinstance(context, xo.ContextCpu):
-            print(f'skipping test_beambeam3d_collective for context {context}')
-            continue
-
         print(repr(context))
 
         # crossing plane
@@ -352,10 +348,6 @@ def test_beambeam3d():
 def test_beambeam3d_gx_gy_singularity():
     for context in xo.context.get_test_contexts():
 
-        if not isinstance(context, xo.ContextCpu):
-            print(f'skipping test_beambeam3d_collective for context {context}')
-            continue
-
         print(repr(context))
 
         # crossing plane
@@ -460,12 +452,11 @@ def test_beambeam3d_gx_gy_singularity():
             assert not np.isnan(part.py[0])
 
 
-
 def test_beambeam3d_collective():
     for context in xo.context.get_test_contexts():
 
-        if not isinstance(context, xo.ContextCpu):
-            print(f'skipping test_beambeam3d_collective for context {context}')
+        if isinstance(context, xo.ContextPyopencl):
+            print('Incompatible with OpenCL')
             continue
 
         print(repr(context))
