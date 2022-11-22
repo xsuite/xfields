@@ -1,3 +1,5 @@
+import pathlib
+
 import numpy as np
 from scipy import constants as cst
 
@@ -6,8 +8,8 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
-import json
-
+test_data_folder = pathlib.Path(
+    __file__).parent.joinpath('../test_data').absolute()
 
 def test_beambeam3d_beamstrahlung_single_collision():
     for context in xo.context.get_test_contexts():
@@ -45,16 +47,16 @@ def test_beambeam3d_beamstrahlung_single_collision():
         physemit_s_tot      = sigma_z_tot*sigma_delta_tot  # [m]
         n_macroparticles_b1 = int(1e6)
         n_macroparticles_b2 = int(1e6)
-        
+
         n_slices = 100
 
         #############
         # particles #
         #############
-        
+
         #e-
         particles_b1 = xp.Particles(
-                    _context = context, 
+                    _context = context,
                     q0        = -1,
                     p0c       = p0c,
                     mass0     = mass0,
@@ -65,11 +67,9 @@ def test_beambeam3d_beamstrahlung_single_collision():
                     py        = sigma_py       *np.random.randn(n_macroparticles_b1),
                     delta     = sigma_delta_tot*np.random.randn(n_macroparticles_b1),
                     )
-        
+
         particles_b1.name = "b1"
-        
-        particles_b1._init_random_number_generator()
-        
+
         slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
 
         el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
@@ -89,20 +89,24 @@ def test_beambeam3d_beamstrahlung_single_collision():
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
         # only if BS on
-        flag_beamstrahlung = 1,
         slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
         slices_other_beam_Sigma_34    = n_slices*[0],
         )
-        
+
         #########################
         # track for 1 collision #
         #########################
-        
+
         line = xt.Line(elements = [el_beambeam_b1])
-        
+
         tracker = xt.Tracker(_context=context, line=line)
+        assert line._needs_rng == False
+
+        tracker.configure_radiation(model_beamstrahlung='quantum')
+        assert line._needs_rng == True
+
         record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5)})
         tracker.track(particles_b1, num_turns=1)
         tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
@@ -113,16 +117,16 @@ def test_beambeam3d_beamstrahlung_single_collision():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        fname="../test_data/beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+        fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
         guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
         n_bins = 10
         bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
         xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
         guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
-        
+
         bin_rel_errors = np.abs(xsuite_hist - guinea_hist) / guinea_hist
         print(f"bin relative errors [1]: {bin_rel_errors}")
-        
+
         # test if relative error in the last 5 bins is smaller than 1e-1
         assert np.allclose(xsuite_hist[-5:], guinea_hist[-5:], rtol=1e-1, atol=0)
 
@@ -134,24 +138,24 @@ def test_beambeam3d_beamstrahlung_single_collision():
         # https://www.researchgate.net/publication/2278298_Beam-Beam_Phenomena_In_Linear_Colliders
         # page 20
         r0 = cst.e**2/(4*np.pi*cst.epsilon_0*cst.m_e*cst.c**2) # - if pp
-        
+
         upsilon_max =   2 * r0**2 * energy/(mass0*1e-9) * bunch_intensity / (1/137*sigma_z_tot*(sigma_x + 1.85*sigma_y))
         upsilon_avg = 5/6 * r0**2 * energy/(mass0*1e-9) * bunch_intensity / (1/137*sigma_z_tot*(sigma_x + sigma_y))
-        
+
         # get rid of padded zeros in table
         photon_critical_energy = np.array(sorted(set(record.beamstrahlungtable.photon_critical_energy))[1:])
         primary_energy         = np.array(sorted(set(        record.beamstrahlungtable.primary_energy))[1:])
-        
+
         upsilon_avg_sim = np.mean(0.67 * photon_critical_energy / primary_energy)
         upsilon_max_sim = np.max(0.67 * photon_critical_energy / primary_energy)
-        
+
         print("Y max. [1]:", upsilon_max)
         print("Y avg. [1]:", upsilon_avg)
         print("Y max. [1]:", upsilon_max_sim)
         print("Y avg. [1]:", upsilon_avg_sim)
         print("Y max. ratio [1]:", upsilon_max_sim / upsilon_max)
         print("Y avg. ratio [1]:", upsilon_avg_sim / upsilon_avg)
-        
+
         assert np.abs(upsilon_max_sim / upsilon_max - 1) < 2e-2
         assert np.abs(upsilon_avg_sim / upsilon_avg - 1) < 5e-2
 
@@ -213,13 +217,11 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
                     py        = sigma_py       *np.random.randn(n_macroparticles_b1),
                     delta     = sigma_delta_tot*np.random.randn(n_macroparticles_b1),
                     )
-        
+
         particles_b1.name = "b1"
-        
-        particles_b1._init_random_number_generator()
-        
+
         slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
-        
+
         # this is different w.r.t WS test
         config_for_update=xf.ConfigForUpdateBeamBeamBiGaussian3D(
                         pipeline_manager=None,
@@ -227,7 +229,7 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
                         slicer=slicer,
                         update_every=None, # Never updates (test in weakstrong mode)
                         )
-            
+
         el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         _context=context,
         config_for_update = config_for_update,
@@ -245,22 +247,26 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
         # only if BS on
-        flag_beamstrahlung = 1,
         slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
         slices_other_beam_Sigma_34    = n_slices*[0],
         )
-        
+
         el_beambeam_b1.name = "beambeam"
-        
+
         #########################
         # track for 1 collision #
         #########################
-        
+
         line = xt.Line(elements = [el_beambeam_b1])
-        
+
         tracker = xt.Tracker(_context=context, line=line)
+        assert line._needs_rng == False
+
+        tracker.configure_radiation(model_beamstrahlung='quantum')
+        assert line._needs_rng == True
+
         record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(3e5)})
         tracker.track(particles_b1, num_turns=1)
         tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
@@ -271,16 +277,16 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        fname="../test_data/beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+        fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
         guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
         n_bins = 10
         bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
         xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
         guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
-        
+
         bin_rel_errors = np.abs(xsuite_hist - guinea_hist) / guinea_hist
         print(f"bin relative errors [1]: {bin_rel_errors}")
-        
+
         # test if relative error in the last 5 bins is smaller than 1e-1
         assert np.allclose(xsuite_hist[-5:], guinea_hist[-5:], rtol=1e-1, atol=0)
 
@@ -292,24 +298,24 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         # https://www.researchgate.net/publication/2278298_Beam-Beam_Phenomena_In_Linear_Colliders
         # page 20
         r0 = cst.e**2/(4*np.pi*cst.epsilon_0*cst.m_e*cst.c**2) # - if pp
-        
+
         upsilon_max =   2 * r0**2 * energy/(mass0*1e-9) * bunch_intensity / (1/137*sigma_z_tot*(sigma_x + 1.85*sigma_y))
         upsilon_avg = 5/6 * r0**2 * energy/(mass0*1e-9) * bunch_intensity / (1/137*sigma_z_tot*(sigma_x + sigma_y))
-        
+
         # get rid of padded zeros in table
         photon_critical_energy = np.array(sorted(set(record.beamstrahlungtable.photon_critical_energy))[1:])
         primary_energy         = np.array(sorted(set(        record.beamstrahlungtable.primary_energy))[1:])
-        
+
         upsilon_avg_sim = np.mean(0.67 * photon_critical_energy / primary_energy)
         upsilon_max_sim = np.max(0.67 * photon_critical_energy / primary_energy)
-        
+
         print("Y max. [1]:", upsilon_max)
         print("Y avg. [1]:", upsilon_avg)
         print("Y max. [1]:", upsilon_max_sim)
         print("Y avg. [1]:", upsilon_avg_sim)
         print("Y max. ratio [1]:", upsilon_max_sim / upsilon_max)
         print("Y avg. ratio [1]:", upsilon_avg_sim / upsilon_avg)
-        
+
         assert np.abs(upsilon_max_sim / upsilon_max - 1) < 2e-2
         assert np.abs(upsilon_avg_sim / upsilon_avg - 1) < 5e-2
 

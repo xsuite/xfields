@@ -13,7 +13,7 @@ from scipy import constants as cst
 import json
 
 context = xo.ContextCpu(omp_num_threads=0)
-       
+
 ###########
 # ttbar 2 #
 ###########
@@ -68,8 +68,6 @@ particles_b1 = xp.Particles(
             )
 
 particles_b1.name = "b1"
-
-particles_b1._init_random_number_generator()
 
 ########################
 # half arc with synrad #
@@ -192,7 +190,6 @@ el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
         # only if BS on
-        flag_beamstrahlung = 1,
         slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
@@ -225,6 +222,17 @@ line = xt.Line(elements = [monitor_emits,
                            el_arc_mid_b1])
 
 tracker = xt.Tracker(line=line)
+
+########################
+# Enable beamstrahlung #
+########################
+
+tracker.configure_radiation(model_beamstrahlung='quantum')
+
+#########
+# Track #
+#########
+
 record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
 tracker.track(particles_b1, num_turns=n_turns)
 tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
@@ -262,36 +270,36 @@ def stat_emittance_from_monitor(emits_dict, n_macroparticles, n_turns, alpha_x=0
     compute statistical emittances. First normalize coordinates by using (263) then (130) from
     https://arxiv.org/pdf/2107.02614.pdf
     """
-        
+
     x     = np.reshape(emits_dict["x"],     (n_macroparticles, n_turns))
     px    = np.reshape(emits_dict["px"],    (n_macroparticles, n_turns))
     y     = np.reshape(emits_dict["y"],     (n_macroparticles, n_turns))
     py    = np.reshape(emits_dict["py"],    (n_macroparticles, n_turns))
     z     = np.reshape(emits_dict["zeta"],  (n_macroparticles, n_turns))
     delta = np.reshape(emits_dict["delta"], (n_macroparticles, n_turns))
-        
+
     x_norm     = x / np.sqrt(beta_x)
     y_norm     = y / np.sqrt(beta_y)
     px_norm    = alpha_x / beta_x * x + beta_x * px
     py_norm    = alpha_y / beta_y * y + beta_y * py
-    
+
     emit_x = np.sqrt(np.mean(( x_norm -  np.mean(x_norm, axis=0))**2, axis=0) *\
                      np.mean((px_norm - np.mean(px_norm, axis=0))**2, axis=0) -\
                      np.mean(( x_norm -  np.mean(x_norm, axis=0)) *\
                              (px_norm - np.mean(px_norm, axis=0)), axis=0)**2)
-        
+
     emit_y = np.sqrt(np.mean(( y_norm -  np.mean(y_norm, axis=0))**2, axis=0) *\
                      np.mean((py_norm - np.mean(py_norm, axis=0))**2, axis=0) -\
                      np.mean(( y_norm -  np.mean(y_norm, axis=0)) *\
                              (py_norm - np.mean(py_norm, axis=0)), axis=0)**2)
-        
+
     emit_s = np.sqrt(np.mean((    z - np.mean(    z, axis=0))**2, axis=0) *\
                      np.mean((delta - np.mean(delta, axis=0))**2, axis=0) -\
                      np.mean((    z - np.mean(    z, axis=0)) *\
                              (delta - np.mean(delta, axis=0)), axis=0)**2)
-        
+
     return emit_x, emit_y, emit_s
-    
+
 # get emittances and RMS beam sizes
 coords_dict = monitor_coords.to_dict()["data"]
 emits_dict  = monitor_emits.to_dict()["data"]

@@ -70,8 +70,6 @@ particles_b1 = xp.Particles(
 
 particles_b1.name = "b1"
 
-particles_b1._init_random_number_generator()
-
 ########################
 # half arc with synrad #
 ########################
@@ -201,8 +199,7 @@ el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         slices_other_beam_Sigma_22    = n_slices*[sigma_px**2],
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
-        # only if BS on
-        flag_beamstrahlung = 1,
+        # only if B on
         slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
@@ -236,6 +233,18 @@ line = xt.Line(elements = [monitor_emits,
                            el_arc_mid_b1])
 
 tracker = xt.Tracker(line=line)
+
+########################
+# Enable beamstrahlung #
+########################
+
+tracker.configure_radiation(model_beamstrahlung='quantum')
+
+#########
+# Track #
+#########
+
+
 record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
 tracker.track(particles_b1, num_turns=n_turns)
 tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
