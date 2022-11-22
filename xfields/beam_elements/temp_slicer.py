@@ -167,7 +167,7 @@ class TempSlicer:
         if isinstance(context, xo.ContextPyopencl):
             raise NotImplementedError
 
-        bin_edges = context.nparray_to_context_array(self.bin_edges) * self.sigma_z  # bin params are in units of RMS bunch length
+        bin_edges = context.nparray_to_context_array(self.bin_edges)
 
         digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
         indices = digitize(particles.zeta, bin_edges, right=True)
