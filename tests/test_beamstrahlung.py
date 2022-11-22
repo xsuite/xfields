@@ -158,6 +158,10 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
 
         print(repr(context))
 
+        if isinstance(context, xo.ContextPyopencl):
+            print("skipping test for pyopencl context")
+            continue
+
         ###########
         # ttbar 2 #
         ###########
@@ -189,16 +193,16 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         physemit_s_tot      = sigma_z_tot*sigma_delta_tot  # [m]
         n_macroparticles_b1 = int(1e6)
         n_macroparticles_b2 = int(1e6)
-        
+
         n_slices = 100
-       
+ 
         #############
         # particles #
         #############
-        
+
         #e-
         particles_b1 = xp.Particles(
-                    _context = context, 
+                    _context = context,
                     q0        = -1,
                     p0c       = p0c,
                     mass0     = mass0,
