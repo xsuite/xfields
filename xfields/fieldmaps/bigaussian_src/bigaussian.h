@@ -134,7 +134,6 @@ void get_Ex_Ey_gauss(
 	}
 }
 
-<<<<<<< HEAD
 
 /*gpufun*/ void compute_Gx_Gy(
         const double  x,
@@ -176,9 +175,6 @@ void get_Ex_Ey_gauss(
     *Gx_ptr = Gx;
     *Gy_ptr = Gy;
 }
-
-=======
->>>>>>> szymonlopaciuk/separate_compute_gx_gy
 #endif
 
 #ifndef NOFIELDMAP
