@@ -113,6 +113,8 @@ def test_compute_moments():
         x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
         print(x_center_b1)
 
+        assert x_center_b1[0] > 1e20
+
         # update particle status, recompute slices
         particles_b1.state[lost_idx] = 0
         slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
