@@ -277,7 +277,7 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        fname="../test_data/beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+        fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
         guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
         n_bins = 10
         bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
