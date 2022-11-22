@@ -296,7 +296,7 @@ def test_beambeam3d():
                     post_subtract_pzeta=d_delta,
             )
 
-            ctx2np = bb._context.nparray_from_context_array
+            ctx2np = bb._context.nparray_from_context_array # Patch for Pyopencl
             bb.slices_other_beam_Sigma_11[1] = ctx2np(bb.slices_other_beam_Sigma_11)[0]
             bb.slices_other_beam_Sigma_12[1] = ctx2np(bb.slices_other_beam_Sigma_12)[0]
             bb.slices_other_beam_Sigma_13[1] = ctx2np(bb.slices_other_beam_Sigma_13)[0]
