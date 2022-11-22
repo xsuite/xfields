@@ -6,6 +6,7 @@
 #ifndef XFIEDLS_BIGUASSIIAN_H
 #define XFIEDLS_BIGUASSIIAN_H
 
+
 // for quick test with gcc
 #include "constants.h" //only_for_context none
 #include "faddeeva.h" //only_for_context none
@@ -45,12 +46,11 @@ void get_transv_field_gauss_ellip(
   double abx = fabs(x - Delta_x);
   double aby = fabs(y - Delta_y);
 
-  //printf("x = %.2e y = %.2e abx = %.2e aby = %.2e", xx, yy, abx, aby);
-
   double S, factBE, Ex, Ey;
   double etaBE_re, etaBE_im, zetaBE_re, zetaBE_im;
   double w_etaBE_re, w_etaBE_im, w_zetaBE_re, w_zetaBE_im;
   double expBE;
+
 
   if (sigmax>sigmay){
     S = sqrt(2.*(sigmax*sigmax-sigmay*sigmay));
@@ -64,6 +64,7 @@ void get_transv_field_gauss_ellip(
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
     faddeeva_w(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
     faddeeva_w(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
@@ -71,6 +72,7 @@ void get_transv_field_gauss_ellip(
 
     Ex = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ey = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
+
   }
   else if (sigmax<sigmay){
     S = sqrt(2.*(sigmay*sigmay-sigmax*sigmax));
@@ -84,6 +86,7 @@ void get_transv_field_gauss_ellip(
 
     //w_zetaBE_re, w_zetaBE_im = wfun(zetaBE_re/S, zetaBE_im/S)
     faddeeva_w(zetaBE_re/S, zetaBE_im/S , &(w_zetaBE_re), &(w_zetaBE_im));
+
     //w_etaBE_re, w_etaBE_im = wfun(etaBE_re/S, etaBE_im/S)
     faddeeva_w(etaBE_re/S, etaBE_im/S , &(w_etaBE_re), &(w_etaBE_im));
 
@@ -91,10 +94,9 @@ void get_transv_field_gauss_ellip(
 
     Ey = factBE*(w_zetaBE_im - w_etaBE_im*expBE);
     Ex = factBE*(w_zetaBE_re - w_etaBE_re*expBE);
+
   }
   else{
-    //printf("Round beam not implemented!\n");
-    //exit(1);
     Ex = Ey = 0.;
   }
 
@@ -115,10 +117,13 @@ void get_Ex_Ey_gauss(
              double* Ex_ptr,
              double* Ey_ptr){
 
+        // round beam
 	if (fabs(sigma_x-sigma_y)< min_sigma_diff){
 	    double sigma = 0.5*(sigma_x+sigma_y);
 	    	get_transv_field_gauss_round(sigma, 0., 0., x, y, Ex_ptr, Ey_ptr);
 	}
+       
+        // elliptical beam
 	else{
 	    get_transv_field_gauss_ellip(
 	            sigma_x, sigma_y, 0., 0., x, y, Ex_ptr, Ey_ptr);
@@ -162,7 +167,6 @@ void get_Ex_Ey_gauss(
                    *(sigma_y/sigma_x*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
         Gy =1./(2*(Sig_11-Sig_33))*(x*Ex+y*Ey+1./(2*PI*EPSILON_0)*
                       (sigma_x/sigma_y*exp(-x*x/(2*Sig_11)-y*y/(2*Sig_33))-1.));
-
     }
 
     *Gx_ptr = Gx;
@@ -203,5 +207,6 @@ void BiGaussianFieldMap_get_dphi_dx_dphi_dy(
     *dphi_dx = -Ex;
     *dphi_dy = -Ey;
 }
+
 #endif
 #endif

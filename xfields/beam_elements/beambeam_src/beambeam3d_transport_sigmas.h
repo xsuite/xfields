@@ -65,7 +65,6 @@ void Sigmas_propagate(
 
 
     if (T<threshold_singular && handle_singularities){
-
         double const a = Sig_12-Sig_34;
         double const b = Sig_22-Sig_44;
         double const c = Sig_14+Sig_23;
@@ -96,8 +95,6 @@ void Sigmas_propagate(
             dS_Sig_33_hat = 0.5*dS_W;
         }
         else{
-            //~ printf("I am here\n");
-            //~ printf("a=%.2e c=%.2e\n", a, c);
             sqrt_a2_c2 = sqrt(a*a+c*c); //repeated?
             cos2theta = fabs(2.*a)/(2*sqrt_a2_c2);
             costheta = sqrt(0.5*(1.+cos2theta));
@@ -122,17 +119,15 @@ void Sigmas_propagate(
         }
     }
     else{
-
         double const sqrtT = sqrt(T);
         cos2theta = signR*R/sqrtT;
         costheta = sqrt(0.5*(1.+cos2theta));
         sintheta = signR*mysign(Sig_13)*sqrt(0.5*(1.-cos2theta));
 
-        //in sixtrack this line seems to be different different
+        //in sixtrack this line seems to be different
         // sintheta = -mysign((Sig_11-Sig_33))*np.sqrt(0.5*(1.-cos2theta))
-
-        Sig_11_hat = 0.5*(W+signR*sqrtT);
-        Sig_33_hat = 0.5*(W-signR*sqrtT);
+       Sig_11_hat = 0.5*(W+signR*sqrtT);
+       Sig_33_hat = 0.5*(W-signR*sqrtT);
 
         dS_cos2theta = signR*(dS_R/sqrtT - R/(2*sqrtT*sqrtT*sqrtT)*dS_T);
         dS_costheta = 1./(4.*costheta)*dS_cos2theta;
