@@ -136,7 +136,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     }
 
     def __init__(self,
-                    phi=None, alpha=None, other_beam_q0=None, particles_per_macroparticle = None,
+                    phi=None, alpha=None, other_beam_q0=None,
                     scale_strength = 1.,
 
                     slices_other_beam_num_particles=None,
@@ -251,8 +251,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.moments = None
             self.partner_moments = np.zeros(
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
-
-            self.particles_per_macroparticle = particles_per_macroparticle
         else:
             self.config_for_update = None
 
@@ -620,7 +618,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     # Compute moments
                     self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
-                    self.moments[:self.config_for_update.slicer.num_slices] *= self.particles_per_macroparticle  # why do this? parts_per_mp can be None
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
                                                      particles.name,
