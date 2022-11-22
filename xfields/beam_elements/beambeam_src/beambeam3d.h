@@ -118,31 +118,29 @@ void synchrobeam_kick(
     // emit beamstrahlung photons from single macropart
     #ifndef XFIELDS_BB3D_NO_BEAMSTR
     const int64_t flag_beamstrahlung = BeamBeamBiGaussian3DData_get_flag_beamstrahlung(el);
-    if (flag_beamstrahlung==1){
+    if(flag_beamstrahlung==1){
+        double sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_sigma_55_star_beamstrahlung(el);  // boosted bunch length
+        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
+        beamstrahlung_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), sigma_55_0);  // slice intensity and RMS slice sizes
+        *pzeta_star = LocalParticle_get_pzeta(part);
+    }
+    else if (flag_beamstrahlung==2){
         BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL;
         BeamstrahlungTableData beamstrahlung_table          = NULL;
         RecordIndex beamstrahlung_table_index               = NULL;
-        if (flag_beamstrahlung > 0) {
-          beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
-          if (beamstrahlung_record){
-            beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-            beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
-          }
+        beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+        if (beamstrahlung_record){
+          beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
+          beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
         }
 
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
         double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // total kick [1]
         double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star_beamstrahlung(el, i_slice);  // bending radius [m]
         beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
-        *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick 
+        *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
     }
     // averaged beamstrahlung using approximate formulas
-    else if(flag_beamstrahlung==2){
-        double sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_sigma_55_star_beamstrahlung(el);  // boosted bunch length
-        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
-        beamstrahlung_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), sigma_55_0);  // slice intensity and RMS slice sizes
-        *pzeta_star = LocalParticle_get_pzeta(part);
-    }
     #endif
 
 

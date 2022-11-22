@@ -89,7 +89,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'min_sigma_diff': xo.Float64,
         'threshold_singular': xo.Float64,
 
-        # beamstrahlung 
+        # beamstrahlung
         'flag_beamstrahlung': xo.Int64,
         'slices_other_beam_zeta_bin_width_star_beamstrahlung': xo.Float64[:],
         'other_beam_sigma_55_star_beamstrahlung': xo.Float64,
@@ -249,8 +249,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
             # beamstrahlung
-            if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None
-                and flag_beamstrahlung == 1):
+            if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None):
                     slices_other_beam_zeta_bin_width_star_beamstrahlung = (
                         self.config_for_update.slicer.bin_widths_beamstrahlung
                             / np.cos(self.phi))
@@ -414,14 +413,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def flag_beamstrahlung(self, flag_beamstrahlung):
         # beamstrahlung
         if flag_beamstrahlung == 1:
-            if np.any(self.slices_other_beam_zeta_bin_width_star_beamstrahlung == 0):
-                raise ValueError(
-                    'slices_other_beam_zeta_bin_width_star_beamstrahlung '
-                    'needs to be correctly set')
-        elif flag_beamstrahlung == 2:
             if self.other_beam_sigma_55_star_beamstrahlung == 0 :
                 raise ValueError(
                     'other_beam_sigma_55_star_beamstrahlung '
+                    'needs to be correctly set')
+        elif flag_beamstrahlung == 2:
+            if np.any(self.slices_other_beam_zeta_bin_width_star_beamstrahlung == 0):
+                raise ValueError(
+                    'slices_other_beam_zeta_bin_width_star_beamstrahlung '
                     'needs to be correctly set')
         self._flag_beamstrahlung = flag_beamstrahlung
 
