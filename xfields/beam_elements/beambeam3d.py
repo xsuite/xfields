@@ -253,7 +253,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
 
             self.particles_per_macroparticle = particles_per_macroparticle
-
+        else:
+            self.config_for_update = None
 
         if old_interface is not None:
             self._init_from_old_interface(old_interface=old_interface, **kwargs)
@@ -359,10 +360,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.threshold_singular = threshold_singular
 
         # beamstrahlung
-        if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None):
-                slices_other_beam_zeta_bin_width_star_beamstrahlung = (
-                    self.config_for_update.slicer.bin_widths_beamstrahlung
-                        / np.cos(self.phi))
+        if self.config_for_update is not None:
+            if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None):
+                    slices_other_beam_zeta_bin_width_star_beamstrahlung = (
+                        self.config_for_update.slicer.bin_widths_beamstrahlung
+                            / np.cos(self.phi))
         if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
                 'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
