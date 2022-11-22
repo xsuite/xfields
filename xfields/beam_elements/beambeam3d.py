@@ -248,11 +248,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             if slices_other_beam_num_particles is None:
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
-            # beamstrahlung
-            if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None):
-                    slices_other_beam_zeta_bin_width_star_beamstrahlung = (
-                        self.config_for_update.slicer.bin_widths_beamstrahlung
-                            / np.cos(self.phi))
             self.moments = None
             self.partner_moments = np.zeros(
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
@@ -364,6 +359,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.threshold_singular = threshold_singular
 
         # beamstrahlung
+        if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None):
+                slices_other_beam_zeta_bin_width_star_beamstrahlung = (
+                    self.config_for_update.slicer.bin_widths_beamstrahlung
+                        / np.cos(self.phi))
         if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
                 'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
@@ -379,6 +378,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                         other_beam_sigma_55_star_beamstrahlung)
         else:
             self.other_beam_sigma_55_star_beamstrahlung = 0
+
+        # beamstrahlung
 
         self.flag_beamstrahlung = flag_beamstrahlung # Trigger property setter
 
