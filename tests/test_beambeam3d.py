@@ -546,7 +546,7 @@ def test_beambeam3d_collective():
                     d_delta=d_delta
                     )
 
-            slicer = xf.TempSlicer(n_slices=5, sigma_z=1, mode="unibin")
+            slicer = xf.TempSlicer(n_slices=3, sigma_z=1, mode="unibin")
             # slicer = xf.TempSlicer(bin_edges = [-10, -5, 0, 5, 10])
             config_for_update=xf.ConfigForUpdateBeamBeamBiGaussian3D(
                 pipeline_manager=None,
