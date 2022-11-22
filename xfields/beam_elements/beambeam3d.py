@@ -223,9 +223,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.track = self._track_collective # switch to specific track method
 
             if slices_other_beam_zeta_center is None:
-                if isinstance(self.config_for_update.slicer, Slicer):
-                    slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers * self.config_for_update.slicer.sigma_z
-                else:
                     slices_other_beam_zeta_center = self.config_for_update.slicer.bin_centers
             # Some dummy values just to initialize the object
             if (slices_other_beam_Sigma_11 is None
@@ -252,10 +249,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                             slices_other_beam_zeta_center)
             # beamstrahlung
             if slices_other_beam_zeta_bin_width_star_beamstrahlung is None and flag_beamstrahlung == 1:
-                if isinstance(self.config_for_update.slicer, Slicer):
-                    slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung * slicer.sigma_z / np.cos(self.phi)
-                else:
-                    slices_other_beam_zeta_bin_width_star_beamstrahlung = np.abs(np.diff(self.config_for_update.slicer.bin_edges))/np.cos(self.phi)
+                    slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(self.phi)
             self.moments = None
             self.partner_moments = np.zeros(self.config_for_update.slicer.num_slices*(1+6+10),dtype=float)
 
@@ -300,11 +294,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         n_slices = len(slices_other_beam_num_particles)
 
         self._allocate_xobject(n_slices, **kwargs)
-
-        #if self.iscollective:
-        #    if not isinstance(self._buffer.context, xo.ContextCpu):
-        #        raise NotImplementedError(
-        #            'BeamBeamBiGaussian3D only works with CPU context for now')
 
         if phi is None:
             assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
@@ -599,9 +588,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                                      particles.at_turn[0],
                                                      internal_tag=self.config_for_update._i_step):
                     # Compute moments
-                    self.config_for_update.slicer.assign_slices(particles)
+                    self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
-                    self.moments[:self.config_for_update.slicer.num_slices] *= self.particles_per_macroparticle
+                    self.moments[:self.config_for_update.slicer.num_slices] *= self.particles_per_macroparticle  # why do this? parts_per_mp can be None
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
                                                      particles.name,
@@ -1244,7 +1233,7 @@ def _python_inv_boost_scalar(x_st, px_st, y_st, py_st, zeta_st, pzeta_st,
 _python_inv_boost = np.vectorize(_python_inv_boost_scalar,
     excluded=("sphi", "cphi", "tphi", "salpha", "calpha"))
 
-class TempSlicer:
+class TempSlicer_:
     def __init__(self, bin_edges):
 
         bin_edges = np.sort(np.array(bin_edges))[::-1]
@@ -1304,26 +1293,26 @@ class TempSlicer:
         return slice_moments
 
 # this might replace TempSlicer
-class Slicer:
+class TempSlicer:
     def __init__(self, n_slices, sigma_z, mode="unibin"):
 
         assert isinstance(n_slices, int) and n_slices>0, ("'n_slices' must be a positive integer!")
-        assert mode in ["unicharge", "unibin", "improved"], ("Accepted values for 'mode': 'unicharge', 'unibin', 'improved'")
+        assert mode in ["unicharge", "unibin", "shatilov"], ("Accepted values for 'mode': 'unicharge', 'unibin', 'shatilov'")
 
         # bin params are in units of RMS bunch length
         if mode=="unicharge":
             z_k_arr, l_k_arr, w_k_arr, dz_k_arr = self.unicharge(n_slices)
         elif mode=="unibin":
             z_k_arr, l_k_arr, w_k_arr, dz_k_arr = self.unibin(n_slices)
-        elif mode=="improved":
-            z_k_arr, l_k_arr, w_k_arr, dz_k_arr = self.improved(n_slices)
+        elif mode=="shatilov":
+            z_k_arr, l_k_arr, w_k_arr, dz_k_arr = self.shatilov(n_slices)
 
         self.num_slices  = n_slices
         self.sigma_z     = sigma_z 
-        self.bin_centers = z_k_arr
-        self.bin_edges   = l_k_arr
+        self.bin_centers = z_k_arr * sigma_z
+        self.bin_edges   = l_k_arr * sigma_z
         self.bin_weights = w_k_arr
-        self.bin_widths_beamstrahlung = dz_k_arr
+        self.bin_widths_beamstrahlung = dz_k_arr * sigma_z
 
     def rho(self, z):
         """
@@ -1405,19 +1394,19 @@ class Slicer:
 
         return z_k_arr_unibin, l_k_arr_unibin, w_k_arr_unibin, dz_k_array_unibin
 
-    def improved(self, n_slices):
+    def shatilov(self, n_slices):
         """
         This method is a mix between uniform bin and charge. It finds the slice centers by iteration.
         """
 
         # these are units of sigma_z
-        z_k_arr_improved = np.zeros(n_slices)  # should be n_slices long, ordered from + to -
-        l_k_arr_improved = np.zeros(n_slices+1)  # bin edges, n_slices+1 long
-        w_k_arr_improved = np.zeros(n_slices)  # bin weights, used for bunch intensity normalization
+        z_k_arr_shatilov = np.zeros(n_slices)  # should be n_slices long, ordered from + to -
+        l_k_arr_shatilov = np.zeros(n_slices+1)  # bin edges, n_slices+1 long
+        w_k_arr_shatilov = np.zeros(n_slices)  # bin weights, used for bunch intensity normalization
         half = int((n_slices + 1) / 2)
         n_odd = n_slices % 2
-        w_k_arr_improved[:half] = 1 / n_slices  # fill up initial values, e.g. n_slices=300-> fill up elements [0,149]; 301: [0,150]
-        l_k_arr_improved[0] = -5  # leftmost bin edge
+        w_k_arr_shatilov[:half] = 1 / n_slices  # fill up initial values, e.g. n_slices=300-> fill up elements [0,149]; 301: [0,150]
+        l_k_arr_shatilov[0] = -5  # leftmost bin edge
 
         k_max = min(1000, 20*n_slices)  # max iterations for l_k
         
@@ -1428,41 +1417,41 @@ class Slicer:
             # go from bottom toward 0 (=middle of Gaussian)
             for j in range(half):
             
-                w_k_sum += 2*w_k_arr_improved[j] # integrate rho up to including current bin
+                w_k_sum += 2*w_k_arr_shatilov[j] # integrate rho up to including current bin
         
                 # get z_k
                 if n_odd and j == half-1:  # center bin (z_c=0)
-                    z_k_arr_improved[j] = 0
+                    z_k_arr_shatilov[j] = 0
                 else:  # all other bins
                     rho_lower = rho_upper
         
                     arg = w_k_sum - 1
                     l_upper = np.sqrt(2)*special.erfinv(arg)
         
-                    l_k_arr_improved[j+1] = l_upper
+                    l_k_arr_shatilov[j+1] = l_upper
                     
                     rho_upper = self.rho(l_upper)  # to cancel 1/sigma_z in rho
                     
                     # get z_k: center of momentum
-                    z_k_arr_improved[j] = (rho_upper - rho_lower) / w_k_arr_improved[j]
+                    z_k_arr_shatilov[j] = (rho_upper - rho_lower) / w_k_arr_shatilov[j]
                     
                 # get w_k
                 if i < k_max:
-                    w_k_arr_improved[j] = np.exp( -z_k_arr_improved[j]**2 / 4 )
+                    w_k_arr_shatilov[j] = np.exp( -z_k_arr_shatilov[j]**2 / 4 )
             
             # renormalize w_k
             if i < k_max:
-                w_int = 2*np.sum(w_k_arr_improved[:half]) - n_odd * w_k_arr_improved[half-1]
-                w_k_arr_improved[:half] = w_k_arr_improved[:half] / w_int
+                w_int = 2*np.sum(w_k_arr_shatilov[:half]) - n_odd * w_k_arr_shatilov[half-1]
+                w_k_arr_shatilov[:half] = w_k_arr_shatilov[:half] / w_int
         
         # mirror for negative half
-        z_k_arr_improved[half:] = -z_k_arr_improved[n_slices-half-1::-1]  # bin centers
-        w_k_arr_improved[half:] =  w_k_arr_improved[n_slices-half-1::-1]  # bin weights, used for bunch intensity normalization
-        l_k_arr_improved[half:] = -l_k_arr_improved[n_slices-half::-1]  # bin edges
-        dz_k_arr_improved       = np.diff(l_k_arr_improved)  # for beamstrahlung
-        l_k_arr_improved        = l_k_arr_improved[::-1]
+        z_k_arr_shatilov[half:] = -z_k_arr_shatilov[n_slices-half-1::-1]  # bin centers
+        w_k_arr_shatilov[half:] =  w_k_arr_shatilov[n_slices-half-1::-1]  # bin weights, used for bunch intensity normalization
+        l_k_arr_shatilov[half:] = -l_k_arr_shatilov[n_slices-half::-1]  # bin edges
+        dz_k_arr_shatilov       = np.diff(l_k_arr_shatilov)  # for beamstrahlung
+        l_k_arr_shatilov        = l_k_arr_shatilov[::-1]
 
-        return z_k_arr_improved, l_k_arr_improved, w_k_arr_improved, dz_k_arr_improved
+        return z_k_arr_shatilov, l_k_arr_shatilov, w_k_arr_shatilov, dz_k_arr_shatilov
 
     def get_slice_indices(self, particles):
         context = particles._context

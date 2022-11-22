@@ -12,10 +12,6 @@ import json
 def test_beambeam3d_beamstrahlung_single_collision():
     for context in xo.context.get_test_contexts():
 
-        #if not isinstance(context, xo.ContextCpu):
-        #    print(f'skipping test_beambeam3d_beamstrahlung_single_collision for context {context}')
-        #    continue
-
         print(repr(context))
 
         ###########
@@ -74,7 +70,7 @@ def test_beambeam3d_beamstrahlung_single_collision():
         
         particles_b1._init_random_number_generator()
         
-        slicer = xf.Slicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+        slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
 
         el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
         _context=context,
@@ -87,14 +83,14 @@ def test_beambeam3d_beamstrahlung_single_collision():
         # slice intensity [num. real particles] n_slices inferred from length of this
         slices_other_beam_num_particles = slicer.bin_weights * bunch_intensity,
         # unboosted strong beam moments
-        slices_other_beam_zeta_center = slicer.bin_centers * slicer.sigma_z,
+        slices_other_beam_zeta_center = slicer.bin_centers,
         slices_other_beam_Sigma_11    = n_slices*[sigma_x**2],
         slices_other_beam_Sigma_22    = n_slices*[sigma_px**2],
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
         # only if BS on
         flag_beamstrahlung = 1,
-        slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung * slicer.sigma_z / np.cos(phi),  # boosted dz
+        slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
         slices_other_beam_Sigma_34    = n_slices*[0],
@@ -164,10 +160,6 @@ def test_beambeam3d_beamstrahlung_single_collision():
 def test_beambeam3d_collective_beamstrahlung_single_collision():
     for context in xo.context.get_test_contexts():
 
-        #if not isinstance(context, xo.ContextCpu):
-        #    print(f'skipping test_beambeam3d_collective_beamstrahlung_single_collision for context {context}')
-        #    continue
-
         print(repr(context))
 
         ###########
@@ -226,7 +218,7 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         
         particles_b1._init_random_number_generator()
         
-        slicer = xf.Slicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+        slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
         
         # this is different w.r.t WS test
         config_for_update=xf.ConfigForUpdateBeamBeamBiGaussian3D(
@@ -247,14 +239,14 @@ def test_beambeam3d_collective_beamstrahlung_single_collision():
         # slice intensity [num. real particles] n_slices inferred from length of this
         slices_other_beam_num_particles = slicer.bin_weights * bunch_intensity,
         # unboosted strong beam moments
-        slices_other_beam_zeta_center = slicer.bin_centers * slicer.sigma_z,
+        slices_other_beam_zeta_center = slicer.bin_centers,
         slices_other_beam_Sigma_11    = n_slices*[sigma_x**2],
         slices_other_beam_Sigma_22    = n_slices*[sigma_px**2],
         slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
         slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
         # only if BS on
         flag_beamstrahlung = 1,
-        slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung * slicer.sigma_z / np.cos(phi),  # boosted dz
+        slices_other_beam_zeta_bin_width_star_beamstrahlung = slicer.bin_widths_beamstrahlung / np.cos(phi),  # boosted dz
         # has to be set
         slices_other_beam_Sigma_12    = n_slices*[0],
         slices_other_beam_Sigma_34    = n_slices*[0],
