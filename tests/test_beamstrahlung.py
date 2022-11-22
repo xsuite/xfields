@@ -14,6 +14,10 @@ test_data_folder = pathlib.Path(
 def test_beambeam3d_beamstrahlung_single_collision():
     for context in xo.context.get_test_contexts():
 
+        if isinstance(context, xo.ContextPyopencl):
+            print('Incompatible with OpenCL')
+            continue
+
         print(repr(context))
 
         ###########
@@ -24,12 +28,6 @@ def test_beambeam3d_beamstrahlung_single_collision():
         p0c                 = 182.5e9  # [eV]
         mass0               = .511e6  # [eV]
         phi                 = 15e-3  # [rad] half xing
-        u_sr                = 9.2  # [GeV]
-        u_bs                = .0114  # [GeV]
-        k2_factor           = .4  # [1]
-        qx                  = .554  # [1] half arc
-        qy                  = .588  # [1]
-        qs                  = .0436  # [1]
         physemit_x          = 1.46e-09  # [m]
         physemit_y          = 2.9e-12  # [m]
         beta_x              = 1  # [m]
@@ -38,15 +36,9 @@ def test_beambeam3d_beamstrahlung_single_collision():
         sigma_px            = np.sqrt(physemit_x/beta_x)  # [m]
         sigma_y             = np.sqrt(physemit_y*beta_y)  # [m]
         sigma_py            = np.sqrt(physemit_y/beta_y)  # [m]
-        sigma_z             = .00194  # [m] sr
         sigma_z_tot         = .00254  # [m] sr+bs
-        sigma_delta         = .0015  # [m]
         sigma_delta_tot     = .00192  # [m]
-        beta_s              = sigma_z/sigma_delta  # [m]
-        physemit_s          = sigma_z*sigma_delta  # [m]
-        physemit_s_tot      = sigma_z_tot*sigma_delta_tot  # [m]
         n_macroparticles_b1 = int(1e6)
-        n_macroparticles_b2 = int(1e6)
 
         n_slices = 100
 
