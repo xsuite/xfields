@@ -8,7 +8,7 @@
 
 /*gpufun*/
 void synchrobeam_kick(
-        BeamBeamBiGaussian3DData el, LocalParticle *part, 
+        BeamBeamBiGaussian3DData el, LocalParticle *part,
         const int i_slice,
         double const q0, double const p0c,
         double* x_star,
@@ -23,7 +23,6 @@ void synchrobeam_kick(
     const double q0_bb  = scale_strength*BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
-    
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -117,9 +116,10 @@ void synchrobeam_kick(
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
 
     // emit beamstrahlung photons from single macropart
+    #ifndef XFIELDS_BB3D_NO_BEAMSTR
     const int64_t flag_beamstrahlung = BeamBeamBiGaussian3DData_get_flag_beamstrahlung(el);
     if (flag_beamstrahlung==1){
-        BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL; 
+        BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL;
         BeamstrahlungTableData beamstrahlung_table          = NULL;
         RecordIndex beamstrahlung_table_index               = NULL;
         if (flag_beamstrahlung > 0) {
@@ -141,8 +141,9 @@ void synchrobeam_kick(
         double sigma_55_0 = BeamBeamBiGaussian3DData_get_other_beam_sigma_55_star_beamstrahlung(el);  // boosted bunch length
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
         beamstrahlung_avg(part, num_part_slice, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), sigma_55_0);  // slice intensity and RMS slice sizes
-        *pzeta_star = LocalParticle_get_pzeta(part);  
+        *pzeta_star = LocalParticle_get_pzeta(part);
     }
+    #endif
 
 
     // Apply the kicks (Hirata's synchro-beam)
@@ -212,7 +213,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el,
         for (int i_slice=0; i_slice<N_slices; i_slice++)
         {
                 synchrobeam_kick(
-                             el, part, 
+                             el, part,
                              i_slice, q0, p0c,
                              &x,
                              &px,
