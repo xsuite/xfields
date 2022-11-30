@@ -52,7 +52,13 @@ void synchrobeam_kick(
     const double Ksl = num_part_slice*QELEM*q0_bb*QELEM*q0/(P0 * C_LIGHT);
 
     //Identify the Collision Point (CP)
+    #ifdef XFIELDS_BEAMBEAM3D_FORCE_CP0
+    const double S = 0.0;
+    #else
     const double S = 0.5*(*zeta_star - zeta_slice_star);
+    #endif
+    //printf("S = %f\n", S);
+    //fflush(stdout);
 
     // Propagate sigma matrix
     double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
