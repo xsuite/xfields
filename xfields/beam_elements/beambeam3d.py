@@ -841,6 +841,33 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_zeta_center_star,
             slices_other_beam_pzeta_center_star):
 
+        if isinstance(slices_other_beam_num_particles, (list, tuple)):
+            slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
+        if isinstance(slices_other_beam_x_center, (list, tuple)):
+            slices_other_beam_x_center = np.array(slices_other_beam_x_center)
+        if isinstance(slices_other_beam_px_center, (list, tuple)):
+            slices_other_beam_px_center = np.array(slices_other_beam_px_center)
+        if isinstance(slices_other_beam_y_center, (list, tuple)):
+            slices_other_beam_y_center = np.array(slices_other_beam_y_center)
+        if isinstance(slices_other_beam_py_center, (list, tuple)):
+            slices_other_beam_py_center = np.array(slices_other_beam_py_center)
+        if isinstance(slices_other_beam_zeta_center, (list, tuple)):
+            slices_other_beam_zeta_center = np.array(slices_other_beam_zeta_center)
+        if isinstance(slices_other_beam_pzeta_center, (list, tuple)):
+            slices_other_beam_pzeta_center = np.array(slices_other_beam_pzeta_center)
+        if isinstance(slices_other_beam_x_center_star, (list, tuple)):
+            slices_other_beam_x_center_star = np.array(slices_other_beam_x_center_star)
+        if isinstance(slices_other_beam_px_center_star, (list, tuple)):
+            slices_other_beam_px_center_star = np.array(slices_other_beam_px_center_star)
+        if isinstance(slices_other_beam_y_center_star, (list, tuple)):
+            slices_other_beam_y_center_star = np.array(slices_other_beam_y_center_star)
+        if isinstance(slices_other_beam_py_center_star, (list, tuple)):
+            slices_other_beam_py_center_star = np.array(slices_other_beam_py_center_star)
+        if isinstance(slices_other_beam_zeta_center_star, (list, tuple)):
+            slices_other_beam_zeta_center_star = np.array(slices_other_beam_zeta_center_star)
+        if isinstance(slices_other_beam_pzeta_center_star, (list, tuple)):
+            slices_other_beam_pzeta_center_star = np.array(slices_other_beam_pzeta_center_star)
+
         if slices_other_beam_zeta_center is not None:
 
             # Check correct according to z, head at the first position in the arrays. Only sort non-empty slices.
