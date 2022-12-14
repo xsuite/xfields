@@ -27,6 +27,8 @@ from .config_tools import configure_orbit_dependent_parameters_for_bb
 from .config_tools import install_spacecharge_frozen
 from .config_tools import full_electroncloud_setup
 
+from ._version import __version__
+
 
 import xtrack as _xt
 
