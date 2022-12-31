@@ -57,6 +57,25 @@ for nn in line.element_names:
     if isinstance(ee, (xf.BeamBeamBiGaussian2D, xf.BeamBeamBiGaussian3D)):
         if f'{ip}{beam_name}' in nn:
             bb_ele_names.append(nn)
+            x_weak.append(ee.ref_shift_x)
+            x_strong.append(ee.other_beam_shift_x + ee.ref_shift_x)
+
+
+import matplotlib.pyplot as plt
+plt.close('all')
+
+tw = tracker.twiss()
+
+tw_df = tw.to_pandas()
+tw_df.set_index('name', inplace=True)
+
+s_bb = tw_df.loc[bb_ele_names, 's'].values
+
+plt.plot(s_bb, x_weak, 'o-')
+plt.plot(s_bb, x_strong, 'o-')
+plt.plot(tw.s, tw.x, '-')
+
+plt.show()
 
 
 
