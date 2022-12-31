@@ -47,7 +47,7 @@ configure_beam_beam_elements(bb_df_b1, bb_df_b2, tracker_b1, tracker_b4,
                                  nemitt_x, nemitt_y, crab_strong_beam, ip_names)
 
 tracker, tracker_other, beam_name = (tracker_b1, tracker_b4, 'b1')
-ip = 1
+ip = 8
 
 line = tracker.line
 bb_ele_names = []
