@@ -16,22 +16,22 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
     temp_particles = particle_on_co.copy()
     for ii, ee in enumerate(tracker.line.elements):
         if ee.__class__.__name__ == 'BeamBeamBiGaussian2D':
-              px_0 = temp_particles.px[0]
-              py_0 = temp_particles.py[0]
+            px_0 = temp_particles.px[0]
+            py_0 = temp_particles.py[0]
 
-              # Separation of 4D is so far set w.r.t. the closes orbit
-              # (to be able to compare against sixtrack)
-              # Here we set the right quantities (coordinates of the strong beam)
-              ee.mean_x += temp_particles.x[0]
-              ee.mean_y += temp_particles.y[0]
+            # Separation of 4D is so far set w.r.t. the closes orbit
+            # (to be able to compare against sixtrack)
+            # Here we set the right quantities (coordinates of the strong beam)
+            ee.mean_x += temp_particles.x[0]
+            ee.mean_y += temp_particles.y[0]
 
-              ee.track(temp_particles)
+            ee.track(temp_particles)
 
-              ee.d_px = temp_particles.px[0] - px_0
-              ee.d_py = temp_particles.py[0] - py_0
+            ee.d_px = temp_particles.px[0] - px_0
+            ee.d_py = temp_particles.py[0] - py_0
 
-              temp_particles.px -= ee.d_px
-              temp_particles.py -= ee.d_py
+            temp_particles.px -= ee.d_px
+            temp_particles.py -= ee.d_py
 
         elif ee.__class__.__name__ == 'BeamBeamBiGaussian3D':
             ee.ref_shift_x = temp_particles.x[0]
