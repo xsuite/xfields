@@ -886,7 +886,11 @@ def setup_beam_beam_in_line(
                 params['slices_other_beam_Sigma_24'] = [0.0]
 
             newee = xf.BeamBeamBiGaussian3D(**params)
-            line.element_dict[eename] = newee
+
+            # needs to be generalized for lenses with multiple slices
+            assert newee._xobject._size == ee._xobject._size
+            # move to the location of the old element (ee becomese newee)
+            newee.move(_buffer=ee._buffer, _offset=ee._offset)
 
 def crabbing_strong_beam_xsuite(bb_dfs,
         tracker_b1, tracker_b4):
