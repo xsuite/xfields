@@ -15,7 +15,7 @@ import xobjects as xo
 
 mad_b1 = Madx()
 
-mad_b1.call("sequence_b1.madx")
+mad_b1.call("lhcb1_seq.madx")
 mad_b1.use('lhcb1')
 mad_b1.twiss()
 
@@ -28,7 +28,7 @@ with open('line_b1.json', 'w') as fid:
     json.dump(line_b1.to_dict(), fid, cls=xo.JEncoder)
 
 mad_b4 = Madx()
-mad_b4.call("sequence_b4.madx")
+mad_b4.call("lhcb4_seq.madx")
 mad_b4.use('lhcb2')
 mad_b4.twiss()
 
