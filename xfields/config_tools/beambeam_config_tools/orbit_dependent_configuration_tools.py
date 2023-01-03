@@ -19,6 +19,9 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
             px_0 = temp_particles.px[0]
             py_0 = temp_particles.py[0]
 
+            ee.post_subtract_px = 0
+            ee.post_subtract_py = 0
+
             ee.ref_shift_x = temp_particles.x[0]
             ee.ref_shift_y = temp_particles.y[0]
 
@@ -38,6 +41,13 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
             ee.ref_shift_zeta = temp_particles.zeta[0]
             ee.ref_shift_pzeta = temp_particles.delta[0] # Element assumes beta0=1 anyhow
 
+            ee.post_subtract_x = 0
+            ee.post_subtract_px = 0
+            ee.post_subtract_y = 0
+            ee.post_subtract_py = 0
+            ee.post_subtract_zeta = 0
+            ee.post_subtract_pzeta = 0
+
             ee.track(temp_particles)
 
             ee.post_subtract_x = temp_particles.x[0] - ee.ref_shift_x
@@ -56,6 +66,9 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
         elif ee.__class__.__name__ == 'Wire':
             px_0 = temp_particles.px[0]
             py_0 = temp_particles.py[0]
+
+            ee.post_subtract_px = 0
+            ee.post_subtract_py = 0
 
             ee.track(temp_particles)
 
