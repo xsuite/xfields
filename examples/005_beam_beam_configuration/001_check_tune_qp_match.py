@@ -18,6 +18,8 @@ tw = tracker.twiss()
 tracker.vars['cmrskew'] = 1e-3
 tracker.vars['cmiskew'] = 1e-3
 
+
+# Match coupling
 tracker.match(vary=['cmrskew', 'cmiskew'], method='bfgs',
     targets = [('c_minus', 0, 1e-4)])
 
@@ -31,4 +33,4 @@ tracker.match(vary=['ksf.b1', 'ksd.b1',],
 
 print('Match tune and chromaticity')
 tracker.match(vary=['kqtf.b1', 'kqtd.b1', 'ksf.b1', 'ksd.b1'],
-    targets = [('qx', 62.315, 1e-4), ('qy', 60.325, 1e-4), ('dqx', 15, .1), ('dqy', 15, .1)])
+    targets = [('qx', target_qx, 1e-4), ('qy', target_qy, 1e-4), ('dqx', 15, .1), ('dqy', 15, .1)])
