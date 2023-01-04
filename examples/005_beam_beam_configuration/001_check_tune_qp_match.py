@@ -10,9 +10,17 @@ line_b1 = xt.Line.from_dict(dct_b1)
 tracker = line_b1.build_tracker()
 
 target_qx = 62.315
-target_qy = 60.315
+target_qy = 60.325
 
 tw = tracker.twiss()
+
+# Try to measure and match coupling
+tracker.vars['cmrskew'] = 1e-3
+tracker.vars['cmiskew'] = 1e-3
+
+tracker.match(vary=['cmrskew', 'cmiskew'], method='bfgs',
+    targets = [('c_minus', 0, 1e-4)])
+
 print('Match tune')
 tracker.match(vary=['kqtf.b1', 'kqtd.b1'],
     targets = [('qx', target_qx, 1e-4), ('qy', target_qy, 1e-4)])
