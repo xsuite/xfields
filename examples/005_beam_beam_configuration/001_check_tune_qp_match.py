@@ -14,23 +14,17 @@ target_qy = 60.325
 
 tw = tracker.twiss()
 
-# Try to measure and match coupling
-tracker.vars['cmrskew'] = 1e-3
-tracker.vars['cmiskew'] = 1e-3
+tracker.match(
+    vary=[
+        xt.Vary('kqtf.b1', step=1e-8),
+        xt.Vary('kqtd.b1', step=1e-8),
+        xt.Vary('ksf.b1', step=1e-8),
+        xt.Vary('ksd.b1', step=1e-8),
+    ],
+    targets = [
+        xt.Target('qx', target_qx, tol=1e-4),
+        xt.Target('qy', target_qy, tol=1e-4),
+        xt.Target('dqx', 15., tol=0.05),
+        xt.Target('dqy', 15., tol=0.05)])
 
 
-# Match coupling
-tracker.match(vary=['cmrskew', 'cmiskew'], method='bfgs',
-    targets = [('c_minus', 0, 1e-4)])
-
-print('Match tune')
-tracker.match(vary=['kqtf.b1', 'kqtd.b1'],
-    targets = [('qx', target_qx, 1e-4), ('qy', target_qy, 1e-4)])
-
-print('Match chromaticity')
-tracker.match(vary=['ksf.b1', 'ksd.b1',],
-    targets = [('dqx', 15, .1), ('dqy', 15, .1)])
-
-print('Match tune and chromaticity')
-tracker.match(vary=['kqtf.b1', 'kqtd.b1', 'ksf.b1', 'ksd.b1'],
-    targets = [('qx', target_qx, 1e-4), ('qy', target_qy, 1e-4), ('dqx', 15, .1), ('dqy', 15, .1)])
