@@ -385,13 +385,6 @@ def elementName(label, IRNumber, beam, identifier):
 def elementDefinition(elementName, elementClass, elementAttributes):
     return f'{elementName} : {elementClass}, {elementAttributes};'
 
-# %% define elementInstallation function
-def elementInstallation(element_name, element_class, atPosition, fromLocation=None):
-    if fromLocation==None:
-        return f'install, element={element_name}, class={element_class}, at={atPosition};'
-    else:
-        return f'install, element={element_name}, class={element_class}, at={atPosition}, from={fromLocation};'
-
 
 def generate_set_of_bb_encounters_1beam(
     circumference=26658.8832,
@@ -422,9 +415,13 @@ def generate_set_of_bb_encounters_1beam(
         myBBLR['self_num_particles'] = bunch_num_particles
         myBBLR['self_particle_charge'] = bunch_particle_charge
         myBBLR['self_relativistic_beta'] = relativistic_beta
-        myBBLR['elementName']=myBBLR.apply(lambda x: elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
+        myBBLR['elementName']=myBBLR.apply(
+            lambda x: elementName(
+                x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier),
+                axis=1)
         myBBLR['other_elementName']=myBBLR.apply(
-                lambda x: elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
+            lambda x: elementName(
+                x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
         # where circ is used
         BBSpacing = circumference / harmonic_number * bunch_spacing_buckets / 2.
         myBBLR['atPosition']=BBSpacing*myBBLR['identifier']
@@ -468,36 +465,6 @@ def generate_set_of_bb_encounters_1beam(
             myBB[f'{ww}_{coord}_crab'] = 0
 
     return myBB
-
-def generate_mad_bb_info(bb_df, mode='dummy', madx_reference_bunch_num_particles=1):
-
-    if mode == 'dummy':
-        bb_df['elementClass']='beambeam'
-        eattributes = lambda charge, label:'sigx = 0.1, '   + \
-                    'sigy = 0.1, '   + \
-                    'xma  = 1, '     + \
-                    'yma  = 1, '     + \
-                    f'charge = 0*{charge}, ' +\
-                    'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
-        bb_df['elementDefinition']=bb_df.apply(lambda x: elementDefinition(x.elementName, x.elementClass, eattributes(x['self_num_particles'], x['label'])), axis=1)
-        bb_df['elementInstallation']=bb_df.apply(lambda x: elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
-    elif mode=='from_dataframe':
-        bb_df['elementClass']='beambeam'
-        eattributes = lambda sigx, sigy, xma, yma, charge, label:f'sigx = {sigx}, '   + \
-                    f'sigy = {sigy}, '   + \
-                    f'xma  = {xma}, '     + \
-                    f'yma  = {yma}, '     + \
-                    f'charge := on_bb_charge*{charge}, ' +\
-                    'slot_id = %d'%({'bb_lr': 4, 'bb_ho': 6}[label]) # need to add 60 for central
-        bb_df['elementDefinition']=bb_df.apply(lambda x: elementDefinition(x.elementName, x.elementClass,
-            eattributes(np.sqrt(x['other_Sigma_11']),np.sqrt(x['other_Sigma_33']),
-                x['xma'], x['yma'],
-                x['other_particle_charge']*x['other_num_particles']/madx_reference_bunch_num_particles, x['label'])), # patch due to the fact that mad-x takes n_part from the weak beam
-            axis=1)
-        bb_df['elementInstallation']=bb_df.apply(lambda x: elementInstallation(x.elementName, x.elementClass, x.atPosition, x.ip_name), axis=1)
-    else:
-        raise ValueError("mode must be 'dummy' or 'from_dataframe")
-
 
 def get_counter_rotating(bb_df):
 
@@ -569,23 +536,6 @@ def get_counter_rotating(bb_df):
     compute_local_crossing_angle_and_plane(c_bb_df)
 
     return c_bb_df
-
-def install_lenses_in_sequence(mad, bb_df, sequence_name,
-        regenerate_mad_bb_info_in_df=True):
-
-    if regenerate_mad_bb_info_in_df:
-        madx_reference_bunch_num_particles = mad.sequence[sequence_name].beam.npart
-        generate_mad_bb_info(bb_df, mode='from_dataframe',
-                madx_reference_bunch_num_particles=madx_reference_bunch_num_particles)
-
-    mad.input(bb_df['elementDefinition'].str.cat(sep='\n'))
-
-    # seqedit
-    mad.input(f'seqedit, sequence={sequence_name};')
-    mad.input('flatten;')
-    mad.input(bb_df['elementInstallation'].str.cat(sep='\n'))
-    mad.input('flatten;')
-    mad.input(f'endedit;')
 
 def get_geometry_and_optics_b1_b2(mad=None, bb_df_b1=None, bb_df_b2=None,
         xsuite_line_b1=None, xsuite_line_b2=None,
@@ -1013,127 +963,6 @@ def crabbing_strong_beam(mad, bb_dfs, z_crab_twiss,
         bb_df['separation_y'] += bb_df['other_y_crab']
 
     return crab_kicker_dict
-
-def generate_bb_dataframes(mad,
-    ip_names=['ip1', 'ip2', 'ip5', 'ip8'],
-    numberOfLRPerIRSide=[25, 20, 25, 20],
-    harmonic_number=35640,
-    bunch_spacing_buckets=10,
-    numberOfHOSlices=11,
-    bunch_num_particles=None,
-    bunch_particle_charge=None,
-    sigmaz_m=None,
-    z_crab_twiss=0.,
-    remove_dummy_lenses=True):
-
-    for pp in ['circ', 'npart', 'gamma']:
-        assert mad.sequence.lhcb1.beam[pp] == mad.sequence.lhcb2.beam[pp]
-
-    circumference = mad.sequence.lhcb1.beam.circ
-    madx_reference_bunch_num_particles = mad.sequence.lhcb1.beam.npart
-
-    if bunch_num_particles is None:
-        bunch_num_particles = madx_reference_bunch_num_particles
-    if bunch_particle_charge is None:
-        bunch_particle_charge = mad.sequence.lhcb1.beam.charge
-
-
-
-    relativistic_gamma = mad.sequence.lhcb1.beam.gamma
-    relativistic_beta = np.sqrt(1 - 1.0 / relativistic_gamma ** 2)
-
-    if sigmaz_m  is not None:
-        sigt = sigmaz_m
-    else:
-        sigt = mad.sequence.lhcb1.beam.sigt
-
-    bb_df_b1 = generate_set_of_bb_encounters_1beam(
-        circumference, harmonic_number,
-        bunch_spacing_buckets,
-        numberOfHOSlices,
-        bunch_num_particles, bunch_particle_charge,
-        sigt, relativistic_beta, ip_names, numberOfLRPerIRSide,
-        beam_name = 'b1',
-        other_beam_name = 'b2')
-
-    bb_df_b2 = generate_set_of_bb_encounters_1beam(
-        circumference, harmonic_number,
-        bunch_spacing_buckets,
-        numberOfHOSlices,
-        bunch_num_particles, bunch_particle_charge,
-        sigt,
-        relativistic_beta, ip_names, numberOfLRPerIRSide,
-        beam_name = 'b2',
-        other_beam_name = 'b1')
-
-    # Generate mad info
-    generate_mad_bb_info(bb_df_b1, mode='dummy')
-    generate_mad_bb_info(bb_df_b2, mode='dummy')
-
-    # Install dummy bb lenses in mad sequences
-    install_lenses_in_sequence(mad, bb_df=bb_df_b1, sequence_name='lhcb1',
-            regenerate_mad_bb_info_in_df=False) # We cannot regenerate because dummy does not have all columns!!!!!!!!!!!!
-    install_lenses_in_sequence(mad, bb_df=bb_df_b2, sequence_name='lhcb2',
-            regenerate_mad_bb_info_in_df=False)
-
-    # Use mad survey and twiss to get geometry and locations of all encounters
-    get_geometry_and_optics_b1_b2(mad, bb_df_b1, bb_df_b2)
-
-    # Get the position of the IPs in the surveys of the two beams
-    ip_position_df = get_survey_ip_position_b1_b2(mad, ip_names)
-
-    # Get geometry and optics at the partner encounter
-    get_partner_corrected_position_and_optics(
-            bb_df_b1, bb_df_b2, ip_position_df)
-
-    # Compute separation, crossing plane rotation, crossing angle and xma
-    for bb_df in [bb_df_b1, bb_df_b2]:
-        compute_separations(bb_df)
-        compute_dpx_dpy(bb_df)
-        compute_local_crossing_angle_and_plane(bb_df)
-        compute_xma_yma(bb_df)
-
-    # Get bb dataframe and mad model (with dummy bb) for beam 3 and 4
-    bb_df_b3 = get_counter_rotating(bb_df_b1)
-    bb_df_b4 = get_counter_rotating(bb_df_b2)
-    generate_mad_bb_info(bb_df_b3, mode='dummy')
-    generate_mad_bb_info(bb_df_b4, mode='dummy')
-
-    # Generate mad info
-    generate_mad_bb_info(bb_df_b1, mode='from_dataframe',
-            madx_reference_bunch_num_particles=madx_reference_bunch_num_particles)
-    generate_mad_bb_info(bb_df_b2, mode='from_dataframe',
-            madx_reference_bunch_num_particles=madx_reference_bunch_num_particles)
-    generate_mad_bb_info(bb_df_b3, mode='from_dataframe',
-            madx_reference_bunch_num_particles=madx_reference_bunch_num_particles)
-    generate_mad_bb_info(bb_df_b4, mode='from_dataframe',
-            madx_reference_bunch_num_particles=madx_reference_bunch_num_particles)
-
-    bb_dfs = {
-        'b1': bb_df_b1,
-        'b2': bb_df_b2,
-        'b3': bb_df_b3,
-        'b4': bb_df_b4}
-
-    if abs(z_crab_twiss)>0:
-        crab_kicker_dict = crabbing_strong_beam(mad, bb_dfs,
-                z_crab_twiss=z_crab_twiss,
-                save_crab_twiss=True)
-    else:
-        print('Crabbing of strong beam skipped!')
-
-    if remove_dummy_lenses:
-        for beam in ['b1', 'b2']:
-            bbdf = bb_dfs[beam]
-            mad.input(f'seqedit, sequence={"lhc"+beam};')
-            mad.input('flatten;')
-            for nn in bbdf.elementName.values:
-                print(f'remove, element={nn}')
-                mad.input(f'remove, element={nn}')
-            mad.input('flatten;')
-            mad.input(f'endedit;')
-
-    return bb_dfs
 
 def find_bb_xma_yma(points_weak, points_strong, names=None):
     ''' To be used in the compute_xma_yma function'''
