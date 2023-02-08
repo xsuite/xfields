@@ -28,20 +28,20 @@ circumference = line_b1.get_length()
 bb_df_b1_ret, bb_df_b2_ret = xf.install_beambeam_elements_in_lines(
             line_b1, line_b4, ip_names,
             circumference, harmonic_number, bunch_spacing_buckets,
-            num_long_range_elems_per_side, num_slices_head_on,
-            bunch_num_particles, sigmaz_m)
+            num_long_range_elems_per_side, num_slices_head_on, sigmaz_m)
 
 tracker_b1 = line_b1.build_tracker()
 tracker_b4 = line_b4.build_tracker()
 
 keep_columns = ['beam', 'other_beam', 'ip_name', 'elementName', 'other_elementName', 'label',
-                'self_num_particles', 'self_particle_charge', 'self_relativistic_beta',
+                'self_particle_charge', 'self_relativistic_beta', 'self_frac_of_bunch',
                 'identifier', 's_crab']
 bb_df_b1 = bb_df_b1_ret[keep_columns].copy()
 bb_df_b2 = bb_df_b2_ret[keep_columns].copy()
 
 xf.configure_beam_beam_elements(bb_df_b1, bb_df_b2, tracker_b1, tracker_b4,
-                                 nemitt_x, nemitt_y, crab_strong_beam, ip_names)
+                                bunch_num_particles,
+                                nemitt_x, nemitt_y, crab_strong_beam, ip_names)
 
 tracker, tracker_other, beam_name = (tracker_b1, tracker_b4, 'b1')
 ip = 8

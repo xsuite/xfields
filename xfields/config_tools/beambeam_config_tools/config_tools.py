@@ -10,7 +10,7 @@ import xfields as xf
 def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
             circumference, harmonic_number, bunch_spacing_buckets,
             num_long_range_elems_per_side, num_slices_head_on,
-            bunch_num_particles, sigmaz_m):
+            sigmaz_m):
 
     # TODO: use keyword arguments
     # TODO: what happens if bunch length is different for the two beams
@@ -18,7 +18,7 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
         circumference, harmonic_number,
         bunch_spacing_buckets,
         num_slices_head_on,
-        bunch_num_particles, line_b1.particle_ref.q0,
+        line_b1.particle_ref.q0,
         sigmaz_m, line_b1.particle_ref.beta0[0], ip_names, num_long_range_elems_per_side,
         beam_name = 'b1',
         other_beam_name = 'b2')
@@ -28,7 +28,7 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
         circumference, harmonic_number,
         bunch_spacing_buckets,
         num_slices_head_on,
-        bunch_num_particles, line_b4.particle_ref.q0,
+        line_b4.particle_ref.q0,
         sigmaz_m,
         line_b4.particle_ref.beta0[0], ip_names, num_long_range_elems_per_side,
         beam_name = 'b2',
@@ -41,6 +41,7 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
     return bb_df_b1, bb_df_b2
 
 def configure_beam_beam_elements(bb_df_b1, bb_df_b2, tracker_b1, tracker_b4,
+                                 num_particles,
                                  nemitt_x, nemitt_y, crab_strong_beam, ip_names):
     twiss_b1 = tracker_b1.twiss()
     twiss_b4 = tracker_b4.twiss()
@@ -51,6 +52,9 @@ def configure_beam_beam_elements(bb_df_b1, bb_df_b2, tracker_b1, tracker_b4,
 
     sigmas_b1 = twiss_b1.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
     sigmas_b2 = twiss_b2.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+
+    bb_df_b1['self_num_particles'] = num_particles * bb_df_b1['self_frac_of_bunch']
+    bb_df_b2['self_num_particles'] = num_particles * bb_df_b2['self_frac_of_bunch']
 
     # Use survey and twiss to get geometry and locations of all encounters
     get_geometry_and_optics_b1_b2(
@@ -391,7 +395,6 @@ def generate_set_of_bb_encounters_1beam(
     harmonic_number = 35640,
     bunch_spacing_buckets = 10,
     numberOfHOSlices = 11,
-    bunch_num_particles = 0.,
     bunch_particle_charge = 0.,
     sigt=0.0755,
     relativistic_beta=1.,
@@ -412,7 +415,6 @@ def generate_set_of_bb_encounters_1beam(
     if len(myBBLRlist)>0:
         myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
 
-        myBBLR['self_num_particles'] = bunch_num_particles
         myBBLR['self_particle_charge'] = bunch_particle_charge
         myBBLR['self_relativistic_beta'] = relativistic_beta
         myBBLR['elementName']=myBBLR.apply(
@@ -426,6 +428,7 @@ def generate_set_of_bb_encounters_1beam(
         BBSpacing = circumference / harmonic_number * bunch_spacing_buckets / 2.
         myBBLR['atPosition']=BBSpacing*myBBLR['identifier']
         myBBLR['s_crab'] = 0.
+        myBBLR['self_frac_of_bunch'] = 1.
         # assuming a sequence rotated in IR3
     else:
         myBBLR = pd.DataFrame()
@@ -445,7 +448,7 @@ def generate_set_of_bb_encounters_1beam(
     myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
 
 
-    myBBHO['self_num_particles'] = bunch_num_particles/numberOfHOSlices
+    myBBHO['self_frac_of_bunch'] = 1./numberOfHOSlices
     myBBHO['self_particle_charge'] = bunch_particle_charge
     myBBHO['self_relativistic_beta'] = relativistic_beta
     for ip_nn in ip_names:
