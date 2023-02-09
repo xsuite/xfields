@@ -9,7 +9,7 @@ import xfields as xf
 
 def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
             circumference, harmonic_number, bunch_spacing_buckets,
-            num_long_range_elems_per_side, num_slices_head_on,
+            num_long_range_encounters_per_side, num_slices_head_on,
             sigmaz_m):
 
     # TODO: use keyword arguments
@@ -19,7 +19,7 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
         bunch_spacing_buckets,
         num_slices_head_on,
         line_b1.particle_ref.q0,
-        sigmaz_m, line_b1.particle_ref.beta0[0], ip_names, num_long_range_elems_per_side,
+        sigmaz_m, line_b1.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
         beam_name = 'b1',
         other_beam_name = 'b2')
 
@@ -30,13 +30,19 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
         num_slices_head_on,
         line_b4.particle_ref.q0,
         sigmaz_m,
-        line_b4.particle_ref.beta0[0], ip_names, num_long_range_elems_per_side,
+        line_b4.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
         beam_name = 'b2',
         other_beam_name = 'b1')
     bb_df_b2['atPosition'] = -bb_df_b2['atPosition'] # I am installing in b4 not in b2
 
     install_dummy_bb_lenses(bb_df=bb_df_b1, line=line_b1)
     install_dummy_bb_lenses(bb_df=bb_df_b2, line=line_b4)
+
+    keep_columns = ['beam', 'other_beam', 'ip_name', 'elementName', 'other_elementName', 'label',
+                'self_particle_charge', 'self_relativistic_beta', 'self_frac_of_bunch',
+                'identifier', 's_crab']
+    bb_df_b1 = bb_df_b1[keep_columns].copy()
+    bb_df_b2 = bb_df_b2[keep_columns].copy()
 
     return bb_df_b1, bb_df_b2
 
