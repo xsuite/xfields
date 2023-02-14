@@ -106,6 +106,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
+        _pkg_root.joinpath('headers','particle_states.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
         '#define NOFIELDMAP', #TODO Remove this workaround
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),

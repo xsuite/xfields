@@ -148,19 +148,19 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
 
             // some error handling
             if (e_photon_array[j]<=0.0){
-		printf("photon emitted with negative energy: E_photon=%g [eV], E_macropart=%g [eV], photon ID: %d, max_photons: %d\n", e_photon*1e9, energy, j, max_photons);
-       	    }
+                printf("photon emitted with negative energy: E_photon=%g [eV], E_macropart=%g [eV], photon ID: %d, max_photons: %d\n", e_photon*1e9, energy, j, max_photons);
+            }
 
             // increment photon counter
             j++;
 
             // break loop and flag part as dead
-       	    if (j>=1000){
-	    	printf("too many photons produced by one particle (photon ID: %d)\n", j);
-	    	//exit(-1);  // doesnt work on GPU
-                LocalParticle_set_state(part, -12); // used to flag this kind of loss
+            if (j>=1000){
+                printf("too many photons produced by one particle (photon ID: %d)\n", j);
+                //exit(-1);  // doesnt work on GPU
+                LocalParticle_set_state(part, XF_TOO_MANY_PHOTONS); // used to flag this kind of loss
                 break;
-	    }
+            }
 
         }
     }
@@ -168,7 +168,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
 
     // update electron energy
     if (energy == 0.0){
-        LocalParticle_set_state(part, -12); // used to flag this kind of loss
+        LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNC); // used to flag this kind of loss
     }else{
        LocalParticle_add_to_energy(part, energy-initial_energy, 0);
     }
