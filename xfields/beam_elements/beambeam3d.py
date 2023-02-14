@@ -8,7 +8,6 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 import xpart as xp
-from xpart.random_number_generator import RandomGenerator
 
 from ..general import _pkg_root
 
@@ -101,7 +100,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
 
-    _depends_on = [ RandomGenerator]
+    _depends_on = [xt.RandomUniform]
 
     _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
