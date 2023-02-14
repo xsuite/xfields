@@ -34,12 +34,12 @@ int beamstrahlung_0(LocalParticle *part,
     double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
  
     // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
-    if (LocalParticle_generate_random_double(part) > p0){return 0;}
+    if (RandomGenerator_get_double(part) > p0){return 0;}
 
     // 2 random numbers to calculate g(v, xcrit)
-    double p = LocalParticle_generate_random_double(part);  // if this is 1, then it corresponds to p0 on original p0*g-v plane
+    double p = RandomGenerator_get_double(part);  // if this is 1, then it corresponds to p0 on original p0*g-v plane
     double v;
-    while((v=LocalParticle_generate_random_double(part))==0); // draw a nonzero random number, variable of the beamstrahlung spectrum
+    while((v=RandomGenerator_get_double(part))==0); // draw a nonzero random number, variable of the beamstrahlung spectrum
     double v2 = v*v;
     double v3 = v2*v;
     double y = v3 / (1.0 - v3);

@@ -8,6 +8,7 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 import xpart as xp
+from xpart.random_number_generator import RandomGenerator
 
 from ..general import _pkg_root
 
@@ -100,6 +101,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
 
+    _depends_on = [ RandomGenerator]
+
     _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
@@ -112,8 +115,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
 
         # beamstrahlung
-        xp.general._pkg_root.joinpath('random_number_generator/rng_src/base_rng.h'),
-        xp.general._pkg_root.joinpath('random_number_generator/rng_src/local_particle_rng.h'),
         _pkg_root.joinpath('headers/beamstrahlung_spectrum.h'),
 
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
