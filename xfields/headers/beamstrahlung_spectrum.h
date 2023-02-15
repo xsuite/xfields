@@ -168,7 +168,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
 
     // update electron energy
     if (energy == 0.0){
-        LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNC); // used to flag this kind of loss
+        LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
     }else{
        LocalParticle_add_to_energy(part, energy-initial_energy, 0);
     }
