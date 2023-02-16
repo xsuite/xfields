@@ -35,7 +35,7 @@ void ElectronCloud_track_local_particle(
         x - x_shift, y - y_shift, tau - tau_shift,
         &dphi_dx, &dphi_dy, &dphi_dtau)
       ){
-          LocalParticle_set_state(part, -11); // Stop tracking particle if it escapes the interpolation grid.
+          LocalParticle_set_state(part, XF_OUTSIDE_INTERPOL); // Stop tracking particle if it escapes the interpolation grid.
       }
 
     const double px_kick = - dphi_dx * length - ElectronCloudData_get_dipolar_px_kick(el);

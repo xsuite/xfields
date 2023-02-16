@@ -37,7 +37,7 @@ void ElectronLensInterpolated_track_local_particle(ElectronLensInterpolatedData 
             x, y, 0.,
             &dphi_dx, &dphi_dy, &dphi_dtau)
           ){
-              LocalParticle_set_state(part, -11); // Stop tracking particle if it escapes the interpolation grid.
+              LocalParticle_set_state(part, XF_OUTSIDE_INTERPOL); // Stop tracking particle if it escapes the interpolation grid.
           }
 
 	    const double q0 = LocalParticle_get_q0(part);

@@ -100,10 +100,13 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
 
+    _depends_on = [xt.RandomUniform]
+
     _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
+        _pkg_root.joinpath('headers','particle_states.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
         '#define NOFIELDMAP', #TODO Remove this workaround
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
@@ -112,8 +115,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
 
         # beamstrahlung
-        xp.general._pkg_root.joinpath('random_number_generator/rng_src/base_rng.h'),
-        xp.general._pkg_root.joinpath('random_number_generator/rng_src/local_particle_rng.h'),
         _pkg_root.joinpath('headers/beamstrahlung_spectrum.h'),
 
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),

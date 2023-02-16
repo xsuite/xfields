@@ -77,6 +77,7 @@ class SpaceCharge3D(xt.BeamElement):
 
     _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('headers','particle_states.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
         _pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'),
     ]

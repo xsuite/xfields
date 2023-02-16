@@ -34,12 +34,12 @@ int beamstrahlung_0(LocalParticle *part,
     double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
  
     // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
-    if (LocalParticle_generate_random_double(part) > p0){return 0;}
+    if (RandomUniform_generate(part) > p0){return 0;}
 
     // 2 random numbers to calculate g(v, xcrit)
-    double p = LocalParticle_generate_random_double(part);  // if this is 1, then it corresponds to p0 on original p0*g-v plane
+    double p = RandomUniform_generate(part);  // if this is 1, then it corresponds to p0 on original p0*g-v plane
     double v;
-    while((v=LocalParticle_generate_random_double(part))==0); // draw a nonzero random number, variable of the beamstrahlung spectrum
+    while((v=RandomUniform_generate(part))==0); // draw a nonzero random number, variable of the beamstrahlung spectrum
     double v2 = v*v;
     double v3 = v2*v;
     double y = v3 / (1.0 - v3);
@@ -148,19 +148,19 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
 
             // some error handling
             if (e_photon_array[j]<=0.0){
-		printf("photon emitted with negative energy: E_photon=%g [eV], E_macropart=%g [eV], photon ID: %d, max_photons: %d\n", e_photon*1e9, energy, j, max_photons);
-       	    }
+                printf("photon emitted with negative energy: E_photon=%g [eV], E_macropart=%g [eV], photon ID: %d, max_photons: %d\n", e_photon*1e9, energy, j, max_photons);
+            }
 
             // increment photon counter
             j++;
 
             // break loop and flag part as dead
-       	    if (j>=1000){
-	    	printf("too many photons produced by one particle (photon ID: %d)\n", j);
-	    	//exit(-1);  // doesnt work on GPU
-                LocalParticle_set_state(part, -12); // used to flag this kind of loss
+            if (j>=1000){
+                printf("too many photons produced by one particle (photon ID: %d)\n", j);
+                //exit(-1);  // doesnt work on GPU
+                LocalParticle_set_state(part, XF_TOO_MANY_PHOTONS); // used to flag this kind of loss
                 break;
-	    }
+            }
 
         }
     }
@@ -168,7 +168,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
 
     // update electron energy
     if (energy == 0.0){
-        LocalParticle_set_state(part, -12); // used to flag this kind of loss
+        LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
     }else{
        LocalParticle_add_to_energy(part, energy-initial_energy, 0);
     }
