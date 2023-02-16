@@ -46,29 +46,29 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
 
     return bb_df_b1, bb_df_b2
 
-def configure_beam_beam_elements(bb_df_b1, bb_df_b2, tracker_b1, tracker_b4,
+def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
                                  num_particles,
                                  nemitt_x, nemitt_y, crab_strong_beam, ip_names):
-    twiss_b1 = tracker_b1.twiss()
-    twiss_b4 = tracker_b4.twiss()
+    twiss_b1 = tracker_cw.twiss()
+    twiss_b4 = tracker_acw.twiss()
     twiss_b2 = twiss_b4.reverse()
 
-    survey_b1 = tracker_b1.survey()
-    survey_b2 = tracker_b4.survey(reverse=True)
+    survey_b1 = tracker_cw.survey()
+    survey_b2 = tracker_acw.survey(reverse=True)
 
     sigmas_b1 = twiss_b1.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
     sigmas_b2 = twiss_b2.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
 
-    bb_df_b1['self_num_particles'] = num_particles * bb_df_b1['self_frac_of_bunch']
-    bb_df_b2['self_num_particles'] = num_particles * bb_df_b2['self_frac_of_bunch']
+    bb_df_cw['self_num_particles'] = num_particles * bb_df_cw['self_frac_of_bunch']
+    bb_df_acw['self_num_particles'] = num_particles * bb_df_acw['self_frac_of_bunch']
 
     # Use survey and twiss to get geometry and locations of all encounters
     get_geometry_and_optics_b1_b2(
         mad=None,
-        bb_df_b1=bb_df_b1,
-        bb_df_b2=bb_df_b2,
-        xsuite_line_b1=tracker_b1.line,
-        xsuite_line_b2=tracker_b4.line,
+        bb_df_b1=bb_df_cw,
+        bb_df_b2=bb_df_acw,
+        xsuite_line_b1=tracker_cw.line,
+        xsuite_line_b2=tracker_acw.line,
         xsuite_twiss_b1=twiss_b1,
         xsuite_twiss_b2=twiss_b2,
         xsuite_survey_b1=survey_b1,
@@ -83,37 +83,37 @@ def configure_beam_beam_elements(bb_df_b1, bb_df_b2, tracker_b1, tracker_b4,
 
     # Get geometry and optics at the partner encounter
     get_partner_corrected_position_and_optics(
-            bb_df_b1, bb_df_b2, ip_position_df)
+            bb_df_cw, bb_df_acw, ip_position_df)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
-    for bb_df in [bb_df_b1, bb_df_b2]:
+    for bb_df in [bb_df_cw, bb_df_acw]:
         compute_separations(bb_df)
         compute_dpx_dpy(bb_df)
         compute_local_crossing_angle_and_plane(bb_df)
         compute_xma_yma(bb_df)
 
     # Get bb dataframe and mad model (with dummy bb) for beam 3 and 4
-    bb_df_b3 = get_counter_rotating(bb_df_b1)
-    bb_df_b4 = get_counter_rotating(bb_df_b2)
+    bb_df_b3 = get_counter_rotating(bb_df_cw)
+    bb_df_b4 = get_counter_rotating(bb_df_acw)
 
     bb_dfs = {
-        'b1': bb_df_b1,
-        'b2': bb_df_b2,
+        'b1': bb_df_cw,
+        'b2': bb_df_acw,
         'b3': bb_df_b3,
         'b4': bb_df_b4}
 
     if crab_strong_beam:
         crabbing_strong_beam_xsuite(bb_dfs,
-            tracker_b1, tracker_b4)
+            tracker_cw, tracker_acw)
     else:
         print('Crabbing of strong beam skipped!')
 
-    setup_beam_beam_in_line(tracker_b1.line, bb_df_b1, bb_coupling=False)
-    setup_beam_beam_in_line(tracker_b4.line, bb_df_b4, bb_coupling=False)
+    setup_beam_beam_in_line(tracker_cw.line, bb_df_cw, bb_coupling=False)
+    setup_beam_beam_in_line(tracker_acw.line, bb_df_b4, bb_coupling=False)
 
-    xf.configure_orbit_dependent_parameters_for_bb(tracker=tracker_b1,
+    xf.configure_orbit_dependent_parameters_for_bb(tracker=tracker_cw,
                         particle_on_co=twiss_b1.particle_on_co)
-    xf.configure_orbit_dependent_parameters_for_bb(tracker=tracker_b4,
+    xf.configure_orbit_dependent_parameters_for_bb(tracker=tracker_acw,
                         particle_on_co=twiss_b4.particle_on_co)
 
 def install_dummy_bb_lenses(bb_df, line):
