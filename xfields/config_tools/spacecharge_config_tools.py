@@ -11,7 +11,6 @@ from ..beam_elements.spacecharge import SpaceCharge3D
 
 import xpart as xp
 import xtrack as xt
-from xtrack.line import _is_thick, _is_drift
 
 def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
                                nemitt_x, nemitt_y, sigma_z,
