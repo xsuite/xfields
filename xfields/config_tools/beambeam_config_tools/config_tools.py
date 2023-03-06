@@ -727,10 +727,6 @@ def find_alpha_and_phi(dpx, dpy):
     return alpha, phi
 
 
-
-
-
-
 def compute_shift_strong_beam_based_on_close_ip(
     points_weak, points_strong, IPs_survey_weak, IPs_survey_strong
 ):
