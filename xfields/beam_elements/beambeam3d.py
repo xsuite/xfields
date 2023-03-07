@@ -108,9 +108,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('headers/power_n.h'),
         _pkg_root.joinpath('headers','particle_states.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
-        '#define NOFIELDMAP', #TODO Remove this workaround
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
-        '#undef NOFIELDMAP', #TODO Remove this workaround
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_transport_sigmas.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
 
@@ -403,7 +401,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_py_center_star=n_slices,
             slices_other_beam_zeta_center_star=n_slices,
             slices_other_beam_pzeta_center_star=n_slices,
-            slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
+            slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
             **kwargs
             )
 
@@ -544,7 +542,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_Sigma_44_star = self._arr2ctx(self.partner_moments[16*self.num_slices_other_beam:17*self.num_slices_other_beam])
 
     def _track_collective(self, particles, _force_suspend=False):
-
         if self.config_for_update._working_on_bunch is not None:
             # I am resuming a suspended calculation
 
