@@ -74,7 +74,7 @@ def faddeeva_calculator():
         def compute(self):
             self._xobject.compile_kernels(only_if_needed=True)
             kernel = self._context.kernels.FaddeevaCalculator_compute
-            kernel.description.n_threads = len(self.z_re)
+            kernel.set_n_threads(len(self.z_re))
             kernel(data=self)
 
     return FaddeevaCalculator

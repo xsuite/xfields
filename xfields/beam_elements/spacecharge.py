@@ -201,6 +201,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         _pkg_root.joinpath('headers/power_n.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
+        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian_fieldmap.h'),
         _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'),
         _pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'),
     ]
