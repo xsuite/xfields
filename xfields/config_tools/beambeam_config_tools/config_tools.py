@@ -92,7 +92,7 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             xsuite_sigmas=sigmas)
 
     # Get geometry and optics at the partner encounter
-    get_partner_corrected_position_and_optics(bb_df_cw, bb_df_acw)
+    get_partner_position_and_optics(bb_df_cw, bb_df_acw)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
@@ -414,7 +414,7 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
                                                     'Sigma'+ss][i_sigma]
 
 
-def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2):
+def get_partner_position_and_optics(bb_df_b1, bb_df_b2):
 
     dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
@@ -443,6 +443,29 @@ def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2):
             self_df.loc[ee, 'other_particle_charge'] = other_df.loc[other_ee, 'self_particle_charge']
             self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
 
+def get_partner_position_and_optics_antisimmetry(bb_df):
+
+    bb_df['other_num_particles'] = None
+    bb_df['other_particle_charge'] = None
+    bb_df['other_relativistic_beta'] = None
+    # for ee in bb_df.index:
+    #     other_beam_nn = self_df.loc[ee, 'other_beam']
+    #     other_df = dict_dfs[other_beam_nn]
+    #     other_ee = self_df.loc[ee, 'other_elementName']
+
+    #     # Get position of the other beam in its own survey
+    #     other_lab_position = copy.deepcopy(other_df.loc[other_ee, 'self_lab_position'])
+
+    #     # Store positions
+    #     self_df.loc[ee, 'other_lab_position'] = other_lab_position
+
+    #     # Get sigmas of the other beam in its own survey
+    #     for ss in _sigma_names:
+    #         self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
+    #     # Get charge of other beam
+    #     self_df.loc[ee, 'other_num_particles'] = other_df.loc[other_ee, 'self_num_particles']
+    #     self_df.loc[ee, 'other_particle_charge'] = other_df.loc[other_ee, 'self_particle_charge']
+    #     self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
 
 def compute_dpx_dpy(bb_df):
     # Defined as (weak) - (strong)
