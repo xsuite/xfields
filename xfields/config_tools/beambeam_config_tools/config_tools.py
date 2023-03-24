@@ -97,7 +97,6 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
 
         compute_dpx_dpy(bb_df)
         compute_local_crossing_angle_and_plane(bb_df)
-        compute_xma_yma(bb_df)
 
     # Get bb dataframe and mad model (with dummy bb) for beam 3 and 4
     bb_df_b3 = get_counter_rotating(bb_df_cw)
@@ -357,8 +356,6 @@ def get_counter_rotating(bb_df):
     c_bb_df['other_relativistic_beta']=bb_df['other_relativistic_beta']
     c_bb_df['separation_x'] = bb_df['separation_x'] * (-1.)
     c_bb_df['separation_y'] = bb_df['separation_y']
-    c_bb_df['xma'] = bb_df['xma'] * (-1.)
-    c_bb_df['yma'] = bb_df['yma']
 
     c_bb_df['dpx'] = bb_df['dpx'] * (-1.) * (-1.)
     c_bb_df['dpy'] = bb_df['dpy'] * (-1.)
@@ -673,36 +670,3 @@ def crabbing_strong_beam_xsuite(bb_dfs,
         bb_df['separation_y_no_crab'] = bb_df['separation_y']
         bb_df['separation_x'] += bb_df['other_x_crab']
         bb_df['separation_y'] += bb_df['other_y_crab']
-
-
-def find_bb_xma_yma(points_weak, points_strong, names=None):
-    ''' To be used in the compute_xma_yma function'''
-    if names is None:
-        names = ["bb_%d" % ii for ii in range(len(points_weak))]
-
-    xma = []
-    yma = []
-    for i_bb, name_bb in enumerate(names):
-
-        pbw = points_weak[i_bb]
-        pbs = points_strong[i_bb]
-
-        # Find as the position of the strong in the lab frame (points_strong[i_bb].p)
-        # the reference frame of the weak in the lab frame (points_weak[i_bb].sp)
-        vbb_ws = points_strong[i_bb].p - points_weak[i_bb].sp
-        # Find separations
-        xma.append(np.dot(vbb_ws, pbw.ex))
-        yma.append(np.dot(vbb_ws, pbw.ey))
-
-    return xma, yma
-
-def compute_xma_yma(bb_df):
-
-    xma, yma = find_bb_xma_yma(
-        points_weak=bb_df['self_lab_position'].values,
-        points_strong=bb_df['other_lab_position'].values,
-        names=bb_df.index.values,
-        )
-
-    bb_df['xma'] = xma
-    bb_df['yma'] = yma
