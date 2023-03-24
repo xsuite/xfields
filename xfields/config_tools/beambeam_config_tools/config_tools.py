@@ -73,16 +73,17 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
     bb_df_acw['self_num_particles'] = num_particles * bb_df_acw['self_frac_of_bunch']
 
     # Use survey and twiss to get geometry and locations of all encounters
-    get_geometry_and_optics_b1_b2(
-        bb_df_b1=bb_df_cw,
-        bb_df_b2=bb_df_acw,
-        xsuite_twiss_b1=twiss_b1,
-        xsuite_twiss_b2=twiss_b2,
-        xsuite_survey_b1=survey_b1,
-        xsuite_survey_b2=survey_b2,
-        xsuite_sigmas_b1=sigmas_b1,
-        xsuite_sigmas_b2=sigmas_b2,
-    )
+    compute_geometry_and_optics(
+        bb_df=bb_df_cw,
+        xsuite_twiss=twiss_b1,
+        xsuite_survey=survey_b1,
+        xsuite_sigmas=sigmas_b1)
+
+    compute_geometry_and_optics(
+        bb_df=bb_df_acw,
+        xsuite_twiss=twiss_b2,
+        xsuite_survey=survey_b2,
+        xsuite_sigmas=sigmas_b2)
 
     # Get geometry and optics at the partner encounter
     get_partner_corrected_position_and_optics(bb_df_cw, bb_df_acw)
@@ -373,51 +374,40 @@ def get_counter_rotating(bb_df):
 
     return c_bb_df
 
-def get_geometry_and_optics_b1_b2(bb_df_b1=None, bb_df_b2=None,
-        xsuite_twiss_b1=None, xsuite_twiss_b2=None,
-        xsuite_survey_b1=None, xsuite_survey_b2=None,
-        xsuite_sigmas_b1=None, xsuite_sigmas_b2=None,):
+def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=None,
+                            xsuite_sigmas=None):
 
-    for beam, bbdf in zip(['b1', 'b2'], [bb_df_b1, bb_df_b2]):
-        # Get positions of the bb encounters (absolute from survey), closed orbit
-        # and orientation of the local reference system (MadPoint objects)
 
-        if beam == 'b1':
-            xsuite_survey = xsuite_survey_b1
-            xsuite_twiss = xsuite_twiss_b1
-            xsuite_sigmas = xsuite_sigmas_b1
-        else:
-            xsuite_survey = xsuite_survey_b2
-            xsuite_twiss = xsuite_twiss_b2
-            xsuite_sigmas = xsuite_sigmas_b2
+    # Get positions of the bb encounters (absolute from survey), closed orbit
+    # and orientation of the local reference system (MadPoint objects)
 
-        # Add empty columns to dataframe
-        bbdf['self_lab_position'] = None
-        bbdf['self_Sigma_11'] = None
-        bbdf['self_Sigma_12'] = None
-        bbdf['self_Sigma_13'] = None
-        bbdf['self_Sigma_14'] = None
-        bbdf['self_Sigma_22'] = None
-        bbdf['self_Sigma_23'] = None
-        bbdf['self_Sigma_24'] = None
-        bbdf['self_Sigma_33'] = None
-        bbdf['self_Sigma_34'] = None
-        bbdf['self_Sigma_44'] = None
+    # Add empty columns to dataframe
+    bb_df['self_lab_position'] = None
+    bb_df['self_Sigma_11'] = None
+    bb_df['self_Sigma_12'] = None
+    bb_df['self_Sigma_13'] = None
+    bb_df['self_Sigma_14'] = None
+    bb_df['self_Sigma_22'] = None
+    bb_df['self_Sigma_23'] = None
+    bb_df['self_Sigma_24'] = None
+    bb_df['self_Sigma_33'] = None
+    bb_df['self_Sigma_34'] = None
+    bb_df['self_Sigma_44'] = None
 
-        for ele_name in bbdf.index.values:
-            ip_name = bbdf['ip_name'][ele_name]
+    for ele_name in bb_df.index.values:
+        ip_name = bb_df['ip_name'][ele_name]
 
-            bbdf.loc[ele_name, 'self_lab_position'] = MadPoint(ele_name, None,
-                            use_twiss=True, use_survey=True,
-                            xsuite_survey=xsuite_survey[ip_name],
-                            xsuite_twiss=xsuite_twiss)
+        bb_df.loc[ele_name, 'self_lab_position'] = MadPoint(ele_name, None,
+                        use_twiss=True, use_survey=True,
+                        xsuite_survey=xsuite_survey[ip_name],
+                        xsuite_twiss=xsuite_twiss)
 
-            # Get the sigmas for the element
-            i_sigma = xsuite_sigmas.name.index(ele_name)
-            for ss in [
-                '11', '12', '13', '14', '22', '23', '24', '33', '34', '44']:
-                bbdf.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
-                                                        'Sigma'+ss][i_sigma]
+        # Get the sigmas for the element
+        i_sigma = xsuite_sigmas.name.index(ele_name)
+        for ss in [
+            '11', '12', '13', '14', '22', '23', '24', '33', '34', '44']:
+            bb_df.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
+                                                    'Sigma'+ss][i_sigma]
 
 
 def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2):
