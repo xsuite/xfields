@@ -56,7 +56,16 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
 
 def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                  num_particles,
-                                 nemitt_x, nemitt_y, crab_strong_beam, ip_names):
+                                 nemitt_x, nemitt_y, crab_strong_beam, ip_names,
+                                 use_antisymmetry=False):
+
+    if line_cw is None or line_acw is None:
+        assert use_antisymmetry is True, (
+            'If you are not using antisymmetry, you need to provide both beams')
+    else:
+        assert use_antisymmetry is False, (
+            'If you are using antisymmetry, you need to provide only one beam'
+            ' (for now...).')
 
     twisses = {}
     for bb_df, line, orientation in zip(
@@ -93,8 +102,18 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             xsuite_survey=surveys,
             xsuite_sigmas=sigmas)
 
+        if crab_strong_beam:
+            measure_crabbing(line, bb_df, reverse=orientation=='acw')
+
     # Get geometry and optics at the partner encounter
-    get_partner_position_and_optics(bb_df_cw, bb_df_acw)
+    if not use_antisymmetry:
+        get_partner_position_and_optics(bb_df_cw, bb_df_acw,
+                                        crab_strong_beam=crab_strong_beam)
+    else:
+        if line_cw is not None:
+            get_partner_position_and_optics_antisimmetry(bb_df_cw)
+        elif line_acw is not None:
+            get_partner_position_and_optics_antisimmetry(bb_df_acw)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
@@ -110,15 +129,14 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
         compute_dpx_dpy(bb_df)
         compute_local_crossing_angle_and_plane(bb_df)
 
-    # Get bb dataframe and mad model (with dummy bb) for beam 3 and 4
-    bb_df_b3 = get_counter_rotating(bb_df_cw) if bb_df_cw is not None  else None
-    bb_df_b4 = get_counter_rotating(bb_df_acw) if bb_df_acw is not None else None
+        if crab_strong_beam:
+            bb_df['separation_x_no_crab'] = bb_df['separation_x']
+            bb_df['separation_y_no_crab'] = bb_df['separation_y']
+            bb_df['separation_x'] += bb_df['other_x_crab']
+            bb_df['separation_y'] += bb_df['other_y_crab']
 
-    if crab_strong_beam:
-        bb_dfs = {'b1': bb_df_cw,'b2': bb_df_acw, 'b3': bb_df_b3, 'b4': bb_df_b4}
-        crabbing_strong_beam_xsuite(bb_dfs, line_cw, line_acw)
-    else:
-        print('Crabbing of strong beam skipped!')
+    # Get bb dataframe and mad model (with dummy bb) for beam 4
+    bb_df_b4 = get_counter_rotating(bb_df_acw) if bb_df_acw is not None else None
 
     if line_cw is not None:
         setup_beam_beam_in_line(line_cw.line, bb_df_cw, bb_coupling=False)
@@ -368,12 +386,14 @@ def get_counter_rotating(bb_df):
     c_bb_df['dpy'] = bb_df['dpy'] * (-1.)
 
     if 'self_x_crab' in c_bb_df.columns:
+        # Crab cavities are accounted for
+        c_bb_df['separation_x_no_crab'] = bb_df['separation_x_no_crab'] * (-1.)
+        c_bb_df['separation_y_no_crab'] = bb_df['separation_y_no_crab']
         for ww in ['self', 'other']:
             c_bb_df[f'{ww}_x_crab'] = bb_df[f'{ww}_x_crab'] * (-1)
             c_bb_df[f'{ww}_px_crab'] = bb_df[f'{ww}_px_crab'] * (-1) * (-1)
             c_bb_df[f'{ww}_y_crab'] = bb_df[f'{ww}_y_crab']
             c_bb_df[f'{ww}_py_crab'] = bb_df[f'{ww}_py_crab'] * (-1)
-
 
     # Compute phi and alpha from dpx and dpy
     compute_local_crossing_angle_and_plane(c_bb_df)
@@ -389,6 +409,8 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
 
     # Add empty columns to dataframe
     bb_df['self_lab_position'] = None
+    bb_df['s'] = None
+    bb_df['s_ip'] = None
     bb_df['self_Sigma_11'] = None
     bb_df['self_Sigma_12'] = None
     bb_df['self_Sigma_13'] = None
@@ -408,6 +430,9 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
                         xsuite_survey=xsuite_survey[ip_name],
                         xsuite_twiss=xsuite_twiss)
 
+        bb_df.loc[ele_name, 's'] = xsuite_twiss[ele_name, 's']
+        bb_df.loc[ele_name, 's_ip'] = xsuite_twiss[ip_name, 's']
+
         # Get the sigmas for the element
         i_sigma = xsuite_sigmas.name.index(ele_name)
         for ss in [
@@ -416,7 +441,7 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
                                                     'Sigma'+ss][i_sigma]
 
 
-def get_partner_position_and_optics(bb_df_b1, bb_df_b2):
+def get_partner_position_and_optics(bb_df_b1, bb_df_b2, crab_strong_beam):
 
     dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
@@ -445,29 +470,44 @@ def get_partner_position_and_optics(bb_df_b1, bb_df_b2):
             self_df.loc[ee, 'other_particle_charge'] = other_df.loc[other_ee, 'self_particle_charge']
             self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
 
+            if crab_strong_beam:
+                for coord in ['x', 'px', 'y', 'py']:
+                    self_df.loc[ee, f'other_{coord}_crab'] = other_df.loc[
+                        other_ee, f'self_{coord}_crab']
+
 def get_partner_position_and_optics_antisimmetry(bb_df):
 
     bb_df['other_num_particles'] = None
     bb_df['other_particle_charge'] = None
     bb_df['other_relativistic_beta'] = None
-    # for ee in bb_df.index:
-    #     other_beam_nn = self_df.loc[ee, 'other_beam']
-    #     other_df = dict_dfs[other_beam_nn]
-    #     other_ee = self_df.loc[ee, 'other_elementName']
+    for ee in bb_df.index:
 
-    #     # Get position of the other beam in its own survey
-    #     other_lab_position = copy.deepcopy(other_df.loc[other_ee, 'self_lab_position'])
+        ds = bb_df.loc[ee, 's'] - bb_df.loc[ee, 's_ip']
+        s_antisim = bb_df.loc[ee, 's_ip'] - ds
+        i_antisym = np.argmin(np.abs(bb_df.s - s_antisim))
+        other_ee = bb_df.index[i_antisym]
 
-    #     # Store positions
-    #     self_df.loc[ee, 'other_lab_position'] = other_lab_position
+        assert np.isclose(
+            bb_df.loc[other_ee, 's'], s_antisim, rtol=0, atol=1e-5)
 
-    #     # Get sigmas of the other beam in its own survey
-    #     for ss in _sigma_names:
-    #         self_df.loc[ee, f'other_Sigma_{ss}'] = other_df.loc[other_ee, f'self_Sigma_{ss}']
-    #     # Get charge of other beam
-    #     self_df.loc[ee, 'other_num_particles'] = other_df.loc[other_ee, 'self_num_particles']
-    #     self_df.loc[ee, 'other_particle_charge'] = other_df.loc[other_ee, 'self_particle_charge']
-    #     self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
+        position_ee = bb_df.loc[ee, 'self_lab_position']
+        position_other_ee = copy.deepcopy(
+            bb_df.loc[other_ee, 'self_lab_position'])
+        # Assuming survey has been made starting from the IP and neglecting
+        # angle between the two surveys
+        position_other_ee.sz = position_ee.sz # longitudinal component
+        position_other_ee.p[2] = position_ee.p[2] # longitudinal component
+
+        # Store positions
+        bb_df.loc[ee, 'other_lab_position'] = position_other_ee
+
+        # Get sigmas of the other beam in its own survey
+        for ss in _sigma_names:
+            bb_df.loc[ee, f'other_Sigma_{ss}'] = bb_df.loc[other_ee, f'self_Sigma_{ss}']
+        # Get charge of other beam
+        bb_df.loc[ee, 'other_num_particles'] = bb_df.loc[other_ee, 'self_num_particles']
+        bb_df.loc[ee, 'other_particle_charge'] = bb_df.loc[other_ee, 'self_particle_charge']
+        bb_df.loc[ee, 'other_relativistic_beta'] = bb_df.loc[other_ee, 'self_relativistic_beta']
 
 def compute_dpx_dpy(bb_df):
     # Defined as (weak) - (strong)
@@ -639,53 +679,28 @@ def setup_beam_beam_in_line(
             # move to the location of the old element (ee becomese newee)
             newee.move(_buffer=ee._buffer, _offset=ee._offset)
 
-def crabbing_strong_beam_xsuite(bb_dfs,
-        line_b1, line_b4):
+def measure_crabbing(line, bb_df, reverse):
 
-    for beam, line in (zip(['b1', 'b2'], [line_b1, line_b4])):
-        bb_df = bb_dfs[beam]
+    tw = line.twiss(reverse=reverse)
 
-        tw = line.twiss(reverse=(beam == 'b2'))
+    for nn in bb_df.index:
+        s_crab = bb_df.loc[nn, 's_crab']
+        if s_crab != 0.0:
+            print(f'Crabbing at {nn}     ', end='\r', flush=True)
+            zeta0 = 2 * s_crab
+            if reverse:
+                zeta0 = -zeta0 # LHC convention
+            tw4d_crab = line.twiss(reverse=reverse, method='4d',
+                                        zeta0=zeta0,
+                                        freeze_longitudinal=True)
+            ii = tw.name.index(nn)
 
-        for nn in bb_df.index:
-            print(f'Crabbing {beam} at {nn}     ', end='\r', flush=True)
-            s_crab = bb_df.loc[nn, 's_crab']
-            if s_crab != 0.0:
-                if beam == 'b1':
-                    zeta0 = 2 * s_crab
-                else:
-                    zeta0 = -2 * s_crab
-                tw4d_crab = line.twiss(reverse=(beam == 'b2'), method='4d',
-                                          zeta0=zeta0,
-                                          freeze_longitudinal=True)
+            for coord in ['x', 'px', 'y', 'py']:
+                bb_df.loc[nn, f'self_{coord}_crab'] = (
+                    tw4d_crab[coord][ii] - tw[coord][ii])
+        else:
+            for coord in ['x', 'px', 'y', 'py']:
+                bb_df.loc[nn, f'self_{coord}_crab'] = 0.0
 
-                ii = tw.name.index(nn)
 
-                for coord in ['x', 'px', 'y', 'py']:
-                    bb_df.loc[nn, f'self_{coord}_crab'] = (
-                        tw4d_crab[coord][ii] - tw[coord][ii])
-            else:
-                for coord in ['x', 'px', 'y', 'py']:
-                    bb_df.loc[nn, f'self_{coord}_crab'] = 0.0
 
-    for coord in ['x', 'px', 'y', 'py']:
-        bb_dfs['b2'][f'other_{coord}_crab'] = bb_dfs['b1'].loc[
-                bb_dfs['b2']['other_elementName'], f'self_{coord}_crab'].values
-        bb_dfs['b1'][f'other_{coord}_crab'] = bb_dfs['b2'].loc[
-                bb_dfs['b1']['other_elementName'], f'self_{coord}_crab'].values
-
-    # Handle b3 and b4
-    for bcw, bacw in zip(['b1', 'b2'], ['b3', 'b4']):
-        for ww in ['self', 'other']:
-            bb_dfs[bacw][f'{ww}_x_crab'] = bb_dfs[bcw][f'{ww}_x_crab'] * (-1)
-            bb_dfs[bacw][f'{ww}_px_crab'] = bb_dfs[bcw][f'{ww}_px_crab'] * (-1) * (-1)
-            bb_dfs[bacw][f'{ww}_y_crab'] = bb_dfs[bcw][f'{ww}_y_crab']
-            bb_dfs[bacw][f'{ww}_py_crab'] = bb_dfs[bcw][f'{ww}_py_crab'] * (-1)
-
-    # Correct separation
-    for beam in ['b1', 'b2', 'b3', 'b4']:
-        bb_df = bb_dfs[beam]
-        bb_df['separation_x_no_crab'] = bb_df['separation_x']
-        bb_df['separation_y_no_crab'] = bb_df['separation_y']
-        bb_df['separation_x'] += bb_df['other_x_crab']
-        bb_df['separation_y'] += bb_df['other_y_crab']
