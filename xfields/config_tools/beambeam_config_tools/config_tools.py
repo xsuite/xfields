@@ -53,8 +53,11 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
     twiss_b4 = tracker_acw.twiss()
     twiss_b2 = twiss_b4.reverse()
 
-    survey_b1 = tracker_cw.survey()
-    survey_b2 = tracker_acw.survey(reverse=True)
+    survey_b1 = {}
+    survey_b2 = {}
+    for ip_name in ip_names:
+        survey_b1[ip_name] = tracker_cw.survey(element0=ip_name)
+        survey_b2[ip_name] = tracker_acw.survey(element0=ip_name, reverse=True)
 
     sigmas_b1 = twiss_b1.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
     sigmas_b2 = twiss_b2.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
@@ -64,7 +67,6 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
 
     # Use survey and twiss to get geometry and locations of all encounters
     get_geometry_and_optics_b1_b2(
-        mad=None,
         bb_df_b1=bb_df_cw,
         bb_df_b2=bb_df_acw,
         xsuite_line_b1=tracker_cw.line,
@@ -77,13 +79,8 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
         xsuite_sigmas_b2=sigmas_b2,
     )
 
-    # Get the position of the IPs in the surveys of the two beams
-    ip_position_df = get_survey_ip_position_b1_b2(mad=None, ip_names=ip_names,
-        xsuite_survey_b1=survey_b1, xsuite_survey_b2=survey_b2)
-
     # Get geometry and optics at the partner encounter
-    get_partner_corrected_position_and_optics(
-            bb_df_cw, bb_df_acw, ip_position_df)
+    get_partner_corrected_position_and_optics(bb_df_cw, bb_df_acw)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
@@ -156,97 +153,18 @@ def install_dummy_bb_lenses(bb_df, line):
                                         + bb_df.loc[nn, 'atPosition']),
                                     name=nn)
 
-
-
-
 _sigma_names = [11, 12, 13, 14, 22, 23, 24, 33, 34, 44]
 _beta_names = ["betx", "bety"]
 
 def norm(v):
     return np.sqrt(np.sum(v ** 2))
 
-def get_points_twissdata_for_element_type(
-    mad=None, seq_name=None, ele_type=None, slot_id=None,
-    use_survey=True, use_twiss=True,
-    xsuite_line=None, xsuite_survey=None, xsuite_twiss=None, xsuite_sigmas=None
-):
-
-    if mad is not None:
-        assert xsuite_line is None
-        assert xsuite_survey is None
-        assert xsuite_twiss is None
-        assert xsuite_sigmas is None
-        assert seq_name is not None
-        elements, element_names = get_elements(
-            seq=mad.sequence[seq_name], ele_type=ele_type, slot_id=slot_id
-        )
-    else:
-
-        if type(ele_type) is list or type(ele_type) is tuple:
-            ele_type = list(ele_type)
-        else:
-            ele_type = [ele_type]
-
-        assert xsuite_line is not None
-        assert xsuite_survey is not None
-        assert xsuite_twiss is not None
-        assert xsuite_sigmas is not None
-
-        elements = []
-        element_names = []
-        for nn, ee in xsuite_line.element_dict.items():
-            if type(ee) in ele_type:
-                elements.append(ee)
-                element_names.append(nn)
-
-    points, twissdata = get_points_twissdata_for_elements(
-        element_names,
-        mad,
-        seq_name,
-        use_survey=use_survey,
-        use_twiss=use_twiss,
-        xsuite_survey=xsuite_survey,
-        xsuite_twiss=xsuite_twiss,
-        xsuite_sigmas=xsuite_sigmas
-    )
-
-    return elements, element_names, points, twissdata
-
-def get_elements(seq, ele_type=None, slot_id=None):
-
-    elements = []
-    element_names = []
-    for ee in seq.elements:
-
-        if ele_type is not None:
-            if ee.base_type.name != ele_type:
-                continue
-
-        if slot_id is not None:
-            if ee.slot_id != slot_id:
-                continue
-
-        elements.append(ee)
-        element_names.append(ee.name)
-
-    return elements, element_names
-
-
-def get_points_twissdata_for_elements(
-    ele_names, mad=None, seq_name=None, use_survey=True, use_twiss=True,
+def get_points_twissdata_for_element(
+    ele_name, use_survey=True, use_twiss=True,
     xsuite_twiss=None, xsuite_survey=None, xsuite_sigmas=None
 ):
 
-    if mad is not None:
-        assert seq_name is not None
-        assert xsuite_survey is None
-        assert xsuite_twiss is None
-        mad.use(sequence=seq_name)
-        mad.twiss()
-        if use_survey:
-            mad.survey()
 
-    bb_xyz_points = []
     bb_twissdata = {
         kk: []
         for kk in _sigma_names
@@ -254,93 +172,29 @@ def get_points_twissdata_for_elements(
         + "dispersion_x dispersion_y x y".split()
     }
 
-    if mad is not None:
-        tw_table = mad.table.twiss
-        gamma = mad.table.twiss.summary.gamma
-    else:
-        tw_table = xsuite_twiss
-        gamma = xsuite_twiss.particle_on_co.gamma0[0]
+    tw_table = xsuite_twiss
+    gamma = xsuite_twiss.particle_on_co.gamma0[0]
     beta = np.sqrt(1.0 - 1.0 / (gamma * gamma))
 
-    for eename in ele_names:
-        if mad is not None:
-            eename = eename + ':1'
-        bb_xyz_points.append(
-            MadPoint(
-                eename, mad, use_twiss=use_twiss, use_survey=use_survey,
-                xsuite_survey=xsuite_survey, xsuite_twiss=xsuite_twiss
-            )
+    bb_xyz_point = MadPoint(ele_name, None,
+                    use_twiss=use_twiss, use_survey=use_survey,
+                    xsuite_survey=xsuite_survey, xsuite_twiss=xsuite_twiss)
+
+    i_twiss = np.where(np.array(tw_table.name) == (ele_name))[0][0]
+
+    for sn in _sigma_names:
+        bb_twissdata[sn] = xsuite_sigmas[f"Sigma{sn}"][i_twiss]
+
+    for kk in ["betx", "bety"]:
+        bb_twissdata[kk].append(tw_table[kk][i_twiss])
+    for pp in ["x", "y"]:
+        bb_twissdata["dispersion_" + pp].append(
+            tw_table["d" + pp][i_twiss]
         )
+        bb_twissdata[pp].append(tw_table[pp][i_twiss])
 
-        i_twiss = np.where(np.array(tw_table.name) == (eename))[0][0]
+    return bb_xyz_point, bb_twissdata
 
-        if mad is not None:
-            for sn in _sigma_names:
-                bb_twissdata[sn].append(
-                    getattr(mad.table.twiss, "sig%d" % sn)[i_twiss]
-                )
-        else:
-            for sn in _sigma_names:
-                bb_twissdata[sn].append(
-                    xsuite_sigmas[f"Sigma{sn}"][i_twiss]
-                )
-
-        for kk in ["betx", "bety"]:
-            bb_twissdata[kk].append(tw_table[kk][i_twiss])
-        for pp in ["x", "y"]:
-            bb_twissdata["dispersion_" + pp].append(
-                tw_table["d" + pp][i_twiss]
-            )
-            bb_twissdata[pp].append(tw_table[pp][i_twiss])
-
-        # if mad is not None:
-        #     bb_twissdata.dispersion_x *= beta
-        #     bb_twissdata.dispersion_y *= beta
-
-    return bb_xyz_points, bb_twissdata
-
-
-def get_bb_names_madpoints_sigmas(
-    mad=None, seq_name=None, use_survey=True, use_twiss=True,
-    xsuite_line=None, xsuite_survey=None, xsuite_twiss=None, xsuite_sigmas=None
-):
-
-    if mad is not None:
-        assert xsuite_line is None
-        assert xsuite_survey is None
-        assert xsuite_twiss is None
-        assert xsuite_sigmas is None
-        assert seq_name is not None
-
-        ele_type="beambeam"
-    else:
-        assert xsuite_line is not None
-        assert xsuite_survey is not None
-        assert xsuite_twiss is not None
-        assert xsuite_sigmas is not None
-        import xfields as xf
-        ele_type = [xf.BeamBeamBiGaussian2D, xf.BeamBeamBiGaussian3D]
-
-
-    (
-        _,
-        element_names,
-        points,
-        twissdata,
-    ) = get_points_twissdata_for_element_type(
-        mad,
-        seq_name,
-        ele_type=ele_type,
-        slot_id=None,
-        use_survey=use_survey,
-        use_twiss=use_twiss,
-        xsuite_line=xsuite_line,
-        xsuite_survey=xsuite_survey,
-        xsuite_twiss=xsuite_twiss,
-        xsuite_sigmas=xsuite_sigmas,
-    )
-    sigmas = {kk: twissdata[kk] for kk in _sigma_names}
-    return element_names, points, sigmas
 
 # From https://github.com/giadarol/WeakStrong/blob/master/slicing.py
 def constant_charge_slicing_gaussian(N_part_tot, sigmaz, N_slices):
@@ -379,10 +233,6 @@ def constant_charge_slicing_gaussian(N_part_tot, sigmaz, N_slices):
 
     return z_centroids, z_cuts, N_part_per_slice
 
-
-# %% define elementDefinition function
-import numpy as np
-
 def elementName(label, IRNumber, beam, identifier):
     if identifier >0:
         sideTag='.r'
@@ -391,10 +241,6 @@ def elementName(label, IRNumber, beam, identifier):
     else:
         sideTag='.c'
     return f'{label}{sideTag}{IRNumber}{beam}_{np.abs(identifier):02}'
-
-def elementDefinition(elementName, elementClass, elementAttributes):
-    return f'{elementName} : {elementClass}, {elementAttributes};'
-
 
 def generate_set_of_bb_encounters_1beam(
     circumference=26658.8832,
@@ -546,7 +392,7 @@ def get_counter_rotating(bb_df):
 
     return c_bb_df
 
-def get_geometry_and_optics_b1_b2(mad=None, bb_df_b1=None, bb_df_b2=None,
+def get_geometry_and_optics_b1_b2(bb_df_b1=None, bb_df_b2=None,
         xsuite_line_b1=None, xsuite_line_b2=None,
         xsuite_twiss_b1=None, xsuite_twiss_b2=None,
         xsuite_survey_b1=None, xsuite_survey_b2=None,
@@ -567,44 +413,36 @@ def get_geometry_and_optics_b1_b2(mad=None, bb_df_b1=None, bb_df_b2=None,
             xsuite_line = xsuite_line_b2
             xsuite_sigmas = xsuite_sigmas_b2
 
-        names, positions, sigmas = get_bb_names_madpoints_sigmas(
-            mad, seq_name="lhc"+beam,
-            xsuite_line=xsuite_line, xsuite_survey=xsuite_survey,
-            xsuite_twiss=xsuite_twiss, xsuite_sigmas=xsuite_sigmas,
-        )
+        # Add empty columns to dataframe
+        bbdf['self_lab_position'] = None
+        bbdf['self_Sigma_11'] = None
+        bbdf['self_Sigma_12'] = None
+        bbdf['self_Sigma_13'] = None
+        bbdf['self_Sigma_14'] = None
+        bbdf['self_Sigma_22'] = None
+        bbdf['self_Sigma_23'] = None
+        bbdf['self_Sigma_24'] = None
+        bbdf['self_Sigma_33'] = None
+        bbdf['self_Sigma_34'] = None
+        bbdf['self_Sigma_44'] = None
 
-        temp_df = pd.DataFrame()
-        temp_df['self_lab_position'] = positions
-        temp_df['elementName'] = names
-        for ss in sigmas.keys():
-            temp_df[f'self_Sigma_{ss}'] = sigmas[ss]
+        for ele_name in bbdf.index.values:
+            ip_name = bbdf['ip_name'][ele_name]
 
-        temp_df = temp_df.set_index('elementName', verify_integrity=True).sort_index()
+            bbdf.loc[ele_name, 'self_lab_position'] = MadPoint(ele_name, None,
+                            use_twiss=True, use_survey=True,
+                            xsuite_survey=xsuite_survey[ip_name],
+                            xsuite_twiss=xsuite_twiss)
 
-        for cc in temp_df.columns:
-            bbdf[cc] = temp_df[cc]
+            # Get the sigmas for the element
+            i_sigma = xsuite_sigmas.name.index(ele_name)
+            for ss in [
+                '11', '12', '13', '14', '22', '23', '24', '33', '34', '44']:
+                bbdf.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
+                                                        'Sigma'+ss][i_sigma]
 
-def get_survey_ip_position_b1_b2(mad=None,
-        ip_names = ['ip1', 'ip2', 'ip5', 'ip8'],
-        xsuite_survey_b1=None, xsuite_survey_b2=None):
 
-    # Get ip position in the two surveys
-
-    ip_position_df = pd.DataFrame()
-
-    for beam, xssv in zip(['b1', 'b2'], [xsuite_survey_b1, xsuite_survey_b2]):
-        if mad is not None:
-            mad.use("lhc"+beam)
-            mad.survey()
-        for ipnn in ip_names:
-            if mad is not None:
-                ipnn += ":1"
-            ip_position_df.loc[ipnn.split(':')[0], beam] = MadPoint.from_survey(
-                (ipnn).lower(), mad=mad, xsuite_survey=xssv)
-
-    return ip_position_df
-
-def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2, ip_position_df):
+def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2):
 
     dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
@@ -621,15 +459,6 @@ def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2, ip_position_df
 
             # Get position of the other beam in its own survey
             other_lab_position = copy.deepcopy(other_df.loc[other_ee, 'self_lab_position'])
-
-            # Compute survey shift based on closest ip
-            closest_ip = self_df.loc[ee, 'ip_name']
-            survey_shift = (
-                    ip_position_df.loc[closest_ip, other_beam_nn].p
-                  - ip_position_df.loc[closest_ip, self_beam_nn].p)
-
-            # Shift to reference system of self
-            other_lab_position.shift_survey(survey_shift)
 
             # Store positions
             self_df.loc[ee, 'other_lab_position'] = other_lab_position
@@ -725,30 +554,6 @@ def find_alpha_and_phi(dpx, dpy):
                     alpha = np.arctan(dpy/dpx)
 
     return alpha, phi
-
-
-def compute_shift_strong_beam_based_on_close_ip(
-    points_weak, points_strong, IPs_survey_weak, IPs_survey_strong
-):
-    strong_shift = []
-    for i_bb, _ in enumerate(points_weak):
-
-        pbw = points_weak[i_bb]
-        pbs = points_strong[i_bb]
-
-        # Find closest IP
-        d_ip = 1e6
-        use_ip = 0
-        for ip in IPs_survey_weak.keys():
-            dd = norm(pbw.p - IPs_survey_weak[ip].p)
-            if dd < d_ip:
-                use_ip = ip
-                d_ip = dd
-
-        # Shift Bs
-        shift_ws = IPs_survey_strong[use_ip].p - IPs_survey_weak[use_ip].p
-        strong_shift.append(shift_ws)
-    return strong_shift
 
 
 def find_bb_separations(points_weak, points_strong, names=None):
@@ -899,76 +704,6 @@ def crabbing_strong_beam_xsuite(bb_dfs,
         bb_df['separation_y'] += bb_df['other_y_crab']
 
 
-
-def crabbing_strong_beam(mad, bb_dfs, z_crab_twiss,
-        save_crab_twiss=True):
-
-    crab_kicker_dict = {'z_crab': z_crab_twiss}
-    for beam in ['b1', 'b2']:
-        bb_df = bb_dfs[beam]
-
-        # Compute crab bump shape
-        mad.input('exec, crossing_disable')
-        mad.globals.z_crab = z_crab_twiss
-
-        seqn = 'lhc'+beam
-        mad.use(seqn)
-        mad.twiss()
-        tw_crab_bump_df = mad.get_twiss_df(table_name='twiss')
-        if save_crab_twiss:
-            tw_crab_bump_df.to_parquet(
-                f'twiss_z_crab_{z_crab_twiss:.5f}_seq_{seqn}.parquet')
-
-        # Save crab kickers
-        seq = mad.sequence[seqn]
-        mad_crab_kickers = [(nn, ee) for (nn, ee) in zip(
-            seq.element_names(), seq.elements) if nn.startswith('acf')]
-        for cc in mad_crab_kickers:
-            nn = cc[0]
-            ee = cc[1]
-            crab_kicker_dict[nn] = {kk:repr(ee[kk]) for kk in ee.keys()}
-
-        mad.globals.z_crab = 0
-        mad.input('exec, crossing_restore')
-
-        # Remove last part of the name
-        tw_crab_bump_df.index = tw_crab_bump_df.name.apply(
-                lambda nn: ''.join(nn.split(':')[:-1]))
-
-        bump_at_bbs = tw_crab_bump_df.loc[bb_df.index, ['x', 'y', 'px', 'py']]
-
-        rf_mod = np.sin(2.*np.pi*mad.globals.hrf400
-                /mad.globals.lhclength*2*bb_df.s_crab)
-        rf_mod_twiss = np.sin(2.*np.pi*mad.globals.hrf400
-                /mad.globals.lhclength*z_crab_twiss)
-
-        for coord in ['x', 'px', 'y', 'py']:
-            bb_df[f'self_{coord}_crab'] = bump_at_bbs[coord]*rf_mod/rf_mod_twiss
-
-    for coord in ['x', 'px', 'y', 'py']:
-        bb_dfs['b2'][f'other_{coord}_crab'] = bb_dfs['b1'].loc[
-                bb_dfs['b2']['other_elementName'], f'self_{coord}_crab'].values
-        bb_dfs['b1'][f'other_{coord}_crab'] = bb_dfs['b2'].loc[
-                bb_dfs['b1']['other_elementName'], f'self_{coord}_crab'].values
-
-    # Handle b3 and b4
-    for bcw, bacw in zip(['b1', 'b2'], ['b3', 'b4']):
-        for ww in ['self', 'other']:
-            bb_dfs[bacw][f'{ww}_x_crab'] = bb_dfs[bcw][f'{ww}_x_crab'] * (-1)
-            bb_dfs[bacw][f'{ww}_px_crab'] = bb_dfs[bcw][f'{ww}_px_crab'] * (-1) * (-1)
-            bb_dfs[bacw][f'{ww}_y_crab'] = bb_dfs[bcw][f'{ww}_y_crab']
-            bb_dfs[bacw][f'{ww}_py_crab'] = bb_dfs[bcw][f'{ww}_py_crab'] * (-1)
-
-    # Correct separation
-    for beam in ['b1', 'b2', 'b3', 'b4']:
-        bb_df = bb_dfs[beam]
-        bb_df['separation_x_no_crab'] = bb_df['separation_x']
-        bb_df['separation_y_no_crab'] = bb_df['separation_y']
-        bb_df['separation_x'] += bb_df['other_x_crab']
-        bb_df['separation_y'] += bb_df['other_y_crab']
-
-    return crab_kicker_dict
-
 def find_bb_xma_yma(points_weak, points_strong, names=None):
     ''' To be used in the compute_xma_yma function'''
     if names is None:
@@ -981,8 +716,8 @@ def find_bb_xma_yma(points_weak, points_strong, names=None):
         pbw = points_weak[i_bb]
         pbs = points_strong[i_bb]
 
-        # Find as the position of the strong in the lab frame (points_strong[i_bb].p) 
-        # the reference frame of the weak in the lab frame (points_weak[i_bb].sp) 
+        # Find as the position of the strong in the lab frame (points_strong[i_bb].p)
+        # the reference frame of the weak in the lab frame (points_weak[i_bb].sp)
         vbb_ws = points_strong[i_bb].p - points_weak[i_bb].sp
         # Find separations
         xma.append(np.dot(vbb_ws, pbw.ex))
