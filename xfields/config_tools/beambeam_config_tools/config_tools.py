@@ -111,9 +111,11 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                         crab_strong_beam=crab_strong_beam)
     else:
         if line_cw is not None:
-            get_partner_position_and_optics_antisimmetry(bb_df_cw)
+            get_partner_position_and_optics_antisimmetry(bb_df_cw,
+                                            crab_strong_beam=crab_strong_beam)
         elif line_acw is not None:
-            get_partner_position_and_optics_antisimmetry(bb_df_acw)
+            get_partner_position_and_optics_antisimmetry(bb_df_acw,
+                                            crab_strong_beam=crab_strong_beam)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
@@ -471,11 +473,11 @@ def get_partner_position_and_optics(bb_df_b1, bb_df_b2, crab_strong_beam):
             self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
 
             if crab_strong_beam:
-                for coord in ['x', 'px', 'y', 'py']:
+                for coord in ['x', 'y']:
                     self_df.loc[ee, f'other_{coord}_crab'] = other_df.loc[
                         other_ee, f'self_{coord}_crab']
 
-def get_partner_position_and_optics_antisimmetry(bb_df):
+def get_partner_position_and_optics_antisimmetry(bb_df, crab_strong_beam):
 
     bb_df['other_num_particles'] = None
     bb_df['other_particle_charge'] = None
@@ -497,6 +499,8 @@ def get_partner_position_and_optics_antisimmetry(bb_df):
         # angle between the two surveys
         position_other_ee.sz = position_ee.sz # longitudinal component
         position_other_ee.p[2] = position_ee.p[2] # longitudinal component
+        position_other_ee.tpx *= -1 # anti-simmetry
+        position_other_ee.tpy *= -1 # anti-simmetry
 
         # Store positions
         bb_df.loc[ee, 'other_lab_position'] = position_other_ee
@@ -508,6 +512,11 @@ def get_partner_position_and_optics_antisimmetry(bb_df):
         bb_df.loc[ee, 'other_num_particles'] = bb_df.loc[other_ee, 'self_num_particles']
         bb_df.loc[ee, 'other_particle_charge'] = bb_df.loc[other_ee, 'self_particle_charge']
         bb_df.loc[ee, 'other_relativistic_beta'] = bb_df.loc[other_ee, 'self_relativistic_beta']
+
+        if crab_strong_beam:
+            for coord in ['x', 'y']:
+                bb_df.loc[ee, f'other_{coord}_crab'] = bb_df.loc[
+                    other_ee, f'self_{coord}_crab']
 
 def compute_dpx_dpy(bb_df):
     # Defined as (weak) - (strong)
