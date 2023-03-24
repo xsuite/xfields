@@ -59,6 +59,13 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
         survey_b1[ip_name] = tracker_cw.survey(element0=ip_name)
         survey_b2[ip_name] = tracker_acw.survey(element0=ip_name, reverse=True)
 
+        assert survey_b1[ip_name][ip_name, 'X'] == 0
+        assert survey_b1[ip_name][ip_name, 'Y'] == 0
+        assert survey_b1[ip_name][ip_name, 'Z'] == 0
+        assert survey_b2[ip_name][ip_name, 'X'] == 0
+        assert survey_b2[ip_name][ip_name, 'Y'] == 0
+        assert survey_b2[ip_name][ip_name, 'Z'] == 0
+
     sigmas_b1 = twiss_b1.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
     sigmas_b2 = twiss_b2.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
 
@@ -69,8 +76,6 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
     get_geometry_and_optics_b1_b2(
         bb_df_b1=bb_df_cw,
         bb_df_b2=bb_df_acw,
-        xsuite_line_b1=tracker_cw.line,
-        xsuite_line_b2=tracker_acw.line,
         xsuite_twiss_b1=twiss_b1,
         xsuite_twiss_b2=twiss_b2,
         xsuite_survey_b1=survey_b1,
@@ -84,7 +89,12 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
-        compute_separations(bb_df)
+
+        bb_df['separation_x'], bb_df['separation_y'] = find_bb_separations(
+             points_weak=bb_df['self_lab_position'].values,
+             points_strong=bb_df['other_lab_position'].values,
+             names=bb_df.index.values)
+
         compute_dpx_dpy(bb_df)
         compute_local_crossing_angle_and_plane(bb_df)
         compute_xma_yma(bb_df)
@@ -154,47 +164,9 @@ def install_dummy_bb_lenses(bb_df, line):
                                     name=nn)
 
 _sigma_names = [11, 12, 13, 14, 22, 23, 24, 33, 34, 44]
-_beta_names = ["betx", "bety"]
 
 def norm(v):
     return np.sqrt(np.sum(v ** 2))
-
-def get_points_twissdata_for_element(
-    ele_name, use_survey=True, use_twiss=True,
-    xsuite_twiss=None, xsuite_survey=None, xsuite_sigmas=None
-):
-
-
-    bb_twissdata = {
-        kk: []
-        for kk in _sigma_names
-        + _beta_names
-        + "dispersion_x dispersion_y x y".split()
-    }
-
-    tw_table = xsuite_twiss
-    gamma = xsuite_twiss.particle_on_co.gamma0[0]
-    beta = np.sqrt(1.0 - 1.0 / (gamma * gamma))
-
-    bb_xyz_point = MadPoint(ele_name, None,
-                    use_twiss=use_twiss, use_survey=use_survey,
-                    xsuite_survey=xsuite_survey, xsuite_twiss=xsuite_twiss)
-
-    i_twiss = np.where(np.array(tw_table.name) == (ele_name))[0][0]
-
-    for sn in _sigma_names:
-        bb_twissdata[sn] = xsuite_sigmas[f"Sigma{sn}"][i_twiss]
-
-    for kk in ["betx", "bety"]:
-        bb_twissdata[kk].append(tw_table[kk][i_twiss])
-    for pp in ["x", "y"]:
-        bb_twissdata["dispersion_" + pp].append(
-            tw_table["d" + pp][i_twiss]
-        )
-        bb_twissdata[pp].append(tw_table[pp][i_twiss])
-
-    return bb_xyz_point, bb_twissdata
-
 
 # From https://github.com/giadarol/WeakStrong/blob/master/slicing.py
 def constant_charge_slicing_gaussian(N_part_tot, sigmaz, N_slices):
@@ -212,7 +184,7 @@ def constant_charge_slicing_gaussian(N_part_tot, sigmaz, N_slices):
             this_centroid = -sigmaz/np.sqrt(2*np.pi)*(
                     np.exp(-z_cuts[ii+1]**2/(2*sigmaz*sigmaz))-
                     np.exp(-z_cuts[ii]**2/(2*sigmaz*sigmaz)))*float(N_slices)
-            # the multiplication times n slices comes from the fact 
+            # the multiplication times n slices comes from the fact
             # that we have to divide by the slice charge, i.e. 1./N
             z_centroids.append(this_centroid)
 
@@ -243,29 +215,32 @@ def elementName(label, IRNumber, beam, identifier):
     return f'{label}{sideTag}{IRNumber}{beam}_{np.abs(identifier):02}'
 
 def generate_set_of_bb_encounters_1beam(
-    circumference=26658.8832,
-    harmonic_number = 35640,
-    bunch_spacing_buckets = 10,
-    numberOfHOSlices = 11,
-    bunch_particle_charge = 0.,
-    sigt=0.0755,
-    relativistic_beta=1.,
-    ip_names = ['ip1', 'ip2', 'ip5', 'ip8'],
-    numberOfLRPerIRSide=[21, 20, 21, 20],
-    beam_name = 'b1',
-    other_beam_name = 'b2'
+    circumference=None,
+    harmonic_number=None,
+    bunch_spacing_buckets=None,
+    numberOfHOSlices=None,
+    bunch_particle_charge=None,
+    sigt=None,
+    relativistic_beta=None,
+    ip_names=None,
+    numberOfLRPerIRSide=None,
+    beam_name=None,
+    other_beam_name=None
     ):
 
 
     # Long-Range
     myBBLRlist=[]
     for ii, ip_nn in enumerate(ip_names):
-        for identifier in (list(range(-numberOfLRPerIRSide[ii],0))+list(range(1,numberOfLRPerIRSide[ii]+1))):
-            myBBLRlist.append({'label':'bb_lr', 'ip_name':ip_nn, 'beam':beam_name, 'other_beam':other_beam_name,
-                'identifier':identifier})
+        for identifier in (list(range(-numberOfLRPerIRSide[ii],0))
+                           + list(range(1,numberOfLRPerIRSide[ii]+1))):
+            myBBLRlist.append({'label': 'bb_lr', 'ip_name': ip_nn,
+                               'beam': beam_name, 'other_beam':other_beam_name,
+                               'identifier':identifier})
 
     if len(myBBLRlist)>0:
-        myBBLR=pd.DataFrame(myBBLRlist)[['beam','other_beam','ip_name','label','identifier']]
+        myBBLR=pd.DataFrame(myBBLRlist)[
+            ['beam','other_beam','ip_name','label','identifier']]
 
         myBBLR['self_particle_charge'] = bunch_particle_charge
         myBBLR['self_relativistic_beta'] = relativistic_beta
@@ -290,25 +265,34 @@ def generate_set_of_bb_encounters_1beam(
     # to check: sigz of the luminous region
     # where sigt is used
     sigzLumi=sigt/2
-    z_centroids, z_cuts, N_part_per_slice = constant_charge_slicing_gaussian(1,sigzLumi,numberOfHOSlices)
+    z_centroids, z_cuts, N_part_per_slice = constant_charge_slicing_gaussian(
+                                                    1,sigzLumi,numberOfHOSlices)
     myBBHOlist=[]
 
     for ip_nn in ip_names:
-        for identifier in (list(range(-numberOfSliceOnSide,0))+[0]+list(range(1,numberOfSliceOnSide+1))):
-            myBBHOlist.append({'label':'bb_ho', 'ip_name':ip_nn, 'other_beam':other_beam_name, 'beam':beam_name, 'identifier':identifier})
+        for identifier in (list(range(-numberOfSliceOnSide,0))
+                           +[0] + list(range(1,numberOfSliceOnSide+1))):
+            myBBHOlist.append({'label': 'bb_ho', 'ip_name': ip_nn,
+                                'other_beam': other_beam_name, 'beam':beam_name,
+                                'identifier':identifier})
 
-    myBBHO=pd.DataFrame(myBBHOlist)[['beam','other_beam', 'ip_name','label','identifier']]
+    myBBHO=pd.DataFrame(myBBHOlist)[
+        ['beam','other_beam', 'ip_name','label','identifier']]
 
 
     myBBHO['self_frac_of_bunch'] = 1./numberOfHOSlices
     myBBHO['self_particle_charge'] = bunch_particle_charge
     myBBHO['self_relativistic_beta'] = relativistic_beta
     for ip_nn in ip_names:
-        myBBHO.loc[myBBHO['ip_name']==ip_nn, 'atPosition']=list(z_centroids)
+        myBBHO.loc[myBBHO['ip_name'] == ip_nn, 'atPosition']=list(z_centroids)
     myBBHO['s_crab'] = myBBHO['atPosition']
 
-    myBBHO['elementName']=myBBHO.apply(lambda x: elementName(x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
-    myBBHO['other_elementName']=myBBHO.apply(lambda x: elementName(x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
+    myBBHO['elementName'] = myBBHO.apply(
+        lambda x: elementName(
+            x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
+    myBBHO['other_elementName']=myBBHO.apply(
+        lambda x: elementName(x.label, x.ip_name.replace('ip', ''),
+                              x.other_beam, x.identifier), axis=1)
     # assuming a sequence rotated in IR3
 
     myBB=pd.concat([myBBHO, myBBLR],sort=False)
@@ -393,7 +377,6 @@ def get_counter_rotating(bb_df):
     return c_bb_df
 
 def get_geometry_and_optics_b1_b2(bb_df_b1=None, bb_df_b2=None,
-        xsuite_line_b1=None, xsuite_line_b2=None,
         xsuite_twiss_b1=None, xsuite_twiss_b2=None,
         xsuite_survey_b1=None, xsuite_survey_b2=None,
         xsuite_sigmas_b1=None, xsuite_sigmas_b2=None,):
@@ -405,12 +388,10 @@ def get_geometry_and_optics_b1_b2(bb_df_b1=None, bb_df_b2=None,
         if beam == 'b1':
             xsuite_survey = xsuite_survey_b1
             xsuite_twiss = xsuite_twiss_b1
-            xsuite_line = xsuite_line_b1
             xsuite_sigmas = xsuite_sigmas_b1
         else:
             xsuite_survey = xsuite_survey_b2
             xsuite_twiss = xsuite_twiss_b2
-            xsuite_line = xsuite_line_b2
             xsuite_sigmas = xsuite_sigmas_b2
 
         # Add empty columns to dataframe
@@ -471,16 +452,6 @@ def get_partner_corrected_position_and_optics(bb_df_b1, bb_df_b2):
             self_df.loc[ee, 'other_particle_charge'] = other_df.loc[other_ee, 'self_particle_charge']
             self_df.loc[ee, 'other_relativistic_beta'] = other_df.loc[other_ee, 'self_relativistic_beta']
 
-def compute_separations(bb_df):
-
-    sep_x, sep_y = find_bb_separations(
-        points_weak=bb_df['self_lab_position'].values,
-        points_strong=bb_df['other_lab_position'].values,
-        names=bb_df.index.values,
-        )
-
-    bb_df['separation_x'] = sep_x
-    bb_df['separation_y'] = sep_y
 
 def compute_dpx_dpy(bb_df):
     # Defined as (weak) - (strong)
