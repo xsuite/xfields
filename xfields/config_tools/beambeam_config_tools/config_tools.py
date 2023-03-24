@@ -505,9 +505,18 @@ def get_partner_position_and_optics_antisimmetry(bb_df, crab_strong_beam):
         # Store positions
         bb_df.loc[ee, 'other_lab_position'] = position_other_ee
 
-        # Get sigmas of the other beam in its own survey
-        for ss in _sigma_names:
-            bb_df.loc[ee, f'other_Sigma_{ss}'] = bb_df.loc[other_ee, f'self_Sigma_{ss}']
+        # Get sigmas of the other beam (signs come from anti-simmetry)
+        bb_df.loc[ee, 'other_Sigma_11'] = bb_df.loc[other_ee, 'self_Sigma_11']
+        bb_df.loc[ee, 'other_Sigma_12'] = -bb_df.loc[other_ee, 'self_Sigma_12']
+        bb_df.loc[ee, 'other_Sigma_13'] = bb_df.loc[other_ee, 'self_Sigma_13']
+        bb_df.loc[ee, 'other_Sigma_14'] = -bb_df.loc[other_ee, 'self_Sigma_14']
+        bb_df.loc[ee, 'other_Sigma_22'] = bb_df.loc[other_ee, 'self_Sigma_22']
+        bb_df.loc[ee, 'other_Sigma_23'] = -bb_df.loc[other_ee, 'self_Sigma_23']
+        bb_df.loc[ee, 'other_Sigma_24'] = bb_df.loc[other_ee, 'self_Sigma_24']
+        bb_df.loc[ee, 'other_Sigma_33'] = bb_df.loc[other_ee, 'self_Sigma_33']
+        bb_df.loc[ee, 'other_Sigma_34'] = -bb_df.loc[other_ee, 'self_Sigma_34']
+        bb_df.loc[ee, 'other_Sigma_44'] = bb_df.loc[other_ee, 'self_Sigma_44']
+
         # Get charge of other beam
         bb_df.loc[ee, 'other_num_particles'] = bb_df.loc[other_ee, 'self_num_particles']
         bb_df.loc[ee, 'other_particle_charge'] = bb_df.loc[other_ee, 'self_particle_charge']
