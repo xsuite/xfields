@@ -10,7 +10,7 @@ import xfields as xf
 
 
 def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
-            circumference, harmonic_number, bunch_spacing_buckets,
+            harmonic_number, bunch_spacing_buckets,
             num_long_range_encounters_per_side, num_slices_head_on,
             sigmaz_m):
 
@@ -21,6 +21,7 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
     # TODO: use keyword arguments
     # TODO: what happens if bunch length is different for the two beams
     if line_b1 is not None:
+        circumference = line_b1.get_length()
         bb_df_b1 = generate_set_of_bb_encounters_1beam(
             circumference, harmonic_number,
             bunch_spacing_buckets,
@@ -35,6 +36,7 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
         bb_df_b1 = None
 
     if line_b4 is not None:
+        circumference = line_b4.get_length()
         bb_df_b2 = generate_set_of_bb_encounters_1beam(
             circumference, harmonic_number,
             bunch_spacing_buckets,
