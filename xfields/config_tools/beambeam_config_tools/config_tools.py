@@ -55,47 +55,50 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
 def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                  num_particles,
                                  nemitt_x, nemitt_y, crab_strong_beam, ip_names):
-    twiss_b1 = line_cw.twiss()
-    twiss_b4 = line_acw.twiss()
-    twiss_b2 = twiss_b4.reverse()
 
-    survey_b1 = {}
-    survey_b2 = {}
-    for ip_name in ip_names:
-        survey_b1[ip_name] = line_cw.survey(element0=ip_name)
-        survey_b2[ip_name] = line_acw.survey(element0=ip_name, reverse=True)
+    twisses = {}
+    for bb_df, line, orientation in zip(
+        [bb_df_cw, bb_df_acw], [line_cw, line_acw], ['cw', 'acw']):
 
-        assert survey_b1[ip_name][ip_name, 'X'] == 0
-        assert survey_b1[ip_name][ip_name, 'Y'] == 0
-        assert survey_b1[ip_name][ip_name, 'Z'] == 0
-        assert survey_b2[ip_name][ip_name, 'X'] == 0
-        assert survey_b2[ip_name][ip_name, 'Y'] == 0
-        assert survey_b2[ip_name][ip_name, 'Z'] == 0
+        if bb_df is None:
+            continue
 
-    sigmas_b1 = twiss_b1.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
-    sigmas_b2 = twiss_b2.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+        twiss = line.twiss()
+        if orientation == 'acw':
+            tw_acw = twiss
+            twiss = twiss.reverse()
+        twisses[orientation] = twiss
 
-    bb_df_cw['self_num_particles'] = num_particles * bb_df_cw['self_frac_of_bunch']
-    bb_df_acw['self_num_particles'] = num_particles * bb_df_acw['self_frac_of_bunch']
+        surveys = {}
 
-    # Use survey and twiss to get geometry and locations of all encounters
-    compute_geometry_and_optics(
-        bb_df=bb_df_cw,
-        xsuite_twiss=twiss_b1,
-        xsuite_survey=survey_b1,
-        xsuite_sigmas=sigmas_b1)
+        for ip_name in ip_names:
+            sv_ip = line.survey(element0=ip_name)
+            if orientation == 'acw':
+                sv_ip = sv_ip.reverse()
+            surveys[ip_name] = sv_ip
+            assert sv_ip[ip_name, 'X'] == 0
+            assert sv_ip[ip_name, 'Y'] == 0
+            assert sv_ip[ip_name, 'Z'] == 0
 
-    compute_geometry_and_optics(
-        bb_df=bb_df_acw,
-        xsuite_twiss=twiss_b2,
-        xsuite_survey=survey_b2,
-        xsuite_sigmas=sigmas_b2)
+        sigmas = twiss.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+
+        bb_df['self_num_particles'] = num_particles * bb_df['self_frac_of_bunch']
+
+        # Use survey and twiss to get geometry and locations of all encounters
+        compute_geometry_and_optics(
+            bb_df=bb_df,
+            xsuite_twiss=twiss,
+            xsuite_survey=surveys,
+            xsuite_sigmas=sigmas)
 
     # Get geometry and optics at the partner encounter
     get_partner_corrected_position_and_optics(bb_df_cw, bb_df_acw)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
+
+        if bb_df is None:
+            continue
 
         bb_df['separation_x'], bb_df['separation_y'] = find_bb_separations(
              points_weak=bb_df['self_lab_position'].values,
@@ -106,28 +109,23 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
         compute_local_crossing_angle_and_plane(bb_df)
 
     # Get bb dataframe and mad model (with dummy bb) for beam 3 and 4
-    bb_df_b3 = get_counter_rotating(bb_df_cw)
-    bb_df_b4 = get_counter_rotating(bb_df_acw)
-
-    bb_dfs = {
-        'b1': bb_df_cw,
-        'b2': bb_df_acw,
-        'b3': bb_df_b3,
-        'b4': bb_df_b4}
+    bb_df_b3 = get_counter_rotating(bb_df_cw) if bb_df_cw is not None  else None
+    bb_df_b4 = get_counter_rotating(bb_df_acw) if bb_df_acw is not None else None
 
     if crab_strong_beam:
-        crabbing_strong_beam_xsuite(bb_dfs,
-            line_cw, line_acw)
+        bb_dfs = {'b1': bb_df_cw,'b2': bb_df_acw, 'b3': bb_df_b3, 'b4': bb_df_b4}
+        crabbing_strong_beam_xsuite(bb_dfs, line_cw, line_acw)
     else:
         print('Crabbing of strong beam skipped!')
 
-    setup_beam_beam_in_line(line_cw.line, bb_df_cw, bb_coupling=False)
-    setup_beam_beam_in_line(line_acw.line, bb_df_b4, bb_coupling=False)
-
-    xf.configure_orbit_dependent_parameters_for_bb(line=line_cw,
-                        particle_on_co=twiss_b1.particle_on_co)
-    xf.configure_orbit_dependent_parameters_for_bb(line=line_acw,
-                        particle_on_co=twiss_b4.particle_on_co)
+    if line_cw is not None:
+        setup_beam_beam_in_line(line_cw.line, bb_df_cw, bb_coupling=False)
+        xf.configure_orbit_dependent_parameters_for_bb(line=line_cw,
+                        particle_on_co=twisses['cw'].particle_on_co)
+    if line_acw is not None:
+        setup_beam_beam_in_line(line_acw.line, bb_df_b4, bb_coupling=False)
+        xf.configure_orbit_dependent_parameters_for_bb(line=line_acw,
+                    particle_on_co=twisses['acw'].reverse().particle_on_co)
 
 def install_dummy_bb_lenses(bb_df, line):
 
