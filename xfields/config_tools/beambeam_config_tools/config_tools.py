@@ -57,7 +57,8 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
 def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                  num_particles,
                                  nemitt_x, nemitt_y, crab_strong_beam, ip_names,
-                                 use_antisymmetry=False):
+                                 use_antisymmetry=False,
+                                 separation_bumps=None):
 
     if line_cw is None or line_acw is None:
         assert use_antisymmetry is True, (
@@ -111,11 +112,13 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                         crab_strong_beam=crab_strong_beam)
     else:
         if line_cw is not None:
-            get_partner_position_and_optics_antisimmetry(bb_df_cw,
-                                            crab_strong_beam=crab_strong_beam)
+            get_partner_position_and_optics_antisymmetry(bb_df_cw,
+                                    crab_strong_beam=crab_strong_beam,
+                                    separation_bumps=separation_bumps)
         elif line_acw is not None:
-            get_partner_position_and_optics_antisimmetry(bb_df_acw,
-                                            crab_strong_beam=crab_strong_beam)
+            get_partner_position_and_optics_antisymmetry(bb_df_acw,
+                                    crab_strong_beam=crab_strong_beam,
+                                    separation_bumps=separation_bumps)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
     for bb_df in [bb_df_cw, bb_df_acw]:
@@ -477,7 +480,8 @@ def get_partner_position_and_optics(bb_df_b1, bb_df_b2, crab_strong_beam):
                     self_df.loc[ee, f'other_{coord}_crab'] = other_df.loc[
                         other_ee, f'self_{coord}_crab']
 
-def get_partner_position_and_optics_antisimmetry(bb_df, crab_strong_beam):
+def get_partner_position_and_optics_antisymmetry(bb_df, crab_strong_beam,
+                    separation_bumps=None):
 
     bb_df['other_num_particles'] = None
     bb_df['other_particle_charge'] = None
@@ -499,13 +503,26 @@ def get_partner_position_and_optics_antisimmetry(bb_df, crab_strong_beam):
         # angle between the two surveys
         position_other_ee.sz = position_ee.sz # longitudinal component
         position_other_ee.p[2] = position_ee.p[2] # longitudinal component
-        position_other_ee.tpx *= -1 # anti-simmetry
-        position_other_ee.tpy *= -1 # anti-simmetry
+        position_other_ee.tpx *= -1 # anti-symmetry
+        position_other_ee.tpy *= -1 # anti-symmetry
+
+        if separation_bumps is not None:
+            if bb_df.loc[ee, 'ip_name'] in separation_bumps:
+                sep_plane = separation_bumps[bb_df.loc[ee, 'ip_name']]
+                setattr(position_other_ee, f't{sep_plane}',
+                    -getattr(position_other_ee, f't{sep_plane}'))
+                setattr(position_other_ee, f'tp{sep_plane}',
+                    -getattr(position_other_ee, f'tp{sep_plane}'))
+                position_other_ee.p[{'x': 0, 'y': 1}[sep_plane]] += (
+                    2 * getattr(position_other_ee, f't{sep_plane}')
+                    # 2 is to compensate for the fact that the orbit was already
+                    # added with the wrong sign
+                )
 
         # Store positions
         bb_df.loc[ee, 'other_lab_position'] = position_other_ee
 
-        # Get sigmas of the other beam (signs come from anti-simmetry)
+        # Get sigmas of the other beam (signs come from anti-symmetry)
         bb_df.loc[ee, 'other_Sigma_11'] = bb_df.loc[other_ee, 'self_Sigma_11']
         bb_df.loc[ee, 'other_Sigma_12'] = -bb_df.loc[other_ee, 'self_Sigma_12']
         bb_df.loc[ee, 'other_Sigma_13'] = bb_df.loc[other_ee, 'self_Sigma_13']
