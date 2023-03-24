@@ -6,7 +6,7 @@
 import xtrack as xt
 
 
-def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
+def configure_orbit_dependent_parameters_for_bb(line, particle_on_co):
 
     """
     Assumes that the separation is saved in mean_x, mean_y for the 4D
@@ -14,7 +14,7 @@ def configure_orbit_dependent_parameters_for_bb(tracker, particle_on_co):
     """
 
     temp_particles = particle_on_co.copy()
-    for ii, ee in enumerate(tracker.line.elements):
+    for ii, ee in enumerate(line.elements):
         if ee.__class__.__name__ == 'BeamBeamBiGaussian2D':
             px_0 = temp_particles.px[0]
             py_0 = temp_particles.py[0]

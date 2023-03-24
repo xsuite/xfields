@@ -7,57 +7,63 @@ from scipy.special import  erfinv
 from ._madpoint import MadPoint
 import xfields as xf
 
+
+
 def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
             circumference, harmonic_number, bunch_spacing_buckets,
             num_long_range_encounters_per_side, num_slices_head_on,
             sigmaz_m):
 
+    keep_columns = ['beam', 'other_beam', 'ip_name', 'elementName', 'other_elementName', 'label',
+            'self_particle_charge', 'self_relativistic_beta', 'self_frac_of_bunch',
+            'identifier', 's_crab']
+
     # TODO: use keyword arguments
     # TODO: what happens if bunch length is different for the two beams
-    bb_df_b1 = generate_set_of_bb_encounters_1beam(
-        circumference, harmonic_number,
-        bunch_spacing_buckets,
-        num_slices_head_on,
-        line_b1.particle_ref.q0,
-        sigmaz_m, line_b1.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
-        beam_name = 'b1',
-        other_beam_name = 'b2')
+    if line_b1 is not None:
+        bb_df_b1 = generate_set_of_bb_encounters_1beam(
+            circumference, harmonic_number,
+            bunch_spacing_buckets,
+            num_slices_head_on,
+            line_b1.particle_ref.q0,
+            sigmaz_m, line_b1.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
+            beam_name = 'b1',
+            other_beam_name = 'b2')
+        install_dummy_bb_lenses(bb_df=bb_df_b1, line=line_b1)
+        bb_df_b1 = bb_df_b1[keep_columns].copy()
+    else:
+        bb_df_b1 = None
 
-
-    bb_df_b2 = generate_set_of_bb_encounters_1beam(
-        circumference, harmonic_number,
-        bunch_spacing_buckets,
-        num_slices_head_on,
-        line_b4.particle_ref.q0,
-        sigmaz_m,
-        line_b4.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
-        beam_name = 'b2',
-        other_beam_name = 'b1')
-    bb_df_b2['atPosition'] = -bb_df_b2['atPosition'] # I am installing in b4 not in b2
-
-    install_dummy_bb_lenses(bb_df=bb_df_b1, line=line_b1)
-    install_dummy_bb_lenses(bb_df=bb_df_b2, line=line_b4)
-
-    keep_columns = ['beam', 'other_beam', 'ip_name', 'elementName', 'other_elementName', 'label',
-                'self_particle_charge', 'self_relativistic_beta', 'self_frac_of_bunch',
-                'identifier', 's_crab']
-    bb_df_b1 = bb_df_b1[keep_columns].copy()
-    bb_df_b2 = bb_df_b2[keep_columns].copy()
+    if line_b4 is not None:
+        bb_df_b2 = generate_set_of_bb_encounters_1beam(
+            circumference, harmonic_number,
+            bunch_spacing_buckets,
+            num_slices_head_on,
+            line_b4.particle_ref.q0,
+            sigmaz_m,
+            line_b4.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
+            beam_name = 'b2',
+            other_beam_name = 'b1')
+        bb_df_b2['atPosition'] = -bb_df_b2['atPosition'] # I am installing in b4 not in b2
+        install_dummy_bb_lenses(bb_df=bb_df_b2, line=line_b4)
+        bb_df_b2 = bb_df_b2[keep_columns].copy()
+    else:
+        bb_df_b2 = None
 
     return bb_df_b1, bb_df_b2
 
-def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
+def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                  num_particles,
                                  nemitt_x, nemitt_y, crab_strong_beam, ip_names):
-    twiss_b1 = tracker_cw.twiss()
-    twiss_b4 = tracker_acw.twiss()
+    twiss_b1 = line_cw.twiss()
+    twiss_b4 = line_acw.twiss()
     twiss_b2 = twiss_b4.reverse()
 
     survey_b1 = {}
     survey_b2 = {}
     for ip_name in ip_names:
-        survey_b1[ip_name] = tracker_cw.survey(element0=ip_name)
-        survey_b2[ip_name] = tracker_acw.survey(element0=ip_name, reverse=True)
+        survey_b1[ip_name] = line_cw.survey(element0=ip_name)
+        survey_b2[ip_name] = line_acw.survey(element0=ip_name, reverse=True)
 
         assert survey_b1[ip_name][ip_name, 'X'] == 0
         assert survey_b1[ip_name][ip_name, 'Y'] == 0
@@ -111,16 +117,16 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, tracker_cw, tracker_acw,
 
     if crab_strong_beam:
         crabbing_strong_beam_xsuite(bb_dfs,
-            tracker_cw, tracker_acw)
+            line_cw, line_acw)
     else:
         print('Crabbing of strong beam skipped!')
 
-    setup_beam_beam_in_line(tracker_cw.line, bb_df_cw, bb_coupling=False)
-    setup_beam_beam_in_line(tracker_acw.line, bb_df_b4, bb_coupling=False)
+    setup_beam_beam_in_line(line_cw.line, bb_df_cw, bb_coupling=False)
+    setup_beam_beam_in_line(line_acw.line, bb_df_b4, bb_coupling=False)
 
-    xf.configure_orbit_dependent_parameters_for_bb(tracker=tracker_cw,
+    xf.configure_orbit_dependent_parameters_for_bb(line=line_cw,
                         particle_on_co=twiss_b1.particle_on_co)
-    xf.configure_orbit_dependent_parameters_for_bb(tracker=tracker_acw,
+    xf.configure_orbit_dependent_parameters_for_bb(line=line_acw,
                         particle_on_co=twiss_b4.particle_on_co)
 
 def install_dummy_bb_lenses(bb_df, line):
@@ -611,12 +617,12 @@ def setup_beam_beam_in_line(
             newee.move(_buffer=ee._buffer, _offset=ee._offset)
 
 def crabbing_strong_beam_xsuite(bb_dfs,
-        tracker_b1, tracker_b4):
+        line_b1, line_b4):
 
-    for beam, tracker in (zip(['b1', 'b2'], [tracker_b1, tracker_b4])):
+    for beam, line in (zip(['b1', 'b2'], [line_b1, line_b4])):
         bb_df = bb_dfs[beam]
 
-        tw = tracker.twiss(reverse=(beam == 'b2'))
+        tw = line.twiss(reverse=(beam == 'b2'))
 
         for nn in bb_df.index:
             print(f'Crabbing {beam} at {nn}     ', end='\r', flush=True)
@@ -626,7 +632,7 @@ def crabbing_strong_beam_xsuite(bb_dfs,
                     zeta0 = 2 * s_crab
                 else:
                     zeta0 = -2 * s_crab
-                tw4d_crab = tracker.twiss(reverse=(beam == 'b2'), method='4d',
+                tw4d_crab = line.twiss(reverse=(beam == 'b2'), method='4d',
                                           zeta0=zeta0,
                                           freeze_longitudinal=True)
 
