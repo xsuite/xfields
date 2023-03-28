@@ -88,9 +88,9 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             if orientation == 'acw':
                 sv_ip = sv_ip.reverse()
             surveys[ip_name] = sv_ip
-            assert sv_ip[ip_name, 'X'] == 0
-            assert sv_ip[ip_name, 'Y'] == 0
-            assert sv_ip[ip_name, 'Z'] == 0
+            assert sv_ip['X', ip_name] == 0
+            assert sv_ip['Y', ip_name] == 0
+            assert sv_ip['Z', ip_name] == 0
 
         sigmas = twiss.get_betatron_sigmas(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
 
@@ -435,8 +435,8 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
                         xsuite_survey=xsuite_survey[ip_name],
                         xsuite_twiss=xsuite_twiss)
 
-        bb_df.loc[ele_name, 's'] = xsuite_twiss[ele_name, 's']
-        bb_df.loc[ele_name, 's_ip'] = xsuite_twiss[ip_name, 's']
+        bb_df.loc[ele_name, 's'] = xsuite_twiss['s', ele_name]
+        bb_df.loc[ele_name, 's_ip'] = xsuite_twiss['s', ip_name]
 
         # Get the sigmas for the element
         i_sigma = np.where(np.array(xsuite_sigmas.name) == ele_name)[0][0]
