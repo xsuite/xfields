@@ -71,7 +71,7 @@ class MadPoint(object):
 
             if use_twiss:
                 assert xsuite_twiss is not None
-                idx = xsuite_twiss['name'].index(name)
+                idx = np.where(np.array(xsuite_twiss['name']) == name)[0][0]
                 self.tx = xsuite_twiss.x[idx]
                 self.ty = xsuite_twiss.y[idx]
                 self.tpx = xsuite_twiss.px[idx]
@@ -79,7 +79,7 @@ class MadPoint(object):
 
             if use_survey:
                 assert xsuite_survey is not None
-                idx = xsuite_survey['name'].index(name)
+                idx = np.where(np.array(xsuite_survey['name']) == name)[0][0]
                 self.sx = xsuite_survey.X[idx]
                 self.sy = xsuite_survey.Y[idx]
                 self.sz = xsuite_survey.Z[idx]

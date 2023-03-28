@@ -439,7 +439,7 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
         bb_df.loc[ele_name, 's_ip'] = xsuite_twiss[ip_name, 's']
 
         # Get the sigmas for the element
-        i_sigma = xsuite_sigmas.name.index(ele_name)
+        i_sigma = np.where(np.array(xsuite_sigmas.name) == ele_name)[0][0]
         for ss in [
             '11', '12', '13', '14', '22', '23', '24', '33', '34', '44']:
             bb_df.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
@@ -731,7 +731,7 @@ def measure_crabbing(line, bb_df, reverse):
                                    freeze_longitudinal=True)
             if reverse:
                 tw4d_crab = tw4d_crab.reverse()
-            ii = tw.name.index(nn)
+            ii = np.where(np.array(tw.name) == nn)[0][0]
 
             for coord in ['x', 'px', 'y', 'py']:
                 bb_df.loc[nn, f'self_{coord}_crab'] = (
