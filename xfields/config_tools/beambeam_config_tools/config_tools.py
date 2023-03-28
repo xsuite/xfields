@@ -716,7 +716,9 @@ def setup_beam_beam_in_line(
 
 def measure_crabbing(line, bb_df, reverse):
 
-    tw = line.twiss(reverse=reverse)
+    tw = line.twiss()
+    if reverse:
+        tw = tw.reverse()
 
     for nn in bb_df.index:
         s_crab = bb_df.loc[nn, 's_crab']
@@ -725,9 +727,10 @@ def measure_crabbing(line, bb_df, reverse):
             zeta0 = 2 * s_crab
             if reverse:
                 zeta0 = -zeta0 # LHC convention
-            tw4d_crab = line.twiss(reverse=reverse, method='4d',
-                                        zeta0=zeta0,
-                                        freeze_longitudinal=True)
+            tw4d_crab = line.twiss(method='4d',zeta0=zeta0,
+                                   freeze_longitudinal=True)
+            if reverse:
+                tw4d_crab = tw4d_crab.reverse()
             ii = tw.name.index(nn)
 
             for coord in ['x', 'px', 'y', 'py']:
