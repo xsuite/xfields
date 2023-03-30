@@ -231,23 +231,22 @@ line = xt.Line(elements = [monitor_emits,
                            el_arc_left_b1,
                            el_sextupole_left,
                            el_arc_mid_b1])
-
-tracker = xt.Tracker(line=line)
+line.build_tracker()
 
 ########################
 # Enable beamstrahlung #
 ########################
 
-tracker.configure_radiation(model_beamstrahlung='quantum')
+line.configure_radiation(model_beamstrahlung='quantum')
 
 #########
 # Track #
 #########
 
 
-record = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
-tracker.track(particles_b1, num_turns=n_turns)
-tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+record = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
+line.track(particles_b1, num_turns=n_turns)
+line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
 #########
 # tests #

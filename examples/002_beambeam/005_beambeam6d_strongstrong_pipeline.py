@@ -85,9 +85,7 @@ particles_b2.init_pipeline('B2b1')
 #############
 # Beam-beam #
 #############
-nb_slice = 1
-bin_edges = sigma_z*np.linspace(-3.0,3.0,nb_slice+1)
-slicer = xf.TempSlicer(bin_edges = bin_edges)
+slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=2)
 config_for_update_b1_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
    pipeline_manager=pipeline_manager,
    element_name='IP1',
@@ -166,10 +164,10 @@ elements_b1 = [bbeamIP1_b1,arc12,bbeamIP2_b1,arc21]
 elements_b2 = [bbeamIP1_b2,arc12,bbeamIP2_b2,arc21]
 line_b1 = xt.Line(elements=elements_b1)
 line_b2 = xt.Line(elements=elements_b2)
-tracker_b1 = xt.Tracker(line=line_b1)
-tracker_b2 = xt.Tracker(line=line_b2)
-branch_b1 = xt.PipelineBranch(tracker_b1,particles_b1)
-branch_b2 = xt.PipelineBranch(tracker_b2,particles_b2)
+line_b1.build_tracker()
+line_b2.build_tracker()
+branch_b1 = xt.PipelineBranch(line_b1,particles_b1)
+branch_b2 = xt.PipelineBranch(line_b2,particles_b2)
 multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2])
 
 #################################################################
@@ -188,10 +186,10 @@ print('Done with tracking.',(time.time()-time0)/1024,'[s/turn]')
 if False:
     for i in range(10):
         plt.figure(1000+i)
-        plt.plot(tracker_b1.record_last_track.x[i,:],tracker_b1.record_last_track.px[i,:],'x')
+        plt.plot(line_b1.record_last_track.x[i,:],line_b1.record_last_track.px[i,:],'x')
 
-positions_x_b1 = np.average(tracker_b1.record_last_track.x,axis=0)
-positions_y_b1 = np.average(tracker_b1.record_last_track.y,axis=0)
+positions_x_b1 = np.average(line_b1.record_last_track.x,axis=0)
+positions_y_b1 = np.average(line_b1.record_last_track.y,axis=0)
 plt.figure(0)
 plt.plot(np.arange(nTurn),positions_x_b1/np.sqrt(physemit_x*beta_x_IP1),'x')
 plt.plot(np.arange(nTurn),positions_y_b1/np.sqrt(physemit_y*beta_y_IP1),'x')

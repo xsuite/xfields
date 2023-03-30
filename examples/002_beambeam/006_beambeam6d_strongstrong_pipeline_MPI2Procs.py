@@ -92,8 +92,7 @@ else:
 # Beam-beam #
 #############
 nb_slice = 11
-bin_edges = sigma_z*np.linspace(-3.0,3.0,nb_slice+1)
-slicer = xf.TempSlicer(bin_edges = bin_edges)
+slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=nb_slice)
 config_for_update_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
    pipeline_manager=pipeline_manager,
    element_name='IP1',
@@ -145,8 +144,8 @@ arc21 = xt.LinearTransferMatrix(
 
 elements = [bbeamIP1,arc12,bbeamIP2,arc21]
 line = xt.Line(elements=elements)
-tracker = xt.Tracker(line=line)
-branch = xt.PipelineBranch(tracker,particles)
+line.build_tracker()
+branch = xt.PipelineBranch(line, particles)
 multitracker = xt.PipelineMultiTracker(branches=[branch])
 
 #################################################################
@@ -166,10 +165,10 @@ if my_rank == 0:
     if False:
         for i in range(10):
             plt.figure(1000+i)
-            plt.plot(tracker.record_last_track.x[i,:],tracker.record_last_track.px[i,:],'x')
+            plt.plot(line.record_last_track.x[i,:],line.record_last_track.px[i,:],'x')
 
-    positions_x_b1 = np.average(tracker.record_last_track.x,axis=0)
-    positions_y_b1 = np.average(tracker.record_last_track.y,axis=0)
+    positions_x_b1 = np.average(line.record_last_track.x,axis=0)
+    positions_y_b1 = np.average(line.record_last_track.y,axis=0)
     plt.figure(0)
     plt.plot(np.arange(nTurn),positions_x_b1/np.sqrt(physemit_x*beta_x_IP1),'x')
     plt.plot(np.arange(nTurn),positions_y_b1/np.sqrt(physemit_y*beta_y_IP1),'x')

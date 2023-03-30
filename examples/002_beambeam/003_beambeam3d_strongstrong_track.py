@@ -77,7 +77,7 @@ d_py=-1.8e-6
 d_zeta=0.019
 d_delta=3e-4
 
-slicer = xf.TempSlicer(bin_edges = [-10, -5, 0, 5, 10])
+slicer = xf.TempSlicer(sigma_z=10, n_slices=3)
 config_for_update=xf.ConfigForUpdateBeamBeamBiGaussian3D(
    pipeline_manager=None,
    element_name=None,

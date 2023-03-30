@@ -220,8 +220,7 @@ line = xt.Line(elements = [monitor_emits,
                            el_arc_left_b1,
                            el_sextupole_left,
                            el_arc_mid_b1])
-
-tracker = xt.Tracker(line=line)
+line.build_tracker()
 
 ########################
 # Enable beamstrahlung #
