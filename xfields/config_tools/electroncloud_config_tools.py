@@ -182,8 +182,9 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
             fieldmap=fieldmap,
             line=line)
 
-    tracker = xt.Tracker(_context=context, line=line, _buffer=buffer)
-    twiss_without_ecloud = tracker.twiss()
+    line.build_tracker(_buffer=buffer)
+
+    twiss_without_ecloud = line.twiss()
     config_electronclouds(
         line,
         twiss=twiss_without_ecloud,
@@ -192,6 +193,6 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
         shift_to_closed_orbit=shift_to_closed_orbit,
         fieldmaps=fieldmaps,
         ecloud_strength=1)
-    twiss_with_ecloud = tracker.twiss()
+    twiss_with_ecloud = line.twiss()
 
-    return tracker, twiss_without_ecloud, twiss_with_ecloud
+    return line, twiss_without_ecloud, twiss_with_ecloud
