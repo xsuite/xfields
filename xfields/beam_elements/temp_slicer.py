@@ -211,4 +211,7 @@ class TempSlicer:
             slice_moments[15*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((y_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_34
             slice_moments[16*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((py_diff**2).sum())/slice_moments[i_slice]           # Sigma_44
 
+        for i_slice in range(self.num_slices):
+            slice_moments[i_slice] *= particles.weight[0]
+
         return slice_moments
