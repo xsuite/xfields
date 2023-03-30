@@ -18,7 +18,7 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
                                tol_spacecharge_position,
                                s_spacecharge=None):
 
-    line_no_sc = line=line.copy()
+    line_no_sc = line.copy()
     line_no_sc.build_tracker()
 
     # Make a matched bunch just to get the matched momentum spread
@@ -61,9 +61,9 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
 
     # Twiss at spacecharge
     line_sc_off = line.filter_elements(exclude_types_starting_with='SpaceCh')
-    line_sc_off = xt.Tracker(line=line_sc_off,
-            element_classes=line_no_sc.element_classes,
-            track_kernel=line_no_sc.track_kernel)
+    line_sc_off.build_tracker(
+            element_classes=line_no_sc.tracker.element_classes,
+            track_kernel=line_no_sc.tracker.track_kernel)
     tw_at_sc = line_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
 
     # Configure lenses
