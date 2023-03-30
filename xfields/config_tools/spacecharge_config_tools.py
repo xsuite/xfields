@@ -18,13 +18,14 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
                                tol_spacecharge_position,
                                s_spacecharge=None):
 
-    tracker_no_sc = xt.Tracker(line=line.copy())
+    line_no_sc = line=line.copy()
+    line_no_sc.build_tracker()
 
     # Make a matched bunch just to get the matched momentum spread
     bunch = xp.generate_matched_gaussian_bunch(
              num_particles=int(2e6), total_intensity_particles=1.,
              nemitt_x=nemitt_x, nemitt_y=nemitt_y, sigma_z=sigma_z,
-             particle_ref=particle_ref, tracker=tracker_no_sc)
+             particle_ref=particle_ref, line=line_no_sc)
     delta_rms = np.std(bunch.delta)
 
     # Generate spacecharge positions
@@ -32,6 +33,7 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
         s_spacecharge = np.linspace(0, line.get_length(),
                                     num_spacecharge_interactions+1)[:-1]
 
+    line.discard_tracker()
     # Create spacecharge elements (dummy)
     sc_elements = []
     sc_names = []
@@ -55,14 +57,14 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
 
     sc_lengths = 0*s_spacecharge
     sc_lengths[:-1] = np.diff(actual_s_spch)
-    sc_lengths[-1] = line.get_length() - np.sum(sc_lengths[:-1]) 
+    sc_lengths[-1] = line.get_length() - np.sum(sc_lengths[:-1])
 
     # Twiss at spacecharge
     line_sc_off = line.filter_elements(exclude_types_starting_with='SpaceCh')
-    tracker_sc_off = xt.Tracker(line=line_sc_off,
-            element_classes=tracker_no_sc.element_classes,
-            track_kernel=tracker_no_sc.track_kernel)
-    tw_at_sc = tracker_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
+    line_sc_off = xt.Tracker(line=line_sc_off,
+            element_classes=line_no_sc.element_classes,
+            track_kernel=line_no_sc.track_kernel)
+    tw_at_sc = line_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
 
     # Configure lenses
     for ii, sc in enumerate(sc_elements):
