@@ -144,11 +144,11 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
     bb_df_b4 = get_counter_rotating(bb_df_acw) if bb_df_acw is not None else None
 
     if line_cw is not None:
-        setup_beam_beam_in_line(line_cw.line, bb_df_cw, bb_coupling=False)
+        setup_beam_beam_in_line(line_cw, bb_df_cw, bb_coupling=False)
         xf.configure_orbit_dependent_parameters_for_bb(line=line_cw,
                         particle_on_co=twisses['cw'].particle_on_co)
     if line_acw is not None:
-        setup_beam_beam_in_line(line_acw.line, bb_df_b4, bb_coupling=False)
+        setup_beam_beam_in_line(line_acw, bb_df_b4, bb_coupling=False)
         xf.configure_orbit_dependent_parameters_for_bb(line=line_acw,
                     particle_on_co=twisses['acw'].reverse().particle_on_co)
 
