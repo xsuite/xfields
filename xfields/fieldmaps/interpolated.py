@@ -387,9 +387,9 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
         if self._average_transverse_distribution:
             self._rho_before_average = self.rho.copy()
-            charge_per_slice = np.sum(self.rho, axis=(0,1))
-            total_transverse_distribution = np.sum(self.rho, axis=2)
-            total_charge = np.sum(charge_per_slice)
+            charge_per_slice = self.rho.sum(axis=(0,1))
+            total_transverse_distribution = self.rho.sum(axis=2)
+            total_charge = charge_per_slice.sum()
 
             for ii in range(self.nz):
                 self.rho[:,:,ii] = (total_transverse_distribution
