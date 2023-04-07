@@ -175,7 +175,8 @@ def replace_spacecharge_with_PIC(
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
         _context=None,
-        _buffer=None):
+        _buffer=None,
+        _average_transverse_distribution=False):
 
     all_sc_elems = []
     name_sc_elems = []
@@ -207,6 +208,7 @@ def replace_spacecharge_with_PIC(
         ylim = n_sigmas_range_pic_y*ee.sigma_y
         base_sc = pic_collection.get_pic(xlim, ylim)
         sc = base_sc.copy(_buffer=base_sc._buffer)
+        sc.fieldmap._average_transverse_distribution = _average_transverse_distribution
         sc.length = ee.length
         line.element_dict[nn] = sc
         all_pics.append(sc)

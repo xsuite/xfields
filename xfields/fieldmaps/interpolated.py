@@ -167,6 +167,8 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
     _kernels = _TriLinearInterpolatedFielmap_kernels
 
+    _average_transverse_distribution = False
+
     def __init__(self,
                  _context=None,
                  _buffer=None,
@@ -381,6 +383,17 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     grid1d_buffer=self._xobject.rho._buffer.buffer,
                     grid1d_offset=self._xobject.rho._offset
                                  +self._xobject.rho._data_offset)
+
+
+        if self._average_transverse_distribution:
+            self._rho_before_average = self.rho.copy()
+            charge_per_slice = np.sum(self.rho, axis=(0,1))
+            total_transverse_distribution = np.sum(self.rho, axis=2)
+            total_charge = np.sum(charge_per_slice)
+
+            for ii in range(self.nz):
+                self.rho[:,:,ii] = (total_transverse_distribution
+                                    * charge_per_slice[ii] / total_charge)
 
         if update_phi:
             self.update_phi_from_rho(solver=solver)
