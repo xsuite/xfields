@@ -275,14 +275,15 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     def track(self, particles):
 
         if self._update_flag:
-            import pdb; pdb.set_trace()
             self.longitudinal_profile.number_of_particles = (
                 (particles.weight * (particles.state > 0)).sum()
             )
             mean_x, sigma_x = mean_and_std(
-                    particles.x, weights=particles.weight)
+                    particles.x,
+                    weights=particles.weight * (particles.state>0))
             mean_y, sigma_y = mean_and_std(
-                    particles.y, weights=particles.weight)
+                    particles.y,
+                    weights=particles.weight * (particles.state>0))
             if self.update_mean_x_on_track:
                 self.mean_x = mean_x
             if self.update_mean_y_on_track:
