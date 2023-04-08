@@ -306,7 +306,7 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     offsets_mesh_quantities=pos_in_buffer_of_maps_to_interp,
                     particles_quantities=buffer_out)
 
-        # Split buffer 
+        # Split buffer
         particles_quantities = [buffer_out[ii*len(x):(ii+1)*len(x)]
                                         for ii in range(nmaps_to_interp)]
 
@@ -383,7 +383,6 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     grid1d_buffer=self._xobject.rho._buffer.buffer,
                     grid1d_offset=self._xobject.rho._offset
                                  +self._xobject.rho._data_offset)
-
 
         if self._average_transverse_distribution:
             self._rho_before_average = self.rho.copy()
