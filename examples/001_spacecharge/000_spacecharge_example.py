@@ -126,6 +126,7 @@ plt.subplot(111)
 tr_profile = spcharge.fieldmap.rho.sum(axis=0)
 for ii in range(tr_profile.shape[1]):
     tr_profile[:,ii] = tr_profile[:,ii]/tr_profile[:,ii].max()
+tr_profile = context.nparray_from_context_array(tr_profile)
 plt.plot(tr_profile)
 
 ###########
