@@ -18,6 +18,36 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
                                tol_spacecharge_position,
                                s_spacecharge=None):
 
+    '''
+    Install spacecharge elements (frozen modeling) in a xtrack.Line object.
+
+    Parameters
+    ----------
+    line : xtrack.Line
+        Line in which the spacecharge elements are installed.
+    particle_ref : xpart.Particles (optional)
+        Reference particle for the spacecharge elements.
+    longitudinal_profile : str
+        Longitudinal profile for the spacecharge elements.
+    nemitt_x : float
+        Normalized emittance in the horizontal plane (in m rad).
+    nemitt_y : float
+        Normalized emittance in the vertical plane (in m rad).
+    sigma_z : float
+        RMS bunch length in meters.
+    num_spacecharge_interactions : int
+        Number of spacecharge interactions to be installed.
+    tol_spacecharge_position : float
+        Tolerance for the spacecharge position.
+    s_spacecharge : np.ndarray (optional)
+        Position of the spacecharge elements.
+
+    Returns
+    -------
+    spacecharge_elements : list
+        List of spacecharge elements.
+    '''
+
     line_no_sc = line.copy()
     line_no_sc.build_tracker()
 
@@ -85,6 +115,30 @@ def replace_spacecharge_with_quasi_frozen(
                         update_mean_y_on_track=True,
                         update_sigma_x_on_track=True,
                         update_sigma_y_on_track=True):
+
+    '''
+    Replace spacecharge elements with quasi-frozen spacecharge elements.
+
+    Parameters
+    ----------
+    line : xtrack.Line
+        Line in which the spacecharge elements are replaced.
+    _buffer : xtrack.Buffer
+        Buffer used allocate the spacecharge elements.
+    update_mean_x_on_track : bool (optional)
+        Update the mean x position on track.
+    update_mean_y_on_track : bool (optional)
+        Update the mean y position on track.
+    update_sigma_x_on_track : bool (optional)
+        Update the sigma x position on track.
+    update_sigma_y_on_track : bool (optional)
+        Update the sigma y position on track.
+
+    Returns
+    -------
+    spacecharge_elements : list
+        List of spacecharge elements.
+    '''
 
     spch_elements = []
     for ii, ee in enumerate(line.elements):
@@ -177,6 +231,43 @@ def replace_spacecharge_with_PIC(
         _context=None,
         _buffer=None,
         _average_transverse_distribution=False):
+
+    '''
+    Replace spacecharge elements with Particle In Cell (PIC) elements.
+
+    Parameters
+    ----------
+    line : xtrack.Line
+        Line in which the spacecharge elements are replaced.
+    n_sigmas_range_pic_x : float
+        Extent of the PIC grid in the horizontal direction in units beam sigmas.
+    n_sigmas_range_pic_y : float
+        Extent of the PIC grid in the vertical direction in units beam sigmas.
+    nx_grid : int
+        Number of grid points in the horizontal direction.
+    ny_grid : int
+        Number of grid points in the vertical direction.
+    nz_grid : int
+        Number of grid points in the longitudinal direction.
+    n_lims_x : int
+        Number different limits in x for which PIC need to be generated.
+    n_lims_y : int
+        Number different limits in y for which PIC need to be generated.
+    z_range : float
+        Range of the longitudinal grid.
+    _context : xtrack.Context (optional)
+        Context in which the PIC elements are created.
+    _buffer : xtrack.Buffer (optional)
+        Buffer in which the PIC elements are created.
+
+    Returns
+    -------
+    pic_collection : xfields.PICCollection
+        Collection of PIC elements.
+    all_pics: list
+        List of all PIC elements.
+    '''
+
 
     all_sc_elems = []
     name_sc_elems = []
