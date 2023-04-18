@@ -9,6 +9,7 @@ import pytest
 import xobjects as xo
 from xobjects.context import available
 from xfields.general import _pkg_root
+from xobjects.test_helpers import for_all_test_contexts
 
 
 @pytest.fixture
@@ -80,12 +81,8 @@ def faddeeva_calculator():
     return FaddeevaCalculator
 
 
-@pytest.mark.parametrize(
-    'context',
-    xo.context.get_test_contexts(),
-    ids=[str(ctx) for ctx in xo.context.get_test_contexts()],
-)
-def test_faddeeva_w_q1(faddeeva_calculator, context):
+@for_all_test_contexts
+def test_faddeeva_w_q1(faddeeva_calculator, test_context):
     FaddeevaCalculator = faddeeva_calculator
 
     # Generate the test grid
@@ -100,7 +97,7 @@ def test_faddeeva_w_q1(faddeeva_calculator, context):
 
     # Calculate the values based on the grid
     z = (re_absc + 1j * im_absc).reshape(n_re * n_im)
-    calculator = FaddeevaCalculator(z=z, _context=context)
+    calculator = FaddeevaCalculator(z=z, _context=test_context)
     calculator.compute()
 
     # Using scipy's wofz implemenation of the Faddeeva method. This is
@@ -127,19 +124,13 @@ def test_faddeeva_w_q1(faddeeva_calculator, context):
     assert d_abs_im.max() < 0.5e-9
 
 
-@pytest.mark.parametrize(
-    'context',
-    xo.context.get_test_contexts(),
-    ids=[str(ctx) for ctx in xo.context.get_test_contexts()],
-)
-def test_faddeeva_w_all_quadrants(faddeeva_calculator, context):
+@for_all_test_contexts
+def test_faddeeva_w_all_quadrants(faddeeva_calculator, test_context):
     FaddeevaCalculator = faddeeva_calculator
 
     x0 = 5.33
     y0 = 4.29
     num_args = 10000
-
-    ctx = context
 
     re_max = np.float64(np.sqrt(2.0) * x0)
     im_max = np.float64(np.sqrt(2.0) * y0)
@@ -163,7 +154,7 @@ def test_faddeeva_w_all_quadrants(faddeeva_calculator, context):
     z = re_absc + 1j * im_absc
 
     # Calculate the values based on the grid
-    calculator = FaddeevaCalculator(z=z, _context=context)
+    calculator = FaddeevaCalculator(z=z, _context=test_context)
     calculator.compute()
 
     # Create comparison data for veryfing the correctness of faddeeva_w().

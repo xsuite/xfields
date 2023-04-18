@@ -1,8 +1,12 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2023.                   #
+# ########################################### #
+
 import numpy as np
 import pytest
 
 import xobjects as xo
-import xtrack as xt
 import xfields as xf
 import xpart as xp
 
@@ -10,121 +14,115 @@ from xobjects.test_helpers import for_all_test_contexts
 
 import ducktrack as dtk
 
-def test_compute_moments():
-    for context in xo.context.get_test_contexts():
 
-        print(repr(context))
+@for_all_test_contexts(excluding='ContextPyopencl')
+def test_compute_moments(test_context):
+    ###########
+    # ttbar 2 #
+    ###########
+    p0c                 = 182.5e9  # [eV]
+    mass0               = .511e6  # [eV]
 
-        if isinstance(context, xo.ContextPyopencl):
-            print('Incompatible with OpenCL')
-            continue
+    physemit_x          = 1.46e-09  # [m]
+    physemit_y          = 2.9e-12  # [m]
+    beta_x              = 1  # [m]
+    beta_y              = .0016  # [m]
+    sigma_x             = np.sqrt(physemit_x*beta_x)  # [m]
+    sigma_px            = np.sqrt(physemit_x/beta_x)  # [m]
+    sigma_y             = np.sqrt(physemit_y*beta_y)  # [m]
+    sigma_py            = np.sqrt(physemit_y/beta_y)  # [m]
+    sigma_z_tot         = .00254  # [m] sr+bs
+    sigma_delta_tot     = .00192  # [m]
+    n_macroparticles_b1 = int(1e6)
 
-        ###########
-        # ttbar 2 #
-        ###########
-        p0c                 = 182.5e9  # [eV]
-        mass0               = .511e6  # [eV]
+    n_slices = 2
+    threshold_num_macroparticles=20
 
-        physemit_x          = 1.46e-09  # [m]
-        physemit_y          = 2.9e-12  # [m]
-        beta_x              = 1  # [m]
-        beta_y              = .0016  # [m]
-        sigma_x             = np.sqrt(physemit_x*beta_x)  # [m]
-        sigma_px            = np.sqrt(physemit_x/beta_x)  # [m]
-        sigma_y             = np.sqrt(physemit_y*beta_y)  # [m]
-        sigma_py            = np.sqrt(physemit_y/beta_y)  # [m]
-        sigma_z_tot         = .00254  # [m] sr+bs
-        sigma_delta_tot     = .00192  # [m]
-        n_macroparticles_b1 = int(1e6)
+    #############
+    # particles #
+    #############
 
-        n_slices = 2
-        threshold_num_macroparticles=20
+    #e-
+    part_range = np.linspace(-5*sigma_z_tot,5*sigma_z_tot,n_macroparticles_b1)
+    particles_b0 = xp.Particles(
+                _context = test_context,
+                q0        = -1,
+                p0c       = p0c,
+                mass0     = mass0,
+                x         = part_range,
+                zeta      = part_range,
+                )
 
-        #############
-        # particles #
-        #############
+    slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unibin")
 
-        #e-
-        part_range = np.linspace(-5*sigma_z_tot,5*sigma_z_tot,n_macroparticles_b1)
-        particles_b0 = xp.Particles(
-                    _context = context,
-                    q0        = -1,
-                    p0c       = p0c,
-                    mass0     = mass0,
-                    x         = part_range,
-                    zeta      = part_range,
-                    )
+    particles_b1 = particles_b0.copy()
+    particles_b2 = particles_b0.copy()
+    particles_b2.state[:int(n_macroparticles_b1/4)] = 0  # set 1/4 of the particles to lost
 
-        slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unibin")
+    # compute slice moments: lost particles are labeled with state=0 and their slice idx will be set to -1
+    slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
+    slice_moments_b2 = slicer.compute_moments(particles_b2, threshold_num_macroparticles=threshold_num_macroparticles)
 
-        particles_b1 = particles_b0.copy()
-        particles_b2 = particles_b0.copy()
-        particles_b2.state[:int(n_macroparticles_b1/4)] = 0  # set 1/4 of the particles to lost
+    other_beam_num_particles_b1 = slice_moments_b1[:n_slices]
+    x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
+    Sigma_11_b1 = slice_moments_b1[ 7*n_slices: 8*n_slices]
 
-        # compute slice moments: lost particles are labeled with state=0 and their slice idx will be set to -1
-        slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
-        slice_moments_b2 = slicer.compute_moments(particles_b2, threshold_num_macroparticles=threshold_num_macroparticles)
+    other_beam_num_particles_b2 = slice_moments_b2[:n_slices]
+    x_center_b2     = slice_moments_b2[   n_slices:2*n_slices]
+    Sigma_11_b2 = slice_moments_b2[ 7*n_slices: 8*n_slices]
 
-        other_beam_num_particles_b1 = slice_moments_b1[:n_slices]
-        x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
-        Sigma_11_b1 = slice_moments_b1[ 7*n_slices: 8*n_slices]
+    # check if all lost particles have slice idx = -1
+    assert np.all(particles_b2.slice[particles_b2.state == 0] == -1)
 
-        other_beam_num_particles_b2 = slice_moments_b2[:n_slices]
-        x_center_b2     = slice_moments_b2[   n_slices:2*n_slices]
-        Sigma_11_b2 = slice_moments_b2[ 7*n_slices: 8*n_slices]
-
-        # check if all lost particles have slice idx = -1
-        assert np.all(particles_b2.slice[particles_b2.state == 0] == -1)
-
-        # check if the mean and std of the alive particles in each slice agrees with compute_moments
-        for s in range(n_slices):
-            slice_b1 = particles_b1.x[particles_b1.slice==s]
-            num_parts_slice_b1 = len(slice_b1)
-            mean_b1  = np.mean(slice_b1)
-            diff_b1  = slice_b1 - mean_b1
-            sigma_b1 = float((diff_b1**2).sum()) / len(slice_b1)
-
-            if num_parts_slice_b1 > threshold_num_macroparticles:
-                assert num_parts_slice_b1 == other_beam_num_particles_b1[s]
-                assert mean_b1 == x_center_b1[s]
-                assert sigma_b1 == Sigma_11_b1[s]
-            else:
-                print(f"Slice {s} has insufficient ({num_parts_slice_b1}) particles! Need at least {threshold_num_macroparticles}.")
-
-            slice_b2 = particles_b2.x[particles_b2.slice==s]
-            num_parts_slice_b2 = len(slice_b2)
-            mean_b2  = np.mean(slice_b2)
-            diff_b2  = slice_b2 - mean_b2
-            sigma_b2 = float((diff_b2**2).sum()) / len(slice_b2)
-            if num_parts_slice_b2 > threshold_num_macroparticles:
-                assert num_parts_slice_b2 == other_beam_num_particles_b2[s]
-                assert mean_b2 == x_center_b2[s]
-                assert sigma_b2 == Sigma_11_b2[s]
-            else:
-                print(f"Slice {s} has insufficient ({num_parts_slice_b2}) particles! Need at least {threshold_num_macroparticles}.")
-
-        # compute number of particles in bunch head slice
-        slice_b1 = particles_b1.x[particles_b1.slice==0]
+    # check if the mean and std of the alive particles in each slice agrees with compute_moments
+    for s in range(n_slices):
+        slice_b1 = particles_b1.x[particles_b1.slice==s]
         num_parts_slice_b1 = len(slice_b1)
-        x_center_b1_before = x_center_b1
-        print(x_center_b1)
+        mean_b1  = np.mean(slice_b1)
+        diff_b1  = slice_b1 - mean_b1
+        sigma_b1 = float((diff_b1**2).sum()) / len(slice_b1)
 
-        # lose a particle in the head of the bunch (slice 0) during tracking, slice moment is messed up
-        lost_idx = -1
-        particles_b1.x[lost_idx] = 1e34
-        slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
-        x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
-        print(x_center_b1)
+        if num_parts_slice_b1 > threshold_num_macroparticles:
+            assert num_parts_slice_b1 == other_beam_num_particles_b1[s]
+            assert mean_b1 == x_center_b1[s]
+            assert sigma_b1 == Sigma_11_b1[s]
+        else:
+            print(f"Slice {s} has insufficient ({num_parts_slice_b1}) particles! Need at least {threshold_num_macroparticles}.")
 
-        assert x_center_b1[0] > 1e20
+        slice_b2 = particles_b2.x[particles_b2.slice==s]
+        num_parts_slice_b2 = len(slice_b2)
+        mean_b2  = np.mean(slice_b2)
+        diff_b2  = slice_b2 - mean_b2
+        sigma_b2 = float((diff_b2**2).sum()) / len(slice_b2)
+        if num_parts_slice_b2 > threshold_num_macroparticles:
+            assert num_parts_slice_b2 == other_beam_num_particles_b2[s]
+            assert mean_b2 == x_center_b2[s]
+            assert sigma_b2 == Sigma_11_b2[s]
+        else:
+            print(f"Slice {s} has insufficient ({num_parts_slice_b2}) particles! Need at least {threshold_num_macroparticles}.")
 
-        # update particle status, recompute slices
-        particles_b1.state[lost_idx] = 0
-        slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
-        x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
-        print(x_center_b1)
+    # compute number of particles in bunch head slice
+    slice_b1 = particles_b1.x[particles_b1.slice==0]
+    num_parts_slice_b1 = len(slice_b1)
+    x_center_b1_before = x_center_b1
+    print(x_center_b1)
 
-        assert np.abs((x_center_b1[0]-x_center_b1_before[0])/x_center_b1_before[0]) < 1e-5
+    # lose a particle in the head of the bunch (slice 0) during tracking, slice moment is messed up
+    lost_idx = -1
+    particles_b1.x[lost_idx] = 1e34
+    slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
+    x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
+    print(x_center_b1)
+
+    assert x_center_b1[0] > 1e20
+
+    # update particle status, recompute slices
+    particles_b1.state[lost_idx] = 0
+    slice_moments_b1 = slicer.compute_moments(particles_b1, threshold_num_macroparticles=threshold_num_macroparticles)
+    x_center_b1     = slice_moments_b1[   n_slices:2*n_slices]
+    print(x_center_b1)
+
+    assert np.abs((x_center_b1[0]-x_center_b1_before[0])/x_center_b1_before[0]) < 1e-5
 
 def sigma_configurations():
     print('decoupled round beam')

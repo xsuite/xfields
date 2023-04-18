@@ -10,3 +10,4 @@ norepository_*
 build
 CyFPPS.cpp
 *.egg-info
+.idea/**

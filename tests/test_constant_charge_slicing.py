@@ -3,9 +3,9 @@ import numpy as np
 import xfields as xf
 
 
-
 constant_charge_slicing_gaussian = (
 xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian)
+
 
 def test_constant_charge_slicing_gaussian():
 
