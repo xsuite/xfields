@@ -8,12 +8,18 @@
 // ########################################### //
 
 
+// classical electron radius [m]
+#if !defined( RE )
+    #define   RE ( 2.81794092e-15 )
+#endif
+
 #if !defined( C_LIGHT )
     #define   C_LIGHT ( 299792458.0 )
 #endif
 
+// from python scipy version 1.9.0: cst.elementary_charge
 #if !defined( EPSILON_0 )
-    #define   EPSILON_0 (8.854187817620e-12)
+    #define   EPSILON_0 (8.8541878128e-12)
 #endif
 
 #if !defined( PI )
@@ -32,8 +38,9 @@
     #define SQRT_PI (1.7724538509055160272981674833411451827975494561224)
 #endif
 
+// from python scipy version 1.9.0: cst.epsilon_0
 #if !defined( QELEM )
-    #define QELEM (1.60217662e-19)
+    #define QELEM (1.602176634e-19)
 #endif
 
 #if !defined( MPROTON_GEV )
@@ -64,8 +71,8 @@
     #define SQRT_TWO (1.414213562373095048801688724209698078569671875376948073176679738)
 #endif
 
-#if !defined( REDUCED_COMPTON )
-    #define REDUCED_COMPTON (3.8615926796089057e-13)
+#if !defined( REDUCED_COMPTON_WAVELENGTH_ELECTRON )
+    #define REDUCED_COMPTON_WAVELENGTH_ELECTRON (3.8615926796089057e-13)
 #endif
 
 #if !defined( REAL_EPSILON )

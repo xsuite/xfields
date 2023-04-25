@@ -243,14 +243,35 @@ line.configure_radiation(model_beamstrahlung='quantum')
 # Track #
 #########
 
-
-record = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
+record = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
+    capacity={"beamstrahlungtable": int(1e5), "bhabhatable": int(0)})
 line.track(particles_b1, num_turns=n_turns)
 line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+
+################################
+# Change beamstrahlung to mean #
+################################
+
+el_beambeam_b1.slices_other_beam_sqrtSigma_11_beamstrahlung = n_slices*[sigma_x]
+el_beambeam_b1.slices_other_beam_sqrtSigma_33_beamstrahlung = n_slices*[sigma_y]
+el_beambeam_b1.slices_other_beam_sqrtSigma_55_beamstrahlung = slicer.bin_weights * sigma_z_tot
+tracker.configure_radiation(model_beamstrahlung='mean')
+
+#########
+# Track #
+#########
+
+record_avg = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
+tracker.track(particles_b1, num_turns=n_turns)
+tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
 #########
 # tests #
 #########
+
+# quantum and mean beamstrahlung comparison
+photon_energy_mean = np.mean(sorted(set(record.beamstrahlungtable.photon_energy))[1:])
+assert np.all(np.abs(record_avg.beamstrahlungtable.photon_energy - photon_energy_mean) / photon_energy_mean < 5e-2)
 
 # average and maximum BS parameter
 # https://www.researchgate.net/publication/2278298_Beam-Beam_Phenomena_In_Linear_Colliders

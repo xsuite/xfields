@@ -15,6 +15,21 @@
 //include_file compute_gx_gy.h for_context cpu_serial opencl cuda cpu_openmp
 
 /*gpufun*/
+void get_charge_density(const double x,
+                      const double y,
+                      const double sigma_x,
+                      const double sigma_y,
+                      double* rho)
+{
+
+  // this is a PDF
+  double factor = 1 / (2*PI*sigma_x*sigma_y);
+  double exp_x = exp(-x*x/(2*sigma_x*sigma_x));
+  double exp_y = exp(-y*y/(2*sigma_y*sigma_y));
+  *rho = factor * exp_x * exp_y;  // [m^-2]
+}
+
+/*gpufun*/
 void get_transv_field_gauss_round(
     double sigma, double Delta_x, double Delta_y,
     double x, double y,

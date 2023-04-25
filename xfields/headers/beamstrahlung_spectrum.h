@@ -4,20 +4,27 @@
 #define SQRT3 1.732050807568877
 #define ALPHA_EM 0.0072973525693
 
+
 /*gpufun*/
 int beamstrahlung_0(LocalParticle *part,
-             double energy,  // [eV]
-             double dz,  // [m]
-             double rho_inv,  // [1/m] changes after each photon emission
-             double* e_photon,  // [GeV] 
-             double* ecrit){  // [GeV] 
-
+             double energy,     // [eV] primary electron energy
+             double dz,         // [m] z slice half width
+             double rho_inv,    // [1/m] inverse local bending radius, changes after each photon emission
+             double* e_photon,  // [GeV] emitted BS photon energy
+             double* ecrit      // [GeV] critical energy of emitted BS photon
+){
     /*
     Based on:
+    GUINEA-PIG
+    https://gitlab.cern.ch/clic-software/guinea-pig-legacy/-/blob/master/guinea_pig.c#L1894
+    and
+    K. Yokoya: A COMPUTER SIMULATION CODE FOR THE BEAM-BEAM INTERACTION IN LINEAR COLLIDERS
     https://inis.iaea.org/collection/NCLCollectionStore/_Public/18/033/18033162.pdf?r=1
+    ----
     return 0: no photon
-    return 1: emit 1 photon, energy stored in photon_energy
+    return 1: emit 1 photon, energy stored in e_photon
     */
+
     // constants for approximating beamstrahlung spectrum
     const double g1_a[5] = {1.0, -0.8432885317, 0.1835132767, -0.0527949659, 0.0156489316};
     const double g2_a[5] = {0.4999456517, -0.5853467515, 0.3657833336, -0.0695055284, 0.019180386};
@@ -27,11 +34,12 @@ int beamstrahlung_0(LocalParticle *part,
     const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
 
     double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEV, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
-    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;  // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
-    (*ecrit) = xcrit * energy*1e-9;  // [GeV]
-    //double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
-    //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);  // [1] beamstrahlung parameter for single macropart
-    double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
+    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;            // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
+    (*ecrit) = xcrit * energy*1e-9;                                 // [GeV] critical BS photon energy
+    double p0 = 25.4 * energy*1e-9 * dz * rho_inv;                  // [1]  Fr * dz, specific for 1 macropart
+    //double omega_crit = (*ecrit)/HBAR_GEVS;                         // [1/s] = 1.5 * gamma**3 * cst.c / rho
+    //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);            // [1] beamstrahlung parameter for single macropart
+
  
     // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
     if (RandomUniform_generate(part) > p0){return 0;}
@@ -76,55 +84,85 @@ int beamstrahlung_0(LocalParticle *part,
 
 
 /*gpufun*/
-double beamstrahlung_avg(LocalParticle *part, 
-                  const double n_bb, double sigma_x, double sigma_y, double sigma_z){
+double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
+        const double n_bb, // [1] strong slice bunch intensity
+        const double sigma_x, const double sigma_y, const double sigma_z  // [m] unboosted strong slice RMS
+){
+    /*
+    Based on:
+    K. Yokoya: Beam-Beam Phenomena In Linear Colliders
+    https://doi.org/10.1007/3-540-55250-2_37
+    ----
+    n_bb and sigma_z are scaled with the (same) slice weights
+    n_avg ~ n_bb -> 1/num_slices less photons per mp in 1 slice
+    delta_avg ~ n_bb^2/sigma_z -> 1/num_slices less rel. E loss per mp in 1 slice
+    e_photon_avg = delta_avg / n_avg -> avg. photon energy is the same in 1 slice
+    */
 
-    double r              = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
-    //const double c1       = 2.59*(5.0/6.0)*(r*r)/(REDUCED_COMPTON);
-    const double c2       =  1.2*(25.0/36.0)*(r*r*r*r)/(REDUCED_COMPTON)*137.0;
-    const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
-    double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
+    // beam properties
+    const double m0             = LocalParticle_get_mass0(part); // [eV/c] beam particle mass
+    const double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
+    const double gamma          = initial_energy / m0; // [1] 
 
-    double gamma          = initial_energy / m0; // [1] 
+    // constants
+    const double r  = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));      // [m] electron radius
+    const double c1 = 2.59 * ( 5.0/ 6.0) * (    r*r) / REDUCED_COMPTON_WAVELENGTH_ELECTRON;          // [m]
+    const double c2 =  1.2 * (25.0/36.0) * (r*r*r*r) / REDUCED_COMPTON_WAVELENGTH_ELECTRON * 137.0;  // [m^3]
 
-    //double n_avg        = c1*n_bb/(sigma_x + sigma_y);  // Avg. number of emitted photons from 1 macroparticle in one collision [1]
-    double delta_avg    = c2*gamma/sigma_z * (n_bb/(sigma_x + sigma_y))*(n_bb/(sigma_x + sigma_y));  // Avg. rel. E loss for 1 macroparticle in one collision [1]
-    double U_BS         = delta_avg*initial_energy;  // Average energy loss per macropart per IP. [eV]
-    //double u_avg        = delta_avg/n_avg;  // Average photon energy normalized to electron energy before emission [1]
-    //double e_photon_avg = u_avg*initial_energy;  // Average photon energy [eV]
-
+    // compute averaged quantities
+    double n_avg        = c1 * n_bb/(sigma_x + sigma_y);  // [1] avg. number of emitted photons from 1 macroparticle in one slice collision
+    double delta_avg    = c2 * gamma/sigma_z * (n_bb/(sigma_x + sigma_y))*(n_bb/(sigma_x + sigma_y));  // [1] avg. rel. E loss for 1 macroparticle in one slice collision
+    double U_BS         = delta_avg*initial_energy;  // [eV] avg. energy loss per macropart in one slice collision
+    double u_avg        = delta_avg/n_avg;           // [1] avg. rel. photon energy normalized to initial electron energy
+    double e_photon_avg = u_avg*initial_energy;      // [eV] avg. photon energy
     LocalParticle_add_to_energy(part, -U_BS, 0);
-    double energy_loss = -U_BS;
+    double energy_loss = -U_BS;  // <0
+
+    if (beamstrahlung_record){
+        // Get a slot in the record (this is thread safe)
+        int64_t i_slot = RecordIndex_get_slot(beamstrahlung_table_index);
+        // The returned slot id is negative if record is NULL or if record is full
+        if (i_slot>=0){
+            BeamstrahlungTableData_set_particle_id(   beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
+            BeamstrahlungTableData_set_photon_energy( beamstrahlung_table, i_slot, e_photon_avg);
+            BeamstrahlungTableData_set_primary_energy(beamstrahlung_table, i_slot, initial_energy);
+        }
+    }
+
     return energy_loss;
 }
 
 
 /*gpufun*/
 double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
-       	    double Fr,  // [1] sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
-	    double dz  // [m] z step between 2 slices ((z_max - z_min) / 2)
+     	double Fr,  // [1] radial force sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
+	double dz   // [m] z slice half width: step between 2 slices ((z_max - z_min) / 2)
 ){
+    /*
+    Based on:
+    GUINEA-PIG
+    https://gitlab.cern.ch/clic-software/guinea-pig-legacy/-/blob/master/guinea_pig.c#L1962
+    */
 
-    const double m0 = LocalParticle_get_mass0(part); // particle mass [eV/c]
+    // beam properties
+    const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
+    double energy         = initial_energy;  // [eV]
+    double gamma          = energy / m0;     // [1]
 
-    double energy = initial_energy;  // [eV]
-    double gamma = energy / m0; // [1] 
-    //double r = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));  // [m] electron radius
-    double rho_inv = Fr / dz;  // [1/m] macropart inverse bending radius
-    double tmp = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
-    int max_photons = (int)(tmp*10.0)+1;
+    // single macroparticle trajectory 
+    double rho_inv  = Fr / dz;  // [1/m] macropart inverse bending radius
+    double tmp      = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
+    int max_photons = (int)(tmp*10.0)+1;  // [1]
+    dz /= (double)max_photons;  // photons are emitted uniformly in space along dz (between 2 slice interactions)
 
-    // photons are emitted uniformly in space along dz (between 2 slice interactions)
-    dz /= (double)max_photons;
-
-    // BS photon counter and energy storage
+    // BS photon counter and BS photon energy buffer
     int j = 0;
     double e_photon_array[1000];
     for (int i=0; i<max_photons; i++){
-    
-        double e_photon, ecrit;  // [GeV]
-        if (beamstrahlung_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if photon can be emitted
+   
+        double e_photon, ecrit;  // [GeV] BS photon energy and critical energy
+        if (beamstrahlung_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if quantum photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
            
             if (beamstrahlung_record){
@@ -141,7 +179,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
                 }
             }
 
-            // update bending radius, macropart energy and gamma
+            // update bending radius, primary macropart energy and gamma
             rho_inv *= energy/(energy - e_photon*1e9);
             energy  -= e_photon*1e9;
             gamma   *= (energy - e_photon*1e9)/energy;
@@ -154,9 +192,9 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
             // increment photon counter
             j++;
 
-            // break loop and flag part as dead
+            // break loop and flag macroparticle as dead
             if (j>=1000){
-                printf("too many photons produced by one particle (photon ID: %d)\n", j);
+                printf("[%d] too many photons produced by one particle (photon ID: %d), Fr: %.12e, dz: %.12e\n", (int)part->ipart, j, Fr, dz);
                 //exit(-1);  // doesnt work on GPU
                 LocalParticle_set_state(part, XF_TOO_MANY_PHOTONS); // used to flag this kind of loss
                 break;
@@ -165,14 +203,13 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
         }
     }
 
-
-    // update electron energy
+    // update primary macroparticle energy
     if (energy == 0.0){
         LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
     }else{
        LocalParticle_add_to_energy(part, energy-initial_energy, 0);
     }
-    double energy_loss = energy-initial_energy;
+    double energy_loss = energy - initial_energy;  // <0
 
     return energy_loss;
 }
