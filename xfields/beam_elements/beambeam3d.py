@@ -276,8 +276,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
             self.moments = None
-            self.partner_moments = np.zeros(
-                self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
+
+
         else:
             self.config_for_update = None
 
@@ -307,6 +307,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         n_slices = len(slices_other_beam_num_particles)
 
         self._allocate_xobject(n_slices, **kwargs)
+
+        if config_for_update is not None:
+            self.partner_moments = self._buffer.context.nplike_lib.zeros(
+                self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
 
         if phi is None:
             assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
@@ -631,7 +635,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def update_from_recieved_moments(self):
         # reference frame transformation as in https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
         self.slices_other_beam_num_particles = self._arr2ctx(self.partner_moments[:self.num_slices_other_beam]) # this contains num real particles, the total elementary charge per slice
-
         self.slices_other_beam_x_center_star = self._arr2ctx(self.partner_moments[self.num_slices_other_beam:2*self.num_slices_other_beam]) * (-1.0)
         self.slices_other_beam_px_center_star = self._arr2ctx(self.partner_moments[2*self.num_slices_other_beam:3*self.num_slices_other_beam])
         self.slices_other_beam_y_center_star = self._arr2ctx(self.partner_moments[3*self.num_slices_other_beam:4*self.num_slices_other_beam])
@@ -718,18 +721,30 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             # recompute and communicate slice moments; if QSS only update before first step
             if (self.config_for_update._do_update and (not self.config_for_update.quasistrongstrong
                 or self.config_for_update._i_step == 0)):
-               
-                particles.reorganize()
-                at_turn = int(particles.at_turn[0])
+                
+                start = time.time()
+                i = 0
+                while particles.state[i] != 1:
+                    i += 1
+                self._context.synchronize()
+                print(f"[beambeam3d.py] step:  {self.config_for_update._i_step:03d}, q0: {particles.q0: .1e}, reorganize        : {(time.time() - start):.6e}")
+                at_turn = int(particles.at_turn[i])
+
                 if self.config_for_update.pipeline_manager.is_ready_to_send(self.config_for_update.element_name,
                                                      particles.name,
                                                      self.config_for_update.partner_particles_name,
                                                      at_turn,
                                                      internal_tag=self.config_for_update._i_step):
                     # Compute moments
+                    start = time.time()
                     self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
-
+                    self._context.synchronize()
+                    print(f"[beambeam3d.py] step:  {self.config_for_update._i_step:03d}, q0: {particles.q0: .1e}, assign_slices     : {(time.time() - start):.6e}")
+                    start = time.time()
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
+                    self._context.synchronize()
+                    print(f"[beambeam3d.py] step:  {self.config_for_update._i_step:03d}, q0: {particles.q0: .1e}, compute_moments   : {(time.time() - start):.6e}")
+
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
                                                      particles.name,
@@ -745,7 +760,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                         self.config_for_update.partner_particles_name,
                                         particles.name,
                                         internal_tag=self.config_for_update._i_step)
+                    start = time.time()
                     self.update_from_recieved_moments()
+                    self._context.synchronize()
+                    print(f"[beambeam3d.py] step:  {self.config_for_update._i_step:03d}, q0: {particles.q0: .1e}, update_reveived   : {(time.time() - start):.6e}")
                 else:
                     return xt.PipelineStatus(on_hold=True)
 
@@ -753,8 +771,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.config_for_update._other_beam_slice_index_for_particles[:] =(
                  self.config_for_update._i_step - self.config_for_update._particles_slice_index)
 
+            start = time.time()
             self.synchro_beam_kick(particles=particles,
                         i_slice_for_particles=self.config_for_update._other_beam_slice_index_for_particles)
+            self._context.synchronize()
+            print(f"[beambeam3d.py] step:  {self.config_for_update._i_step:03d}, q0: {particles.q0: .1e}, synchrobeam_kick  : {(time.time() - start):.6e}")
+
             self.config_for_update._i_step += 1
             if self.config_for_update._i_step == (
                             n_slices_self_beam + self.num_slices_other_beam - 1):
