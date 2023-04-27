@@ -3,11 +3,11 @@
 // Copyright (c) CERN, 2021.                   //
 // ########################################### //
 
-#ifndef XFIELDS_COMPUTESLICEMOMENTS_GPU
-#define XFIELDS_COMPUTESLICEMOMENTS_GPU //only_for_context cuda opencl
+#ifndef XFIELDS_COMPUTESLICEMOMENTS_CUDA
+#define XFIELDS_COMPUTESLICEMOMENTS_CUDA //only_for_context cuda
 #endif
 
-#ifndef XFIELDS_COMPUTESLICEMOMENTS_GPU
+#ifndef XFIELDS_COMPUTESLICEMOMENTS_CUDA
 
 #ifndef XFIELDS_COMPUTESLICEMOMENTS_H__
 #define XFIELDS_COMPUTESLICEMOMENTS_H__
@@ -156,10 +156,10 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
 
 }
 #endif /* XFIELDS_COMPUTESLICEMOMENTS_H__ */
-#endif /* XFIELDS_COMPUTESLICEMOMENTS_GPU */
+#endif /* XFIELDS_COMPUTESLICEMOMENTS_CUDA */
 
 
-#ifdef XFIELDS_COMPUTESLICEMOMENTS_GPU
+#ifdef XFIELDS_COMPUTESLICEMOMENTS_CUDA
 
 #ifndef XFIELDS_COMPUTESLICEMOMENTS_CUH__
 #define XFIELDS_COMPUTESLICEMOMENTS_CUH__
@@ -271,4 +271,4 @@ __global__ void compute_slice_moments_cuda_2(double* moments, const int64_t n_sl
     }
 }
 #endif /* XFIELDS_COMPUTESLICEMOMENTS_CUH__ */
-#endif /* XFIELDS_COMPUTESLICEMOMENTS_GPU */
+#endif /* XFIELDS_COMPUTESLICEMOMENTS_CUDA */
