@@ -776,3 +776,38 @@ def _compute_delays(bb_df_cw, bb_df_acw, delay_at_ips_slots, ip_names,
             delay_in_slots.append(int(this_delay))
 
         bbdf['delay_in_slots'] = delay_in_slots
+
+def apply_filling_pattern(collider, filling_pattern_cw, filling_pattern_acw,
+                          i_bunch_cw, i_bunch_acw):
+
+    dframes = collider._bb_config['dataframes']
+
+    ring_length_in_slots = int(collider._bb_config['harmonic_number']
+                            / collider._bb_config['bunch_spacing_buckets'])
+
+    for orientation_self in ['clockwise', 'anticlockwise']:
+
+        if orientation_self == 'clockwise':
+            filling_pattern_self = np.array(filling_pattern_cw, dtype=int)
+            filling_pattern_other = np.array(filling_pattern_acw, dtype=int)
+            i_bunch_self = i_bunch_cw
+        else:
+            filling_pattern_self = np.array(filling_pattern_acw)
+            filling_pattern_other = np.array(filling_pattern_cw)
+            i_bunch_self = i_bunch_acw
+
+        assert set(list(filling_pattern_self)).issubset({0, 1})
+        assert set(list(filling_pattern_other)).issubset({0, 1})
+
+        assert filling_pattern_cw[i_bunch_self] == 1, "Selected bunch is not in the filling scheme"
+
+        temp_df = dframes[orientation_self].loc[:, ['delay_in_slots', 'ip_name']].copy()
+        temp_df['partner_bunch_index'] = dframes[orientation_self]['delay_in_slots'] + i_bunch_self
+        temp_df['partner_bunch_index'] = np.mod(temp_df['partner_bunch_index'], ring_length_in_slots)
+        temp_df['is_active'] = filling_pattern_other[temp_df['partner_bunch_index']] == 1
+
+        for nn, state in temp_df['is_active'].items():
+            if state:
+                collider.vars[nn + '_scale_strength'] = collider.vars['beambeam_scale']
+            else:
+                collider.vars[nn + '_scale_strength'] = 0
