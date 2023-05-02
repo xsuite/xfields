@@ -7,12 +7,10 @@ from scipy.special import  erfinv
 from ._madpoint import MadPoint
 import xfields as xf
 
-
-
 def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
             harmonic_number, bunch_spacing_buckets,
             num_long_range_encounters_per_side, num_slices_head_on,
-            sigmaz_m):
+            sigmaz_m, delay_at_ips_slots=None):
 
     keep_columns = ['beam', 'other_beam', 'ip_name', 'elementName', 'other_elementName', 'label',
             'self_particle_charge', 'self_relativistic_beta', 'self_frac_of_bunch',
@@ -51,6 +49,10 @@ def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
         bb_df_b2 = bb_df_b2[keep_columns].copy()
     else:
         bb_df_b2 = None
+
+    if delay_at_ips_slots is not None:
+        _compute_delays(bb_df_b1, bb_df_b2, delay_at_ips_slots, ip_names,
+                        harmonic_number, bunch_spacing_buckets)
 
     return bb_df_b1, bb_df_b2
 
@@ -740,5 +742,37 @@ def measure_crabbing(line, bb_df, reverse):
             for coord in ['x', 'px', 'y', 'py']:
                 bb_df.loc[nn, f'self_{coord}_crab'] = 0.0
 
+def _compute_delays(bb_df_cw, bb_df_acw, delay_at_ips_slots, ip_names,
+                    harmonic_number, bunch_spacing_buckets):
 
+    ring_length_in_slots = harmonic_number / bunch_spacing_buckets
 
+    for orientation, bbdf  in zip(['clockwise', 'anticlockwise'],
+                                  [bb_df_cw, bb_df_acw]):
+
+        if orientation == 'clockwise':
+            delay_at_ips_dict = {iipp: dd
+                                for iipp, dd in zip(ip_names, delay_at_ips_slots)}
+        elif orientation == 'anticlockwise':
+            delay_at_ips_dict = {iipp: np.mod(ring_length_in_slots - dd, ring_length_in_slots)
+                                for iipp, dd in zip(ip_names, delay_at_ips_slots)}
+        else:
+            raise ValueError('?!')
+
+        delay_in_slots = []
+
+        for nn in bbdf.index.values:
+            ip_name = bbdf.loc[nn, 'ip_name']
+            this_delay = delay_at_ips_dict[ip_name]
+
+            if nn.startswith('bb_lr.'):
+                if orientation == 'clockwise':
+                    this_delay += bbdf.loc[nn, 'identifier']
+                elif orientation == 'anticlockwise':
+                    this_delay -= bbdf.loc[nn, 'identifier']
+                else:
+                    raise ValueError('?!')
+
+            delay_in_slots.append(int(this_delay))
+
+        bbdf['delay_in_slots'] = delay_in_slots
