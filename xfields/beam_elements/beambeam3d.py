@@ -42,10 +42,21 @@ class BhabhaTable(xo.HybridClass):
       'theta_g': xo.Float64[:],
         }
 
+class LumiTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'luminosity': xo.Float64[:],
+        }
+
+
 class BeamBeamBiGaussian3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
         'bhabhatable': BhabhaTable,
+        'lumitable': LumiTable,
        }
 
 class BeamBeamBiGaussian3D(xt.BeamElement):
@@ -117,6 +128,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
          #bhabha
          'flag_bhabha': xo.Int64,
+
+         #lumi
+         'flag_luminosity': xo.Int64,
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
@@ -179,6 +193,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_sqrtSigma_55_beamstrahlung=None,
 
                     flag_bhabha=0,
+                    flag_luminosity=0,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -373,6 +388,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # initialize bhabha
         self._init_bhabha(flag_bhabha)
 
+        self._init_luminosity(flag_luminosity)
+
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
@@ -539,6 +556,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     @flag_bhabha.setter
     def flag_bhabha(self, flag_bhabha):
         self._flag_bhabha = flag_bhabha
+
+    def _init_luminosity(self, flag_luminosity):
+        self.flag_luminosity = flag_luminosity
 
     def _init_from_old_interface(self, old_interface, **kwargs):
 

@@ -123,6 +123,35 @@ void synchrobeam_kick(
     double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
 
+    double rho, wgt;
+
+    // calculate luminosity
+    const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
+    if (flag_luminosity == 1){
+
+        // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+        get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
+        wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+ 
+        // init record table
+        BeamBeamBiGaussian3DRecordData lumi_record = NULL;
+        LumiTableData lumi_table                   = NULL;
+        RecordIndex lumi_table_index               = NULL;
+        lumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+        if (lumi_record){
+            lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
+            lumi_table_index =                      LumiTableData_getp__index(lumi_table);
+
+        // Get a slot in the record (this is thread safe)
+        int64_t i_slot = RecordIndex_get_slot(lumi_table_index);
+        // The returned slot id is negative if record is NULL or if record is full
+        if (i_slot>=0){
+            LumiTableData_set_particle_id(           lumi_table, i_slot, LocalParticle_get_particle_id(part));
+            LumiTableData_set_luminosity(            lumi_table, i_slot, wgt);  // each macropart will have n_slices entries
+            }
+        }
+    }
+
     // emit bhabha photons from single macropart
     #ifndef XFIELDS_BB3D_NO_BHABHA
     const int64_t flag_bhabha = BeamBeamBiGaussian3DData_get_flag_bhabha(el);
@@ -138,13 +167,12 @@ void synchrobeam_kick(
             bhabha_table_index =                      BhabhaTableData_getp__index(bhabha_table);
         }
 
-        // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        double rho;
-        get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
-    
-        const double charge_per_macropart = LocalParticle_get_weight(part);
-        double wgt = charge_per_macropart * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron vphoton Compton event
-    
+        if (flag_luminosity != 1){
+          // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+          get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
+          wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+        }
+
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
     
         const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0    
