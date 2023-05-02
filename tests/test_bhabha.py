@@ -99,7 +99,7 @@ def test_beambeam3d_bhabha_ws_no_config():
         assert line._needs_rng == True
 
         record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e3)})
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e3), "lumitable": int(0)})
         line.track(particles_b1, num_turns=1)
         line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -215,7 +215,7 @@ def test_beambeam3d_bhabha_ws_config():
         assert line._needs_rng == True
 
         record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e3)})
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e3), "lumitable": int(0)})
         line.track(particles_b1, num_turns=1)
         line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -382,11 +382,13 @@ def test_beambeam3d_bhabha_qss():
                                                                   capacity={
                                                                       "beamstrahlungtable": int(0),
                                                                       "bhabhatable": int(3e3),
+                                                                      "lumitable": int(0),
                                                                   })
         record_qss_b2 = line_b2.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                                   capacity={
                                                                       "beamstrahlungtable": int(0),
                                                                       "bhabhatable": int(3e3),
+                                                                      "lumitable": int(0),
                                                                   })
 
         multitracker.track(num_turns=1)
@@ -561,11 +563,13 @@ def test_beambeam3d_bhabha_ss():
                                                                   capacity={
                                                                       "beamstrahlungtable": int(0),
                                                                       "bhabhatable": int(3e3),
+                                                                      "lumitable": int(0),
                                                                   })
         record_ss_b2 = line_b2.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                                   capacity={
                                                                       "beamstrahlungtable": int(0),
                                                                       "bhabhatable": int(3e3),
+                                                                      "lumitable": int(0),
                                                                   })
 
         multitracker.track(num_turns=1)

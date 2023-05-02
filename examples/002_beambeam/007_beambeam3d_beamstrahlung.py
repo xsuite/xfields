@@ -233,7 +233,7 @@ line.configure_radiation(model_beamstrahlung='quantum')
 #########
 
 record = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D,
-    capacity={"beamstrahlungtable": int(1e5), "bhabhatable": int(0)})
+    capacity={"beamstrahlungtable": int(1e5), "bhabhatable": int(0), "lumitable": int(0)})
 line.track(particles_b1, num_turns=n_turns)
 line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -250,7 +250,7 @@ tracker.configure_radiation(model_beamstrahlung='mean')
 # Track #
 #########
 
-record_avg = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5)})
+record_avg = tracker.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(1e5), "bhabhatable": int(0), "lumitable": int(0)})
 tracker.track(particles_b1, num_turns=n_turns)
 tracker.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
