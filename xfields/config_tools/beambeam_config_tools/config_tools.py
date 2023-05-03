@@ -799,7 +799,7 @@ def apply_filling_pattern(collider, filling_pattern_cw, filling_pattern_acw,
         assert set(list(filling_pattern_self)).issubset({0, 1})
         assert set(list(filling_pattern_other)).issubset({0, 1})
 
-        assert filling_pattern_cw[i_bunch_self] == 1, "Selected bunch is not in the filling scheme"
+        assert filling_pattern_self[i_bunch_self] == 1, "Selected bunch is not in the filling scheme"
 
         temp_df = dframes[orientation_self].loc[:, ['delay_in_slots', 'ip_name']].copy()
         temp_df['partner_bunch_index'] = dframes[orientation_self]['delay_in_slots'] + i_bunch_self
