@@ -198,17 +198,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         return params
 
     def _track_collective(self, particles, _force_suspend=False):
-        if self.config_for_update._working_on_bunch is not None:
-            # I am resuming a suspended calculation
-
-            assert self.config_for_update._working_on_bunch == particles.name
-
-            # Beam beam interaction in the boosted frame
-            ret = self._apply_bb_kicks(particles)
-
-            return ret
-
-        else:
+        if self.config_for_update._working_on_bunch is None:
             # I am working on a new bunch
 
             if particles._num_active_particles == 0:
@@ -231,10 +221,16 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
             if _force_suspend:
                 return xt.PipelineStatus(on_hold=True)
 
-            # Beam beam interaction in the boosted frame
-            ret = self._apply_bb_kicks(particles)
+        assert self.config_for_update._working_on_bunch == particles.name
 
-            return ret
+        ret = self._apply_bb_kicks(particles)
+
+        return ret
+
+        # Beam beam interaction in the boosted frame
+        ret = self._apply_bb_kicks(particles)
+
+        return ret
 
     def _apply_bb_kicks(self, particles):
         if self.config_for_update._do_update:
