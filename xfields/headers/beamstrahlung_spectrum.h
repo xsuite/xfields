@@ -36,7 +36,7 @@ int beamstrahlung_0(LocalParticle *part,
     double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEV, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
     double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;            // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
     (*ecrit) = xcrit * energy*1e-9;                                 // [GeV] critical BS photon energy
-    double p0 = 25.4 * energy*1e-9 * dz * rho_inv;                  // [1]  Fr * dz, specific for 1 macropart
+    double p0 = 25.4 * energy*1e-9 * dz * rho_inv;                  // [1] p0, specific for 1 macropart
     //double omega_crit = (*ecrit)/HBAR_GEVS;                         // [1/s] = 1.5 * gamma**3 * cst.c / rho
     //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);            // [1] beamstrahlung parameter for single macropart
 
@@ -69,7 +69,7 @@ int beamstrahlung_0(LocalParticle *part,
         return 0;
     }
         
-    // g normalized (g(v=0, xcrit)=1=p0), g(v, xcrit) gives the no. of emitted photons in a fiven delta v interval
+    // g normalized (g(v=0, xcrit)=1), g(v, xcrit) gives the no. of emitted photons in a given delta v interval
     double g = v2 / pow(denom, 2.0) * ( g1 + ( pow(xcrit, 2.0) * pow(y, 2.0) ) / ( 1.0 + xcrit * y ) * g2 );  // g (w.o. normalization above) splits the unit rectangle p0*g-v to A,B,C regions
    
     // region C (emit photon) if p<p0*g, region B (no photon) if p>=p0*g, p0=1 bc. of normalization above
@@ -152,7 +152,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
 
     // single macroparticle trajectory 
     double rho_inv  = Fr / dz;  // [1/m] macropart inverse bending radius
-    double tmp      = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
+    double tmp      = 25.4 * energy*1e-9 * dz * rho_inv;  // [1] p0, specific for 1 macropart, 1e-9 to convert [eV] to [GeV]
     int max_photons = (int)(tmp*10.0)+1;  // [1]
     dz /= (double)max_photons;  // photons are emitted uniformly in space along dz (between 2 slice interactions)
 
