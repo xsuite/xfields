@@ -28,7 +28,7 @@ int beamstrahlung_0(LocalParticle *part,
 
     double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEV, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
     double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;
-    (*ecrit) = xcrit * energy*1e-9;  // [GeV]
+    (*ecrit) = xcrit * energy*1e-9; // [GeV]
     //double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
     //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);  // [1] beamstrahlung parameter for single macropart
     double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
