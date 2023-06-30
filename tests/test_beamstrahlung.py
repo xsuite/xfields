@@ -277,7 +277,6 @@ def test_beambeam3d_beamstrahlung_ws_config():
         line = xt.Line(elements = [el_beambeam_b1])
         line.build_tracker(_context=context)
 
-        tracker = xt.Tracker(_context=context, line=line)
         assert line._needs_rng == False
 
         line.configure_radiation(model_beamstrahlung='quantum')

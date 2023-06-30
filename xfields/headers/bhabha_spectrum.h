@@ -98,12 +98,14 @@ void mequiv (LocalParticle *part,
 /***********************************************************************************/
 
 /*gpufun*/
-void equal_newton(double (*fint)(double),   // the integrated spectrum (CDF)
-                  double (*fdiff)(double),  // the differential spectrum (PDF)
+void equal_newton(double (*fint)(double, const double),   // the integrated spectrum (CDF)
+                  double (*fdiff)(double, const double),  // the differential spectrum (PDF)
                   double xmin,              // left boundary of domain
                   double xmax,              // right boundary of domain
                   double y,                 // random sample on y axis
-                  double *x                 // initial guess for root (inverse CDF sampling)
+                  double *x,                // initial guess for root (inverse CDF sampling)
+                  const double x_compt      // [1] normalized cm energy of virtual photon - electron compton scattering
+
 ){
     /*
     Based on:
@@ -116,15 +118,15 @@ void equal_newton(double (*fint)(double),   // the integrated spectrum (CDF)
     double ytry,xtry;
     int i=0;
     xtry=*x;
-    ytry=(*fint)(xtry);
+    ytry=(*fint)(xtry, x_compt);
     while (fabs(ytry-y)>(fabs(ytry)+fabs(y))*eps
            && (xmax-xmin)>eps) {
         i++;
-        xtry-=(ytry-y)/(*fdiff)(xtry);
+        xtry-=(ytry-y)/(*fdiff)(xtry, x_compt);
         if ((xtry>=xmax)||(xtry<=xmin)) {
             xtry=0.5*(xmax+xmin);
         }
-        ytry=(*fint)(xtry);
+        ytry=(*fint)(xtry, x_compt);
         if(ytry<y) {
             xmin=xtry;
         }
@@ -163,12 +165,9 @@ double compt_tot(double s  // [GeV^2] center of mass energy of the macroparticle
 }
 
 
-/*gpulocmem*/
-double x_compt;
-
-
 /*gpufun*/
-double compt_diff(double y  // [1] virtual photon energy fraction compared to primary energy
+double compt_diff(double y,              // [1] virtual photon energy fraction compared to primary energy
+                  const double x_compt   // [1] normalized cm energy of virtual photon - electron compton scattering
 ){
     /*
     Based on:
@@ -185,7 +184,8 @@ double compt_diff(double y  // [1] virtual photon energy fraction compared to pr
 
 
 /*gpufun*/
-double compt_int(double y  // [1] virtual photon energy fraction compared to primary energy
+double compt_int(double y,             // [1] virtual photon energy fraction compared to primary energy
+                 const double x_compt  // [1] normalized cm energy of virtual photon - electron compton scattering
 ){
     /*
     Based on:
@@ -217,18 +217,18 @@ double compt_select(LocalParticle *part,
     s: center of mass energy of electron-virtual photon system, s=(x+1)*(m_e*c**2)**2
     returns a randomly sampled scattered photon energy fraction drawn from the Compton energy ditribution
     */
-    double cmin, cmax, c, y, ym, x;
-  
-    x = s / (MELECTRON_GEV*MELECTRON_GEV);
-    x_compt = x;
-    ym = x / (x + 1.0);     // [1] y_max, maximum energy fraction (right edge od domain on x axis of the spectrum)
-    cmin = compt_int(0.0);  // [m^2] min of range of CDF 
-    cmax = compt_int(ym);   // [m^2] max of range of CDF
+    double cmin, cmax, c, y, ym;
+    const double x_compt = s / (MELECTRON_GEV*MELECTRON_GEV);
+
+    //x_compt = x;
+    ym = x_compt / (x_compt + 1.0);  // [1] y_max, maximum energy fraction (right edge od domain on x axis of the spectrum)
+    cmin = compt_int(0.0, x_compt);  // [m^2] min of range of CDF 
+    cmax = compt_int(ym, x_compt);   // [m^2] max of range of CDF
   
     y = RandomUniform_generate(part);
     c = cmin + (cmax - cmin)*y;  // [m^2] this is the random sample in the inverse CDF
     y *= ym;                     // [1] this is the initial guess on the domain axis 
-    equal_newton(&compt_int, &compt_diff, 0.0, ym, c, &y);  // find root: y=sigma^-1(c) i.e. do the inverse CDF sampling
+    equal_newton(&compt_int, &compt_diff, 0.0, ym, c, &y, x_compt);  // find root: y=sigma^-1(c) i.e. do the inverse CDF sampling
   
     return y;  // [1]
 }
