@@ -176,13 +176,15 @@ void synchrobeam_kick(
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
     
         const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0    
-        int n_photons = requiv(part, other_beam_slice_energy);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
+
+        const double compt_x_min = BeamBeamBiGaussian3DData_get_compt_x_min(el);
+        int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
     
         // generate virtual photons of the opposite slice
         double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon;
         for (int i_phot=0; i_phot<n_photons; i_phot++){
     
-          mequiv(part, other_beam_slice_energy, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
+          mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
     
           // virtual photons are located at the opposite slice centroid
           x_photon = x_slice_star;
@@ -193,7 +195,7 @@ void synchrobeam_kick(
     
           // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
           compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
-              e_photon, q2, px_photon, py_photon, pzeta_photon, wgt, px_star, py_star, pzeta_star, q0);
+              e_photon, compt_x_min, q2, px_photon, py_photon, pzeta_photon, wgt, px_star, py_star, pzeta_star, q0);
     
           // reload pzeta since they changed from compton; px and py are changed only locally
           *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick

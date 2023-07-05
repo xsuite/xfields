@@ -7,7 +7,7 @@
 /************************************************************************************/
 
 /*gpufun*/
-float requiv(LocalParticle *part, const double e_primary){
+float requiv(LocalParticle *part, const double e_primary, const double compt_x_min){
     /*
     Based on:
     GUINEA-PIG
@@ -19,7 +19,7 @@ float requiv(LocalParticle *part, const double e_primary){
     double lnxmin, s4, xmin, lns4, r_photons, n_photons;
   
     s4 = e_primary*e_primary;  // [GeV^2] mandelstam s divided by 4: s/4
-    xmin = emass2 / s4;        // [1] virtual photon's energy fraction compared to primary energy
+    xmin = compt_x_min * emass2 / s4;  // [1] virtual photon's energy fraction compared to primary energy
   
     if (xmin>=1.0) return 0.0;
   
@@ -39,11 +39,12 @@ float requiv(LocalParticle *part, const double e_primary){
 
 /*gpufun*/
 void mequiv (LocalParticle *part,
-             const double e_primary,  // [GeV] other beam slice energy
-             double *xmin,            // [1] cutoff x from where to integrate number density
-             double *e_photon,        // [GeV] single equivalent virtual photon energy
-             double *q2,              // [GeV^2] single equivalent virtual photon virtuality
-             double *one_m_x          // [1] 1 - x
+             const double e_primary,    // [GeV] other beam slice energy
+             const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff
+             double *xmin,              // [1] cutoff x from where to integrate number density
+             double *e_photon,          // [GeV] single equivalent virtual photon energy
+             double *q2,                // [GeV^2] single equivalent virtual photon virtuality
+             double *one_m_x            // [1] 1 - x
 ){
     /*
     Based on:
@@ -56,7 +57,7 @@ void mequiv (LocalParticle *part,
     double s4, q2max, q2min, lnx, x, lnxmin, lns4;
   
     s4 = e_primary*e_primary;  // [GeV^2] mandelstam s divided by 4: s/4
-    *xmin = emass2 / s4;       // [1] virtual photon's energy fraction compared to primary energy
+    *xmin = compt_x_min * emass2 / s4;  // [1] virtual photon's energy fraction compared to primary energy
   
     lnxmin = -log(*xmin);
     lns4 = log(s4 / (MELECTRON_GEV*MELECTRON_GEV));
@@ -236,13 +237,14 @@ double compt_select(LocalParticle *part,
 
 /*gpufun*/
 void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record, RecordIndex bhabha_table_index, BhabhaTableData bhabha_table,
-              double e_photon,      // [GeV] single equivalent virtual photon energy before Compton scattering
-              double q2,            // [GeV^2] single equivalent virtual photon virtuality
-              double vx_photon,     // [1] transverse x momentum component of virtual photon (vx = dx/ds/p0)
-              double vy_photon,     // [1] transverse y momentum component of virtual photon (vy = dy/ds/p0)
-              double vzeta_photon,  // [1] zeta momentum component of virtual photon
-              double wgt,           // [m^-2] int. luminosity
-              double *vx,           // [1] normalized momenta of the primary macroparticle
+              double e_photon,           // [GeV] single equivalent virtual photon energy before Compton scattering
+              const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff
+              double q2,                 // [GeV^2] single equivalent virtual photon virtuality
+              double vx_photon,          // [1] transverse x momentum component of virtual photon (vx = dx/ds/p0)
+              double vy_photon,          // [1] transverse y momentum component of virtual photon (vy = dy/ds/p0)
+              double vzeta_photon,       // [1] zeta momentum component of virtual photon
+              double wgt,                // [m^-2] int. luminosity
+              double *vx,                // [1] normalized momenta of the primary macroparticle
               double *vy,
               double *vzeta, 
               double q0             // [e] charge of primary macroparticle
@@ -273,10 +275,9 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     double e_loss_primary;            // [GeV] energy lost from one emission
     double e_loss_primary_tot = 0.0;  // [GeV] total energy lost by the macroparticle
   
-    double eps = 0.0;                 // 1e-5;
-    static int compt_x_min = 1;       // [1]
+    double eps = 0.0;                 // 1e-5 in guinea
     static int compt_scale = 1;       // [1]
-    static int compt_emax = 100;      // [GeV] upper cutoff from guineapig
+    static int compt_emax = 200;      // [GeV] upper cutoff from guineapig
     static double pair_ecut = 0.005;  // [GeV] lower cutoff from guineapig
     double r1, r2;  // [1] uniform random numbers
   
@@ -305,8 +306,8 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
         e_e_prime = one_m_y * e_primary;  // [GeV] scattered electron energy: E_e' = E_e + E_p - E_p' but E_p is negligible compared to other terms
         e_photon_prime = y*e_primary;     // [GeV] scattered photon energy
   
-        // save computations for tracking: energies below are lost anyways, energies above have negligible e loss from bhabha
-        if ((one_m_y * e_primary < compt_emax) && (one_m_y * e_primary > pair_ecut)) {
+        // save computations for tracking: energies below are lost anyways, energies above compt_emax have negligible e loss from bhabha
+        if ((e_e_prime < compt_emax) && (e_e_prime > pair_ecut)) {
   
           // compute scattered primary momenta
           // adjust magnitude
