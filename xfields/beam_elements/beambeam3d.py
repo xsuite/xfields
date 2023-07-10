@@ -549,8 +549,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._flag_beamstrahlung = flag_beamstrahlung
 
     def _init_bhabha(self, flag_bhabha, compt_x_min):
-        self.flag_bhabha = flag_bhabha # Trigger property setter
         self.compt_x_min = compt_x_min
+        self.flag_bhabha = flag_bhabha # Trigger property setter
 
     @property
     def flag_bhabha(self):
