@@ -34,7 +34,7 @@ int beamstrahlung_0(LocalParticle *part,
     const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
 
     double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEV, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
-    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;            // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = ξ (doc) = upsbar (C++)
+    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;            // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = xi (doc) = upsbar (C++)
     (*ecrit) = xcrit * energy*1e-9;                                 // [GeV] critical BS photon energy
     double p0 = 25.4 * energy*1e-9 * dz * rho_inv;                  // [1] p0, specific for 1 macropart
     //double omega_crit = (*ecrit)/HBAR_GEVS;                         // [1/s] = 1.5 * gamma**3 * cst.c / rho
