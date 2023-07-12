@@ -214,7 +214,7 @@ double compt_select(LocalParticle *part,
     GUINEA-PIG
     https://gitlab.cern.ch/clic-software/guinea-pig-legacy/-/blob/master/background.c#L397
     ----
-    Given an input CM energy, returns a generated scattered Compton photon energy (y = ħω/E0)
+    Given an input CM energy, returns a generated scattered Compton photon energy (y = hbar*omega/E0)
     s: center of mass energy of electron-virtual photon system, s=(x+1)*(m_e*c**2)**2
     returns a randomly sampled scattered photon energy fraction drawn from the Compton energy ditribution
     */
@@ -222,10 +222,10 @@ double compt_select(LocalParticle *part,
     const double x_compt = s / (MELECTRON_GEV*MELECTRON_GEV);
 
     //x_compt = x;
-    ym = x_compt / (x_compt + 1.0);  // [1] y_max, maximum energy fraction (right edge od domain on x axis of the spectrum)
+    ym = x_compt / (x_compt + 1.0);  // [1] y_max, maximum energy fraction (right edge of domain on x axis of the spectrum)
     cmin = compt_int(0.0, x_compt);  // [m^2] min of range of CDF 
     cmax = compt_int(ym, x_compt);   // [m^2] max of range of CDF
-  
+
     y = RandomUniform_generate(part);
     c = cmin + (cmax - cmin)*y;  // [m^2] this is the random sample in the inverse CDF
     y *= ym;                     // [1] this is the initial guess on the domain axis 
