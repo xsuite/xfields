@@ -85,8 +85,8 @@ void synchrobeam_kick(
             &dS_costheta, &dS_sintheta);
 
     // Evaluate transverse coordinates of the weak baem w.r.t. the strong beam centroid
-    const double x_bar_star = *x_star + *px_star * S - x_slice_star;
-    const double y_bar_star = *y_star + *py_star * S - y_slice_star;
+    const double x_bar_star = *x_star + *px_star * S - x_slice_star + px_slice_star;
+    const double y_bar_star = *y_star + *py_star * S - y_slice_star + py_slice_Star;
 
     // Move to the uncoupled reference frame
     const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
@@ -237,9 +237,9 @@ void synchrobeam_kick(
     #endif
 
     // Apply the kicks (Hirata's synchro-beam)
-    *pzeta_star = *pzeta_star + Fz_star+0.5*(
-                Fx_star*(*px_star+0.5*Fx_star)+
-                Fy_star*(*py_star+0.5*Fy_star));
+    *pzeta_star = *pzeta_star + Fz_star + 0.5*(
+                Fx_star*(*px_star+0.5*Fx_star + px_slice_star)+
+                Fy_star*(*py_star+0.5*Fy_star + py_slice_star));
     *x_star = *x_star - S*Fx_star;
     *px_star = *px_star + Fx_star;
     *y_star = *y_star - S*Fy_star;
