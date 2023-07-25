@@ -6,6 +6,10 @@
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
 
+#ifndef min
+#define min(a,b) ((a) <= (b) ? (a) : (b))
+#endif
+
 /*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part,
@@ -167,8 +171,11 @@ void synchrobeam_kick(
             bhabha_table_index =                      BhabhaTableData_getp__index(bhabha_table);
         }
 
-        if (flag_luminosity != 1){
-          // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+        // switch for beam size effect
+        const int64_t flag_beamsize_effect = BeamBeamBiGaussian3DData_get_flag_beamsize_effect(el);
+
+        // gaussian charge density, we are centered at the strong slice centroid
+        if (flag_luminosity != 1 && flag_beamsize_effect == 0){
           get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
           wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
         }
@@ -181,14 +188,31 @@ void synchrobeam_kick(
         int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
     
         // generate virtual photons of the opposite slice
-        double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon;
+        double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon, radius, theta;
         for (int i_phot=0; i_phot<n_photons; i_phot++){
     
           mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
     
+          // apply beam size effect here (affects x and y only)
+          switch(flag_beamsize_effect){
+          case 0:  // this is w.r.t of the strong slice centroid
+              x_photon = 0.0;
+              y_photon = 0.0;
+              break;
+          case 1:  // photons distributed on a disc around centroid
+              radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
+              radius = min(radius, 1e-4);
+              x_photon = rndm_sincos(part, &theta) * radius;
+              y_photon =               theta * radius;
+
+              // resample charge density at randomized photon location
+              get_charge_density(x_bar_hat_star+x_photon, y_bar_hat_star+y_photon, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
+              wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+              break;
+          }
+
           // virtual photons are located at the opposite slice centroid
-          x_photon = x_slice_star;
-          y_photon = y_slice_star;
+
           px_photon = px_slice_star;
           py_photon = py_slice_star; 
           pzeta_photon = pzeta_slice_star;

@@ -7,6 +7,20 @@
 /************************************************************************************/
 
 /*gpufun*/
+double rndm_sincos(LocalParticle *part, double *theta)
+{
+    const double twopi=2.0*PI;
+    double r1;
+    r1 = RandomUniform_generate(part);
+    *theta = cos(twopi*r1);
+    if (r1 > 0.5)
+        return sqrt(1.0- *theta * *theta);
+    else
+        return -sqrt(1.0- *theta * *theta);
+}
+
+
+/*gpufun*/
 float requiv(LocalParticle *part, const double e_primary, const double compt_x_min){
     /*
     Based on:

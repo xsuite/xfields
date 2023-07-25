@@ -129,6 +129,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
          #bhabha
          'flag_bhabha': xo.Int64,
          'compt_x_min': xo.Float64,
+         'flag_beamsize_effect': xo.Int64,
 
          #lumi
          'flag_luminosity': xo.Int64,
@@ -195,6 +196,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     flag_bhabha=0,
                     compt_x_min=1.,
+                    flag_beamsize_effect=1,
+
                     flag_luminosity=0,
 
                     slices_other_beam_x_center_star=None,
@@ -388,7 +391,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         )
 
         # initialize bhabha
-        self._init_bhabha(flag_bhabha, compt_x_min)
+        self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
 
         self._init_luminosity(flag_luminosity)
 
@@ -548,7 +551,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     'needs to be correctly set')
         self._flag_beamstrahlung = flag_beamstrahlung
 
-    def _init_bhabha(self, flag_bhabha, compt_x_min):
+    def _init_bhabha(self, flag_bhabha, compt_x_min, flag_beamsize_effect):
+        self.flag_beamsize_effect = flag_beamsize_effect
         self.compt_x_min = compt_x_min
         self.flag_bhabha = flag_bhabha # Trigger property setter
 
