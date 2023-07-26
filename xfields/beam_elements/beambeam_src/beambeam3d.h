@@ -200,7 +200,7 @@ void synchrobeam_kick(
               y_photon = 0.0;
               break;
           case 1:  // photons distributed on a disc around centroid
-              radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
+              radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
               radius = min(radius, 1e-4);
               x_photon = rndm_sincos(part, &theta) * radius;
               y_photon =               theta * radius;
