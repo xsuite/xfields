@@ -23,6 +23,8 @@ class BeamstrahlungTable(xo.HybridClass):
       'photon_critical_energy': xo.Float64[:],
       'primary_energy': xo.Float64[:],
       'rho_inv': xo.Float64[:],
+      'n_avg': xo.Float64[:],
+      'delta_avg': xo.Float64[:],
         }
 
 

@@ -125,6 +125,8 @@ double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData bea
         if (i_slot>=0){
             BeamstrahlungTableData_set_particle_id(   beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
             BeamstrahlungTableData_set_photon_energy( beamstrahlung_table, i_slot, e_photon_avg);
+            BeamstrahlungTableData_set_delta_avg(     beamstrahlung_table, i_slot, delta_avg);
+            BeamstrahlungTableData_set_n_avg(         beamstrahlung_table, i_slot, n_avg);
             BeamstrahlungTableData_set_primary_energy(beamstrahlung_table, i_slot, initial_energy);
         }
     }
