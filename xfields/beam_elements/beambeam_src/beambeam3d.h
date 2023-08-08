@@ -10,6 +10,9 @@
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
 
+//include_file ../../fieldmaps/interpolated_src/atomicadd.clh for_context opencl
+//include_file ../../fieldmaps/interpolated_src/atomicadd.h for_context cpu_serial cpu_openmp
+
 /*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part,
@@ -146,13 +149,9 @@ void synchrobeam_kick(
             lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
             lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
-        // Get a slot in the record (this is thread safe)
-        int64_t i_slot = RecordIndex_get_slot(lumi_table_index);
-        // The returned slot id is negative if record is NULL or if record is full
-        if (i_slot>=0){
-            LumiTableData_set_particle_id(           lumi_table, i_slot, LocalParticle_get_particle_id(part));
-            LumiTableData_set_luminosity(            lumi_table, i_slot, wgt);  // each macropart will have n_slices entries
-            }
+        const int at_turn = LocalParticle_get_at_turn(part);
+        double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
+        atomicAdd(lumi_address, wgt);
         }
     }
 
@@ -196,14 +195,16 @@ void synchrobeam_kick(
           // apply beam size effect here (affects x and y only)
           switch(flag_beamsize_effect){
           case 0:  // this is w.r.t of the strong slice centroid
+              radius = 0.0;
               x_photon = 0.0;
               y_photon = 0.0;
               break;
           case 1:  // photons distributed on a disc around centroid
               radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
-              radius = min(radius, 1e-4);
+              //printf("radius: %.6e\n", radius);
+              radius = min(radius, 1e5);
               x_photon = rndm_sincos(part, &theta) * radius;
-              y_photon =               theta * radius;
+              y_photon = theta * radius;
 
               // resample charge density at randomized photon location
               get_charge_density(x_bar_hat_star+x_photon, y_bar_hat_star+y_photon, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
@@ -216,13 +217,15 @@ void synchrobeam_kick(
           px_photon = px_slice_star;
           py_photon = py_slice_star; 
           pzeta_photon = pzeta_slice_star;
-    
-          // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
-          compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
+          
+          //if (radius < sqrt(Sig_33_hat_star)){
+            // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
+            compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
               e_photon, compt_x_min, q2, px_photon, py_photon, pzeta_photon, wgt, px_star, py_star, pzeta_star, q0);
     
-          // reload pzeta since they changed from compton; px and py are changed only locally
-          *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
+            // reload pzeta since they changed from compton; px and py are changed only locally
+            *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
+         // }
         }
     }
     #endif
