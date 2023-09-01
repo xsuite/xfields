@@ -59,13 +59,14 @@ beta_y_IP2 = 1.0
 sigma_z = 0.08
 sigma_delta = 1E-4
 beta_s = sigma_z/sigma_delta
-Qx = 0.31
+Qx = 0.285
 Qy = 0.32
 Qs = 2.1E-3
 
-#Offsets in sigma
+#Offsets [sigma] the two beams with opposite direction
+#to enhance oscillation of the pi-mode 
 mean_x_init = 0.1
-mean_y_init = 0.0
+mean_y_init = 0.1
 
 p0c = 7000e9
 
@@ -78,7 +79,7 @@ if my_rank == 0:
         px=np.sqrt(physemit_x/beta_x_IP1)
             *np.random.randn(n_macroparticles),
         y=np.sqrt(physemit_y*beta_y_IP1)
-            *(np.random.randn(n_macroparticles)-mean_y_init),
+            *(np.random.randn(n_macroparticles)+mean_y_init),
         py=np.sqrt(physemit_y/beta_y_IP1)
             *np.random.randn(n_macroparticles),
         zeta=sigma_z*np.random.randn(n_macroparticles),
@@ -122,6 +123,7 @@ else:
 #############
 # Beam-beam #
 #############
+
 nb_slice = 11
 slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=nb_slice)
 config_for_update_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
@@ -142,6 +144,9 @@ config_for_update_IP2=xf.ConfigForUpdateBeamBeamBiGaussian3D(
    slicer=slicer,
    update_every=1 # Setup for strong-strong simulation
    )
+
+
+
 print('build bb elements...')
 bbeamIP1 = xf.BeamBeamBiGaussian3D(
             _context=context,
@@ -192,7 +197,6 @@ multitracker.track(num_turns=nTurn,turn_by_turn_monitor=True)
 print('Done with tracking.',(time.time()-time0)/1024,'[s/turn]')
 
 
-
 #################################################################
 # Post-processing: raw data and spectrum                        #
 #################################################################
@@ -205,9 +209,12 @@ if my_rank == 0:
     freqs = np.fft.fftshift(np.fft.fftfreq(nTurn))
     mask = freqs > 0
     myFFT = np.fft.fftshift(np.fft.fft(positions_x_b1))
-    plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
+    plt.semilogy(freqs[mask], (np.abs(myFFT[mask])),label='Horizontal')
     myFFT = np.fft.fftshift(np.fft.fft(positions_y_b1))
-    plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
+    plt.semilogy(freqs[mask], (np.abs(myFFT[mask])),label='Vertical')
+    plt.xlabel('Frequency [$f_{rev}$]')
+    plt.ylabel('Amplitude')
+    plt.legend(loc=0)
     plt.show()
 
 
