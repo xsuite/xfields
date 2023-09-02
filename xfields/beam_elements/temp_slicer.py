@@ -1,9 +1,76 @@
 import numpy as np
 from scipy import special
 import xobjects as xo
+import xpart as xp
+from ..general import _pkg_root
 
-class TempSlicer:
-    def __init__(self, n_slices, sigma_z, mode="unibin"):
+_digitize_kernel = xo.Kernel(
+            c_name="digitize",
+            args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
+                  xo.Arg(xo.Float64, const=True, pointer=True, name='particles_zeta'),
+                  xo.Arg(xo.Float64, const=True, pointer=True, name='bin_edges'),
+                  xo.Arg(xo.Int64, name='n_slices'),
+                  xo.Arg(xo.Int64, pointer=True, name='particles_slice')]
+)
+
+_compute_slice_moments_kernel = xo.Kernel(
+            c_name="compute_slice_moments",
+            args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
+                  xo.Arg(xo.Int64, pointer=True, name='particles_slice'),
+                  xo.Arg(xo.Float64, pointer=True, name='moments'),
+                  xo.Arg(xo.Int64, name='n_slices'),
+                  xo.Arg(xo.Int64, name='threshold_num_macroparticles')]
+)
+
+_compute_slice_moments_cuda_1_kernel = xo.Kernel(
+            c_name="compute_slice_moments_cuda_1",
+            args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
+                  xo.Arg(xo.Int64, pointer=True, name='particles_slice'),
+                  xo.Arg(xo.Float64, pointer=True, name='moments'),
+                  xo.Arg(xo.Int64, const=True, name='num_macroparticles'),
+                  xo.Arg(xo.Int64, const=True, name='n_slices')],
+            n_threads="num_macroparticles",
+)
+
+_compute_slice_moments_cuda_2_kernel = xo.Kernel(
+            c_name="compute_slice_moments_cuda_2",
+            args=[xo.Arg(xo.Float64, pointer=True, name='moments'),
+                  xo.Arg(xo.Int64, const=True, name='n_slices'),
+                  xo.Arg(xo.Int64, const=True, name='weight'),
+                  xo.Arg(xo.Int64, const=True, name='threshold_num_macroparticles')],
+            n_threads="n_slices",
+)
+
+_temp_slicer_kernels = {'digitize': _digitize_kernel,
+			'compute_slice_moments':_compute_slice_moments_kernel,
+                        'compute_slice_moments_cuda_1':_compute_slice_moments_cuda_1_kernel,
+                        'compute_slice_moments_cuda_2':_compute_slice_moments_cuda_2_kernel,
+                        }
+
+
+class TempSlicer(xo.HybridClass):
+
+    _xofields = {}
+
+    # I add undescores in front of the names so that I can define custom
+    # properties
+    _rename = {nn: '_'+nn for nn in _xofields}
+
+    _extra_c_sources = [_pkg_root.joinpath('headers/compute_slice_moments.h'),
+                        ]
+
+    _depends_on = [xp.Particles]
+
+    _kernels = _temp_slicer_kernels
+
+
+    def __init__(self, _context=None,
+                 _buffer=None,
+                 _offset=None,
+                 _xobject=None,
+                 n_slices = 11,
+                 sigma_z = 0.1,
+                 mode="unibin"):
 
         assert isinstance(n_slices, int) and n_slices>0, ("'n_slices' must be a positive integer!")
         assert mode in ["unicharge", "unibin", "shatilov"], ("Accepted values for 'mode': 'unicharge', 'unibin', 'shatilov'")
@@ -22,6 +89,18 @@ class TempSlicer:
         self.bin_edges   = l_k_arr * sigma_z
         self.bin_weights = w_k_arr
         self.bin_widths_beamstrahlung = dz_k_arr * sigma_z
+
+        if _xobject is not None:
+            self.xoinitialize(_xobject=_xobject, _context=_context,
+                             _buffer=_buffer, _offset=_offset)
+            return
+
+        self.xoinitialize(
+                 _context=_context,
+                 _buffer=_buffer,
+                 _offset=_offset)
+
+        self.compile_kernels(only_if_needed=True)
 
     def rho(self, z):
         """
@@ -169,8 +248,16 @@ class TempSlicer:
 
         bin_edges = context.nparray_to_context_array(self.bin_edges)
 
-        digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
-        indices = digitize(particles.zeta, bin_edges, right=True)
+        if isinstance(context, xo.ContextCupy):
+            digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
+            indices = digitize(particles.zeta, bin_edges, right=True)
+
+        else:  # OpenMP implementation of binary search for CPU
+            indices = particles._context.nplike_lib.zeros_like(particles.zeta, dtype=particles._context.nplike_lib.int64)
+            self._context.kernels.digitize(particles = particles, particles_zeta = particles.zeta,
+                                                    bin_edges = bin_edges, n_slices = self.num_slices,
+                                                    particles_slice = indices)
+
         indices -= 1 # In digitize, 0 means before the first edge
         indices[particles.state <=0 ] = -1
 
@@ -182,36 +269,33 @@ class TempSlicer:
         particles.slice = self.get_slice_indices(particles)
 
     def compute_moments(self, particles, update_assigned_slices=True, threshold_num_macroparticles=20):
+        context = particles._context
+        if isinstance(context, xo.ContextPyopencl):
+            raise NotImplementedError
+
         if update_assigned_slices:
             self.assign_slices(particles)
 
-        slice_moments = np.zeros(self.num_slices*(1+6+10),dtype=float)
-        for i_slice in range(self.num_slices):
-            mask = (particles.slice == i_slice) & (particles.state >0)  # skip lost particles (1: alive, 0 lost)
-            slice_moments[i_slice]                   = 0 if len(particles.x[mask]) < threshold_num_macroparticles else len(particles.x[mask])                                    # nb part
-            slice_moments[self.num_slices+i_slice]   = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.x[mask].sum())/slice_moments[i_slice]     # <x>
-            slice_moments[2*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.px[mask].sum())/slice_moments[i_slice]    # <px>
-            slice_moments[3*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.y[mask].sum())/slice_moments[i_slice]     # <y>
-            slice_moments[4*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.py[mask].sum())/slice_moments[i_slice]    # <py>
-            slice_moments[5*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.zeta[mask].sum())/slice_moments[i_slice]  # <z>
-            slice_moments[6*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float(particles.delta[mask].sum())/slice_moments[i_slice] # <pz> # TODO mhy pzeta doesn't work?
+        if isinstance(context, xo.ContextCupy):
 
-            x_diff  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.x[mask]-slice_moments[self.num_slices+i_slice]
-            px_diff = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.px[mask]-slice_moments[2*self.num_slices+i_slice]
-            y_diff  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.y[mask]-slice_moments[3*self.num_slices+i_slice]
-            py_diff = 0 if len(particles.x[mask]) < threshold_num_macroparticles else particles.py[mask]-slice_moments[4*self.num_slices+i_slice]
-            slice_moments[7*self.num_slices+i_slice]  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff**2).sum())/slice_moments[i_slice]             # Sigma_11
-            slice_moments[8*self.num_slices+i_slice]  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff*px_diff).sum())/slice_moments[i_slice]      # Sigma_12
-            slice_moments[9*self.num_slices+i_slice]  = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff*y_diff).sum())/slice_moments[i_slice]       # Sigma_13
-            slice_moments[10*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((x_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_14
-            slice_moments[11*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((px_diff**2).sum())/slice_moments[i_slice]           # Sigma_22
-            slice_moments[12*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((px_diff*y_diff).sum())/slice_moments[i_slice]     # Sigma_23
-            slice_moments[13*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((px_diff*py_diff).sum())/slice_moments[i_slice]    # Sigma_24
-            slice_moments[14*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((y_diff**2).sum())/slice_moments[i_slice]            # Sigma_33
-            slice_moments[15*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((y_diff*py_diff).sum())/slice_moments[i_slice]     # Sigma_34
-            slice_moments[16*self.num_slices+i_slice] = 0 if len(particles.x[mask]) < threshold_num_macroparticles else float((py_diff**2).sum())/slice_moments[i_slice]           # Sigma_44
+            slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)
+            self._context.kernels.compute_slice_moments_cuda_1(particles=particles, particles_slice=particles.slice,
+                                                           moments=slice_moments, num_macroparticles=np.int64(len(particles.slice)),
+                                                           n_slices=np.int64(self.num_slices))
 
-        for i_slice in range(self.num_slices):
-            slice_moments[i_slice] *= particles.weight[0]
+            self._context.kernels.compute_slice_moments_cuda_2(moments=slice_moments, n_slices=np.int64(self.num_slices),
+                                                           weight=particles.weight.get()[0], threshold_num_macroparticles=np.int64(threshold_num_macroparticles))
+            return slice_moments[int(self.num_slices*16):]
 
-        return slice_moments
+        # context CPU with OpenMP
+        else:
+
+            slice_moments = self._context.zeros(self.num_slices*(1+6+10),dtype=np.float64)
+
+            # np.cumsum[-1] =/= np.sum due to different order of summation
+            # use np.isclose instead of ==; np.sum does pariwise sum which orders values differently thus causing a numerical error
+            # see: https://stackoverflow.com/questions/69610452/why-does-the-last-entry-of-numpy-cumsum-not-necessarily-equal-numpy-sum
+            self._context.kernels.compute_slice_moments(particles=particles, particles_slice=particles.slice,
+                                                    moments=slice_moments, n_slices=self.num_slices,
+                                                    threshold_num_macroparticles=threshold_num_macroparticles)
+            return slice_moments

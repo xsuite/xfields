@@ -4,6 +4,7 @@
 # ########################################### #
 
 import numpy as np
+import time
 
 import xobjects as xo
 import xtrack as xt
@@ -22,11 +23,42 @@ class BeamstrahlungTable(xo.HybridClass):
       'photon_critical_energy': xo.Float64[:],
       'primary_energy': xo.Float64[:],
       'rho_inv': xo.Float64[:],
+      'n_avg': xo.Float64[:],
+      'delta_avg': xo.Float64[:],
         }
+
+
+class BhabhaTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'photon_id': xo.Int64[:],
+      'primary_energy': xo.Float64[:],
+      'photon_energy': xo.Float64[:],
+      'photon_px': xo.Float64[:],
+      'photon_py': xo.Float64[:],
+      'photon_pzeta': xo.Float64[:],
+      'theta_e': xo.Float64[:],
+      'theta_g': xo.Float64[:],
+        }
+
+class LumiTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'luminosity': xo.Float64[:],
+        }
+
 
 class BeamBeamBiGaussian3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
+        'bhabhatable': BhabhaTable,
+        'lumitable': LumiTable,
        }
 
 class BeamBeamBiGaussian3D(xt.BeamElement):
@@ -92,13 +124,23 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # beamstrahlung
         'flag_beamstrahlung': xo.Int64,
         'slices_other_beam_zeta_bin_width_star_beamstrahlung': xo.Float64[:],
-        'other_beam_sigma_55_star_beamstrahlung': xo.Float64,
+        'slices_other_beam_sqrtSigma_11_beamstrahlung': xo.Float64[:],
+        'slices_other_beam_sqrtSigma_33_beamstrahlung': xo.Float64[:],
+        'slices_other_beam_sqrtSigma_55_beamstrahlung': xo.Float64[:],
 
+         #bhabha
+         'flag_bhabha': xo.Int64,
+         'compt_x_min': xo.Float64,
+         'flag_beamsize_effect': xo.Int64,
+
+         #lumi
+         'flag_luminosity': xo.Int64,
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
 
     _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
+    _rename = {'flag_bhabha': '_flag_bhabha'}
 
     _depends_on = [xt.RandomUniform]
 
@@ -114,7 +156,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # beamstrahlung
         _pkg_root.joinpath('headers/beamstrahlung_spectrum.h'),
-
+        _pkg_root.joinpath('headers/bhabha_spectrum.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
 
@@ -124,7 +166,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'synchro_beam_kick': xo.Kernel(
             c_name='BeamBeam3D_selective_apply_synchrobeam_kick_local_particle',
             args=[
-                xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
+                xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles'),
             ]),
         'change_ref_frame': xo.Kernel(
             c_name='BeamBeamBiGaussian3D_change_ref_frame_local_particle',
@@ -148,9 +190,17 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_pzeta_center=0.,
 
                     flag_beamstrahlung=0,
-
+                    slices_other_beam_zeta_bin_width_beamstrahlung=None,
                     slices_other_beam_zeta_bin_width_star_beamstrahlung=None,
-                    other_beam_sigma_55_star_beamstrahlung=None,
+                    slices_other_beam_sqrtSigma_11_beamstrahlung=None,
+                    slices_other_beam_sqrtSigma_33_beamstrahlung=None,
+                    slices_other_beam_sqrtSigma_55_beamstrahlung=None,
+
+                    flag_bhabha=0,
+                    compt_x_min=1.,
+                    flag_beamsize_effect=1,
+
+                    flag_luminosity=0,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -248,8 +298,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
             self.moments = None
-            self.partner_moments = np.zeros(
-                self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
+
+
         else:
             self.config_for_update = None
 
@@ -279,6 +329,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         n_slices = len(slices_other_beam_num_particles)
 
         self._allocate_xobject(n_slices, **kwargs)
+
+        if config_for_update is not None:
+            self.partner_moments = self._buffer.context.nplike_lib.zeros(
+                self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
 
         if phi is None:
             assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
@@ -328,6 +382,21 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_y_center_star, slices_other_beam_py_center_star,
             slices_other_beam_zeta_center_star, slices_other_beam_pzeta_center_star)
 
+        # Initialize beamstrahlung related quantities
+        self._init_beamstrahlung(
+            flag_beamstrahlung,
+            slices_other_beam_zeta_bin_width_beamstrahlung,
+            slices_other_beam_zeta_bin_width_star_beamstrahlung,
+            slices_other_beam_sqrtSigma_11_beamstrahlung,
+            slices_other_beam_sqrtSigma_33_beamstrahlung,
+            slices_other_beam_sqrtSigma_55_beamstrahlung,
+        )
+
+        # initialize bhabha
+        self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
+
+        self._init_luminosity(flag_luminosity)
+
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
@@ -356,32 +425,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.min_sigma_diff = min_sigma_diff
         self.threshold_singular = threshold_singular
 
-        # beamstrahlung
-        if self.config_for_update is not None:
-            if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None):
-                    slices_other_beam_zeta_bin_width_star_beamstrahlung = (
-                        self.config_for_update.slicer.bin_widths_beamstrahlung
-                            / np.cos(self.phi))
-        if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
-            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
-                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
-            assert (len(self.slices_other_beam_zeta_bin_width_star_beamstrahlung)
-                == len(self.slices_other_beam_num_particles))
-            self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
-        else:
-            self.slices_other_beam_zeta_bin_width_star_beamstrahlung[:] = 0
-
-        if other_beam_sigma_55_star_beamstrahlung:
-            self.other_beam_sigma_55_star_beamstrahlung = (
-                                        other_beam_sigma_55_star_beamstrahlung)
-        else:
-            self.other_beam_sigma_55_star_beamstrahlung = 0
-
-        # beamstrahlung
-
-        self.flag_beamstrahlung = flag_beamstrahlung # Trigger property setter
-
     def _allocate_xobject(self, n_slices, **kwargs):
         self.xoinitialize(
             slices_other_beam_Sigma_11_star=n_slices,
@@ -402,8 +445,82 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_zeta_center_star=n_slices,
             slices_other_beam_pzeta_center_star=n_slices,
             slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
+            slices_other_beam_sqrtSigma_11_beamstrahlung=n_slices,
+            slices_other_beam_sqrtSigma_33_beamstrahlung=n_slices,
+            slices_other_beam_sqrtSigma_55_beamstrahlung=n_slices, 
             **kwargs
             )
+
+    def _init_beamstrahlung(self,
+            flag_beamstrahlung,
+            slices_other_beam_zeta_bin_width_beamstrahlung,
+            slices_other_beam_zeta_bin_width_star_beamstrahlung,
+            slices_other_beam_sqrtSigma_11_beamstrahlung,
+            slices_other_beam_sqrtSigma_33_beamstrahlung,
+            slices_other_beam_sqrtSigma_55_beamstrahlung,
+            ):
+
+        if self.config_for_update is not None:
+            if slices_other_beam_zeta_bin_width_star_beamstrahlung is None:
+                    if slices_other_beam_zeta_bin_width_beamstrahlung is not None:
+                        slices_other_beam_zeta_bin_width_star_beamstrahlung = (
+                            slices_other_beam_zeta_bin_width_beamstrahlung
+                                / np.cos(self.phi))
+                    else:
+                        slices_other_beam_zeta_bin_width_star_beamstrahlung = (
+                            self.config_for_update.slicer.bin_widths_beamstrahlung
+                                / np.cos(self.phi))
+
+        if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None and
+            slices_other_beam_zeta_bin_width_beamstrahlung is not None):
+            assert not np.isscalar(slices_other_beam_zeta_bin_width_beamstrahlung), (
+                'slices_other_beam_zeta_bin_width_beamstrahlung must be an array')
+            assert (len(slices_other_beam_zeta_bin_width_beamstrahlung)
+                == len(self.slices_other_beam_num_particles))
+            slices_other_beam_zeta_bin_width_star_beamstrahlung = (
+                slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi)) 
+
+        if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
+            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
+                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
+            assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
+                == len(self.slices_other_beam_num_particles))
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+        else:
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung[:] = 0
+
+        if slices_other_beam_sqrtSigma_11_beamstrahlung is not None:
+            assert not np.isscalar(slices_other_beam_sqrtSigma_11_beamstrahlung), (
+                'slices_other_beam_sqrtSigma_11_beamstrahlung must be an array')
+            assert (len(slices_other_beam_sqrtSigma_11_beamstrahlung)
+                == len(self.slices_other_beam_num_particles))
+            self.slices_other_beam_sqrtSigma_11_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_sqrtSigma_11_beamstrahlung))
+        else:
+            self.slices_other_beam_sqrtSigma_11_beamstrahlung[:] = 0
+
+        if slices_other_beam_sqrtSigma_33_beamstrahlung is not None:
+            assert not np.isscalar(slices_other_beam_sqrtSigma_33_beamstrahlung), (
+                'slices_other_beam_sqrtSigma_33_beamstrahlung must be an array')
+            assert (len(slices_other_beam_sqrtSigma_33_beamstrahlung)
+                == len(self.slices_other_beam_num_particles))
+            self.slices_other_beam_sqrtSigma_33_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_sqrtSigma_33_beamstrahlung))
+        else:
+            self.slices_other_beam_sqrtSigma_33_beamstrahlung[:] = 0
+
+        if slices_other_beam_sqrtSigma_55_beamstrahlung is not None:
+            assert not np.isscalar(slices_other_beam_sqrtSigma_55_beamstrahlung), (
+                'slices_other_beam_sqrtSigma_55_beamstrahlung must be an array')
+            assert (len(slices_other_beam_sqrtSigma_55_beamstrahlung)
+                == len(self.slices_other_beam_num_particles))
+            self.slices_other_beam_sqrtSigma_55_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_sqrtSigma_55_beamstrahlung))
+        else:
+            self.slices_other_beam_sqrtSigma_55_beamstrahlung[:] = 0
+
+        self.flag_beamstrahlung = flag_beamstrahlung # Trigger property setter
 
     @property
     def flag_beamstrahlung(self):
@@ -411,21 +528,49 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     @flag_beamstrahlung.setter
     def flag_beamstrahlung(self, flag_beamstrahlung):
-        # beamstrahlung
-        if flag_beamstrahlung == 1:
-            raise NotImplementedError('"mean" model not yet finished')
-            if self.other_beam_sigma_55_star_beamstrahlung == 0 :
+        ctx2np  = self._context.nparray_from_context_array
+        if flag_beamstrahlung == 1:  # avg photon emission, requires unboosted strong bunch slice RMS
+            if np.any(ctx2np(
+                self.slices_other_beam_sqrtSigma_11_beamstrahlung == 0)):
                 raise ValueError(
-                    'other_beam_sigma_55_star_beamstrahlung '
+                    'slices_other_beam_sqrtSigma_11_beamstrahlung'
                     'needs to be correctly set')
-        elif flag_beamstrahlung == 2:
-            ctx2np  = self._context.nparray_from_context_array
+            if np.any(ctx2np(
+                self.slices_other_beam_sqrtSigma_33_beamstrahlung == 0)):
+                raise ValueError(
+                    'slices_other_beam_sqrtSigma_33_beamstrahlung '
+                    'needs to be correctly set')
+            if np.any(ctx2np(
+                self.slices_other_beam_sqrtSigma_55_beamstrahlung == 0)):
+                raise ValueError(
+                    'slices_other_beam_sqrtSigma_55_beamstrahlung '
+                    'needs to be correctly set')
+        elif flag_beamstrahlung == 2:  # quantum BS, requires boosted strong z bin widths
             if np.any(ctx2np(
                 self.slices_other_beam_zeta_bin_width_star_beamstrahlung == 0)):
                 raise ValueError(
                     'slices_other_beam_zeta_bin_width_star_beamstrahlung '
                     'needs to be correctly set')
         self._flag_beamstrahlung = flag_beamstrahlung
+
+    def _init_bhabha(self, flag_bhabha, compt_x_min, flag_beamsize_effect):
+        self.flag_beamsize_effect = flag_beamsize_effect
+        self.compt_x_min = compt_x_min
+        self.flag_bhabha = flag_bhabha # Trigger property setter
+
+    @property
+    def flag_bhabha(self):
+        return self._flag_bhabha
+
+    @flag_bhabha.setter
+    def flag_bhabha(self, flag_bhabha):
+        if flag_bhabha == 1:
+            if self.compt_x_min <= 0:
+                raise ValueError('compt_x_min must be larger than 0')
+        self._flag_bhabha = flag_bhabha
+
+    def _init_luminosity(self, flag_luminosity):
+        self.flag_luminosity = flag_luminosity
 
     def _init_from_old_interface(self, old_interface, **kwargs):
 
@@ -521,8 +666,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     def update_from_recieved_moments(self):
         # reference frame transformation as in https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
-        self.slices_other_beam_num_particles = self._arr2ctx(self.partner_moments[:self.num_slices_other_beam])
-
+        self.slices_other_beam_num_particles = self._arr2ctx(self.partner_moments[:self.num_slices_other_beam]) # this contains num real particles, the total elementary charge per slice
         self.slices_other_beam_x_center_star = self._arr2ctx(self.partner_moments[self.num_slices_other_beam:2*self.num_slices_other_beam]) * (-1.0)
         self.slices_other_beam_px_center_star = self._arr2ctx(self.partner_moments[2*self.num_slices_other_beam:3*self.num_slices_other_beam])
         self.slices_other_beam_y_center_star = self._arr2ctx(self.partner_moments[3*self.num_slices_other_beam:4*self.num_slices_other_beam])
@@ -606,23 +750,30 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         while True:
 
-            if self.config_for_update._do_update:
+            # recompute and communicate slice moments; if QSS only update before first step
+            if (self.config_for_update._do_update and (not self.config_for_update.quasistrongstrong
+                or self.config_for_update._i_step == 0)):
+                
+                i = 0
+                while particles.state[i] != 1:
+                    i += 1
+                at_turn = int(particles.at_turn[i])
 
                 if self.config_for_update.pipeline_manager.is_ready_to_send(self.config_for_update.element_name,
                                                      particles.name,
                                                      self.config_for_update.partner_particles_name,
-                                                     particles.at_turn[0],
+                                                     at_turn,
                                                      internal_tag=self.config_for_update._i_step):
                     # Compute moments
                     self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
+
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
                                                      particles.name,
                                                      self.config_for_update.partner_particles_name,
-                                                     particles.at_turn[0],
+                                                     at_turn,
                                                      internal_tag=self.config_for_update._i_step)
-
                 if self.config_for_update.pipeline_manager.is_ready_to_recieve(self.config_for_update.element_name,
                                         self.config_for_update.partner_particles_name,
                                         particles.name,
@@ -774,6 +925,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         if slices_other_beam_Sigma_24 is None and slices_other_beam_Sigma_24_star is None:
             slices_other_beam_Sigma_24 = 0
 
+        # unboosted sigmas preferred
         if slices_other_beam_Sigma_11 is not None:
             self.slices_other_beam_Sigma_11 = self._arr2ctx(slices_other_beam_Sigma_11)
         else:
@@ -1294,13 +1446,15 @@ class ConfigForUpdateBeamBeamBiGaussian3D:
         element_name=None,
         slicer=None,
         partner_particles_name=None,
-        update_every=None):
+        update_every=None,
+        quasistrongstrong=None):
 
         self.pipeline_manager = pipeline_manager
         self.element_name = element_name
         self.slicer = slicer
         self.partner_particles_name = partner_particles_name
         self.update_every = update_every
+        self.quasistrongstrong = quasistrongstrong
 
         self._i_step = 0
         self._working_on_bunch = None
