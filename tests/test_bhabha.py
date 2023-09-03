@@ -8,6 +8,11 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
+
+bins = np.logspace(np.log10(1e-4), np.log10(2e2), 20)
+guinea_hist = np.array([2693, 3137, 2912, 2482, 2156])  # from GP legacy ttbar2 100 slices
+cx = 1e-2
+
 def test_beambeam3d_bhabha_ws_no_config():
     for context in xo.context.get_test_contexts():
 
@@ -84,6 +89,8 @@ def test_beambeam3d_bhabha_ws_no_config():
                 # has to be set
                 slices_other_beam_Sigma_12    = n_slices*[0],
                 slices_other_beam_Sigma_34    = n_slices*[0],
+                compt_x_min=cx,
+                flag_beamsize_effect=1,
         )
 
         #########################
@@ -99,7 +106,7 @@ def test_beambeam3d_bhabha_ws_no_config():
         assert line._needs_rng == True
 
         record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e3), "lumitable": int(0)})
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
         line.track(particles_b1, num_turns=1)
         line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -109,14 +116,12 @@ def test_beambeam3d_bhabha_ws_no_config():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        bins = np.linspace(62.5, 182.5, 10)
-        guinea_hist = np.array([  0., 129., 256., 268., 319., 422., 534., 460., 414.])  # from GP legacy ttbar2 100 slices
-        xsuite_ws_b1_hist  = np.histogram( record_ws_b1.bhabhatable.photon_energy/1e9, bins=bins)[0]
+        xsuite_ws_b1_hist  = np.histogram( record_ws_b1.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
         ws_b1_bin_rel_errors = np.abs(xsuite_ws_b1_hist - guinea_hist) / (guinea_hist)
         print(f"WS beam 1 bin relative errors [1]: {ws_b1_bin_rel_errors}")
 
-        # test if relative error in the last 5 bins is smaller than 1e-1
-        assert np.allclose(xsuite_ws_b1_hist[-5:], guinea_hist[-5:], rtol=5e-1, atol=0)
+        # test if relative error in the last 5 bins is smaller than 2e-1
+        assert np.allclose(xsuite_ws_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
 
 def test_beambeam3d_bhabha_ws_config():
@@ -198,6 +203,8 @@ def test_beambeam3d_bhabha_ws_config():
                 slices_other_beam_Sigma_22    = n_slices*[sigma_px**2],
                 slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
                 slices_other_beam_Sigma_44    = n_slices*[sigma_py**2],
+                compt_x_min=cx,
+                flag_beamsize_effect=1,
         )
 
         el_beambeam_b1.name = "beambeam"
@@ -215,7 +222,7 @@ def test_beambeam3d_bhabha_ws_config():
         assert line._needs_rng == True
 
         record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e3), "lumitable": int(0)})
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
         line.track(particles_b1, num_turns=1)
         line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -225,14 +232,12 @@ def test_beambeam3d_bhabha_ws_config():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        bins = np.linspace(62.5, 182.5, 10)
-        guinea_hist = np.array([  0., 129., 256., 268., 319., 422., 534., 460., 414.])  # from GP legacy ttbar2 100 slices
-        xsuite_ws_b1_hist  = np.histogram( record_ws_b1.bhabhatable.photon_energy/1e9, bins=bins)[0]
+        xsuite_ws_b1_hist  = np.histogram( record_ws_b1.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
         ws_b1_bin_rel_errors = np.abs(xsuite_ws_b1_hist - guinea_hist) / (guinea_hist)
         print(f"WS beam 1 bin relative errors [1]: {ws_b1_bin_rel_errors}")
 
-        # test if relative error in the last 5 bins is smaller than 1e-1
-        assert np.allclose(xsuite_ws_b1_hist[-5:], guinea_hist[-5:], rtol=5e-1, atol=0)
+        # test if relative error in the last 5 bins is smaller than 2e-1
+        assert np.allclose(xsuite_ws_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
 
 def test_beambeam3d_bhabha_qss():
@@ -343,6 +348,8 @@ def test_beambeam3d_bhabha_qss():
                     phi = phi, 
                     alpha=0,
                     config_for_update = config_for_update_b1_IP1,
+                    compt_x_min=cx,
+                    flag_beamsize_effect=1,
         )
         bbeamIP1_b2 = xf.BeamBeamBiGaussian3D(
                     _context=context,
@@ -350,6 +357,8 @@ def test_beambeam3d_bhabha_qss():
                     phi = -phi, # boost beam 1 slices by -phi
                     alpha=0, 
                     config_for_update = config_for_update_b2_IP1,
+                    compt_x_min=cx,
+                    flag_beamsize_effect=1,
         )
 
         #########################
@@ -378,18 +387,10 @@ def test_beambeam3d_bhabha_qss():
         branch_b2 = xt.PipelineBranch(line_b2, particles_b2)
         multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2])
         
-        record_qss_b1 = line_b1.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
-                                                                  capacity={
-                                                                      "beamstrahlungtable": int(0),
-                                                                      "bhabhatable": int(3e3),
-                                                                      "lumitable": int(0),
-                                                                  })
-        record_qss_b2 = line_b2.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
-                                                                  capacity={
-                                                                      "beamstrahlungtable": int(0),
-                                                                      "bhabhatable": int(3e3),
-                                                                      "lumitable": int(0),
-                                                                  })
+        record_qss_b1 = line_b1.start_internal_logging_for_elements_of_type(
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
+        record_qss_b2 = line_b2.start_internal_logging_for_elements_of_type(
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
 
         multitracker.track(num_turns=1)
         line_b1.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
@@ -402,18 +403,16 @@ def test_beambeam3d_bhabha_qss():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        bins = np.linspace(62.5, 182.5, 10)
-        guinea_hist = np.array([  0., 129., 256., 268., 319., 422., 534., 460., 414.])  # from GP legacy ttbar2 100 slices
-        xsuite_qss_b1_hist = np.histogram(record_qss_b1.bhabhatable.photon_energy/1e9, bins=bins)[0]
-        xsuite_qss_b2_hist = np.histogram(record_qss_b2.bhabhatable.photon_energy/1e9, bins=bins)[0]
+        xsuite_qss_b1_hist = np.histogram(record_qss_b1.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
+        xsuite_qss_b2_hist = np.histogram(record_qss_b2.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
         qss_b1_bin_rel_errors = np.abs(xsuite_qss_b1_hist - guinea_hist) / (guinea_hist)
         qss_b2_bin_rel_errors = np.abs(xsuite_qss_b2_hist - guinea_hist) / (guinea_hist)
         print(f"QSS beam 1 bin relative errors [1]: {qss_b1_bin_rel_errors}")
         print(f"QSS beam 2 bin relative errors [1]: {qss_b2_bin_rel_errors}")
 
-        # test if relative error in the last 5 bins is smaller than 1e-1
-        assert np.allclose(xsuite_qss_b1_hist[-5:], guinea_hist[-5:], rtol=5e-1, atol=0)
-        assert np.allclose(xsuite_qss_b2_hist[-5:], guinea_hist[-5:], rtol=5e-1, atol=0)
+        # test if relative error in the last 5 bins is smaller than 2e-1
+        assert np.allclose(xsuite_qss_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
+        assert np.allclose(xsuite_qss_b2_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
 
 def test_beambeam3d_bhabha_ss():
@@ -524,6 +523,8 @@ def test_beambeam3d_bhabha_ss():
                     phi = phi, 
                     alpha=0,
                     config_for_update = config_for_update_b1_IP1,
+                    compt_x_min=cx,
+                    flag_beamsize_effect=1,
         )
         bbeamIP1_b2 = xf.BeamBeamBiGaussian3D(
                     _context=context,
@@ -531,6 +532,8 @@ def test_beambeam3d_bhabha_ss():
                     phi = -phi, # boost beam 1 slices by -phi
                     alpha=0, 
                     config_for_update = config_for_update_b2_IP1,
+                    compt_x_min=cx,
+                    flag_beamsize_effect=1,
         )
 
         #########################
@@ -559,18 +562,10 @@ def test_beambeam3d_bhabha_ss():
         branch_b2 = xt.PipelineBranch(line_b2, particles_b2)
         multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2])
         
-        record_ss_b1 = line_b1.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
-                                                                  capacity={
-                                                                      "beamstrahlungtable": int(0),
-                                                                      "bhabhatable": int(3e3),
-                                                                      "lumitable": int(0),
-                                                                  })
-        record_ss_b2 = line_b2.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
-                                                                  capacity={
-                                                                      "beamstrahlungtable": int(0),
-                                                                      "bhabhatable": int(3e3),
-                                                                      "lumitable": int(0),
-                                                                  })
+        record_ss_b1 = line_b1.start_internal_logging_for_elements_of_type(
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
+        record_ss_b2 = line_b2.start_internal_logging_for_elements_of_type(
+            xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
 
         multitracker.track(num_turns=1)
         line_b1.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
@@ -583,16 +578,14 @@ def test_beambeam3d_bhabha_ss():
         # test 1: compare spectrum with guineapig #
         ###########################################
 
-        bins = np.linspace(62.5, 182.5, 10)
-        guinea_hist = np.array([  0., 129., 256., 268., 319., 422., 534., 460., 414.])  # from GP legacy ttbar2 100 slices
-        xsuite_ss_b1_hist = np.histogram(record_ss_b1.bhabhatable.photon_energy/1e9, bins=bins)[0]
-        xsuite_ss_b2_hist = np.histogram(record_ss_b2.bhabhatable.photon_energy/1e9, bins=bins)[0]
+        xsuite_ss_b1_hist = np.histogram(record_ss_b1.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
+        xsuite_ss_b2_hist = np.histogram(record_ss_b2.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
         ss_b1_bin_rel_errors = np.abs(xsuite_ss_b1_hist - guinea_hist) / (guinea_hist)
         ss_b2_bin_rel_errors = np.abs(xsuite_ss_b2_hist - guinea_hist) / (guinea_hist)
         print(f"SS beam 1 bin relative errors [1]: {ss_b1_bin_rel_errors}")
         print(f"SS beam 2 bin relative errors [1]: {ss_b2_bin_rel_errors}")
 
-        # test if relative error in the last 5 bins is smaller than 1e-1
-        assert np.allclose(xsuite_ss_b1_hist[-5:], guinea_hist[-5:], rtol=5e-1, atol=0)
-        assert np.allclose(xsuite_ss_b2_hist[-5:], guinea_hist[-5:], rtol=5e-1, atol=0)
+        # test if relative error in the last 5 bins is smaller than 2e-1
+        assert np.allclose(xsuite_ss_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
+        assert np.allclose(xsuite_ss_b2_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
