@@ -275,12 +275,12 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     ----
     Compton scatter one vitrual macrophoton on one macroparticle. Potentially emit a real Bhabha photon. 
     */
-  
+
     double e_ref = LocalParticle_get_energy0(part)*1e-9;  // [GeV] reference beam energy
     double e_primary = (LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part))*1e-9;  // [GeV] 
     double beta_ref = LocalParticle_get_beta0(part);         // [1] reference beta
     double part_per_mpart = LocalParticle_get_weight(part);  // [e] num charges represented by 1 macropart
-  
+
     int n, i;                        // [1]
     double tmp, scal, s, x, y;       // [m^2, m^2, GeV^2, 1, 1]
     double theta_g, theta_e, phi_e;  // [rad] scattering angles
@@ -288,31 +288,31 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     double e_photon_prime, px_photon_prime, py_photon_prime, pzeta_photon_prime;      // [GeV, 1, 1, 1] scattered (real) Compton photon
     double e_loss_primary;            // [GeV] energy lost from one emission
     double e_loss_primary_tot = 0.0;  // [GeV] total energy lost by the macroparticle
-  
+
     double eps = 0.0;                 // 1e-5 in guinea
     static int compt_scale = 1;       // [1]
     static int compt_emax = 200;      // [GeV] upper cutoff from guineapig
     static double pair_ecut = 0.005;  // [GeV] lower cutoff from guineapig
     double r1, r2;  // [1] uniform random numbers
-  
+
     if (q2 > MELECTRON_GEV*MELECTRON_GEV) return;  // global upper cut on virtuality; eliminates "constant" part of q2 spectrum i.e. the hadronic virtual photons
-  
+
     s = 4.0*e_photon*e_primary;  // approximated center of mass energy of primary - photon Compton scattering
     if (q2 > s) return;          // event specific upper cut on virtuality; check against max allowed virtuality to be absorbed in the event
-  
+
     if (s < compt_x_min * MELECTRON_GEV*MELECTRON_GEV*4.0) return;  // event specific lower cut on x; check against user defined compt_x_min
-  
+
     tmp = compt_tot(s)*wgt*compt_scale;   // [1] this determines the number of real Compton scattering events
     n = (int)floor(tmp)+1;                // [1] round up e.g. tmp=5.4 will mean n=6 events
     scal = tmp/n;                         // [1] fractional part of event count
     x = s/(MELECTRON_GEV*MELECTRON_GEV);  // [1]
-  
+
     for (i=0; i<n; i++) {
       y = compt_select(part, s);  // [1] draw compton scattered photon energy
-  
+
       if (scal > eps){
         double one_m_y = 1 - y;  // + e_photon / e_primary;
-  
+
         e_e_prime = one_m_y * e_primary;  // + e_photon; neglected. [GeV] scattered electron energy: E_e' = E_e + E_p - E_p' but E_p is negligible compared to other terms
         e_photon_prime = y*e_primary;     // [GeV] scattered photon energy
 
@@ -322,30 +322,30 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
 
         // save computations for tracking: energies below are lost anyways, energies above compt_emax have negligible e loss from bhabha
         if ((e_e_prime < compt_emax) && (e_e_prime > pair_ecut)) {
-  
+
           // compute scattered primary momenta
           // adjust magnitude
           px_e_prime = *vx * e_e_prime;  // / e_primary;
           py_e_prime = *vy * e_e_prime;  // / e_primary;
-  
+
           // adjust direction
           pt_e_prime = theta_e * e_e_prime;  // [1] transverse azimuthal momentum
           phi_e = 2.0 * PI * RandomUniform_generate(part);
           px_e_prime  += pt_e_prime * sin(phi_e);
           py_e_prime  += pt_e_prime * cos(phi_e);
           ps_e_prime   = sqrt(e_e_prime*e_e_prime - px_e_prime*px_e_prime - py_e_prime*py_e_prime - MELECTRON_GEV*MELECTRON_GEV);  // [1] longitudinal momentum
-  
+
           pzeta_e_prime = (e_e_prime - e_ref) / (beta_ref * beta_ref * e_ref);
-  
+
           // compute scattered photon momenta from momentum conservation
           px_photon_prime    = (*vx  + vx_photon) * e_primary - px_e_prime;
           py_photon_prime    = (*vy  + vy_photon) * e_primary - py_e_prime;
           pzeta_photon_prime = (*vzeta + vzeta_photon) * e_primary - pzeta_e_prime;
-  
+
           // account for the event weight
           r1 = RandomUniform_generate(part);
           if (r1 < scal) {
-  
+
             if (bhabha_record){
               // Get a slot in the record (this is thread safe)
               int64_t i_slot = RecordIndex_get_slot(bhabha_table_index);
@@ -362,15 +362,15 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
                   BhabhaTableData_set_theta_g(       bhabha_table, i_slot, theta_g);
               }
             }
-            
+
             // scattered photons are real so affect a macropart with a probability
             r2 = RandomUniform_generate(part);
             if (r2 < 1.0 / part_per_mpart){
               e_loss_primary = e_e_prime - e_primary;  // [GeV], <0, loss from a single photon emission
-  
+
               if (e_loss_primary == 0.0){
                 printf("0 energy loss: %g", e_loss_primary);
-              }else{ 
+              }else{
                 printf("[%d] lost %g [GeV]\n", (int)part->ipart, e_loss_primary);
                 if (-1.0 * e_loss_primary >= e_primary){  // macropart dies
                   LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
@@ -386,7 +386,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               }
             }
           }
-  
+
         }
       }
     }
