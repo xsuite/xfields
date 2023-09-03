@@ -318,7 +318,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
         e_photon_prime = y*e_primary;     // [GeV] scattered photon energy
 
         // get scattered angle for photon and beam primary
-        theta_g = MELECTRON_GEV / e_primary * sqrt((x - (x + 1.0) * y) / y);  
+        theta_g = MELECTRON_GEV / e_primary * sqrt((x - (x + 1.0) * y) / y);
         theta_e = theta_g * e_photon_prime / (e_primary - e_photon_prime);  // + e_photon; neglected
 
         // save computations for tracking: energies below are lost anyways, energies above compt_emax have negligible e loss from bhabha
@@ -346,13 +346,6 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
           // account for the event weight
           r1 = RandomUniform_generate(part);
           if (r1 < scal) {
-  
-            //FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/n84/xsuite_bhabhas.txt", "a");
-            //fprintf(f1, "%.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e %.6e\n", e_e_prime - e_primary, y, e_primary, *vx*e_primary, *vy*e_primary, *vzeta*e_primary, e_e_prime, px_e_prime, py_e_prime, ps_e_prime, pzeta_e_prime, e_photon, vx_photon*e_primary, vy_photon*e_primary, vzeta_photon*e_primary, e_photon_prime, px_photon_prime, py_photon_prime, pzeta_photon_prime, theta_g, theta_e, LocalParticle_get_p0c(part));
-            //fprintf(f1, "%g %d %g %g %g %g %g %g %g %g %g\n", q0, n, tmp, s, e_photon, y, e_e_prime - e_primary, wgt, ps_e_prime, r1, scal);
-            //fprintf(f1, "%g %g %g %g %g %g %g %g\n", q0, tmp, s, e_photon, y, e_e_prime - e_primary, theta_e, theta_g);
-            //fprintf(f1, "%g %g\n", e_photon, wgt);
-            //fclose(f1);
   
             if (bhabha_record){
               // Get a slot in the record (this is thread safe)

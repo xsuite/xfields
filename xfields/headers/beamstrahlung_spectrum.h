@@ -118,10 +118,6 @@ double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData bea
     LocalParticle_add_to_energy(part, -U_BS, 0);
     double energy_loss = -U_BS;  // <0
 
-    FILE *f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/n90_beamstrahlung_github_test/xsuite_bs.txt", "a");
-    fprintf(f1, "%d\n", LocalParticle_get_particle_id(part));
-    fclose(f1);
-
     if (beamstrahlung_record){
         // Get a slot in the record (this is thread safe)
         int64_t i_slot = RecordIndex_get_slot(beamstrahlung_table_index);
