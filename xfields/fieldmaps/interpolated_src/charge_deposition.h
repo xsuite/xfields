@@ -6,12 +6,6 @@
 #ifndef XFIELDS_CHARGE_DEPOSITION_H
 #define XFIELDS_CHARGE_DEPOSITION_H
 
-//include_file atomicadd.clh for_context opencl
-//include_file atomicadd.h for_context cpu_serial cpu_openmp
-
-
-
-
 /*gpufun*/ void p2m_rectmesh3d_one_particle(
         // INPUTS:
         const double x, 
