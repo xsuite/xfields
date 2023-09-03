@@ -10,9 +10,6 @@
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
 
-//include_file ../../fieldmaps/interpolated_src/atomicadd.clh for_context opencl
-//include_file ../../fieldmaps/interpolated_src/atomicadd.h for_context cpu_serial cpu_openmp
-
 /*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part,
