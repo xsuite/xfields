@@ -158,7 +158,7 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
     _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/atomicadd.h'),
+        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
