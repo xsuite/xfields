@@ -93,12 +93,12 @@ void synchrobeam_kick(
     const double y_bar_star = *y_star + *py_star * S - y_slice_star + py_slice_star * S;
 
     // Move to the uncoupled reference frame
-    const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
-    const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
+    const double x_bar_hat_star = x_bar_star*costheta + y_bar_star * sintheta;
+    const double y_bar_hat_star = -x_bar_star*sintheta + y_bar_star * costheta;
 
     // Compute derivatives of the transformation
-    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
-    const double dS_y_bar_hat_star = -x_bar_star*dS_sintheta +y_bar_star*dS_costheta;
+    const double dS_x_bar_hat_star = x_bar_star * dS_costheta + y_bar_star * dS_sintheta;
+    const double dS_y_bar_hat_star = -x_bar_star * dS_sintheta + y_bar_star * dS_costheta;
 
     // Get transverse fields
     double Ex, Ey;
@@ -147,7 +147,7 @@ void synchrobeam_kick(
             lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
         const int at_turn = LocalParticle_get_at_turn(part);
-        double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
+        /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);
         atomicAdd(lumi_address, wgt);
         }
     }
