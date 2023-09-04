@@ -111,9 +111,12 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
     ###################################################
     # Change to average beamstrahlung and track again #
     ###################################################
-    el_beambeam_b1.slices_other_beam_sqrtSigma_11_beamstrahlung = test_context.nplike_lib.array(n_slices*[sigma_x])
-    el_beambeam_b1.slices_other_beam_sqrtSigma_33_beamstrahlung = test_context.nplike_lib.array(n_slices*[sigma_y]) 
-    el_beambeam_b1.slices_other_beam_sqrtSigma_55_beamstrahlung = test_context.nplike_lib.array(slicer.bin_weights) * sigma_z_tot 
+    el_beambeam_b1.slices_other_beam_sqrtSigma_11_beamstrahlung = (
+        test_context.nparray_to_context_array(np.array(n_slices*[sigma_x])))
+    el_beambeam_b1.slices_other_beam_sqrtSigma_33_beamstrahlung = (
+        test_context.nparray_to_context_array(np.array(n_slices*[sigma_y])))
+    el_beambeam_b1.slices_other_beam_sqrtSigma_55_beamstrahlung = (
+        test_context.nparray_to_context_array(slicer.bin_weights * sigma_z_tot))
 
     line.configure_radiation(model_beamstrahlung='mean')
     record_avg = line.start_internal_logging_for_elements_of_type(
