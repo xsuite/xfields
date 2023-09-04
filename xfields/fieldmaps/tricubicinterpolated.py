@@ -154,6 +154,7 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
     _rename = {nn: '_'+nn for nn in _xofields}
 
     _extra_c_sources = [
+        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
