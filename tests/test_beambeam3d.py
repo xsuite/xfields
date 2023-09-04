@@ -17,9 +17,11 @@ def test_digitize(test_context):
 
     if isinstance(test_context, xo.ContextPyopencl):
         pytest.skip("Not implemented for OpenCL")
+        return
 
     if isinstance(test_context, xo.ContextCupy):
         pytest.skip("Not implemented for cupy")
+        return
 
     slicer = xf.TempSlicer(_context=test_context, n_slices=3, sigma_z=1, mode="unicharge")
     z = np.sort(np.hstack([10, slicer.bin_centers, slicer.bin_edges, -10]))
@@ -38,15 +40,16 @@ def test_digitize(test_context):
     # slice id -1 is ahead of first bin, n_slices is behind last bin or at last bin lower edge
     assert np.all(slice_indices == np_digitize), "Slice indices do not match!"
 
+@for_all_test_contexts
+def test_compute_moments_1(test_context):
 
-def test_compute_moments_1():
-    for context in xo.context.get_test_contexts():
+        if isinstance(test_context, xo.ContextPyopencl):
+            pytest.skip("Not implemented for OpenCL")
+            return
 
-        print(repr(context))
-
-        if isinstance(context, xo.ContextPyopencl):
-            print('Incompatible with OpenCL')
-            continue
+        if isinstance(test_context, xo.ContextCupy):
+            pytest.skip("Not implemented for cupy")
+            return
 
         ###########
         # ttbar 2 #
@@ -69,7 +72,7 @@ def test_compute_moments_1():
         n_slices_list = [1, 100]
 
         # on GPU check for multiple grid settings
-        if isinstance(context, xo.ContextCupy):
+        if isinstance(test_context, xo.ContextCupy):
             default_blocksize_list = [1, 256, 1024]
         else:
             default_blocksize_list = [0]
@@ -80,8 +83,8 @@ def test_compute_moments_1():
 
                 print(f"[test.py] n_slices: {n_slices}")
 
-                if isinstance(context, xo.ContextCupy):
-                    context.default_shared_mem_size_bytes = n_slices * 17 * 8
+                if isinstance(test_context, xo.ContextCupy):
+                    test_context.default_shared_mem_size_bytes = n_slices * 17 * 8
 
                 #############
                 # particles #
@@ -91,7 +94,7 @@ def test_compute_moments_1():
                 part_range = np.linspace(-5*sigma_z_tot,5*sigma_z_tot,n_macroparticles)
 
                 particles_b0 = xp.Particles(
-                            _context = context,
+                            _context = test_context,
                             q0        = -1,
                             p0c       = p0c,
                             mass0     = mass0,
@@ -103,7 +106,9 @@ def test_compute_moments_1():
                             delta     = part_range,
                             )
 
-                slicer = xf.TempSlicer(_context=context, n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+                slicer = xf.TempSlicer(
+                    _context=test_context, n_slices=n_slices, sigma_z=sigma_z_tot,
+                    mode="unicharge")
 
                 particles_b1 = particles_b0.copy()
                 particles_b2 = particles_b0.copy()
@@ -121,7 +126,7 @@ def test_compute_moments_1():
                     # check if all lost particles have slice idx = -1
                     assert np.all(particles.slice[particles.state == 0] == -1), "Not all lost particles have slice -1!"
 
-                    slice_moments = context.zeros(n_slices*(1+6+10),dtype=np.float64)  # count (1) + moments (16)
+                    slice_moments = test_context.zeros(n_slices*(1+6+10),dtype=np.float64)  # count (1) + moments (16)
 
                     for i_slice in range(n_slices):
                         mask = (particles.slice == i_slice)  # dead particles are all in slice -1
@@ -172,7 +177,11 @@ def test_compute_moments_1():
                             slice_moments[16*n_slices+i_slice] = (py_diff**2       ).sum() / num_macroparticles_slice  # Sigma_44
 
                     # check for each moment
-                    assert np.allclose(slice_moments, slice_moments_xfields, atol=1e-16), f"Xfields moment computation (n_slices={n_slices}, n_macroparticles={n_macroparticles}, blocksize(on GPU only)={default_blocksize}) is wrong!"
+                    assert np.allclose(
+                        slice_moments, slice_moments_xfields, atol=1e-16),(
+                        f"Xfields moment computation (n_slices={n_slices}, "
+                        f"n_macroparticles={n_macroparticles}, "
+                        "blocksize(on GPU only)={default_blocksize}) is wrong!")
 
 def test_compute_moments_2():
     for context in xo.context.get_test_contexts():
