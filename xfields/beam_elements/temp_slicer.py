@@ -22,6 +22,8 @@ _compute_slice_moments_kernel = xo.Kernel(
                   xo.Arg(xo.Int64, name='threshold_num_macroparticles')]
 )
 
+_temp_slicer_kernels = {'digitize': _digitize_kernel,
+ 			'compute_slice_moments':_compute_slice_moments_kernel}
 
 class TempSlicer(xo.HybridClass):
 
@@ -35,6 +37,8 @@ class TempSlicer(xo.HybridClass):
                         ]
 
     _depends_on = [xp.Particles]
+
+    _kernels = _temp_slicer_kernels
 
     def __init__(self, _context=None,
                  _buffer=None,
@@ -222,7 +226,6 @@ class TempSlicer(xo.HybridClass):
 
         if isinstance(context, xo.ContextCupy):
             raise NotImplementedError # Still to be debugged
-
         else:  # OpenMP implementation of binary search for CPU
             indices = particles._context.nplike_lib.zeros_like(particles.zeta, dtype=particles._context.nplike_lib.int64)
             self._context.kernels.digitize(particles = particles, particles_zeta = particles.zeta,
