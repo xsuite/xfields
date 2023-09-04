@@ -70,19 +70,20 @@ def test_compute_moments_1():
         n_slices_list = [1, 100]
 
         # on GPU check for multiple grid settings
-        default_blocksize_list = [0]
+        if isinstance(context, xo.ContextCupy):
+            context.default_shared_mem_size_bytes = n_slices * 17 * 8
+            default_blocksize_list = [1, 256, 1024]
+        else:
+            default_blocksize_list = [0]
 
         for default_blocksize in default_blocksize_list:
-            if isinstance(context, xo.ContextCupy):
-                context.default_block_size=default_blocksize
-                print(f"[test.py] default_blocksize: {context.default_block_size}")
+
             for n_slices in n_slices_list:
 
                 print(f"[test.py] n_slices: {n_slices}")
 
                 if isinstance(context, xo.ContextCupy):
                     context.default_shared_mem_size_bytes = n_slices * 17 * 8
-                    default_blocksize_list = [1, 256, 1024]
 
                 #############
                 # particles #
