@@ -766,11 +766,17 @@ def test_beambeam3d_gx_gy_singularity(test_context, Sig_11_0, Sig_12_0, Sig_13_0
     assert not np.isnan(part.py[0])
 
 
-@for_all_test_contexts(excluding='ContextPyopencl')
 @for_all_sigma_configurations
 def test_beambeam3d_collective(test_context, Sig_11_0, Sig_12_0, Sig_13_0,
                                Sig_14_0, Sig_22_0, Sig_23_0, Sig_24_0, Sig_33_0,
                                Sig_34_0, Sig_44_0):
+
+    if isinstance(test_context, xo.ContextCupy):
+        pytest.skip('Cupy does not support bb3d collective')
+
+    if isinstance(test_context, xo.ContextPyopencl):
+        pytest.skip('Pyopencl does not support bb3d collective')
+
     # crossing plane
     alpha = 0.7
 
