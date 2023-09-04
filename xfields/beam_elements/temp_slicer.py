@@ -22,31 +22,6 @@ _compute_slice_moments_kernel = xo.Kernel(
                   xo.Arg(xo.Int64, name='threshold_num_macroparticles')]
 )
 
-_compute_slice_moments_cuda_1_kernel = xo.Kernel(
-            c_name="compute_slice_moments_cuda_1",
-            args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
-                  xo.Arg(xo.Int64, pointer=True, name='particles_slice'),
-                  xo.Arg(xo.Float64, pointer=True, name='moments'),
-                  xo.Arg(xo.Int64, const=True, name='num_macroparticles'),
-                  xo.Arg(xo.Int64, const=True, name='n_slices')],
-            n_threads="num_macroparticles",
-)
-
-_compute_slice_moments_cuda_2_kernel = xo.Kernel(
-            c_name="compute_slice_moments_cuda_2",
-            args=[xo.Arg(xo.Float64, pointer=True, name='moments'),
-                  xo.Arg(xo.Int64, const=True, name='n_slices'),
-                  xo.Arg(xo.Int64, const=True, name='weight'),
-                  xo.Arg(xo.Int64, const=True, name='threshold_num_macroparticles')],
-            n_threads="n_slices",
-)
-
-_temp_slicer_kernels = {'digitize': _digitize_kernel,
-			'compute_slice_moments':_compute_slice_moments_kernel,
-                        'compute_slice_moments_cuda_1':_compute_slice_moments_cuda_1_kernel,
-                        'compute_slice_moments_cuda_2':_compute_slice_moments_cuda_2_kernel,
-                        }
-
 
 class TempSlicer(xo.HybridClass):
 
@@ -60,9 +35,6 @@ class TempSlicer(xo.HybridClass):
                         ]
 
     _depends_on = [xp.Particles]
-
-    _kernels = _temp_slicer_kernels
-
 
     def __init__(self, _context=None,
                  _buffer=None,
@@ -277,16 +249,7 @@ class TempSlicer(xo.HybridClass):
             self.assign_slices(particles)
 
         if isinstance(context, xo.ContextCupy):
-
-            slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)
-            self._context.kernels.compute_slice_moments_cuda_1(particles=particles, particles_slice=particles.slice,
-                                                           moments=slice_moments, num_macroparticles=np.int64(len(particles.slice)),
-                                                           n_slices=np.int64(self.num_slices))
-
-            self._context.kernels.compute_slice_moments_cuda_2(moments=slice_moments, n_slices=np.int64(self.num_slices),
-                                                           weight=particles.weight.get()[0], threshold_num_macroparticles=np.int64(threshold_num_macroparticles))
-            return slice_moments[int(self.num_slices*16):]
-
+            raise NotImplementedError # Still to be debugged
         # context CPU with OpenMP
         else:
 

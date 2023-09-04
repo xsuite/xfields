@@ -136,7 +136,7 @@ void synchrobeam_kick(
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
         get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
         wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
- 
+
         // init record table
         BeamBeamBiGaussian3DRecordData lumi_record = NULL;
         LumiTableData lumi_table                   = NULL;
