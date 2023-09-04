@@ -187,11 +187,14 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
 @for_all_test_contexts
 def test_beambeam3d_beamstrahlung_ws_config(test_context):
 
-    print(repr(test_context))
-
     if isinstance(test_context, xo.ContextPyopencl):
-        print("skipping test for pyopencl context")
-        continue
+        pytest.skip("Not implemented for OpenCL")
+        return
+
+    if isinstance(test_context, xo.ContextCupy):
+        pytest.skip("Not implemented for cupy")
+        return
+
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
 
