@@ -66,7 +66,7 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
 
     particles_b1.name = "b1"
 
-    slicer = xf.TempSlicer(_context=test_context, n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+    slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
 
     el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
             _context=test_context,
