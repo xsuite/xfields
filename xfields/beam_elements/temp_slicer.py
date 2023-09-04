@@ -221,8 +221,7 @@ class TempSlicer(xo.HybridClass):
         bin_edges = context.nparray_to_context_array(self.bin_edges)
 
         if isinstance(context, xo.ContextCupy):
-            digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
-            indices = digitize(particles.zeta, bin_edges, right=True)
+            raise NotImplementedError # Still to be debugged
 
         else:  # OpenMP implementation of binary search for CPU
             indices = particles._context.nplike_lib.zeros_like(particles.zeta, dtype=particles._context.nplike_lib.int64)
