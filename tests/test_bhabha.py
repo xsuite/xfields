@@ -124,9 +124,6 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
 @for_all_test_contexts
 def test_beambeam3d_bhabha_ws_config(test_context):
 
-    if isinstance(test_context, xo.ContextPyopencl):
-        print('Incompatible with OpenCL')
-        continue
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
 
@@ -160,7 +157,7 @@ def test_beambeam3d_bhabha_ws_config(test_context):
 
     #e-
     particles_b1 = xp.Particles(
-                _context = test_context, 
+                _context = test_context,
                 q0        = -1,
                 p0c       = p0c,
                 mass0     = mass0,
@@ -462,7 +459,7 @@ def test_beambeam3d_bhabha_ss(test_context):
 
     #e-
     particles_b1 = xp.Particles(
-                _context = test_context, 
+                _context = test_context,
                 q0        = -1,
                 p0c       = p0c,
                 mass0     = mass0,
@@ -477,7 +474,7 @@ def test_beambeam3d_bhabha_ss(test_context):
 
     # e+
     particles_b2 = xp.Particles(
-                _context = test_context, 
+                _context = test_context,
                 q0        = 1,
                 p0c       = p0c,
                 mass0     = mass0,
@@ -489,7 +486,7 @@ def test_beambeam3d_bhabha_ss(test_context):
                 delta     = sigma_delta_tot*np.random.randn(n_macroparticles_b2),
                 weight=bunch_intensity/n_macroparticles_b2,
                 )
-    
+
     particles_b1.name = "b1"
     particles_b2.name = "b2"
 
