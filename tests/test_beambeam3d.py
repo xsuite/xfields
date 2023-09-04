@@ -10,34 +10,33 @@ from xobjects.test_helpers import for_all_test_contexts
 
 import ducktrack as dtk
 
-def test_digitize():
+@for_all_test_contexts
+def test_digitize(test_context):
 
-    for context in xo.context.get_test_contexts():
+    print(repr(test_context))
 
-        print(repr(context))
+    if isinstance(test_context, xo.ContextPyopencl):
+        pytest.skip("Not implemented for OpenCL")
 
-        if isinstance(context, xo.ContextPyopencl):
-            print('Incompatible with OpenCL')
-            continue
+    if isinstance(test_context, xo.ContextCupy):
+        pytest.skip("Not implemented for cupy")
 
-        slicer = xf.TempSlicer(_context=context, n_slices=3, sigma_z=1, mode="unicharge")
-        z = np.sort(np.hstack([10, slicer.bin_centers, slicer.bin_edges, -10]))
+    slicer = xf.TempSlicer(_context=test_context, n_slices=3, sigma_z=1, mode="unicharge")
+    z = np.sort(np.hstack([10, slicer.bin_centers, slicer.bin_edges, -10]))
 
-        particles = xp.Particles(
-                            _context = context,
-                            zeta      = z,
-                            )
+    particles = xp.Particles(_context=test_context, zeta=z)
 
-        # get slice indices using kernel, bins sorted in decreasing order
-        slice_indices = slicer.get_slice_indices(particles)
+    # get slice indices using kernel, bins sorted in decreasing order
+    slice_indices = slicer.get_slice_indices(particles)
 
-        # get slice indices using python
-        np_digitize = context.nplike_lib.array([np.digitize(i, slicer.bin_edges, right=True) for i in z]) - 1
+    # get slice indices using python
+    np_digitize = test_context.nplike_lib.array(
+        [np.digitize(i, slicer.bin_edges, right=True) for i in z]) - 1
 
-        # x in ]xmin, xmax]
-        # slice id 0 is the head of the bunch
-        # slice id -1 is ahead of first bin, n_slices is behind last bin or at last bin lower edge
-        assert np.all(slice_indices == np_digitize), "Slice indices do not match!"
+    # x in ]xmin, xmax]
+    # slice id 0 is the head of the bunch
+    # slice id -1 is ahead of first bin, n_slices is behind last bin or at last bin lower edge
+    assert np.all(slice_indices == np_digitize), "Slice indices do not match!"
 
 
 def test_compute_moments_1():
