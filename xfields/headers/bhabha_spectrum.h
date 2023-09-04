@@ -45,7 +45,7 @@ float requiv(LocalParticle *part, const double e_primary, const double compt_x_m
     // account for noninteger photon by randomly emitting n+1 sometimes
     n_photons = (int)floor(r_photons);
     r_photons -= n_photons;
-    if(RandomUniform_generate(part) < r_photons) n_photons++;
+    if(RandomUniform_generate(part) < r_photons) n_photons += 1.0;
   
     return n_photons;
 }
@@ -290,9 +290,9 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     double e_loss_primary_tot = 0.0;  // [GeV] total energy lost by the macroparticle
 
     double eps = 0.0;                 // 1e-5 in guinea
-    static int compt_scale = 1;       // [1]
-    static int compt_emax = 200;      // [GeV] upper cutoff from guineapig
-    static double pair_ecut = 0.005;  // [GeV] lower cutoff from guineapig
+    const double compt_scale = 1;       // [1]
+    const double compt_emax = 200;      // [GeV] upper cutoff from guineapig
+    const double pair_ecut = 0.005;  // [GeV] lower cutoff from guineapig
     double r1, r2;  // [1] uniform random numbers
 
     if (q2 > MELECTRON_GEV*MELECTRON_GEV) return;  // global upper cut on virtuality; eliminates "constant" part of q2 spectrum i.e. the hadronic virtual photons
