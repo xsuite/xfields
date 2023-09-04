@@ -78,7 +78,7 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
             min_sigma_diff     = 1e-28,
             # slice intensity [num. real particles] n_slices inferred from length of this
             slices_other_beam_num_particles      = slicer.bin_weights * bunch_intensity,
-            # unboosted strong beam moments  
+            # unboosted strong beam moments
             slices_other_beam_zeta_center = slicer.bin_centers,
             slices_other_beam_Sigma_11    = n_slices*[sigma_x**2],
             slices_other_beam_Sigma_22    = n_slices*[sigma_px**2],
@@ -104,7 +104,11 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     assert line._needs_rng == True
 
     record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-        xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(3e4), "lumitable": int(0)})
+        xf.BeamBeamBiGaussian3D,
+        capacity={
+            "beamstrahlungtable": int(0),
+            "bhabhatable": int(3e4),
+            "lumitable": int(0)})
     line.track(particles_b1, num_turns=1)
     line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -114,7 +118,8 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    xsuite_ws_b1_hist  = np.histogram( record_ws_b1.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
+    xsuite_ws_b1_hist  = np.histogram(
+        record_ws_b1.bhabhatable.photon_energy/1e9, bins=bins)[0][-5:]
     ws_b1_bin_rel_errors = np.abs(xsuite_ws_b1_hist - guinea_hist) / (guinea_hist)
     print(f"WS beam 1 bin relative errors [1]: {ws_b1_bin_rel_errors}")
 
@@ -123,6 +128,14 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
 
 @for_all_test_contexts
 def test_beambeam3d_bhabha_ws_config(test_context):
+
+    if isinstance(test_context, xo.ContextPyopencl):
+        pytest.skip("Not implemented for OpenCL")
+        return
+
+    if isinstance(test_context, xo.ContextCupy):
+        pytest.skip("Not implemented for cupy")
+        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
