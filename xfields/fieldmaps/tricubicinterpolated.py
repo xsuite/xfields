@@ -7,6 +7,7 @@ import numpy as np
 
 import xobjects as xo
 import xpart as xp
+import xtrack as xt
 
 from .interpolated import _configure_grid
 from ..general import _pkg_root
