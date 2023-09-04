@@ -765,7 +765,7 @@ def test_beambeam3d_gx_gy_singularity(test_context, Sig_11_0, Sig_12_0, Sig_13_0
     assert not np.isnan(part.px[0])
     assert not np.isnan(part.py[0])
 
-
+@for_all_test_contexts
 @for_all_sigma_configurations
 def test_beambeam3d_collective(test_context, Sig_11_0, Sig_12_0, Sig_13_0,
                                Sig_14_0, Sig_22_0, Sig_23_0, Sig_24_0, Sig_33_0,
