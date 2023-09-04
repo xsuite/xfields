@@ -71,7 +71,6 @@ def test_compute_moments_1():
 
         # on GPU check for multiple grid settings
         if isinstance(context, xo.ContextCupy):
-            context.default_shared_mem_size_bytes = n_slices * 17 * 8
             default_blocksize_list = [1, 256, 1024]
         else:
             default_blocksize_list = [0]
