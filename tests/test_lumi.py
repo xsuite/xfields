@@ -435,8 +435,13 @@ def test_beambeam3d_bhabha_qss(test_context):
 def test_beambeam3d_bhabha_ss(test_context):
 
     if isinstance(test_context, xo.ContextPyopencl):
-        print('Incompatible with OpenCL')
-        continue
+        pytest.skip("Not implemented for OpenCL")
+        return
+
+    if isinstance(test_context, xo.ContextCupy):
+        pytest.skip("Not implemented for cupy")
+        return
+
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
 
