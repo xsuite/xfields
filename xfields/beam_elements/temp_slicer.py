@@ -27,7 +27,9 @@ _temp_slicer_kernels = {'digitize': _digitize_kernel,
 
 class TempSlicer(xo.HybridClass):
 
-    _xofields = {}
+    _xofields = {
+        '_dummy': xo.Int64, # Not to have zero-size xobject
+    }
 
     # I add undescores in front of the names so that I can define custom
     # properties
