@@ -31,22 +31,22 @@ float requiv(LocalParticle *part, const double e_primary, const double compt_x_m
     */
     const double emass2=MELECTRON_GEV*MELECTRON_GEV;
     double lnxmin, s4, xmin, lns4, r_photons, n_photons;
-  
+
     s4 = e_primary*e_primary;  // [GeV^2] mandelstam s divided by 4: s/4
     xmin = compt_x_min * emass2 / s4;  // [1] virtual photon's energy fraction compared to primary energy
-  
+
     if (xmin>=1.0) return 0.0;
-  
+
     lnxmin=-log(xmin);
     lns4 = log(s4 / (MELECTRON_GEV*MELECTRON_GEV));
-  
+
     r_photons = .00232461*lnxmin*(lnxmin + lns4);  // alpha/pi = 0.00232461
-  
+
     // account for noninteger photon by randomly emitting n+1 sometimes
     n_photons = (int)floor(r_photons);
     r_photons -= n_photons;
     if(RandomUniform_generate(part) < r_photons) n_photons += 1.0;
-  
+
     return n_photons;
 }
 
@@ -106,52 +106,6 @@ void mequiv (LocalParticle *part,
     return;
   
 }
-
-/***********************************************************************************/
-/* Subroutines for Compton scattering of the virtual photon and the opposite slice */
-/* Adapted from GUINEA-PIG                                                         */
-/***********************************************************************************/
-
-/*gpufun*/
-void equal_newton(double (*fint)(double, const double),   // the integrated spectrum (CDF)
-                  double (*fdiff)(double, const double),  // the differential spectrum (PDF)
-                  double xmin,              // left boundary of domain
-                  double xmax,              // right boundary of domain
-                  double y,                 // random sample on y axis
-                  double *x,                // initial guess for root (inverse CDF sampling)
-                  const double x_compt      // [1] normalized cm energy of virtual photon - electron compton scattering
-
-){
-    /*
-    Based on:
-    GUINEA-PIG
-    https://gitlab.cern.ch/clic-software/guinea-pig-legacy/-/blob/master/background.c#L23
-    ----
-    Uses the Newton-Raphson root finding method for inverse CDF sampling of the given spectrum.
-    */
-    double eps=1e-6;
-    double ytry,xtry;
-    int i=0;
-    xtry=*x;
-    ytry=(*fint)(xtry, x_compt);
-    while (fabs(ytry-y)>(fabs(ytry)+fabs(y))*eps
-           && (xmax-xmin)>eps) {
-        i++;
-        xtry-=(ytry-y)/(*fdiff)(xtry, x_compt);
-        if ((xtry>=xmax)||(xtry<=xmin)) {
-            xtry=0.5*(xmax+xmin);
-        }
-        ytry=(*fint)(xtry, x_compt);
-        if(ytry<y) {
-            xmin=xtry;
-        }
-        else {
-            xmax=xtry;
-        }
-    }
-    *x=xtry;
-}
-
 
 /*gpufun*/
 double compt_tot(double s  // [GeV^2] center of mass energy of the macroparticle - virtual photon Compton scattering
@@ -219,6 +173,52 @@ double compt_int(double y,             // [1] virtual photon energy fraction com
 }
 
 
+/***********************************************************************************/
+/* Subroutines for Compton scattering of the virtual photon and the opposite slice */
+/* Adapted from GUINEA-PIG                                                         */
+/***********************************************************************************/
+
+/*gpufun*/
+void equal_newton(
+                  double xmin,              // left boundary of domain
+                  double xmax,              // right boundary of domain
+                  double y,                 // random sample on y axis
+                  double *x,                // initial guess for root (inverse CDF sampling)
+                  const double x_compt      // [1] normalized cm energy of virtual photon - electron compton scattering
+
+){
+    /*
+    Based on:
+    GUINEA-PIG
+    https://gitlab.cern.ch/clic-software/guinea-pig-legacy/-/blob/master/background.c#L23
+    ----
+    Uses the Newton-Raphson root finding method for inverse CDF sampling of the given spectrum.
+    */
+    double eps=1e-6;
+    double ytry,xtry;
+    int i=0;
+    xtry=*x;
+    ytry=compt_int(xtry, x_compt);
+    while (fabs(ytry-y)>(fabs(ytry)+fabs(y))*eps
+           && (xmax-xmin)>eps) {
+        i++;
+        xtry-=(ytry-y)/compt_diff(xtry, x_compt);
+        if ((xtry>=xmax)||(xtry<=xmin)) {
+            xtry=0.5*(xmax+xmin);
+        }
+        ytry=compt_int(xtry, x_compt);
+        if(ytry<y) {
+            xmin=xtry;
+        }
+        else {
+            xmax=xtry;
+        }
+    }
+    *x=xtry;
+}
+
+
+
 /*gpufun*/
 double compt_select(LocalParticle *part,
                     double s  // [GeV^2] center of mass energy of the macroparticle - virtual photon Compton scattering
@@ -243,7 +243,7 @@ double compt_select(LocalParticle *part,
     y = RandomUniform_generate(part);
     c = cmin + (cmax - cmin)*y;  // [m^2] this is the random sample in the inverse CDF
     y *= ym;                     // [1] this is the initial guess on the domain axis 
-    equal_newton(&compt_int, &compt_diff, 0.0, ym, c, &y, x_compt);  // find root: y=sigma^-1(c) i.e. do the inverse CDF sampling
+    equal_newton(0.0, ym, c, &y, x_compt);  // find root: y=sigma^-1(c) i.e. do the inverse CDF sampling
   
     return y;  // [1]
 }
