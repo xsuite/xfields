@@ -28,7 +28,9 @@ _compute_slice_moments_cuda_1_kernel = xo.Kernel(
                   xo.Arg(xo.Int64, pointer=True, name='particles_slice'),
                   xo.Arg(xo.Float64, pointer=True, name='moments'),
                   xo.Arg(xo.Int64, const=True, name='num_macroparticles'),
-                  xo.Arg(xo.Int64, const=True, name='n_slices')],
+                  xo.Arg(xo.Int64, const=True, name='n_slices'),
+                  xo.Arg(xo.Int64, const=True, name='shared_mem_size_bytes')
+                  ],
             n_threads="num_macroparticles",
 )
 
@@ -281,7 +283,7 @@ class TempSlicer(xo.HybridClass):
             slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)
             self._context.kernels.compute_slice_moments_cuda_1(particles=particles, particles_slice=particles.slice,
                                                            moments=slice_moments, num_macroparticles=np.int64(len(particles.slice)),
-                                                           n_slices=np.int64(self.num_slices))
+                                                           n_slices=np.int64(self.num_slices), shared_mem_size_bytes=np.int64(self.num_slices*17*8))
 
             self._context.kernels.compute_slice_moments_cuda_2(moments=slice_moments, n_slices=np.int64(self.num_slices),
                                                            weight=particles.weight.get()[0], threshold_num_macroparticles=np.int64(threshold_num_macroparticles))
