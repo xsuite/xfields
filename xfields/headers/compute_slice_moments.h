@@ -12,7 +12,7 @@
 #ifndef XFIELDS_COMPUTESLICEMOMENTS_H__
 #define XFIELDS_COMPUTESLICEMOMENTS_H__
 
-void compute_slice_moments_cuda_1(ParticlesData particles, int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices){};
+void compute_slice_moments_cuda_1(ParticlesData particles, int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices, const int64_t shared_mem_size_bytes){};
 void compute_slice_moments_cuda_2(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles){};
 
 int64_t binary_search(const double* bins, int first, int last, const double x){
@@ -167,7 +167,7 @@ __global__ void digitize(ParticlesData particles, const double* particles_zeta, 
 __global__ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, double* moments, int n_slices, int threshold_n_macroparticles){};
 
 __global__ void compute_slice_moments_cuda_1(ParticlesData particles,
-                        int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices) {
+                        int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices, const int64_t shared_mem_size_bytes) {
 
         // each thread loads one element from global to shared mem
         unsigned int tid = threadIdx.x;

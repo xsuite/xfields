@@ -22,8 +22,34 @@ _compute_slice_moments_kernel = xo.Kernel(
                   xo.Arg(xo.Int64, name='threshold_num_macroparticles')]
 )
 
+
+_compute_slice_moments_cuda_1_kernel = xo.Kernel(
+            c_name="compute_slice_moments_cuda_1",
+            args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
+                  xo.Arg(xo.Int64, pointer=True, name='particles_slice'),
+                  xo.Arg(xo.Float64, pointer=True, name='moments'),
+                  xo.Arg(xo.Int64, const=True, name='num_macroparticles'),
+                  xo.Arg(xo.Int64, const=True, name='n_slices'),
+                  xo.Arg(xo.Int64, const=True, name='shared_mem_size_bytes')
+                  ],
+            n_threads="num_macroparticles",
+)
+
+_compute_slice_moments_cuda_2_kernel = xo.Kernel(
+            c_name="compute_slice_moments_cuda_2",
+            args=[xo.Arg(xo.Float64, pointer=True, name='moments'),
+                  xo.Arg(xo.Int64, const=True, name='n_slices'),
+                  xo.Arg(xo.Int64, const=True, name='weight'),
+                  xo.Arg(xo.Int64, const=True, name='threshold_num_macroparticles')],
+            n_threads="n_slices",
+)
+
 _temp_slicer_kernels = {'digitize': _digitize_kernel,
- 			'compute_slice_moments':_compute_slice_moments_kernel}
+                        'compute_slice_moments':_compute_slice_moments_kernel,
+                        'compute_slice_moments_cuda_1':_compute_slice_moments_cuda_1_kernel,
+                        'compute_slice_moments_cuda_2':_compute_slice_moments_cuda_2_kernel,
+                        }
+
 
 class TempSlicer(xo.HybridClass):
 
@@ -227,7 +253,8 @@ class TempSlicer(xo.HybridClass):
         bin_edges = context.nparray_to_context_array(self.bin_edges)
 
         if isinstance(context, xo.ContextCupy):
-            raise NotImplementedError # Still to be debugged
+            digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
+            indices = digitize(particles.zeta, bin_edges, right=True)
         else:  # OpenMP implementation of binary search for CPU
             indices = particles._context.nplike_lib.zeros_like(particles.zeta, dtype=particles._context.nplike_lib.int64)
             self._context.kernels.digitize(particles = particles, particles_zeta = particles.zeta,
@@ -253,7 +280,15 @@ class TempSlicer(xo.HybridClass):
             self.assign_slices(particles)
 
         if isinstance(context, xo.ContextCupy):
-            raise NotImplementedError # Still to be debugged
+            slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)
+            self._context.kernels.compute_slice_moments_cuda_1(particles=particles, particles_slice=particles.slice,
+                                                           moments=slice_moments, num_macroparticles=np.int64(len(particles.slice)),
+                                                           n_slices=np.int64(self.num_slices), shared_mem_size_bytes=np.int64(self.num_slices*17*8))
+
+            self._context.kernels.compute_slice_moments_cuda_2(moments=slice_moments, n_slices=np.int64(self.num_slices),
+                                                           weight=particles.weight.get()[0], threshold_num_macroparticles=np.int64(threshold_num_macroparticles))
+            return slice_moments[int(self.num_slices*16):]
+
         # context CPU with OpenMP
         else:
 
