@@ -371,7 +371,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               if (e_loss_primary == 0.0){
                 printf("0 energy loss: %g", e_loss_primary);
               }else{
-                printf("[%d] lost %g [GeV]\n", (int)part->ipart, e_loss_primary);
+                //printf("[%d] lost %g [GeV]\n", (int)part->ipart, e_loss_primary);
                 if (-1.0 * e_loss_primary >= e_primary){  // macropart dies
                   LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
                   return;
