@@ -149,6 +149,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _extra_c_sources= [
         _pkg_root.joinpath('headers/constants.h'),
+        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
         _pkg_root.joinpath('headers','particle_states.h'),

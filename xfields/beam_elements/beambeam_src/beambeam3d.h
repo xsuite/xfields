@@ -96,12 +96,12 @@ void synchrobeam_kick(
     const double y_bar_star = *y_star + *py_star * S - y_slice_star + py_slice_star * S;
 
     // Move to the uncoupled reference frame
-    const double x_bar_hat_star = x_bar_star*costheta +y_bar_star*sintheta;
-    const double y_bar_hat_star = -x_bar_star*sintheta +y_bar_star*costheta;
+    const double x_bar_hat_star = x_bar_star*costheta + y_bar_star * sintheta;
+    const double y_bar_hat_star = -x_bar_star*sintheta + y_bar_star * costheta;
 
     // Compute derivatives of the transformation
-    const double dS_x_bar_hat_star = x_bar_star*dS_costheta +y_bar_star*dS_sintheta;
-    const double dS_y_bar_hat_star = -x_bar_star*dS_sintheta +y_bar_star*dS_costheta;
+    const double dS_x_bar_hat_star = x_bar_star * dS_costheta + y_bar_star * dS_sintheta;
+    const double dS_y_bar_hat_star = -x_bar_star * dS_sintheta + y_bar_star * dS_costheta;
 
     // Get transverse fields
     double Ex, Ey;
@@ -139,7 +139,7 @@ void synchrobeam_kick(
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
         get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
         wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
- 
+
         // init record table
         BeamBeamBiGaussian3DRecordData lumi_record = NULL;
         LumiTableData lumi_table                   = NULL;
@@ -221,7 +221,9 @@ void synchrobeam_kick(
           //if (radius < sqrt(Sig_33_hat_star)){
             // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
             compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
-              e_photon, compt_x_min, q2, x_photon, y_photon, S, px_photon, py_photon, pzeta_photon, wgt, px_star, py_star, pzeta_star, q0);
+                     e_photon, compt_x_min, q2, 
+                     x_photon, y_photon, S, px_photon, py_photon, pzeta_photon, 
+                     wgt, px_star, py_star, pzeta_star, q0);
     
             // reload pzeta since they changed from compton; px and py are changed only locally
             *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick

@@ -22,6 +22,7 @@ _compute_slice_moments_kernel = xo.Kernel(
                   xo.Arg(xo.Int64, name='threshold_num_macroparticles')]
 )
 
+
 _compute_slice_moments_cuda_1_kernel = xo.Kernel(
             c_name="compute_slice_moments_cuda_1",
             args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
@@ -44,7 +45,7 @@ _compute_slice_moments_cuda_2_kernel = xo.Kernel(
 )
 
 _temp_slicer_kernels = {'digitize': _digitize_kernel,
-			'compute_slice_moments':_compute_slice_moments_kernel,
+                        'compute_slice_moments':_compute_slice_moments_kernel,
                         'compute_slice_moments_cuda_1':_compute_slice_moments_cuda_1_kernel,
                         'compute_slice_moments_cuda_2':_compute_slice_moments_cuda_2_kernel,
                         }
@@ -52,7 +53,9 @@ _temp_slicer_kernels = {'digitize': _digitize_kernel,
 
 class TempSlicer(xo.HybridClass):
 
-    _xofields = {}
+    _xofields = {
+        '_dummy': xo.Int64, # Not to have zero-size xobject
+    }
 
     # I add undescores in front of the names so that I can define custom
     # properties
@@ -64,7 +67,6 @@ class TempSlicer(xo.HybridClass):
     _depends_on = [xp.Particles]
 
     _kernels = _temp_slicer_kernels
-
 
     def __init__(self, _context=None,
                  _buffer=None,
@@ -253,7 +255,6 @@ class TempSlicer(xo.HybridClass):
         if isinstance(context, xo.ContextCupy):
             digitize = particles._context.nplike_lib.digitize  # only works with cpu and cupy
             indices = digitize(particles.zeta, bin_edges, right=True)
-
         else:  # OpenMP implementation of binary search for CPU
             indices = particles._context.nplike_lib.zeros_like(particles.zeta, dtype=particles._context.nplike_lib.int64)
             self._context.kernels.digitize(particles = particles, particles_zeta = particles.zeta,
@@ -279,7 +280,6 @@ class TempSlicer(xo.HybridClass):
             self.assign_slices(particles)
 
         if isinstance(context, xo.ContextCupy):
-
             slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)
             self._context.kernels.compute_slice_moments_cuda_1(particles=particles, particles_slice=particles.slice,
                                                            moments=slice_moments, num_macroparticles=np.int64(len(particles.slice)),

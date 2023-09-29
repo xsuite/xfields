@@ -7,6 +7,7 @@ import numpy as np
 
 import xobjects as xo
 import xpart as xp
+import xtrack as xt
 
 from .interpolated import _configure_grid
 from ..general import _pkg_root
@@ -154,6 +155,7 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
     _rename = {nn: '_'+nn for nn in _xofields}
 
     _extra_c_sources = [
+        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
         _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),

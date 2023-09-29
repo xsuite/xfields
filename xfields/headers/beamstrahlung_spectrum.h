@@ -34,12 +34,12 @@ int beamstrahlung_0(LocalParticle *part,
     const double g2_c[4] = {0.2847316689, 0.58306846, 0.3915531539, 1.0};
 
     double c1 = 1.5*HBAR_GEVS / pow(MELECTRON_GEV, 3.0) * C_LIGHT;  // [c^4/Gev^2] 2.22e-6 = 1.5*hbar*cst.c/e0**3
-    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv;            // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = xi (doc) = upsbar (C++)
-    (*ecrit) = xcrit * energy*1e-9;                                 // [GeV] critical BS photon energy
-    double p0 = 25.4 * energy*1e-9 * dz * rho_inv;                  // [1] p0, specific for 1 macropart
-    //double omega_crit = (*ecrit)/HBAR_GEVS;                         // [1/s] = 1.5 * gamma**3 * cst.c / rho
-    //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);            // [1] beamstrahlung parameter for single macropart
 
+    double xcrit = c1 * pow(energy*1e-9, 2.0) * rho_inv; // [1] ecrit/E magnitude of quantum correction, in guineapig: xcrit (C) = xi (doc) = upsbar (C++)
+    (*ecrit) = xcrit * energy*1e-9; // [GeV]
+    //double omega_crit = (*ecrit)/HBAR_GEVS;  // [1/s] = 1.5 * gamma**3 * cst.c / rho
+    //double upsilon = 2.0/3.0 * (*ecrit) / (energy*1e-9);  // [1] beamstrahlung parameter for single macropart
+    double p0 = 25.4 * energy*1e-9 * dz * rho_inv;  // [1]  Fr * dz, specific for 1 macropart
  
     // eliminate region A in p0*g-v plane (=normalize with p0 = reject 1-p0 (p0<1) fraction of cases = y axis of p0*g-v plane is now spanning 0--p0=1
     if (RandomUniform_generate(part) > p0){return 0;}
@@ -124,8 +124,8 @@ double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData bea
         // The returned slot id is negative if record is NULL or if record is full
         if (i_slot>=0){
             BeamstrahlungTableData_set_particle_id(   beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
-            BeamstrahlungTableData_set_at_turn(               beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part));
-            BeamstrahlungTableData_set_at_element(            beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
+            BeamstrahlungTableData_set_at_turn(       beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part));
+            BeamstrahlungTableData_set_at_element(    beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
             BeamstrahlungTableData_set_photon_energy( beamstrahlung_table, i_slot, e_photon_avg);
             BeamstrahlungTableData_set_delta_avg(     beamstrahlung_table, i_slot, delta_avg);
             BeamstrahlungTableData_set_n_avg(         beamstrahlung_table, i_slot, n_avg);
