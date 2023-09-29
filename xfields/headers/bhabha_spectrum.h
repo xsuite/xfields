@@ -254,7 +254,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               double e_photon,           // [GeV] single equivalent virtual photon energy before Compton scattering
               const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff
               double q2,                 // [GeV^2] single equivalent virtual photon virtuality
-              double x_photon, double y_photon, double z_photon, // [m] (boosted) coords of the virtual photon
+              double x_photon, double y_photon, double z_photon,  // [m] (boosted) coords of the virtual photon
               double vx_photon,          // [1] transverse x momentum component of virtual photon (vx = dx/ds/p0)
               double vy_photon,          // [1] transverse y momentum component of virtual photon (vy = dy/ds/p0)
               double vzeta_photon,       // [1] zeta momentum component of virtual photon
