@@ -254,6 +254,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               double e_photon,           // [GeV] single equivalent virtual photon energy before Compton scattering
               const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff
               double q2,                 // [GeV^2] single equivalent virtual photon virtuality
+              double x_photon, double y_photon, double z_photon, // [m] (boosted) coords of the virtual photon
               double vx_photon,          // [1] transverse x momentum component of virtual photon (vx = dx/ds/p0)
               double vy_photon,          // [1] transverse y momentum component of virtual photon (vy = dy/ds/p0)
               double vzeta_photon,       // [1] zeta momentum component of virtual photon
@@ -352,14 +353,19 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               // The returned slot id is negative if record is NULL or if record is full
               if (i_slot>=0){
                   BhabhaTableData_set_particle_id(   bhabha_table, i_slot, LocalParticle_get_particle_id(part));
+                  BhabhaTableData_set_at_turn(       bhabha_table, i_slot, LocalParticle_get_at_turn(part));
+                  BhabhaTableData_set_at_element(    bhabha_table, i_slot, LocalParticle_get_at_element(part));
                   BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary);
                   BhabhaTableData_set_photon_id(     bhabha_table, i_slot, n);
+                  BhabhaTableData_set_photon_x(      bhabha_table, i_slot, x_photon);
+                  BhabhaTableData_set_photon_y(      bhabha_table, i_slot, y_photon);
+                  BhabhaTableData_set_photon_z(      bhabha_table, i_slot, z_photon);
                   BhabhaTableData_set_photon_energy( bhabha_table, i_slot, e_photon_prime*1e9);
                   BhabhaTableData_set_photon_px(     bhabha_table, i_slot, px_photon_prime);
                   BhabhaTableData_set_photon_py(     bhabha_table, i_slot, py_photon_prime);
                   BhabhaTableData_set_photon_pzeta(  bhabha_table, i_slot, pzeta_photon_prime);
-                  BhabhaTableData_set_theta_e(       bhabha_table, i_slot, theta_e);
-                  BhabhaTableData_set_theta_g(       bhabha_table, i_slot, theta_g);
+                  BhabhaTableData_set_primary_scattering_angle(bhabha_table, i_slot, theta_e);
+                  BhabhaTableData_set_photon_scattering_angle( bhabha_table, i_slot, theta_g);
               }
             }
 

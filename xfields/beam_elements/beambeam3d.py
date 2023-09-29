@@ -40,8 +40,8 @@ class BhabhaTable(xo.HybridClass):
       'photon_px': xo.Float64[:],
       'photon_py': xo.Float64[:],
       'photon_pzeta': xo.Float64[:],
-      'theta_e': xo.Float64[:],
-      'theta_g': xo.Float64[:],
+      'primary_scattering_angle': xo.Float64[:],
+      'photon_scattering_angle': xo.Float64[:],
         }
 
 class LumiTable(xo.HybridClass):

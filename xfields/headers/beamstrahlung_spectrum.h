@@ -124,6 +124,8 @@ double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData bea
         // The returned slot id is negative if record is NULL or if record is full
         if (i_slot>=0){
             BeamstrahlungTableData_set_particle_id(   beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
+            BeamstrahlungTableData_set_at_turn(       beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part));
+            BeamstrahlungTableData_set_at_element(    beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
             BeamstrahlungTableData_set_photon_energy( beamstrahlung_table, i_slot, e_photon_avg);
             BeamstrahlungTableData_set_delta_avg(     beamstrahlung_table, i_slot, delta_avg);
             BeamstrahlungTableData_set_n_avg(         beamstrahlung_table, i_slot, n_avg);
@@ -173,6 +175,8 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
                 // The returned slot id is negative if record is NULL or if record is full
                 if (i_slot>=0){
                     BeamstrahlungTableData_set_particle_id(           beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
+                    BeamstrahlungTableData_set_at_turn(               beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part));
+                    BeamstrahlungTableData_set_at_element(            beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
                     BeamstrahlungTableData_set_photon_id(             beamstrahlung_table, i_slot, j);
                     BeamstrahlungTableData_set_photon_energy(         beamstrahlung_table, i_slot, e_photon*1e9);
                     BeamstrahlungTableData_set_photon_critical_energy(beamstrahlung_table, i_slot, ecrit*1e9);
