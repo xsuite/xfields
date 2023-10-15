@@ -14,6 +14,7 @@ from .solvers.fftsolvers import FFTSolver3D
 
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
+from .beam_elements.beambeam2d import ConfigForUpdateBeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
 from .beam_elements.temp_slicer import TempSlicer
