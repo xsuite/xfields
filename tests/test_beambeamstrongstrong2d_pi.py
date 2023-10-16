@@ -9,7 +9,7 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
-def test_beambeamstrongstrong3d_pi():
+def test_beambeamstrongstrong2d_pi():
 
     context = xo.ContextCpu(omp_num_threads=0)
 
@@ -143,5 +143,4 @@ def test_beambeamstrongstrong3d_pi():
 
     assert np.isclose(freqs[np.argmax(fft_x[mask])],0.294677734375,atol=3E-4,rtol=0.0)
     assert np.isclose(freqs[np.argmax(fft_y[mask])],0.3046875,atol=3E-4,rtol=0.0)
-
 

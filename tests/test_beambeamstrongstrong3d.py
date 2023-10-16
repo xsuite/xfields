@@ -146,11 +146,6 @@ def test_beambeamstrongstrong3d():
    #       beam's property                                         #
    #################################################################
 
-   for index in [1,4,8,9,13,15]:
-      for islice in range(n_slices):
-         moments_b2[index*n_slices+islice] *= -1
-
    assert np.isclose(np.max(np.abs(bbeamIP1_b1.partner_moments-moments_b2)),0.0)
    assert np.isclose(np.max(np.abs(bbeamIP1_b2.partner_moments-moments_b1)),0.0)
-
 
