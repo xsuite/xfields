@@ -10,7 +10,7 @@ from ..beam_elements.spacecharge import SpaceChargeBiGaussian
 from ..beam_elements.spacecharge import SpaceCharge3D
 
 import xpart as xp
-import xtrack as xt
+import xobjects as xo
 
 def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
                                nemitt_x, nemitt_y, sigma_z,
@@ -48,7 +48,7 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
         List of spacecharge elements.
     '''
 
-    line_no_sc = line.copy()
+    line_no_sc = line.copy(_context=xo.ContextCpy())
     line_no_sc.build_tracker()
 
     # Make a matched bunch just to get the matched momentum spread
