@@ -48,7 +48,7 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
         List of spacecharge elements.
     '''
 
-    line_no_sc = line.copy(_context=xo.ContextCpy())
+    line_no_sc = line.copy(_context=xo.ContextCpu())
     line_no_sc.build_tracker()
 
     # Make a matched bunch just to get the matched momentum spread
