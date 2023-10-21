@@ -1,5 +1,6 @@
 import xtrack as xt
 import xpart as xp
+import xobjects as xo
 
 line = xt.Line.from_json(
     '../../../xtrack/test_data/sps_w_spacecharge/line_no_spacecharge_and_particle.json')
@@ -24,3 +25,10 @@ bunch_spacing_buckets = 5
 for ii in range(num_bunches):
     beam.zeta[ii * num_partilces_per_bunch:(ii+1) * num_partilces_per_bunch] += (
         ii * bunch_spacing_buckets * dz_bucket)
+
+class UniformBinSlicer(xt.BeamElement):
+    _xofields = {
+        'z_min': xo.Float64,
+        'num_slices': xo.Int64,
+        'dz': xo.Float64,
+    }
