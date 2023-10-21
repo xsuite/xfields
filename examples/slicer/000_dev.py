@@ -6,16 +6,21 @@ line = xt.Line.from_json(
 line.particle_ref = xt.Particles(p0c=26e9, mass0=xt.PROTON_MASS_EV)
 line.build_tracker()
 
-bunch1 = xp.generate_matched_gaussian_bunch(num_particles=100,
-            total_intensity_particles=1e11,
-            sigma_z=0.1, nemitt_x=2.5e-6, nemitt_y=2.5e-6, line=line)
-
-bunch2 = xp.generate_matched_gaussian_bunch(num_particles=100,
-            total_intensity_particles=2e11,
-            sigma_z=0.1, nemitt_x=2.5e-6, nemitt_y=2.5e-6, line=line)
-
 tw = line.twiss()
 
+num_partilces_per_bunch = 100
+num_bunches = 3
+total_intensity_particles_bunch = 1e11
+
+beam = xp.generate_matched_gaussian_bunch(
+            num_particles=num_partilces_per_bunch * num_bunches,
+            total_intensity_particles=total_intensity_particles_bunch * num_bunches,
+            sigma_z=0.1, nemitt_x=2.5e-6, nemitt_y=2.5e-6, line=line)
+
 harmonic_number = 4620
-dz_bucket = tw.circumference  /harmonic_number
+dz_bucket = tw.circumference / harmonic_number
 bunch_spacing_buckets = 5
+
+for ii in range(num_bunches):
+    beam.zeta[ii * num_partilces_per_bunch:(ii+1) * num_partilces_per_bunch] += (
+        ii * bunch_spacing_buckets * dz_bucket)
