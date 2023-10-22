@@ -86,11 +86,13 @@ class UniformBinSlicer(xt.BeamElement):
         'bunch_spacing_zeta': '_bunch_spacing_zeta',
     }
 
-    _extra_c_sources = [test_source]
+    _extra_c_sources = [
+        Path('uniform_bin_slicer.h')
+    ]
 
     _per_particle_kernels = {
-            'test_kernel': xo.Kernel(
-                c_name='test_function',
+            'test_slice': xo.Kernel(
+                c_name='UniformBinSlicer_slice',
                 args=[
                     xo.Arg(xo.Float64, pointer=True, name='b')
                 ]),
@@ -131,4 +133,4 @@ p = xt.Particles(zeta=[-1, 0, 1])
 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
-slicer.test_kernel(particles=p, b=p.x*4)
+slicer.test_slice(particles=p, b=p.x*4)
