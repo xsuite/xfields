@@ -3,6 +3,8 @@ import xpart as xp
 import xobjects as xo
 import xfields as xf
 
+from pathlib import Path
+
 # line = xt.Line.from_json(
 #     '../../../xtrack/test_data/sps_w_spacecharge/line_no_spacecharge_and_particle.json')
 # line.particle_ref = xt.Particles(p0c=26e9, mass0=xt.PROTON_MASS_EV)
@@ -29,6 +31,41 @@ import xfields as xf
 
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
+
+
+test_source = r"""
+/*gpufun*/
+void test_function(UniformBinSlicerData el,
+                LocalParticle* part0,
+                /*gpuglmem*/ double* b){
+
+    double const a = UniformBinSlicerData_get_a(el);
+
+    //start_per_particle_block (part0->part)
+
+        const int64_t ipart = part->ipart;
+        double const val = b[ipart];
+
+        LocalParticle_add_to_s(part, val + a);
+
+    //end_per_particle_block
+}
+
+/*gpufun*/
+void UniformBinSlicer_track_local_particle(UniformBinSlicerData el,
+                LocalParticle* part0){
+
+    double const a = UniformBinSlicerData_get_a(el);
+
+    //start_per_particle_block (part0->part)
+
+        LocalParticle_set_s(part, a);
+
+    //end_per_particle_block
+}
+
+"""
+
 class UniformBinSlicer(xt.BeamElement):
     _xofields = {
         'z_min': xo.Float64,
@@ -37,6 +74,7 @@ class UniformBinSlicer(xt.BeamElement):
         'i_bunch_0': xo.Int64,
         'num_bunches': xo.Int64,
         'bunch_spacing_zeta': xo.Float64,
+        'a': xo.Float64,
     }
 
     _rename = {
@@ -48,13 +86,23 @@ class UniformBinSlicer(xt.BeamElement):
         'bunch_spacing_zeta': '_bunch_spacing_zeta',
     }
 
-    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_grid=None, **kwarga):
+    _extra_c_sources = [test_source]
+
+    _per_particle_kernels = {
+            'test_kernel': xo.Kernel(
+                c_name='test_function',
+                args=[
+                    xo.Arg(xo.Float64, pointer=True, name='b')
+                ]),
+        }
+
+    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_grid=None, **kwargs):
 
         self._zeta_grid = _configure_grid('zeta', zeta_grid, dzeta, zeta_range, nbins)
         self.xoinitialize(z_min=self.zeta_grid[0], num_slices=self.num_slices,
                           dzeta=self.dzeta,
-                          i_bunch_0=0, num_bunches=0, bunch_spacing_zeta=0) # To be implemented
-
+                          i_bunch_0=0, num_bunches=0, bunch_spacing_zeta=0, # To be implemented
+                          **kwargs)
     @property
     def zeta_grid(self):
         """
@@ -78,3 +126,9 @@ class UniformBinSlicer(xt.BeamElement):
         return self.zeta_grid[1] - self.zeta_grid[0]
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
+
+p = xt.Particles(zeta=[-1, 0, 1])
+
+ss = 0 * p.x
+ctx= xo.ContextCpu()
+slicer.test_kernel(particles=p, b=p.x*4)
