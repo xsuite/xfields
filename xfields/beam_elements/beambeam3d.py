@@ -665,7 +665,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.num_slices_other_beam = len(params["charge_slices"])
 
-    def update_from_recieved_moments(self):
+    def update_from_received_moments(self):
         # reference frame transformation as in https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
         self.slices_other_beam_num_particles = self._arr2ctx(self.partner_moments[:self.num_slices_other_beam]) # this contains num real particles, the total elementary charge per slice
         self.slices_other_beam_x_center_star = self._arr2ctx(self.partner_moments[self.num_slices_other_beam:2*self.num_slices_other_beam]) * (-1.0)
@@ -754,7 +754,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             # recompute and communicate slice moments; if QSS only update before first step
             if (self.config_for_update._do_update and (not self.config_for_update.quasistrongstrong
                 or self.config_for_update._i_step == 0)):
-                
+
                 i = 0
                 while particles.state[i] != 1:
                     i += 1
@@ -784,7 +784,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                         self.config_for_update.partner_particles_name,
                                         particles.name,
                                         internal_tag=self.config_for_update._i_step)
-                    self.update_from_recieved_moments()
+                    self.update_from_received_moments()
                 else:
                     return xt.PipelineStatus(on_hold=True)
 
