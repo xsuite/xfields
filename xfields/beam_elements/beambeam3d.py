@@ -142,8 +142,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
 
-    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
-    _rename = {'flag_bhabha': '_flag_bhabha'}
+    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung', 'flag_bhabha': '_flag_bhabha'}
 
     _depends_on = [xt.RandomUniform]
 
