@@ -10,7 +10,8 @@
 /*gpufun*/
 void UniformBinSlicer_slice(UniformBinSlicerData el,
                 LocalParticle* part0,
-                /*gpuglmem*/ int64_t* i_slice_for_particles){
+                /*gpuglmem*/ int64_t* i_slice_part,
+                /*gpuglmem*/ int64_t* i_bunch_part){
 
     int64_t const num_slices = UniformBinSlicerData_get_num_slices(el);
     double const z_min = UniformBinSlicerData_get_z_min(el);
@@ -26,16 +27,21 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         double zeta = LocalParticle_get_zeta(part);
         const int64_t ipart = part->ipart;
 
-        int64_t i_bunch = floor(
-            (zeta - z_min_edge - i_bunch_0 * bunch_spacing_zeta)
-            / bunch_spacing_zeta);
+        int64_t i_bunch = floor((zeta - z_min_edge) / bunch_spacing_zeta);
 
-        int64_t i_slice = floor((zeta - (z_min_edge + i_bunch * bunch_spacing_zeta)) / dzeta);
+        int64_t i_slice = floor(
+            (zeta - (z_min_edge + i_bunch * bunch_spacing_zeta)) / dzeta);
 
-        if (i_slice >= 0 && i_slice < num_slices){
-            i_slice_for_particles[ipart] = i_slice;
+        if (i_bunch >= i_bunch_0 && i_bunch < num_bunches){
+            i_bunch_part[ipart] = i_bunch;
         } else {
-            i_slice_for_particles[ipart] = -1;
+            i_bunch_part[ipart] = -1;
+        }
+
+        if (i_bunch_part[ipart] >=0 && i_slice >= 0 && i_slice < num_slices){
+            i_slice_part[ipart] = i_slice;
+        } else {
+            i_slice_part[ipart] = -1;
         }
     //end_per_particle_block
 

@@ -61,7 +61,8 @@ class UniformBinSlicer(xt.BeamElement):
             'test_slice': xo.Kernel(
                 c_name='UniformBinSlicer_slice',
                 args=[
-                    xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
+                    xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles'),
+                    xo.Arg(xo.Int64, pointer=True, name='i_bunch_for_particles')
                 ]),
         }
 
@@ -103,6 +104,8 @@ i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2, 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
 i_slice_for_particles = p.particle_id * 0 - 999
-slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles)
+i_bunch_for_particles = p.particle_id * 0 - 999
+slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
+                  i_bunch_for_particles=i_bunch_for_particles)
 
 assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
