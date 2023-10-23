@@ -16,6 +16,10 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
     double const z_min = UniformBinSlicerData_get_z_min(el);
     double const dzeta = UniformBinSlicerData_get_dzeta(el);
 
+    int64_t const num_bunches = UniformBinSlicerData_get_num_bunches(el);
+    int64_t const i_bunch_0 = UniformBinSlicerData_get_i_bunch_0(el);
+    double const bunch_spacing_zeta = UniformBinSlicerData_get_bunch_spacing_zeta(el);
+
     double const z_min_edge = z_min - 0.5 * dzeta;
 
     //start_per_particle_block (part0->part)
@@ -30,7 +34,6 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
             i_slice_for_particles[ipart] = -1;
         }
     //end_per_particle_block
-
 
 }
 
