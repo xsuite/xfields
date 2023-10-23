@@ -128,7 +128,7 @@ class UniformBinSlicer(xt.BeamElement):
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 
-p = xt.Particles(zeta=[-1, 0, 1])
+p = xt.Particles(zeta=[-1, -0.65, -0.45, 0, 1, 5])
 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
