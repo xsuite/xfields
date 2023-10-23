@@ -26,7 +26,11 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         double zeta = LocalParticle_get_zeta(part);
         const int64_t ipart = part->ipart;
 
-        int64_t i_slice = floor((zeta - z_min_edge) / dzeta);
+        int64_t i_bunch = floor(
+            (zeta - z_min_edge - i_bunch_0 * bunch_spacing_zeta)
+            / bunch_spacing_zeta);
+
+        int64_t i_slice = floor((zeta - (z_min_edge + i_bunch * bunch_spacing_zeta)) / dzeta);
 
         if (i_slice >= 0 && i_slice < num_slices){
             i_slice_for_particles[ipart] = i_slice;
