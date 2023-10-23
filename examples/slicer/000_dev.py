@@ -34,40 +34,6 @@ import numpy as np
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
 
-
-test_source = r"""
-/*gpufun*/
-void test_function(UniformBinSlicerData el,
-                LocalParticle* part0,
-                /*gpuglmem*/ double* b){
-
-    double const a = UniformBinSlicerData_get_a(el);
-
-    //start_per_particle_block (part0->part)
-
-        const int64_t ipart = part->ipart;
-        double const val = b[ipart];
-
-        LocalParticle_add_to_s(part, val + a);
-
-    //end_per_particle_block
-}
-
-/*gpufun*/
-void UniformBinSlicer_track_local_particle(UniformBinSlicerData el,
-                LocalParticle* part0){
-
-    double const a = UniformBinSlicerData_get_a(el);
-
-    //start_per_particle_block (part0->part)
-
-        LocalParticle_set_s(part, a);
-
-    //end_per_particle_block
-}
-
-"""
-
 class UniformBinSlicer(xt.BeamElement):
     _xofields = {
         'z_min': xo.Float64,
@@ -130,8 +96,9 @@ class UniformBinSlicer(xt.BeamElement):
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 
-p = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2])
-i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1]
+p = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2, 2.51])
+p.state[-1] = 0
+i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1, -999]
 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
