@@ -5,6 +5,8 @@ import xfields as xf
 
 from pathlib import Path
 
+import numpy as np
+
 # line = xt.Line.from_json(
 #     '../../../xtrack/test_data/sps_w_spacecharge/line_no_spacecharge_and_particle.json')
 # line.particle_ref = xt.Particles(p0c=26e9, mass0=xt.PROTON_MASS_EV)
@@ -128,9 +130,12 @@ class UniformBinSlicer(xt.BeamElement):
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 
-p = xt.Particles(zeta=[-1, -0.65, -0.45, 0, 1, 5])
+p = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2])
+i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1]
 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
-i_slice_for_particles = p.particle_id * 0
+i_slice_for_particles = p.particle_id * 0 - 999
 slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles)
+
+assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
