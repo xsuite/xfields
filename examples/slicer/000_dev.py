@@ -74,7 +74,6 @@ class UniformBinSlicer(xt.BeamElement):
         'i_bunch_0': xo.Int64,
         'num_bunches': xo.Int64,
         'bunch_spacing_zeta': xo.Float64,
-        'a': xo.Float64,
     }
 
     _rename = {
@@ -94,7 +93,7 @@ class UniformBinSlicer(xt.BeamElement):
             'test_slice': xo.Kernel(
                 c_name='UniformBinSlicer_slice',
                 args=[
-                    xo.Arg(xo.Float64, pointer=True, name='b')
+                    xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles')
                 ]),
         }
 
@@ -133,4 +132,5 @@ p = xt.Particles(zeta=[-1, 0, 1])
 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
-slicer.test_slice(particles=p, b=p.x*4)
+i_slice_for_particles = p.particle_id * 0
+slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles)
