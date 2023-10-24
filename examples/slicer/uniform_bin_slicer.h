@@ -27,22 +27,33 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         double zeta = LocalParticle_get_zeta(part);
         const int64_t ipart = part->ipart;
 
-        int64_t i_bunch = floor((zeta - z_min_edge) / bunch_spacing_zeta);
+        int64_t i_bunch;
+        double z_min_edge_bunch = z_min_edge;
+        uint8_t can_be_assigned_to_slice = 0;
 
-        int64_t i_slice = floor(
-            (zeta - (z_min_edge + i_bunch * bunch_spacing_zeta)) / dzeta);
-
-        if (i_bunch >= i_bunch_0 && i_bunch < num_bunches){
-            i_bunch_part[ipart] = i_bunch;
-        } else {
-            i_bunch_part[ipart] = -1;
+        if (num_bunches <= 0){
+            i_bunch = 0;
+            can_be_assigned_to_slice = 1;
+        }
+        else{
+            i_bunch = floor((zeta - z_min_edge) / bunch_spacing_zeta);
+            if (i_bunch >= i_bunch_0 && i_bunch < num_bunches){
+                i_bunch_part[ipart] = i_bunch;
+                z_min_edge_bunch = z_min_edge + i_bunch * bunch_spacing_zeta;
+                can_be_assigned_to_slice = 1;
+            } else {
+                i_bunch_part[ipart] = -1;
+                can_be_assigned_to_slice = 0;
+            }
         }
 
-        if (i_bunch_part[ipart] >=0 && i_slice >= 0 && i_slice < num_slices){
+        int64_t i_slice = floor((zeta - z_min_edge_bunch) / dzeta);
+        if (can_be_assigned_to_slice && i_slice >= 0 && i_slice < num_slices){
             i_slice_part[ipart] = i_slice;
         } else {
             i_slice_part[ipart] = -1;
         }
+
     //end_per_particle_block
 
 }

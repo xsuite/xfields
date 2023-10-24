@@ -66,12 +66,19 @@ class UniformBinSlicer(xt.BeamElement):
                 ]),
         }
 
-    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_grid=None, **kwargs):
+    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_grid=None,
+                 num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
+                 **kwargs):
 
         self._zeta_grid = _configure_grid('zeta', zeta_grid, dzeta, zeta_range, nbins)
+        num_bunches = num_bunches or 0
+        i_bunch_0 = i_bunch_0 or 0
+        bunch_spacing_zeta = bunch_spacing_zeta or 0
+
         self.xoinitialize(z_min=self.zeta_grid[0], num_slices=self.num_slices,
                           dzeta=self.dzeta,
-                          i_bunch_0=0, num_bunches=0, bunch_spacing_zeta=0, # To be implemented
+                          num_bunches=num_bunches, i_bunch_0=i_bunch_0,
+                          bunch_spacing_zeta=bunch_spacing_zeta,
                           **kwargs)
     @property
     def zeta_grid(self):
