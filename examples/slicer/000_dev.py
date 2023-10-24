@@ -102,7 +102,24 @@ class UniformBinSlicer(xt.BeamElement):
         """
         return self.zeta_grid[1] - self.zeta_grid[0]
 
+    @property
+    def num_bunches(self):
+        """
+        Number of bunches
+        """
+        return self._num_bunches
+
+    @property
+    def i_bunch_0(self):
+        """
+        Index of the first bunch
+        """
+        return self._i_bunch_0
+
+# Check in single-bunch mode
+
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
+assert slicer.num_bunches == 0 # Single-bunch mode
 
 p = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2, 2.51])
 p.state[-1] = 0
@@ -116,3 +133,14 @@ slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
                   i_bunch_for_particles=i_bunch_for_particles)
 
 assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
+
+# Check in multi-bunch mode
+bunch_spacing_zeta = 10.
+
+p1 = p.copy()
+p2 = p.copy()
+p2.zeta += bunch_spacing_zeta
+p3 = p.copy()
+p3.zeta += 2 * bunch_spacing_zeta
+
+p = xp.Particles.merge([p1, p2, p3])
