@@ -124,7 +124,14 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Number of particles per slice
         """
-        return self._particles_per_slice.reshape(self.num_bunches, self.num_slices)
+        return self._reshape_for_multibunch(self._particles_per_slice)
+
+    def _reshape_for_multibunch(self, data):
+        if self.num_bunches <= 0:
+            return data
+        else:
+            return data.reshape(self.num_bunches, self.num_slices)
+
 
 # Check in single-bunch mode
 
@@ -142,11 +149,17 @@ i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2, 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
 i_slice_for_particles = p.particle_id * 0 - 999
-i_bunch_for_particles = p.particle_id * 0 - 999
+i_bunch_for_particles = p.particle_id * 0 - 9999
 slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
                   i_bunch_for_particles=i_bunch_for_particles)
 
 assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
+assert np.all(i_bunch_for_particles == -9999)
+
+
+expected_particles_per_slice = np.array([30, 60, 90])
+assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
+                     atol=1e-12, rtol=0)
 
 # Check in multi-bunch mode
 bunch_spacing_zeta = 10.
@@ -172,6 +185,8 @@ slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=0,
 slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
                     i_bunch_for_particles=i_bunch_for_particles)
 
+
+
 i_slice_expected  = np.array([
     -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
     -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
@@ -187,5 +202,14 @@ i_bunch_expected  = np.array([
     -999, -999, -999, -999
 ])
 
+expected_particles_per_slice = np.array([
+    [30, 60, 90],
+    [300, 600, 900],
+    [3000, 6000, 9000],
+    [30000, 60000, 90000],
+])
+
 assert np.all(i_slice_for_particles == i_slice_expected)
 assert np.all(i_bunch_for_particles == i_bunch_expected)
+assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
+                   atol=1e-12, rtol=0)
