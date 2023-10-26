@@ -42,6 +42,7 @@ class UniformBinSlicer(xt.BeamElement):
         'i_bunch_0': xo.Int64,
         'num_bunches': xo.Int64,
         'bunch_spacing_zeta': xo.Float64,
+        'particles_per_slice': xo.Float64[:],
     }
 
     _rename = {
@@ -79,6 +80,7 @@ class UniformBinSlicer(xt.BeamElement):
                           dzeta=self.dzeta,
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
+                          particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
                           **kwargs)
     @property
     def zeta_grid(self):
