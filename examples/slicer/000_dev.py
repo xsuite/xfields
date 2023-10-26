@@ -121,8 +121,11 @@ class UniformBinSlicer(xt.BeamElement):
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 assert slicer.num_bunches == 0 # Single-bunch mode
 
-p = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2, 2.51])
-p.state[-1] = 0
+p0 = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2, 2.51])
+p0.state[-1] = 0
+
+p = p0.copy()
+
 i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1, -999]
 
 ss = 0 * p.x
@@ -137,10 +140,38 @@ assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
 # Check in multi-bunch mode
 bunch_spacing_zeta = 10.
 
-p1 = p.copy()
-p2 = p.copy()
+p1 = p0.copy()
+p2 = p0.copy()
 p2.zeta += bunch_spacing_zeta
-p3 = p.copy()
+p3 = p0.copy()
 p3.zeta += 2 * bunch_spacing_zeta
+p4 = p0.copy()
+p4.zeta += 3 * bunch_spacing_zeta
 
-p = xp.Particles.merge([p1, p2, p3])
+p = xp.Particles.merge([p1, p2, p3, p4])
+
+i_bunch_for_particles = p.particle_id * 0 - 999
+i_slice_for_particles = p.particle_id * 0 - 999
+
+slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=0,
+                          num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
+slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
+                    i_bunch_for_particles=i_bunch_for_particles)
+
+i_slice_expected  = np.array([
+    -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
+    -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
+    -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
+    -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
+    -999, -999, -999, -999
+])
+i_bunch_expected  = np.array([
+    -1, -1,    0,      0,  0,    0,     0,    0,    0, 0, 0,     0,   0,
+     0,  0,    1,      1,  1,    1,     1,    1,    1, 1, 1,     1,  1,
+     1,  1,    2,      2,  2,    2,     2,    2,    2, 2, 2,     2,  2,
+     2,  2,    3,      3,  3,    3,     3,    3,    3, 3, 3,     3,  3,
+    -999, -999, -999, -999
+])
+
+assert np.all(i_slice_for_particles == i_slice_expected)
+assert np.all(i_bunch_for_particles == i_bunch_expected)
