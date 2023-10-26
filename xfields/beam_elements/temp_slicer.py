@@ -23,8 +23,8 @@ _compute_slice_moments_kernel = xo.Kernel(
 )
 
 
-_compute_slice_moments_cuda_1_kernel = xo.Kernel(
-            c_name="compute_slice_moments_cuda_1",
+_compute_slice_moments_cuda_sums_per_slice_kernel = xo.Kernel(
+            c_name="compute_slice_moments_cuda_sums_per_slice",
             args=[xo.Arg(xp.Particles._XoStruct, name='particles'),
                   xo.Arg(xo.Int64, pointer=True, name='particles_slice'),
                   xo.Arg(xo.Float64, pointer=True, name='moments'),
@@ -35,8 +35,8 @@ _compute_slice_moments_cuda_1_kernel = xo.Kernel(
             n_threads="num_macroparticles",
 )
 
-_compute_slice_moments_cuda_2_kernel = xo.Kernel(
-            c_name="compute_slice_moments_cuda_2",
+_compute_slice_moments_cuda_moments_from_sums_kernel = xo.Kernel(
+            c_name="compute_slice_moments_cuda_moments_from_sums",
             args=[xo.Arg(xo.Float64, pointer=True, name='moments'),
                   xo.Arg(xo.Int64, const=True, name='n_slices'),
                   xo.Arg(xo.Int64, const=True, name='weight'),
@@ -46,8 +46,8 @@ _compute_slice_moments_cuda_2_kernel = xo.Kernel(
 
 _temp_slicer_kernels = {'digitize': _digitize_kernel,
                         'compute_slice_moments':_compute_slice_moments_kernel,
-                        'compute_slice_moments_cuda_1':_compute_slice_moments_cuda_1_kernel,
-                        'compute_slice_moments_cuda_2':_compute_slice_moments_cuda_2_kernel,
+                        'compute_slice_moments_cuda_sums_per_slice':_compute_slice_moments_cuda_sums_per_slice_kernel,
+                        'compute_slice_moments_cuda_moments_from_sums':_compute_slice_moments_cuda_moments_from_sums_kernel,
                         }
 
 
@@ -281,11 +281,11 @@ class TempSlicer(xo.HybridClass):
 
         if isinstance(context, xo.ContextCupy):
             slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)
-            self._context.kernels.compute_slice_moments_cuda_1(particles=particles, particles_slice=particles.slice,
+            self._context.kernels.compute_slice_moments_cuda_sums_per_slice(particles=particles, particles_slice=particles.slice,
                                                            moments=slice_moments, num_macroparticles=np.int64(len(particles.slice)),
                                                            n_slices=np.int64(self.num_slices), shared_mem_size_bytes=np.int64(self.num_slices*17*8))
 
-            self._context.kernels.compute_slice_moments_cuda_2(moments=slice_moments, n_slices=np.int64(self.num_slices),
+            self._context.kernels.compute_slice_moments_cuda_moments_from_sums(moments=slice_moments, n_slices=np.int64(self.num_slices),
                                                            weight=particles.weight.get()[0], threshold_num_macroparticles=np.int64(threshold_num_macroparticles))
             return slice_moments[int(self.num_slices*16):]
 
