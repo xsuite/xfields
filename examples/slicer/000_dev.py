@@ -52,6 +52,7 @@ class UniformBinSlicer(xt.BeamElement):
         'i_bunch_0': '_i_bunch_0',
         'num_bunches': '_num_bunches',
         'bunch_spacing_zeta': '_bunch_spacing_zeta',
+        'particles_per_slice': '_particles_per_slice',
     }
 
     _extra_c_sources = [
@@ -117,6 +118,13 @@ class UniformBinSlicer(xt.BeamElement):
         Index of the first bunch
         """
         return self._i_bunch_0
+
+    @property
+    def particles_per_slice(self):
+        """
+        Number of particles per slice
+        """
+        return self._particles_per_slice.reshape(self.num_bunches, self.num_slices)
 
 # Check in single-bunch mode
 
