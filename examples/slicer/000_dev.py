@@ -123,7 +123,8 @@ class UniformBinSlicer(xt.BeamElement):
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 assert slicer.num_bunches == 0 # Single-bunch mode
 
-p0 = xt.Particles(zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51, 2, 2.51])
+p0 = xt.Particles(zeta  =[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51,  1, 1.49, 1.51,  2, 2.51],
+                  weight=[10,  10,    10,    10, 10,    20,    20, 20,   30,  30,  30,   40, 40,   40])
 p0.state[-1] = 0
 
 p = p0.copy()
@@ -145,10 +146,13 @@ bunch_spacing_zeta = 10.
 p1 = p0.copy()
 p2 = p0.copy()
 p2.zeta += bunch_spacing_zeta
+p2.weight *= 10
 p3 = p0.copy()
 p3.zeta += 2 * bunch_spacing_zeta
+p3.weight *= 100
 p4 = p0.copy()
 p4.zeta += 3 * bunch_spacing_zeta
+p4.weight *= 1000
 
 p = xp.Particles.merge([p1, p2, p3, p4])
 
