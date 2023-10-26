@@ -231,7 +231,7 @@ __global__ void compute_slice_moments_cuda_sums_per_slice(ParticlesData particle
 
 	}
 
-__global__ void compute_slice_moments_moments_from_sums(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles) {
+__global__ void compute_slice_moments_cuda_moments_from_sums(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles) {
 
     unsigned int gid = blockIdx.x*blockDim.x + threadIdx.x;
     
