@@ -33,31 +33,34 @@ import numpy as np
 
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
+coords = ['x', 'px', 'y', 'py', 'zeta', 'delta']
+second_moments={}
+for cc1 in coords:
+    for cc2 in coords:
+        second_moments[cc1+cc2] = (cc1, cc2)
+
+_xof = {
+    'z_min': xo.Float64,
+    'num_slices': xo.Int64,
+    'dzeta': xo.Float64,
+    'i_bunch_0': xo.Int64,
+    'num_bunches': xo.Int64,
+    'bunch_spacing_zeta': xo.Float64,
+    'particles_per_slice': xo.Float64[:],
+}
+for cc in coords:
+    _xof['sum_'+cc] = xo.Float64[:]
+for ss in second_moments:
+    _xof['sum_'+ss] = xo.Float64[:]
+
+_rnm = {}
+
+for kk in _xof.keys():
+    _rnm[kk] = '_' + kk
 
 class UniformBinSlicer(xt.BeamElement):
-    _xofields = {
-        'z_min': xo.Float64,
-        'num_slices': xo.Int64,
-        'dzeta': xo.Float64,
-        'i_bunch_0': xo.Int64,
-        'num_bunches': xo.Int64,
-        'bunch_spacing_zeta': xo.Float64,
-        'particles_per_slice': xo.Float64[:],
-        'sum_x': xo.Float64[:],
-        'sum_xx': xo.Float64[:],
-    }
-
-    _rename = {
-        'z_min': '_z_min',
-        'num_slices': '_num_slices',
-        'dzeta': '_dzeta',
-        'i_bunch_0': '_i_bunch_0',
-        'num_bunches': '_num_bunches',
-        'bunch_spacing_zeta': '_bunch_spacing_zeta',
-        'particles_per_slice': '_particles_per_slice',
-        'sum_x': '_sum_x',
-        'sum_xx': '_sum_xx',
-    }
+    _xofields = _xof
+    _rename = _rnm
 
     _extra_c_sources = [
         xt.general._pkg_root.joinpath('headers/atomicadd.h'),
@@ -87,8 +90,7 @@ class UniformBinSlicer(xt.BeamElement):
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
                           particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
-                          sum_x=(num_bunches or 1) * self.num_slices,
-                          sum_xx=(num_bunches or 1) * self.num_slices,
+                          **{'sum_' + cc: (num_bunches or 1) for cc in coords + list(second_moments.keys())},
                           **kwargs)
     @property
     def zeta_grid(self):
