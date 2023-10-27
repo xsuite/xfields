@@ -22,6 +22,10 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
     double const bunch_spacing_zeta = UniformBinSlicerData_get_bunch_spacing_zeta(el);
     double* particles_per_slice = UniformBinSlicerData_getp1_particles_per_slice(el, 0);
 
+    double* sum_x = UniformBinSlicerData_getp1_sum_x(el, 0);
+
+    double* sum_xx = UniformBinSlicerData_getp1_sum_xx(el, 0);
+
     double const z_min_edge = z_min - 0.5 * dzeta;
 
     //start_per_particle_block (part0->part)
@@ -53,8 +57,11 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         if (can_be_assigned_to_slice && i_slice >= 0 && i_slice < num_slices){
             i_slice_part[ipart] = i_slice;
 
-            // To be replaced with atomic add
-            particles_per_slice[i_slice + i_bunch * num_slices] += weight;
+            atomicAdd(&particles_per_slice[i_slice + i_bunch * num_slices], weight);
+            atomicAdd(&sum_x[i_slice + i_bunch * num_slices],
+                       weight * LocalParticle_get_x(part));
+            atomicAdd(&sum_xx[i_slice + i_bunch * num_slices],
+                       weight * LocalParticle_get_x(part) * LocalParticle_get_x(part));
 
         } else {
             i_slice_part[ipart] = -1;

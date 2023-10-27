@@ -43,6 +43,8 @@ class UniformBinSlicer(xt.BeamElement):
         'num_bunches': xo.Int64,
         'bunch_spacing_zeta': xo.Float64,
         'particles_per_slice': xo.Float64[:],
+        'sum_x': xo.Float64[:],
+        'sum_xx': xo.Float64[:],
     }
 
     _rename = {
@@ -53,9 +55,12 @@ class UniformBinSlicer(xt.BeamElement):
         'num_bunches': '_num_bunches',
         'bunch_spacing_zeta': '_bunch_spacing_zeta',
         'particles_per_slice': '_particles_per_slice',
+        'sum_x': '_sum_x',
+        'sum_xx': '_sum_xx',
     }
 
     _extra_c_sources = [
+        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         Path('uniform_bin_slicer.h')
     ]
 
@@ -82,6 +87,8 @@ class UniformBinSlicer(xt.BeamElement):
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
                           particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
+                          sum_x=(num_bunches or 1) * self.num_slices,
+                          sum_xx=(num_bunches or 1) * self.num_slices,
                           **kwargs)
     @property
     def zeta_grid(self):
@@ -126,6 +133,20 @@ class UniformBinSlicer(xt.BeamElement):
         """
         return self._reshape_for_multibunch(self._particles_per_slice)
 
+    @property
+    def sum_x(self):
+        """
+        Sum of x per slice
+        """
+        return self._reshape_for_multibunch(self._sum_x)
+
+    @property
+    def mean_x(self):
+        """
+        Mean of x per slice
+        """
+        return self.sum_x / self.particles_per_slice
+
     def _reshape_for_multibunch(self, data):
         if self.num_bunches <= 0:
             return data
@@ -139,7 +160,9 @@ slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 assert slicer.num_bunches == 0 # Single-bunch mode
 
 p0 = xt.Particles(zeta  =[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51,  1, 1.49, 1.51,  2, 2.51],
-                  weight=[10,  10,    10,    10, 10,    20,    20, 20,   30,  30,  30,   40, 40,   40])
+                  weight=[10,  10,    10,    10, 10,    20,    20, 20,   30,  30,  30,   40, 40,   40],
+                  x=     [0.,  1.,   2.,    3., 4.,    5.,    6., 7.,    8.,  9.,  10.,  11., 12.,  13.],
+                  )
 p0.state[-1] = 0
 
 p = p0.copy()
@@ -184,8 +207,6 @@ slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=0,
                           num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
 slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
                     i_bunch_for_particles=i_bunch_for_particles)
-
-
 
 i_slice_expected  = np.array([
     -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
