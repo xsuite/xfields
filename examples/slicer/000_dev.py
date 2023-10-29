@@ -104,16 +104,23 @@ class UniformBinSlicer(xt.BeamElement):
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
+        slicer.particles_per_slice[:] = 0
+
         if i_bunch_particles is not None:
             use_bunch_index_array = 1
         else:
             use_bunch_index_array = 0
-            i_slice_particles = particles.particle_id[:1] # Dummy
+            i_bunch_particles = particles.particle_id[:1] # Dummy
         if i_slice_particles is not None:
             use_slice_index_array = 1
         else:
             use_slice_index_array = 0
             i_slice_particles = particles.particle_id[:1] # Dummy
+
+        for cc in coords:
+            getattr(self, '_sum_' + cc)[:] = 0
+        for ss in second_moments:
+            getattr(self, '_sum_' + ss)[:] = 0
 
         self._slice_kernel(particles=particles,
                     use_bunch_index_array=use_bunch_index_array,
@@ -299,3 +306,4 @@ p = xt.Particles(zeta=1,
                  weight=[1, 2, 1],
                  x = [99, 100, 101],
                  y = [201,200, 199])
+slicer.slice(p)
