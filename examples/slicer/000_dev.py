@@ -75,13 +75,13 @@ class UniformBinSlicer(xt.BeamElement):
     ]
 
     _per_particle_kernels = {
-            'slice_kernel': xo.Kernel(
+            '_slice_kernel': xo.Kernel(
                 c_name='UniformBinSlicer_slice',
                 args=[
                     xo.Arg(xo.Int64, name='use_bunch_index_array'),
                     xo.Arg(xo.Int64, name='use_slice_index_array'),
-                    xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles'),
-                    xo.Arg(xo.Int64, pointer=True, name='i_bunch_for_particles')
+                    xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
+                    xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles')
                 ]),
         }
 
@@ -101,6 +101,26 @@ class UniformBinSlicer(xt.BeamElement):
                           particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
                           **{'sum_' + cc: (num_bunches or 1) * self.num_slices for cc in coords + list(second_moments.keys())},
                           **kwargs)
+
+    def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
+
+        if i_bunch_particles is not None:
+            use_bunch_index_array = 1
+        else:
+            use_bunch_index_array = 0
+            i_slice_particles = particles.particle_id[:1] # Dummy
+        if i_slice_particles is not None:
+            use_slice_index_array = 1
+        else:
+            use_slice_index_array = 0
+            i_slice_particles = particles.particle_id[:1] # Dummy
+
+        self._slice_kernel(particles=particles,
+                    use_bunch_index_array=use_bunch_index_array,
+                    use_slice_index_array=use_slice_index_array,
+                    i_slice_particles=i_slice_particles,
+                    i_bunch_particles=i_bunch_particles)
+
     @property
     def zeta_centers(self):
         """
@@ -207,15 +227,13 @@ i_slice_expected    = [-1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2, 
 
 ss = 0 * p.x
 ctx= xo.ContextCpu()
-i_slice_for_particles = p.particle_id * 0 - 999
-i_bunch_for_particles = p.particle_id * 0 - 9999
-slicer.slice_kernel(particles=p,
-                    use_bunch_index_array=1, use_slice_index_array=1,
-                    i_slice_for_particles=i_slice_for_particles,
-                    i_bunch_for_particles=i_bunch_for_particles)
+i_slice_particles = p.particle_id * 0 - 999
+i_bunch_particles = p.particle_id * 0 - 9999
+slicer.slice(particles=p, i_bunch_particles=i_bunch_particles,
+                    i_slice_particles=i_slice_particles)
 
-assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
-assert np.all(i_bunch_for_particles == -9999)
+assert np.all(np.array(i_slice_expected) == i_slice_particles)
+assert np.all(i_bunch_particles == -9999)
 
 
 expected_particles_per_slice = np.array([30, 60, 90])
@@ -238,15 +256,14 @@ p4.weight *= 1000
 
 p = xp.Particles.merge([p1, p2, p3, p4])
 
-i_bunch_for_particles = p.particle_id * 0 - 999
-i_slice_for_particles = p.particle_id * 0 - 999
+i_bunch_particles = p.particle_id * 0 - 999
+i_slice_particles = p.particle_id * 0 - 999
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=0,
                           num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
-slicer.slice_kernel(particles=p,
-                    use_bunch_index_array=1, use_slice_index_array=1,
-                    i_slice_for_particles=i_slice_for_particles,
-                    i_bunch_for_particles=i_bunch_for_particles)
+slicer.slice(particles=p,
+                    i_slice_particles=i_slice_particles,
+                    i_bunch_particles=i_bunch_particles)
 
 i_slice_expected  = np.array([
     -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
@@ -270,8 +287,8 @@ expected_particles_per_slice = np.array([
     [30000, 60000, 90000],
 ])
 
-assert np.all(i_slice_for_particles == i_slice_expected)
-assert np.all(i_bunch_for_particles == i_bunch_expected)
+assert np.all(i_slice_particles == i_slice_expected)
+assert np.all(i_bunch_particles == i_bunch_expected)
 assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
                    atol=1e-12, rtol=0)
 
