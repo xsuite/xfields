@@ -37,6 +37,8 @@ coords = ['x', 'px', 'y', 'py', 'zeta', 'delta']
 second_moments={}
 for cc1 in coords:
     for cc2 in coords:
+        if cc1 + cc2 in second_moments or cc2 + cc1 in second_moments:
+            continue
         second_moments[cc1+cc2] = (cc1, cc2)
 
 _xof = {
@@ -134,20 +136,6 @@ class UniformBinSlicer(xt.BeamElement):
         Number of particles per slice
         """
         return self._reshape_for_multibunch(self._particles_per_slice)
-
-    @property
-    def sum_x(self):
-        """
-        Sum of x per slice
-        """
-        return self._reshape_for_multibunch(self._sum_x)
-
-    @property
-    def mean_x(self):
-        """
-        Mean of x per slice
-        """
-        return self.sum_x / self.particles_per_slice
 
     def _reshape_for_multibunch(self, data):
         if self.num_bunches <= 0:
