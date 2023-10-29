@@ -152,6 +152,34 @@ class UniformBinSlicer(xt.BeamElement):
             cc = cc + '_' + cc2
         return self._reshape_for_multibunch(getattr(self, '_sum_' + cc))
 
+    def mean(self, cc, cc2=None):
+        """
+        Mean of the quantity cc per slice
+        """
+        return self.sum(cc, cc2) / self.particles_per_slice
+
+    def cov(self, cc1, cc2=None):
+        """
+        Covariance between cc1 and cc2 per slice
+        """
+        if cc2 is None:
+            if cc1 in short_second_mom_names:
+                cc1 = short_second_mom_names[cc1]
+            cc1, cc2 = cc1.split('_')
+        return self.mean(cc1, cc2) - self.mean(cc1) * self.mean(cc2)
+
+    def var(self, cc):
+        """
+        Variance of the quantity cc per slice
+        """
+        return self.cov(cc, cc)
+
+    def std(self, cc):
+        """
+        Standard deviation of the quantity cc per slice
+        """
+        return np.sqrt(self.var(cc))
+
     def _reshape_for_multibunch(self, data):
         if self.num_bunches <= 0:
             return data
