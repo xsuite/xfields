@@ -55,6 +55,11 @@ for cc in coords:
 for ss in second_moments:
     _xof['sum_'+ss] = xo.Float64[:]
 
+short_second_mom_names={}
+for ss in second_moments:
+    short_second_mom_names[ss.replace('_','')] = ss
+# Gives {'xx': 'x_x', 'xpx': 'x_px', ...}
+
 _rnm = {}
 
 for kk in _xof.keys():
@@ -137,10 +142,14 @@ class UniformBinSlicer(xt.BeamElement):
         """
         return self._reshape_for_multibunch(self._particles_per_slice)
 
-    def sum(self, cc):
+    def sum(self, cc, cc2=None):
         """
         Sum of the quantity cc per slice
         """
+        if cc in short_second_mom_names:
+            cc = short_second_mom_names[cc]
+        if cc2 is not None:
+            cc = cc + '_' + cc2
         return self._reshape_for_multibunch(getattr(self, '_sum_' + cc))
 
     def _reshape_for_multibunch(self, data):
@@ -231,3 +240,6 @@ assert np.all(i_slice_for_particles == i_slice_expected)
 assert np.all(i_bunch_for_particles == i_bunch_expected)
 assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
                    atol=1e-12, rtol=0)
+
+assert np.all(slicer.sum('xy') == slicer.sum('x_y'))
+assert np.all(slicer.sum('x', 'y') == slicer.sum('x_y'))
