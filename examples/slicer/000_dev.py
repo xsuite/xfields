@@ -37,9 +37,9 @@ coords = ['x', 'px', 'y', 'py', 'zeta', 'delta']
 second_moments={}
 for cc1 in coords:
     for cc2 in coords:
-        if cc1 + cc2 in second_moments or cc2 + cc1 in second_moments:
+        if cc1 + '_' + cc2 in second_moments or cc2 + '_' + cc1 in second_moments:
             continue
-        second_moments[cc1+cc2] = (cc1, cc2)
+        second_moments[cc1 + '_' + cc2] = (cc1, cc2)
 
 _xof = {
     'z_min': xo.Float64,
@@ -92,7 +92,7 @@ class UniformBinSlicer(xt.BeamElement):
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
                           particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
-                          **{'sum_' + cc: (num_bunches or 1) for cc in coords + list(second_moments.keys())},
+                          **{'sum_' + cc: (num_bunches or 1) * self.num_slices for cc in coords + list(second_moments.keys())},
                           **kwargs)
     @property
     def zeta_grid(self):
