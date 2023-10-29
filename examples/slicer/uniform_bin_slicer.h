@@ -10,6 +10,8 @@
 /*gpufun*/
 void UniformBinSlicer_slice(UniformBinSlicerData el,
                 LocalParticle* part0,
+                int64_t const use_bunch_index_array,
+                int64_t const use_slice_index_array,
                 /*gpuglmem*/ int64_t* i_slice_part,
                 /*gpuglmem*/ int64_t* i_bunch_part){
 
@@ -82,18 +84,24 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         else{
             i_bunch = floor((zeta - z_min_edge) / bunch_spacing_zeta);
             if (i_bunch >= i_bunch_0 && i_bunch < num_bunches){
-                i_bunch_part[ipart] = i_bunch;
+                if (use_bunch_index_array){
+                    i_bunch_part[ipart] = i_bunch;
+                }
                 z_min_edge_bunch = z_min_edge + i_bunch * bunch_spacing_zeta;
                 can_be_assigned_to_slice = 1;
             } else {
-                i_bunch_part[ipart] = -1;
+                if (use_bunch_index_array){
+                    i_bunch_part[ipart] = -1;
+                }
                 can_be_assigned_to_slice = 0;
             }
         }
 
         int64_t i_slice = floor((zeta - z_min_edge_bunch) / dzeta);
         if (can_be_assigned_to_slice && i_slice >= 0 && i_slice < num_slices){
-            i_slice_part[ipart] = i_slice;
+            if (use_slice_index_array){
+                i_slice_part[ipart] = i_slice;
+            }
 
             atomicAdd(&particles_per_slice[i_slice + i_bunch * num_slices], weight);
 
@@ -143,7 +151,9 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
             atomicAdd(&sum_delta_delta[i_slice + i_bunch * num_slices], weight * LocalParticle_get_delta(part) * LocalParticle_get_delta(part));
 
         } else {
-            i_slice_part[ipart] = -1;
+            if (use_slice_index_array){
+                i_slice_part[ipart] = -1;
+            }
         }
 
 

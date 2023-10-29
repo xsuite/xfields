@@ -75,9 +75,11 @@ class UniformBinSlicer(xt.BeamElement):
     ]
 
     _per_particle_kernels = {
-            'test_slice': xo.Kernel(
+            'slice_kernel': xo.Kernel(
                 c_name='UniformBinSlicer_slice',
                 args=[
+                    xo.Arg(xo.Int64, name='use_bunch_index_array'),
+                    xo.Arg(xo.Int64, name='use_slice_index_array'),
                     xo.Arg(xo.Int64, pointer=True, name='i_slice_for_particles'),
                     xo.Arg(xo.Int64, pointer=True, name='i_bunch_for_particles')
                 ]),
@@ -207,8 +209,10 @@ ss = 0 * p.x
 ctx= xo.ContextCpu()
 i_slice_for_particles = p.particle_id * 0 - 999
 i_bunch_for_particles = p.particle_id * 0 - 9999
-slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
-                  i_bunch_for_particles=i_bunch_for_particles)
+slicer.slice_kernel(particles=p,
+                    use_bunch_index_array=1, use_slice_index_array=1,
+                    i_slice_for_particles=i_slice_for_particles,
+                    i_bunch_for_particles=i_bunch_for_particles)
 
 assert np.all(np.array(i_slice_expected) == i_slice_for_particles)
 assert np.all(i_bunch_for_particles == -9999)
@@ -239,7 +243,9 @@ i_slice_for_particles = p.particle_id * 0 - 999
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=0,
                           num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
-slicer.test_slice(particles=p, i_slice_for_particles=i_slice_for_particles,
+slicer.slice_kernel(particles=p,
+                    use_bunch_index_array=1, use_slice_index_array=1,
+                    i_slice_for_particles=i_slice_for_particles,
                     i_bunch_for_particles=i_bunch_for_particles)
 
 i_slice_expected  = np.array([
@@ -271,3 +277,8 @@ assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
 
 assert np.all(slicer.sum('xy') == slicer.sum('x_y'))
 assert np.all(slicer.sum('x', 'y') == slicer.sum('x_y'))
+
+p = xt.Particles(zeta=1,
+                 weight=[1, 2, 1],
+                 x = [99, 100, 101],
+                 y = [201,200, 199])
