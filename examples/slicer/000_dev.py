@@ -137,6 +137,12 @@ class UniformBinSlicer(xt.BeamElement):
         """
         return self._reshape_for_multibunch(self._particles_per_slice)
 
+    def sum(self, cc):
+        """
+        Sum of the quantity cc per slice
+        """
+        return self._reshape_for_multibunch(getattr(self, '_sum_' + cc))
+
     def _reshape_for_multibunch(self, data):
         if self.num_bunches <= 0:
             return data
