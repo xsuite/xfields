@@ -43,28 +43,28 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
     //         'zeta_zeta', 'zeta_delta',
     //         'delta_delta']
     // for mm in moms:
-    //    print(f"double* sum_{mm} = UniformBinSlicerData_getp1_sum_{mm}(el, 0);")
-    double* sum_x_x = UniformBinSlicerData_getp1_sum_x_x(el, 0);
-    double* sum_x_px = UniformBinSlicerData_getp1_sum_x_px(el, 0);
-    double* sum_x_y = UniformBinSlicerData_getp1_sum_x_y(el, 0);
-    double* sum_x_py = UniformBinSlicerData_getp1_sum_x_py(el, 0);
-    double* sum_x_zeta = UniformBinSlicerData_getp1_sum_x_zeta(el, 0);
-    double* sum_x_delta = UniformBinSlicerData_getp1_sum_x_delta(el, 0);
-    double* sum_px_px = UniformBinSlicerData_getp1_sum_px_px(el, 0);
-    double* sum_px_y = UniformBinSlicerData_getp1_sum_px_y(el, 0);
-    double* sum_px_py = UniformBinSlicerData_getp1_sum_px_py(el, 0);
-    double* sum_px_zeta = UniformBinSlicerData_getp1_sum_px_zeta(el, 0);
-    double* sum_px_delta = UniformBinSlicerData_getp1_sum_px_delta(el, 0);
-    double* sum_y_y = UniformBinSlicerData_getp1_sum_y_y(el, 0);
-    double* sum_y_py = UniformBinSlicerData_getp1_sum_y_py(el, 0);
-    double* sum_y_zeta = UniformBinSlicerData_getp1_sum_y_zeta(el, 0);
-    double* sum_y_delta = UniformBinSlicerData_getp1_sum_y_delta(el, 0);
-    double* sum_py_py = UniformBinSlicerData_getp1_sum_py_py(el, 0);
-    double* sum_py_zeta = UniformBinSlicerData_getp1_sum_py_zeta(el, 0);
-    double* sum_py_delta = UniformBinSlicerData_getp1_sum_py_delta(el, 0);
-    double* sum_zeta_zeta = UniformBinSlicerData_getp1_sum_zeta_zeta(el, 0);
-    double* sum_zeta_delta = UniformBinSlicerData_getp1_sum_zeta_delta(el, 0);
-    double* sum_delta_delta = UniformBinSlicerData_getp1_sum_delta_delta(el, 0);
+    //    print(f"double* sum_{mm} = (UniformBinSlicerData_len_sum_{mm}(el)) ? UniformBinSlicerData_getp1_sum_{mm}(el, 0) : NULL ;")
+    double* sum_x_x = (UniformBinSlicerData_len_sum_x_x(el)) ? UniformBinSlicerData_getp1_sum_x_x(el, 0) : NULL ;
+    double* sum_x_px = (UniformBinSlicerData_len_sum_x_px(el)) ? UniformBinSlicerData_getp1_sum_x_px(el, 0) : NULL ;
+    double* sum_x_y = (UniformBinSlicerData_len_sum_x_y(el)) ? UniformBinSlicerData_getp1_sum_x_y(el, 0) : NULL ;
+    double* sum_x_py = (UniformBinSlicerData_len_sum_x_py(el)) ? UniformBinSlicerData_getp1_sum_x_py(el, 0) : NULL ;
+    double* sum_x_zeta = (UniformBinSlicerData_len_sum_x_zeta(el)) ? UniformBinSlicerData_getp1_sum_x_zeta(el, 0) : NULL ;
+    double* sum_x_delta = (UniformBinSlicerData_len_sum_x_delta(el)) ? UniformBinSlicerData_getp1_sum_x_delta(el, 0) : NULL ;
+    double* sum_px_px = (UniformBinSlicerData_len_sum_px_px(el)) ? UniformBinSlicerData_getp1_sum_px_px(el, 0) : NULL ;
+    double* sum_px_y = (UniformBinSlicerData_len_sum_px_y(el)) ? UniformBinSlicerData_getp1_sum_px_y(el, 0) : NULL ;
+    double* sum_px_py = (UniformBinSlicerData_len_sum_px_py(el)) ? UniformBinSlicerData_getp1_sum_px_py(el, 0) : NULL ;
+    double* sum_px_zeta = (UniformBinSlicerData_len_sum_px_zeta(el)) ? UniformBinSlicerData_getp1_sum_px_zeta(el, 0) : NULL ;
+    double* sum_px_delta = (UniformBinSlicerData_len_sum_px_delta(el)) ? UniformBinSlicerData_getp1_sum_px_delta(el, 0) : NULL ;
+    double* sum_y_y = (UniformBinSlicerData_len_sum_y_y(el)) ? UniformBinSlicerData_getp1_sum_y_y(el, 0) : NULL ;
+    double* sum_y_py = (UniformBinSlicerData_len_sum_y_py(el)) ? UniformBinSlicerData_getp1_sum_y_py(el, 0) : NULL ;
+    double* sum_y_zeta = (UniformBinSlicerData_len_sum_y_zeta(el)) ? UniformBinSlicerData_getp1_sum_y_zeta(el, 0) : NULL ;
+    double* sum_y_delta = (UniformBinSlicerData_len_sum_y_delta(el)) ? UniformBinSlicerData_getp1_sum_y_delta(el, 0) : NULL ;
+    double* sum_py_py = (UniformBinSlicerData_len_sum_py_py(el)) ? UniformBinSlicerData_getp1_sum_py_py(el, 0) : NULL ;
+    double* sum_py_zeta = (UniformBinSlicerData_len_sum_py_zeta(el)) ? UniformBinSlicerData_getp1_sum_py_zeta(el, 0) : NULL ;
+    double* sum_py_delta = (UniformBinSlicerData_len_sum_py_delta(el)) ? UniformBinSlicerData_getp1_sum_py_delta(el, 0) : NULL ;
+    double* sum_zeta_zeta = (UniformBinSlicerData_len_sum_zeta_zeta(el)) ? UniformBinSlicerData_getp1_sum_zeta_zeta(el, 0) : NULL ;
+    double* sum_zeta_delta = (UniformBinSlicerData_len_sum_zeta_delta(el)) ? UniformBinSlicerData_getp1_sum_zeta_delta(el, 0) : NULL ;
+    double* sum_delta_delta = (UniformBinSlicerData_len_sum_delta_delta(el)) ? UniformBinSlicerData_getp1_sum_delta_delta(el, 0) : NULL ;
 
     double const z_min_edge = z_min - 0.5 * dzeta;
 
