@@ -85,11 +85,11 @@ class UniformBinSlicer(xt.BeamElement):
                 ]),
         }
 
-    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_slices=None,
+    def __init__(self, zeta_range=None, num_slices=None, dzeta=None, zeta_slices=None,
                  num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
-        self._zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, nbins)
+        self._zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, num_slices)
         num_bunches = num_bunches or 0
         i_bunch_0 = i_bunch_0 or 0
         bunch_spacing_zeta = bunch_spacing_zeta or 0
@@ -259,7 +259,7 @@ class UniformBinSlicer(xt.BeamElement):
 # Check slice attribution (single-bunch mode) #
 ###############################################
 
-slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
+slicer = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3)
 assert slicer.num_bunches == 0 # Single-bunch mode
 
 p0 = xt.Particles(zeta  =[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51,  1, 1.49, 1.51,  2, 2.51],
@@ -310,7 +310,7 @@ p = xt.Particles.merge([p1, p2, p3, p4])
 i_bunch_particles = p.particle_id * 0 - 999
 i_slice_particles = p.particle_id * 0 - 999
 
-slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=0,
+slicer = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3, i_bunch_0=0,
                           num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
 slicer.slice(particles=p,
                     i_slice_particles=i_slice_particles,
@@ -348,7 +348,7 @@ assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
 # Check moments (single-bunch mode) #
 #####################################
 
-slicer_single_bunch = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
+slicer_single_bunch = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3)
 
 p = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  weight=[1, 2, 1],
@@ -453,10 +453,10 @@ for mm in moms:
 # Check moments (multi-bunch mode) #
 ####################################
 
-slicer_multi_bunch = UniformBinSlicer(zeta_range=(-1, 1), nbins=3,
+slicer_multi_bunch = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
                                         num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
 
-slicer_multi_bunch_part = UniformBinSlicer(zeta_range=(-1, 1), nbins=3, i_bunch_0=1,
+slicer_multi_bunch_part = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3, i_bunch_0=1,
                                         num_bunches=3, bunch_spacing_zeta=bunch_spacing_zeta)
 
 p1 = xt.Particles(zeta=[0.99, 1.0, 1.01],
@@ -686,3 +686,20 @@ for mm in moms:
     assert np.allclose(slicer_multi_bunch_part.std('zeta'), np.sqrt(slicer_multi_bunch_part.var('zeta')),
                         rtol=0, atol=1e-12)
 
+# Try selected moments
+slicer_multi_bunch_mom = UniformBinSlicer(
+    zeta_range=(-1, 1), num_slices=3,
+    num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta,
+    moments=['x', 'xy'])
+
+p1 = xt.Particles(zeta=[0.99, 1.0, 1.01],
+                 weight=[1, 2, 1],
+                 x = [99, 100, 101],
+                 y = [201,200, 199])
+p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) + 2 * bunch_spacing_zeta,
+                    weight=[1, 2, 1],
+                    x = [99, 100, 101],
+                    y = [201,200, 199])
+p = xt.Particles.merge([p1, p2])
+
+slicer_multi_bunch_mom.slice(p)
