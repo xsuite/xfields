@@ -770,4 +770,4 @@ assert np.allclose(slicer_multi_bunch_mom.var('px'),
 p = xt.Particles(zeta=np.random.uniform(-1, 1, int(1e6)),
                  x = np.random.normal(0, 1, int(1e6)))
 slicer_time = UniformBinSlicer(zeta_range=(-1, 1), num_slices=100,
-                               moments=['x'])
+                               moments=['x', 'xx'])
