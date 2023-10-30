@@ -33,13 +33,13 @@ import numpy as np
 
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
-coords = ['x', 'px', 'y', 'py', 'zeta', 'delta']
-second_moments={}
-for cc1 in coords:
-    for cc2 in coords:
-        if cc1 + '_' + cc2 in second_moments or cc2 + '_' + cc1 in second_moments:
+COORDS = ['x', 'px', 'y', 'py', 'zeta', 'delta']
+SECOND_MOMENTS={}
+for cc1 in COORDS:
+    for cc2 in COORDS:
+        if cc1 + '_' + cc2 in SECOND_MOMENTS or cc2 + '_' + cc1 in SECOND_MOMENTS:
             continue
-        second_moments[cc1 + '_' + cc2] = (cc1, cc2)
+        SECOND_MOMENTS[cc1 + '_' + cc2] = (cc1, cc2)
 
 _xof = {
     'z_min': xo.Float64,
@@ -50,13 +50,13 @@ _xof = {
     'bunch_spacing_zeta': xo.Float64,
     'particles_per_slice': xo.Float64[:],
 }
-for cc in coords:
+for cc in COORDS:
     _xof['sum_'+cc] = xo.Float64[:]
-for ss in second_moments:
+for ss in SECOND_MOMENTS:
     _xof['sum_'+ss] = xo.Float64[:]
 
 short_second_mom_names={}
-for ss in second_moments:
+for ss in SECOND_MOMENTS:
     short_second_mom_names[ss.replace('_','')] = ss
 # Gives {'xx': 'x_x', 'xpx': 'x_px', ...}
 
@@ -94,19 +94,25 @@ class UniformBinSlicer(xt.BeamElement):
         i_bunch_0 = i_bunch_0 or 0
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
-        all_moments = coords + list(second_moments.keys())
+        all_moments = COORDS + list(SECOND_MOMENTS.keys())
         if moments == 'all':
             selected_moments = all_moments
         else:
             assert isinstance (moments, (list, tuple))
             selected_moments = []
             for mm in moments:
-                if mm in coords:
+                if mm in COORDS:
                     selected_moments.append(mm)
-                elif mm in second_moments:
+                elif mm in SECOND_MOMENTS:
                     selected_moments.append(mm)
+                    for cc in SECOND_MOMENTS[mm]:
+                        if cc not in SECOND_MOMENTS:
+                            selected_moments.append(cc)
                 elif mm in short_second_mom_names:
                     selected_moments.append(short_second_mom_names[mm])
+                    for cc in SECOND_MOMENTS[short_second_mom_names[mm]]:
+                        if cc not in SECOND_MOMENTS:
+                            selected_moments.append(cc)
                 else:
                     raise ValueError(f'Unknown moment {mm}')
 
@@ -139,9 +145,9 @@ class UniformBinSlicer(xt.BeamElement):
             use_slice_index_array = 0
             i_slice_particles = particles.particle_id[:1] # Dummy
 
-        for cc in coords:
+        for cc in COORDS:
             getattr(self, '_sum_' + cc)[:] = 0
-        for ss in second_moments:
+        for ss in SECOND_MOMENTS:
             getattr(self, '_sum_' + ss)[:] = 0
 
         self._slice_kernel(particles=particles,
@@ -197,6 +203,21 @@ class UniformBinSlicer(xt.BeamElement):
         Spacing between bunches in meters
         """
         return self._bunch_spacing_zeta
+
+    @property
+    def moments(self):
+        """
+        List of moments that are being recorded
+        """
+        out = []
+        for cc in COORDS:
+            if len(getattr(self._xobject, 'sum_' + cc)) > 0:
+                out.append(cc)
+        for ss in SECOND_MOMENTS:
+            if len(getattr(self._xobject, 'sum_' + ss)) > 0:
+                out.append(ss)
+
+        return out
 
     @property
     def particles_per_slice(self):
@@ -690,7 +711,10 @@ for mm in moms:
 slicer_multi_bunch_mom = UniformBinSlicer(
     zeta_range=(-1, 1), num_slices=3,
     num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta,
-    moments=['x', 'xy'])
+    moments=['delta', 'xy', 'px_px'])
+
+assert np.all(np.array(slicer_multi_bunch_mom.moments) == np.array(
+    ['x', 'px', 'y', 'delta', 'x_y', 'px_px']))
 
 p1 = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  weight=[1, 2, 1],
@@ -703,3 +727,32 @@ p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) + 2 * bunch_spacing_zeta,
 p = xt.Particles.merge([p1, p2])
 
 slicer_multi_bunch_mom.slice(p)
+slicer_multi_bunch.slice(p)
+
+assert np.allclose(slicer_multi_bunch_mom.particles_per_slice,
+                     slicer_multi_bunch.particles_per_slice,
+                     rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.zeta_centers,
+                        slicer_multi_bunch.zeta_centers,
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.sum('x'),
+                        slicer_multi_bunch.sum('x'),
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.sum('y'),
+                        slicer_multi_bunch.sum('y'),
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.sum('px'),
+                        slicer_multi_bunch.sum('px'),
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.sum('delta'),
+                        slicer_multi_bunch.sum('delta'),
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.cov('x_y'),
+                        slicer_multi_bunch.cov('x_y'),
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.cov('px_px'),
+                        slicer_multi_bunch.cov('px_px'),
+                        rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch_mom.var('px'),
+                        slicer_multi_bunch.var('px'),
+                        rtol=0, atol=1e-12)
