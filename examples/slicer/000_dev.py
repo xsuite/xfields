@@ -219,8 +219,9 @@ class UniformBinSlicer(xt.BeamElement):
         else:
             return data.reshape(self.num_bunches, self.num_slices)
 
-
-# Check in single-bunch mode
+###############################################
+# Check slice attribution (single-bunch mode) #
+###############################################
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 assert slicer.num_bunches == 0 # Single-bunch mode
@@ -251,7 +252,10 @@ expected_particles_per_slice = np.array([30, 60, 90])
 assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
                      atol=1e-12, rtol=0)
 
-# Check in multi-bunch mode
+##############################################
+# Check slice attribution (multi-bunch mode) #
+##############################################
+
 bunch_spacing_zeta = 10.
 
 p1 = p0.copy()
@@ -303,9 +307,6 @@ assert np.all(i_bunch_particles == i_bunch_expected)
 assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
                    atol=1e-12, rtol=0)
 
-assert np.all(slicer.sum('xy') == slicer.sum('x_y'))
-assert np.all(slicer.sum('x', 'y') == slicer.sum('x_y'))
-
 slicer_single_bunch = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
 
 p = xt.Particles(zeta=1,
@@ -337,6 +338,19 @@ assert np.allclose(slicer_single_bunch.var('x'), slicer_single_bunch.cov('x', 'x
 assert np.allclose(slicer_single_bunch.var('x'), slicer_single_bunch.mean('xx') - slicer_single_bunch.mean('x')**2,
     rtol=0, atol=1e-12)
 assert np.allclose(slicer_single_bunch.var('zeta'), 0, rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.std('x'), np.sqrt(slicer_single_bunch.var('x')),
+                    rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.std('y'), np.sqrt(slicer_single_bunch.var('y')),
+                    rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.std('zeta'), np.sqrt(slicer_single_bunch.var('zeta')),
+                    rtol=0, atol=1e-12)
+
+assert np.all(slicer_single_bunch.sum('xy') == slicer_single_bunch.sum('x_y'))
+assert np.all(slicer_single_bunch.sum('x', 'y') == slicer_single_bunch.sum('x_y'))
+assert np.all(slicer_single_bunch.mean('xy') == slicer_single_bunch.mean('x_y'))
+assert np.all(slicer_single_bunch.mean('x', 'y') == slicer_single_bunch.mean('x_y'))
+assert np.all(slicer_single_bunch.cov('xy') == slicer_single_bunch.cov('x_y'))
+assert np.all(slicer_single_bunch.cov('x', 'y') == slicer_single_bunch.cov('x_y'))
 
 # # Same parametrized
 
@@ -379,3 +393,11 @@ for mm in moms:
     assert np.allclose(slicer_single_bunch.var(c1_name), slicer_single_bunch.mean(c1_name + c1_name) - slicer_single_bunch.mean(c1_name)**2,
         rtol=0, atol=1e-12)
     assert np.allclose(slicer_single_bunch.var('zeta'), 0, rtol=0, atol=1e-12)
+
+    assert np.all(slicer_single_bunch.sum(c1_name + c2_name) == slicer_single_bunch.sum(c1_name + '_' + c2_name))
+    assert np.all(slicer_single_bunch.sum(c1_name, c2_name) == slicer_single_bunch.sum(c1_name + '_' + c2_name))
+    assert np.all(slicer_single_bunch.mean(c1_name + c2_name) == slicer_single_bunch.mean(c1_name + '_' + c2_name))
+    assert np.all(slicer_single_bunch.mean(c1_name, c2_name) == slicer_single_bunch.mean(c1_name + '_' + c2_name))
+    assert np.all(slicer_single_bunch.cov(c1_name + c2_name) == slicer_single_bunch.cov(c1_name + '_' + c2_name))
+    assert np.all(slicer_single_bunch.cov(c1_name, c2_name) == slicer_single_bunch.cov(c1_name + '_' + c2_name))
+
