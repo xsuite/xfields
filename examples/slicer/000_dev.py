@@ -85,16 +85,16 @@ class UniformBinSlicer(xt.BeamElement):
                 ]),
         }
 
-    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_centers=None,
+    def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_slices=None,
                  num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
                  **kwargs):
 
-        self._zeta_centers = _configure_grid('zeta', zeta_centers, dzeta, zeta_range, nbins)
+        self._zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, nbins)
         num_bunches = num_bunches or 0
         i_bunch_0 = i_bunch_0 or 0
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
-        self.xoinitialize(z_min=self.zeta_centers[0], num_slices=self.num_slices,
+        self.xoinitialize(z_min=self._zeta_slices[0], num_slices=self.num_slices,
                           dzeta=self.dzeta,
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
@@ -133,22 +133,27 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Array with the grid points (bin centers).
         """
-        return self._zeta_centers
-
+        if self.num_bunches <= 0:
+            return self._zeta_slices
+        else:
+            out = np.zeros((self.num_bunches, self.num_slices))
+            for ii in range(self.num_bunches):
+                out[ii, :] = (self._zeta_slices + ii * self.bunch_spacing_zeta)
+            return out
 
     @property
     def num_slices(self):
         """
         Number of bins
         """
-        return len(self.zeta_centers)
+        return len(self._zeta_slices)
 
     @property
     def dzeta(self):
         """
         Bin size in meters.
         """
-        return self.zeta_centers[1] - self.zeta_centers[0]
+        return self._zeta_slices[1] - self._zeta_slices[0]
 
     @property
     def num_bunches(self):
@@ -163,6 +168,13 @@ class UniformBinSlicer(xt.BeamElement):
         Index of the first bunch
         """
         return self._i_bunch_0
+
+    @property
+    def bunch_spacing_zeta(self):
+        """
+        Spacing between bunches in meters
+        """
+        return self._bunch_spacing_zeta
 
     @property
     def particles_per_slice(self):
@@ -320,6 +332,8 @@ p = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  y = [201,200, 199])
 slicer_single_bunch.slice(p)
 
+assert slicer_single_bunch.bunch_spacing_zeta == 0
+
 assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
 assert np.allclose(slicer_single_bunch.particles_per_slice, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
 assert np.allclose(slicer_single_bunch.sum('x'), [0, 0, (p.x * p.weight).sum()], rtol=0, atol=1e-12)
@@ -428,9 +442,11 @@ p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) + 2 * bunch_spacing_zeta,
                     y = [201,200, 199])
 p = xt.Particles.merge([p1, p2])
 
+assert np.isclose(slicer_multi_bunch.bunch_spacing_zeta, 10, rtol=0, atol=1e-12)
+
 slicer_multi_bunch.slice(p)
 
-assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12) # Needs to be adapted!!!!
+assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [9, 10, 11], [19, 20, 21], [29, 30, 31]]), rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.particles_per_slice, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.sum('x'), [[0, 0, (p1.x * p1.weight).sum()], [0, 0, 0], [0, (p2.x * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.sum('y'), [[0, 0, (p1.y * p1.weight).sum()], [0, 0, 0], [0, (p2.y * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
@@ -497,7 +513,7 @@ for mm in moms:
     c1_p2 = getattr(p2, c1_name)
     c2_p2 = getattr(p2, c2_name)
 
-    assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12) # Needs to be adapted!!!!
+    assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [9, 10, 11], [19, 20, 21], [29, 30, 31]]), rtol=0, atol=1e-12)
     assert np.allclose(slicer_multi_bunch.particles_per_slice, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
     assert np.allclose(slicer_multi_bunch.sum(c1_name), [[0, 0, (c1_p1 * p1.weight).sum()], [0, 0, 0], [0, (c1_p2 * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
     assert np.allclose(slicer_multi_bunch.sum(c2_name), [[0, 0, (c2_p1 * p1.weight).sum()], [0, 0, 0], [0, (c2_p2 * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
