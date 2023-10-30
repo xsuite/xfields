@@ -185,7 +185,11 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Mean of the quantity cc per slice
         """
-        return self.sum(cc, cc2) / self.particles_per_slice
+        out = 0 * self.particles_per_slice
+        mask_nonzero = self.particles_per_slice > 0
+        out[mask_nonzero] = (self.sum(cc, cc2)[mask_nonzero]
+                             / self.particles_per_slice[mask_nonzero])
+        return out
 
     def cov(self, cc1, cc2=None):
         """
@@ -302,8 +306,11 @@ assert np.allclose(slicer.particles_per_slice, expected_particles_per_slice,
 assert np.all(slicer.sum('xy') == slicer.sum('x_y'))
 assert np.all(slicer.sum('x', 'y') == slicer.sum('x_y'))
 
+slicer_single_bunch = UniformBinSlicer(zeta_range=(-1, 1), nbins=3)
+
 p = xt.Particles(zeta=1,
                  weight=[1, 2, 1],
                  x = [99, 100, 101],
                  y = [201,200, 199])
-slicer.slice(p)
+slicer_single_bunch.slice(p)
+
