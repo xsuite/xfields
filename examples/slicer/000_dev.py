@@ -75,8 +75,16 @@ class UniformBinSlicer(xt.BeamElement):
     ]
 
     _per_particle_kernels = {
-            '_slice_kernel': xo.Kernel(
+            '_slice_kernel_all': xo.Kernel(
                 c_name='UniformBinSlicer_slice',
+                args=[
+                    xo.Arg(xo.Int64, name='use_bunch_index_array'),
+                    xo.Arg(xo.Int64, name='use_slice_index_array'),
+                    xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
+                    xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles')
+                ]),
+            '_slice_kernel_x_only': xo.Kernel(
+                c_name='UniformBinSlicer_slice_x_only',
                 args=[
                     xo.Arg(xo.Int64, name='use_bunch_index_array'),
                     xo.Arg(xo.Int64, name='use_slice_index_array'),
@@ -129,6 +137,8 @@ class UniformBinSlicer(xt.BeamElement):
                           bunch_spacing_zeta=bunch_spacing_zeta,
                           particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
                           **allocated_sizes, **kwargs)
+
+        self._slice_kernel = self._slice_kernel_all
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
@@ -756,3 +766,8 @@ assert np.allclose(slicer_multi_bunch_mom.cov('px_px'),
 assert np.allclose(slicer_multi_bunch_mom.var('px'),
                         slicer_multi_bunch.var('px'),
                         rtol=0, atol=1e-12)
+
+p = xt.Particles(zeta=np.random.uniform(-1, 1, int(1e6)),
+                 x = np.random.normal(0, 1, int(1e6)))
+slicer_time = UniformBinSlicer(zeta_range=(-1, 1), num_slices=100,
+                               moments=['x'])
