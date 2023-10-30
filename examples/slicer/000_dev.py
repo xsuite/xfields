@@ -87,20 +87,42 @@ class UniformBinSlicer(xt.BeamElement):
 
     def __init__(self, zeta_range=None, nbins=None, dzeta=None, zeta_slices=None,
                  num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
-                 **kwargs):
+                 moments='all', **kwargs):
 
         self._zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, nbins)
         num_bunches = num_bunches or 0
         i_bunch_0 = i_bunch_0 or 0
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
+        all_moments = coords + list(second_moments.keys())
+        if moments == 'all':
+            selected_moments = all_moments
+        else:
+            assert isinstance (moments, (list, tuple))
+            selected_moments = []
+            for mm in moments:
+                if mm in coords:
+                    selected_moments.append(mm)
+                elif mm in second_moments:
+                    selected_moments.append(mm)
+                elif mm in short_second_mom_names:
+                    selected_moments.append(short_second_mom_names[mm])
+                else:
+                    raise ValueError(f'Unknown moment {mm}')
+
+        allocated_sizes = {}
+        for mm in all_moments:
+            if mm in selected_moments:
+                allocated_sizes['sum_' + mm] = (num_bunches or 1) * self.num_slices
+            else:
+                allocated_sizes['sum_' + mm] = 0
+
         self.xoinitialize(z_min=self._zeta_slices[0], num_slices=self.num_slices,
                           dzeta=self.dzeta,
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
                           particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
-                          **{'sum_' + cc: (num_bunches or 1) * self.num_slices for cc in coords + list(second_moments.keys())},
-                          **kwargs)
+                          **allocated_sizes, **kwargs)
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
@@ -191,6 +213,8 @@ class UniformBinSlicer(xt.BeamElement):
             cc = short_second_mom_names[cc]
         if cc2 is not None:
             cc = cc + '_' + cc2
+        if len(getattr(self._xobject, 'sum_' + cc)) == 0:
+            raise ValueError(f'Moment `{cc}` not recorded')
         return self._reshape_for_multibunch(getattr(self, '_sum_' + cc))
 
     def mean(self, cc, cc2=None):
