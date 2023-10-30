@@ -104,7 +104,7 @@ class UniformBinSlicer(xt.BeamElement):
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
-        slicer.particles_per_slice[:] = 0
+        self.particles_per_slice[:] = 0
 
         if i_bunch_particles is not None:
             use_bunch_index_array = 1
@@ -314,3 +314,68 @@ p = xt.Particles(zeta=1,
                  y = [201,200, 199])
 slicer_single_bunch.slice(p)
 
+assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.particles_per_slice, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('x'), [0, 0, (p.x * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('y'), [0, 0, (p.y * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('zeta'), [0, 0, (p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('xx'), [0, 0, (p.x**2 * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('yy'), [0, 0, (p.y**2 * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('xy'), [0, 0, (p.x * p.y * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.sum('xzeta'), [0, 0, (p.x * p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.mean('x'), [0, 0, (p.x * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.mean('y'), [0, 0, (p.y * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.mean('xx'), [0, 0, (p.x**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.mean('yy'), [0, 0, (p.y**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.mean('xy'), [0, 0, (p.x * p.y * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.mean('xzeta'), [0, 0, (p.x * p.zeta * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.cov('x', 'y'),
+    slicer_single_bunch.mean('xy') - slicer_single_bunch.mean('x') * slicer_single_bunch.mean('y'),
+    rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.var('x'), slicer_single_bunch.cov('x', 'x'),
+    rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.var('x'), slicer_single_bunch.mean('xx') - slicer_single_bunch.mean('x')**2,
+    rtol=0, atol=1e-12)
+assert np.allclose(slicer_single_bunch.var('zeta'), 0, rtol=0, atol=1e-12)
+
+# # Same parametrized
+
+moms = ['x_px', 'x_y', 'x_py', 'x_delta',
+        'px_y', 'px_py', 'px_delta',
+        'y_py', 'y_delta',
+        'py_delta']
+for mm in moms:
+    c1_name, c2_name = mm.split('_')
+
+    p = xt.Particles(zeta=1,
+                    weight=[1, 2, 1],
+                    **{c1_name: [99, 100, 101],
+                       c2_name: [201,200, 199]})
+    c1 = getattr(p, c1_name)
+    c2 = getattr(p, c2_name)
+
+    slicer_single_bunch.slice(p)
+
+    assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.particles_per_slice, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum(c1_name), [0, 0, (c1 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum(c2_name), [0, 0, (c2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum('zeta'), [0, 0, (p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum(c1_name + c1_name), [0, 0, (c1**2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum(c2_name + c2_name), [0, 0, (c2**2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum(c1_name + c2_name), [0, 0, (c1 * c2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.sum(c1_name + 'zeta'), [0, 0, (c1 * p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.mean(c1_name), [0, 0, (c1 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.mean(c2_name), [0, 0, (c2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.mean(c1_name + c1_name), [0, 0, (c1**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.mean(c2_name + c2_name), [0, 0, (c2**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.mean(c1_name + c2_name), [0, 0, (c1 * c2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.mean(c1_name + 'zeta'), [0, 0, (c1 * p.zeta * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.cov(c1_name, c2_name),
+        slicer_single_bunch.mean(c1_name + c2_name) - slicer_single_bunch.mean(c1_name) * slicer_single_bunch.mean(c2_name),
+        rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.var(c1_name), slicer_single_bunch.cov(c1_name, c1_name),
+        rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.var(c1_name), slicer_single_bunch.mean(c1_name + c1_name) - slicer_single_bunch.mean(c1_name)**2,
+        rtol=0, atol=1e-12)
+    assert np.allclose(slicer_single_bunch.var('zeta'), 0, rtol=0, atol=1e-12)
