@@ -3,10 +3,12 @@ import numpy as np
 from scipy.constants import c, e, m_p
 from numpy.fft import fft, ifft
 
-from PyHEADTAIL.particles.slicing import UniformBinSlicer
-from PyHEADTAIL.particles.particles import Particles
-from PyHEADTAIL.impedances.wakes import CircularResonator, WakeField
-from PyHEADTAIL.machines.synchrotron import Synchrotron
+from PyHEADTAIL.particles.slicing import UniformBinSlicer as PyHTUniformBinSlicer
+from PyHEADTAIL.particles.particles import Particles as PyHTParticles
+from PyHEADTAIL.impedances.wakes import CircularResonator as PyHTCircularResonator
+
+from PyHEADTAIL.impedances.wakes import WakeField as PyHTWakeField
+from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 
 # Machine settings
@@ -54,7 +56,7 @@ epsn_x = 2e-6
 epsn_y = 2e-6
 sigma_z = 0.09
 
-machine = Synchrotron(
+machine = PyHTSynchrotron(
         optics_mode='smooth', circumference=circumference,
         n_segments=1, s=None, name=None,
         alpha_x=None, beta_x=beta_x, D_x=0,
@@ -99,7 +101,7 @@ for b_id in bucket_id_set:
     # if b_id != 0:
     #     allbunches.x[mask] = 0
 
-beam = Particles(macroparticlenumber=allbunches.macroparticlenumber,
+beam = PyHTParticles(macroparticlenumber=allbunches.macroparticlenumber,
                  particlenumber_per_mp=allbunches.particlenumber_per_mp,
                  charge=allbunches.charge, mass=allbunches.mass,
                  circumference=allbunches.circumference, gamma=allbunches.gamma,
@@ -114,7 +116,7 @@ beam = Particles(macroparticlenumber=allbunches.macroparticlenumber,
 # Initialise wakes
 
 
-slicer = UniformBinSlicer(n_slices, z_cuts=(-0.5*bucket_length, 0.5*bucket_length),
+slicer = PyHTUniformBinSlicer(n_slices, z_cuts=(-0.5*bucket_length, 0.5*bucket_length),
                           circumference=machine.circumference, h_bunch=h_bunch)
 
 
@@ -127,7 +129,7 @@ L = 100000.
 sigma = 1. / 7.88e-10
 
 # wakes = CircularResistiveWall(b, L, sigma, b/c, beta_beam=machine.beta)
-wakes = CircularResonator(R_shunt=135e6, frequency=1.97e9*0.6, Q=31000/100, n_turns_wake=n_turns_wake)
+wakes = PyHTCircularResonator(R_shunt=135e6, frequency=1.97e9*0.6, Q=31000/100, n_turns_wake=n_turns_wake)
 
 # mpi_settings = 'circular_mpi_full_ring_fft'
 # wake_field = WakeField(slicer, wakes, mpi=mpi_settings, Q_x=accQ_x, Q_y=accQ_y, beta_x=beta_x, beta_y=beta_y)
@@ -144,20 +146,20 @@ p0_SI = machine.p0
 mpi_settings = False
 mpi_settings = 'memory_optimized'
 mpi_settings = 'linear_mpi_full_ring_fft'
-wake_field = WakeField(slicer, wakes, mpi=mpi_settings)
+wake_field = PyHTWakeField(slicer, wakes, mpi=mpi_settings)
 
 # Wake full beam
 
 n_buckets_slicer = max(filling_scheme) + 2
 n_buckets_slicer = max(filling_scheme) + 1
 
-slicer_full_beam = UniformBinSlicer(n_buckets_slicer * slicer.n_slices,
+slicer_full_beam = PyHTUniformBinSlicer(n_buckets_slicer * slicer.n_slices,
                                     z_cuts=((0.5 - n_buckets_slicer)*bucket_length, 0.5*bucket_length),
                                     circumference=machine.circumference, h_bunch=h_bunch)
 slicer_full_beam.force_absolute = True
 
-wakes_full_beam = CircularResonator(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q, n_turns_wake=wakes.n_turns_wake)
-wake_field_full_beam = WakeField(slicer_full_beam, wakes_full_beam, mpi=False)
+wakes_full_beam = PyHTCircularResonator(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q, n_turns_wake=wakes.n_turns_wake)
+wake_field_full_beam = PyHTWakeField(slicer_full_beam, wakes_full_beam, mpi=False)
 
 
 # import pdb
