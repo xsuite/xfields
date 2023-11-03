@@ -49,7 +49,6 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam2d.h'),
     ]
 
-
     def __init__(self,
                     scale_strength=1.,
 
@@ -83,8 +82,20 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
         # Collective mode (pipeline update)
         if config_for_update is not None:
-            raise NotImplementedError
-            # To be implemented based on 6d implementation
+
+            self.config_for_update = config_for_update
+            self.iscollective = True
+            self.track_WS = self.track # weak-strong tracking once the properties of the element have been updated
+            self.track = self._track_collective # switch to specific track method
+
+            self.moments = None
+            self.partner_moments = np.zeros((1+2+3), dtype=float)
+            other_beam_num_particles = 0.0
+            other_beam_Sigma_11 = 0.0
+            other_beam_Sigma_13 = 0.0
+            other_beam_Sigma_33 = 0.0
+        else:
+            self.config_for_update = None
 
         params = self._handle_init_old_interface(kwargs)
 
@@ -186,6 +197,101 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
         return params
 
+    def _track_collective(self, particles, _force_suspend=False):
+        if self.config_for_update._working_on_bunch is None:
+            # I am working on a new bunch
+
+            if particles._num_active_particles == 0:
+                return # All particles are lost
+
+            # Check that the element is not occupied by a bunch
+            assert self.config_for_update._working_on_bunch is None
+
+            self.config_for_update._working_on_bunch = particles.name
+
+            # Handle update frequency
+            at_turn = particles._xobject.at_turn[0] # On CPU there is always an active particle in position 0
+            if (self.config_for_update.update_every is not None
+                    and at_turn % self.config_for_update.update_every == 0):
+                self.config_for_update._do_update = True
+            else:
+                self.config_for_update._do_update = False
+
+            # Can be used to test the resume without pipeline
+            if _force_suspend:
+                return xt.PipelineStatus(on_hold=True)
+
+        assert self.config_for_update._working_on_bunch == particles.name
+
+        ret = self._apply_bb_kicks(particles)
+
+        return ret
+
+        # Beam beam interaction in the boosted frame
+        ret = self._apply_bb_kicks(particles)
+
+        return ret
+
+    def _apply_bb_kicks(self, particles):
+        if self.config_for_update._do_update:
+            if self.config_for_update.pipeline_manager.is_ready_to_send(self.config_for_update.element_name,
+                                                 particles.name,
+                                                 self.config_for_update.partner_particles_name,
+                                                 particles.at_turn[0],
+                                                 internal_tag=0):
+                # Compute moments
+                self.moments = self.compute_spacial_moments(particles)
+                self.config_for_update.pipeline_manager.send_message(self.moments,
+                                                 self.config_for_update.element_name,
+                                                 particles.name,
+                                                 self.config_for_update.partner_particles_name,
+                                                 particles.at_turn[0],
+                                                 internal_tag=0)
+
+            if self.config_for_update.pipeline_manager.is_ready_to_recieve(self.config_for_update.element_name,
+                                    self.config_for_update.partner_particles_name,
+                                    particles.name,
+                                    internal_tag=0):
+                self.config_for_update.pipeline_manager.recieve_message(self.partner_moments,
+                                    self.config_for_update.element_name,
+                                    self.config_for_update.partner_particles_name,
+                                    particles.name,
+                                    internal_tag=0)
+                self.update_from_recieved_moments()
+            else:
+                return xt.PipelineStatus(on_hold=True)
+
+        self.track_WS(particles)
+
+        self.config_for_update._working_on_bunch = None
+
+        return None
+
+    def compute_spacial_moments(self,particles):
+        nplike_lib = self._buffer.context.nplike_lib
+        moments = np.zeros((1+2+3), dtype=float)
+        moments[0] = nplike_lib.sum(particles.weight)
+        moments[1] = nplike_lib.sum(particles.x*particles.weight) / moments[0]
+        moments[2] = nplike_lib.sum(particles.y*particles.weight) / moments[0]
+        x_diff = particles.x-moments[1]
+        y_diff = particles.y-moments[2]
+        moments[3] = nplike_lib.sum(x_diff**2*particles.weight) / moments[0]
+        moments[4] = nplike_lib.sum(x_diff*y_diff*particles.weight) / moments[0]
+        moments[5] = nplike_lib.sum(y_diff**2*particles.weight) / moments[0]
+        return moments
+
+    def update_from_recieved_moments(self):
+        # reference frame transformation as in https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
+        self.other_beam_num_particles = self.partner_moments[0]
+
+        self.other_beam_shift_x = self.partner_moments[1] * (-1.0)
+        self.other_beam_shift_y = self.partner_moments[2]
+
+        self.other_beam_Sigma_11 = self.partner_moments[3]
+        self.other_beam_Sigma_13 = self.partner_moments[4]
+        self.other_beam_Sigma_33 = self.partner_moments[5]
+        
+
     # Properties to mimic the old interfece (to be removed)
     @property
     def n_particles(self):
@@ -260,6 +366,20 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         self.post_subtract_py = value
 
 
+class ConfigForUpdateBeamBeamBiGaussian2D:
+
+    def __init__(self,
+        pipeline_manager=None,
+        element_name=None,
+        partner_particles_name=None,
+        update_every=None):
+
+        self.pipeline_manager = pipeline_manager
+        self.element_name = element_name
+        self.partner_particles_name = partner_particles_name
+        self.update_every = update_every
+
+        self._working_on_bunch = None
 
 
 
