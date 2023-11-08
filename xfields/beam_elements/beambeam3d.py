@@ -200,7 +200,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_sqrtSigma_55_beamstrahlung=None,
 
                     flag_bhabha=0,
-                    compt_x_min=1.,
+                    compt_x_min=1e-4,
                     flag_beamsize_effect=1,
 
                     flag_luminosity=0,
