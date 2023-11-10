@@ -36,12 +36,15 @@ class BhabhaTable(xo.HybridClass):
       'particle_id': xo.Int64[:],
       'photon_id': xo.Int64[:],
       'primary_energy': xo.Float64[:],
+      'photon_x': xo.Float64[:],
+      'photon_y': xo.Float64[:],
+      'photon_z': xo.Float64[:],
       'photon_energy': xo.Float64[:],
       'photon_px': xo.Float64[:],
       'photon_py': xo.Float64[:],
       'photon_pzeta': xo.Float64[:],
-      'theta_e': xo.Float64[:],
-      'theta_g': xo.Float64[:],
+      'primary_scattering_angle': xo.Float64[:],
+      'photon_scattering_angle': xo.Float64[:],
         }
 
 class LumiTable(xo.HybridClass):
@@ -139,8 +142,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
 
-    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung'}
-    _rename = {'flag_bhabha': '_flag_bhabha'}
+    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung', 'flag_bhabha': '_flag_bhabha'}
 
     _depends_on = [xt.RandomUniform]
 
@@ -198,7 +200,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_sqrtSigma_55_beamstrahlung=None,
 
                     flag_bhabha=0,
-                    compt_x_min=1.,
+                    compt_x_min=1e-4,
                     flag_beamsize_effect=1,
 
                     flag_luminosity=0,
