@@ -142,7 +142,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
 
-    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung', 'flag_bhabha': '_flag_bhabha'}
+    _rename = {'flag_beamstrahlung': '_flag_beamstrahlung',
+               'flag_bhabha': '_flag_bhabha'}
 
     _depends_on = [xt.RandomUniform]
 
@@ -161,7 +162,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         _pkg_root.joinpath('headers/beamstrahlung_spectrum.h'),
         _pkg_root.joinpath('headers/bhabha_spectrum.h'),
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
+        _pkg_root.joinpath(
+            'beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
 
    ]
 
@@ -481,7 +483,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_zeta_bin_width_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             slices_other_beam_zeta_bin_width_star_beamstrahlung = (
-                slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi)) 
+                slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi))
 
         if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
@@ -756,11 +758,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             # recompute and communicate slice moments; if QSS only update before first step
             if (self.config_for_update._do_update and (not self.config_for_update.quasistrongstrong
                 or self.config_for_update._i_step == 0)):
-                
-                i = 0
-                while particles.state[i] != 1:
-                    i += 1
-                at_turn = int(particles.at_turn[i])
+
+                ii = 0
+                while particles.state[ii] != 1:
+                    ii += 1
+                at_turn = int(particles.at_turn[ii])
 
                 if self.config_for_update.pipeline_manager.is_ready_to_send(self.config_for_update.element_name,
                                                      particles.name,

@@ -147,7 +147,7 @@ void synchrobeam_kick(
             lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
         const int at_turn = LocalParticle_get_at_turn(part);
-        double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
+        double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);
         atomicAdd(lumi_address, wgt);
         }
     }
@@ -163,8 +163,8 @@ void synchrobeam_kick(
         RecordIndex bhabha_table_index               = NULL;
         bhabha_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
         if (bhabha_record){
-            bhabha_table       = BeamBeamBiGaussian3DRecordData_getp_bhabhatable(bhabha_record);
-            bhabha_table_index =                      BhabhaTableData_getp__index(bhabha_table);
+            bhabha_table = BeamBeamBiGaussian3DRecordData_getp_bhabhatable(bhabha_record);
+            bhabha_table_index = BhabhaTableData_getp__index(bhabha_table);
         }
 
         // switch for beam size effect
@@ -177,18 +177,18 @@ void synchrobeam_kick(
         }
 
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
-    
-        const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0    
+
+        const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0
 
         const double compt_x_min = BeamBeamBiGaussian3DData_get_compt_x_min(el);
         int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
-    
+
         // generate virtual photons of the opposite slice
         double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon, radius, theta;
         for (int i_phot=0; i_phot<n_photons; i_phot++){
-    
+
           mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
-    
+
           // apply beam size effect here (affects x and y only)
           switch(flag_beamsize_effect){
           case 0:  // this is w.r.t of the strong slice centroid
@@ -198,7 +198,6 @@ void synchrobeam_kick(
               break;
           case 1:  // photons distributed on a disc around centroid
               radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
-              //printf("radius: %.6e\n", radius);
               radius = min(radius, 1e5);
               x_photon = x_bar_hat_star + rndm_sincos(part, &theta) * radius;
               y_photon = y_bar_hat_star + theta * radius;
@@ -212,19 +211,17 @@ void synchrobeam_kick(
           // virtual photons are located at the opposite slice centroid
 
           px_photon = px_slice_star;
-          py_photon = py_slice_star; 
+          py_photon = py_slice_star;
           pzeta_photon = pzeta_slice_star;
-          
-          //if (radius < sqrt(Sig_33_hat_star)){
+
             // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
             compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
-                     e_photon, compt_x_min, q2, 
-                     x_photon, y_photon, S, px_photon, py_photon, pzeta_photon, 
+                     e_photon, compt_x_min, q2,
+                     x_photon, y_photon, S, px_photon, py_photon, pzeta_photon,
                      wgt, px_star, py_star, pzeta_star, q0);
-    
+
             // reload pzeta since they changed from compton; px and py are changed only locally
             *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
-         // }
         }
     }
     #endif
@@ -241,7 +238,7 @@ void synchrobeam_kick(
         beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
         if (beamstrahlung_record){
             beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-            beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
+            beamstrahlung_table_index = BeamstrahlungTableData_getp__index(beamstrahlung_table);
         }
 
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
