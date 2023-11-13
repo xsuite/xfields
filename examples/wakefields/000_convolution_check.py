@@ -92,7 +92,7 @@ wavelength = 2
 allbunches.x = amplitude * np.sin(2 * np.pi * z_all / wavelength)
 allbunches.xp *= 0
 
-allbunches.x[allbunches.z < 0] = 0
+allbunches.x[z_all < 0] = 0
 
 for b_id in bucket_id_set:
     mask = allbunches.bucket_id == b_id
@@ -290,8 +290,8 @@ for i_turn in range(n_turns):
                 label=f"turn {i_turn}")
 
         ax00.plot(
-            xf_slicer.zeta_centers.T,
-            xf_slicer.mean('x').T, '.', color=color_list[i_turn])
+            xf_slicer_list[-1].zeta_centers.T,
+            xf_slicer_list[-1].mean('x').T, '.', color=color_list[i_turn])
 
         ax01.plot(
             slice_set_after_wake_beam[-1].z_centers,
@@ -325,19 +325,19 @@ wf = Wakefield(
 
 for i_turn in range(n_turns_wake):
     for i_bunch in range(n_bunches):
-        mom = dipole_moment_matrix_multiturn[::-1,:,:][i_bunch, :, i_turn]
-        mom_xf = xf_slicer_list[i_turn].mean('x')[i_bunch, :] * xf_slicer_list[i_turn].particles_per_slice[i_bunch, :]
-        wf.moments_data.set_moments(moments={
-            'x': mom,
-            'num_particles': np.ones_like(mom),
-            },
-        i_turn=i_turn, i_source=i_bunch)
-
+        # mom = dipole_moment_matrix_multiturn[::-1,:,:][i_bunch, :, i_turn]
         # wf.moments_data.set_moments(moments={
-        #     'x': xf_slicer_list[i_turn].mean('x')[i_bunch, :] * xf_slicer_list[i_turn].particles_per_slice[i_bunch, :],
-        #     'num_particles': np.ones_like(xf_slicer_list[i_turn].particles_per_slice[i_bunch, :]),
+        #     'x': mom,
+        #     'num_particles': np.ones_like(mom),
         #     },
-        # i_turn=i_turn, i_source=i_bunch)
+        #     i_turn=i_turn, i_source=i_bunch)
+
+        mom_xf = xf_slicer_list[::-1][i_turn].mean('x')[i_bunch, :] * xf_slicer_list[::-1][i_turn].particles_per_slice[i_bunch, :]
+        wf.moments_data.set_moments(moments={
+             'x': mom_xf,
+             'num_particles': np.ones_like(mom_xf),
+             },
+            i_turn=i_turn, i_source=i_bunch)
 
 print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f} %')
 
