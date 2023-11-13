@@ -92,7 +92,7 @@ wavelength = 2
 allbunches.x = amplitude * np.sin(2 * np.pi * z_all / wavelength)
 allbunches.xp *= 0
 
-# allbunches.x[allbunches.z < 0] = 0
+allbunches.x[allbunches.z < 0] = 0
 
 for b_id in bucket_id_set:
     mask = allbunches.bucket_id == b_id
@@ -332,8 +332,6 @@ for i_turn in range(n_turns_wake):
             'num_particles': np.ones_like(mom),
             },
         i_turn=i_turn, i_source=i_bunch)
-
-        prrrrr
 
         # wf.moments_data.set_moments(moments={
         #     'x': xf_slicer_list[i_turn].mean('x')[i_bunch, :] * xf_slicer_list[i_turn].particles_per_slice[i_bunch, :],
