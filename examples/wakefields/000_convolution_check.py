@@ -231,6 +231,7 @@ for i_turn in range(n_turns):
         py=beam.yp,
         zeta=beam.z,
         delta=beam.dp,
+        weight = beam.particlenumber_per_mp,
     )
     xf_slicer = xf.UniformBinSlicer(
         zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
@@ -325,11 +326,20 @@ wf = Wakefield(
 for i_turn in range(n_turns_wake):
     for i_bunch in range(n_bunches):
         mom = dipole_moment_matrix_multiturn[::-1,:,:][i_bunch, :, i_turn]
+        mom_xf = xf_slicer_list[i_turn].mean('x')[i_bunch, :] * xf_slicer_list[i_turn].particles_per_slice[i_bunch, :]
         wf.moments_data.set_moments(moments={
             'x': mom,
             'num_particles': np.ones_like(mom),
             },
         i_turn=i_turn, i_source=i_bunch)
+
+        prrrrr
+
+        # wf.moments_data.set_moments(moments={
+        #     'x': xf_slicer_list[i_turn].mean('x')[i_bunch, :] * xf_slicer_list[i_turn].particles_per_slice[i_bunch, :],
+        #     'num_particles': np.ones_like(xf_slicer_list[i_turn].particles_per_slice[i_bunch, :]),
+        #     },
+        # i_turn=i_turn, i_source=i_bunch)
 
 print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f} %')
 
