@@ -71,13 +71,13 @@ bunch_spacing_zeta = 10.
 
 p1 = p0.copy()
 p2 = p0.copy()
-p2.zeta += bunch_spacing_zeta
+p2.zeta -= bunch_spacing_zeta
 p2.weight *= 10
 p3 = p0.copy()
-p3.zeta += 2 * bunch_spacing_zeta
+p3.zeta -= 2 * bunch_spacing_zeta
 p3.weight *= 100
 p4 = p0.copy()
-p4.zeta += 3 * bunch_spacing_zeta
+p4.zeta -= 3 * bunch_spacing_zeta
 p4.weight *= 1000
 
 p = xt.Particles.merge([p1, p2, p3, p4])
@@ -98,11 +98,19 @@ i_slice_expected  = np.array([
     -1, -1,    0,      0,  0,    1,     1,    1,    2, 2, 2,    -1,  -1,
     -999, -999, -999, -999
 ])
+# i_bunch_expected  = np.array([
+#     -1, -1,    0,      0,  0,    0,     0,    0,    0, 0, 0,     0,   0,
+#      0,  0,    1,      1,  1,    1,     1,    1,    1, 1, 1,     1,   1,
+#      1,  1,    2,      2,  2,    2,     2,    2,    2, 2, 2,     2,   2,
+#      2,  2,    3,      3,  3,    3,     3,    3,    3, 3, 3,     3,   3,
+#     -999, -999, -999, -999
+# ])
+
 i_bunch_expected  = np.array([
-    -1, -1,    0,      0,  0,    0,     0,    0,    0, 0, 0,     0,   0,
-     0,  0,    1,      1,  1,    1,     1,    1,    1, 1, 1,     1,   1,
-     1,  1,    2,      2,  2,    2,     2,    2,    2, 2, 2,     2,   2,
-     2,  2,    3,      3,  3,    3,     3,    3,    3, 3, 3,     3,   3,
+     1,  1,    0,      0,  0,    0,     0,    0,    0, 0, 0,     0,   0,
+     2,  2,    1,      1,  1,    1,     1,    1,    1, 1, 1,     1,   1,
+     3,  3,    2,      2,  2,    2,     2,    2,    2, 2, 2,     2,   2,
+     -1,  -1,    3,      3,  3,    3,     3,    3,    3, 3, 3,     3,   3,
     -999, -999, -999, -999
 ])
 

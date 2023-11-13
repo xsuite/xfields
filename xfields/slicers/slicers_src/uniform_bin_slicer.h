@@ -91,13 +91,13 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
             can_be_assigned_to_slice = 1;
         }
         else{
-            double i_bunch = floor((zeta - z_min_edge) / bunch_spacing_zeta);
+            double i_bunch = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
             i_bunch_rel = i_bunch - i_bunch_0;
             if (i_bunch_rel >= 0 && i_bunch_rel < num_bunches){
                 if (use_bunch_index_array){
                     i_bunch_part[ipart] = i_bunch;
                 }
-                z_min_edge_bunch = z_min_edge + i_bunch * bunch_spacing_zeta;
+                z_min_edge_bunch = z_min_edge - i_bunch * bunch_spacing_zeta;
                 can_be_assigned_to_slice = 1;
             } else {
                 if (use_bunch_index_array){
