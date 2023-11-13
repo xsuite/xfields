@@ -290,7 +290,7 @@ for i_turn in range(n_turns):
 
         ax00.plot(
             xf_slicer.zeta_centers.T,
-            xf_slicer.mean('x').T, 'o')
+            xf_slicer.mean('x').T, '.', color=color_list[i_turn])
 
         ax01.plot(
             slice_set_after_wake_beam[-1].z_centers,
