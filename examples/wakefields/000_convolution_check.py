@@ -209,27 +209,6 @@ for i_turn in range(n_turns):
                         statistics=['mean_x', 'mean_xp', 'mean_y', 'mean_yp']))
     allbunches.clean_slices()
 
-
-    # Measure with xfields slicer
-    xt_part_temp = xt.Particles(
-        mass0=xt.PROTON_MASS_EV,
-        gamma0=allbunches.gamma,
-        x=allbunches.x,
-        px=allbunches.xp,
-        y=allbunches.y,
-        py=allbunches.yp,
-        zeta=allbunches.z,
-        delta=allbunches.dp,
-    )
-
-    xf_slicer = xf.UniformBinSlicer(
-        zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
-        num_slices=n_slices,
-        i_bunch_0=0, num_bunches=n_bunches,
-        bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
-    xf_slicer.slice(xt_part_temp)
-    xf_slicer_list.append(xf_slicer)
-
     # Continue with PyHEADTAIL
     beam.clean_slices()
     slice_set_before_wake_beam.append(beam.get_slices(slicer_full_beam,
@@ -241,6 +220,25 @@ for i_turn in range(n_turns):
 
     x_at_wake_beam.append(beam.x.copy())
     xp_before_wake_beam.append(beam.xp.copy())
+
+    # Measure with xfields slicer
+    xt_part_temp = xt.Particles(
+        mass0=xt.PROTON_MASS_EV,
+        gamma0=beam.gamma,
+        x=beam.x,
+        px=beam.xp,
+        y=beam.y,
+        py=beam.yp,
+        zeta=beam.z,
+        delta=beam.dp,
+    )
+    xf_slicer = xf.UniformBinSlicer(
+        zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
+        num_slices=n_slices,
+        i_bunch_0=0, num_bunches=n_bunches,
+        bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
+    xf_slicer.slice(xt_part_temp)
+    xf_slicer_list.append(xf_slicer)
 
     wake_field.track(allbunches)
     wake_field_full_beam.track(beam)
