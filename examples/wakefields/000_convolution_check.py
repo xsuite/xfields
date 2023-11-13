@@ -10,6 +10,8 @@ from PyHEADTAIL.impedances.wakes import CircularResonator as PyHTCircularResonat
 from PyHEADTAIL.impedances.wakes import WakeField as PyHTWakeField
 from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
+import xfields as xf
+import xtrack as xt
 
 # Machine settings
 
@@ -114,8 +116,6 @@ beam = PyHTParticles(macroparticlenumber=allbunches.macroparticlenumber,
                  ))
 
 # Initialise wakes
-
-
 slicer = PyHTUniformBinSlicer(n_slices, z_cuts=(-0.5*bucket_length, 0.5*bucket_length),
                           circumference=machine.circumference, h_bunch=h_bunch)
 
@@ -162,9 +162,6 @@ wakes_full_beam = PyHTCircularResonator(R_shunt=wakes.R_shunt, frequency=wakes.f
 wake_field_full_beam = PyHTWakeField(slicer_full_beam, wakes_full_beam, mpi=False)
 
 
-# import pdb
-# pdb.set_trace()
-
 plt.close('all')
 
 if plot_on:
@@ -194,6 +191,8 @@ store_particlenumber_per_mp = allbunches.particlenumber_per_mp
 z_source_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
+xf_slicer_list = []
+
 color_list = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 for i_turn in range(n_turns):
 
@@ -210,6 +209,28 @@ for i_turn in range(n_turns):
                         statistics=['mean_x', 'mean_xp', 'mean_y', 'mean_yp']))
     allbunches.clean_slices()
 
+
+    # Measure with xfields slicer
+    xt_part_temp = xt.Particles(
+        mass0=xt.PROTON_MASS_EV,
+        gamma0=allbunches.gamma,
+        x=allbunches.x,
+        px=allbunches.xp,
+        y=allbunches.y,
+        py=allbunches.yp,
+        zeta=allbunches.z,
+        delta=allbunches.dp,
+    )
+
+    xf_slicer = xf.UniformBinSlicer(
+        zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
+        num_slices=n_slices,
+        i_bunch_0=0, num_bunches=n_bunches,
+        bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
+    xf_slicer.slice(xt_part_temp)
+    xf_slicer_list.append(xf_slicer)
+
+    # Continue with PyHEADTAIL
     beam.clean_slices()
     slice_set_before_wake_beam.append(beam.get_slices(slicer_full_beam,
                         statistics=['mean_x', 'mean_xp', 'mean_y', 'mean_yp']))
@@ -269,10 +290,15 @@ for i_turn in range(n_turns):
                 slice_set_after_wake_beam[-1].mean_x, '-', color=color_list[i_turn],
                 label=f"turn {i_turn}")
 
+        ax00.plot(
+            xf_slicer.zeta_centers.T,
+            xf_slicer.mean('x').T, 'o')
+
         ax01.plot(
             slice_set_after_wake_beam[-1].z_centers,
             slice_set_after_wake_beam[-1].mean_xp - slice_set_before_wake_beam[-1].mean_xp,
             '-', color=color_list[i_turn], label=f"turn {i_turn}")
+
 
 if plot_on:
     ax00.legend()
