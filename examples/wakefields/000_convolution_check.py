@@ -193,6 +193,26 @@ dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
 xf_slicer_list = []
 
+from wakefield import Wakefield, TempResonatorFunction
+
+wf = Wakefield(
+    source_moments=['num_particles', 'x'],
+    kick=None,
+    scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
+    function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
+    z_slice_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
+    slicer=None, # alternatively, a slicer can be used
+    num_slices=n_slices, # Per bunch, this is N_1 in the paper
+    z_period=bunch_spacing_buckets*bucket_length, # This is P in the paper
+    #num_periods=n_bunches, # This is N_S
+    num_periods=h_RF//bunch_spacing_buckets, # This is N_S
+    num_turns=n_turns_wake,
+    circumference=circumference,
+    _flatten=flatten
+)
+
+
+
 color_list = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 for i_turn in range(n_turns):
 
@@ -305,23 +325,6 @@ if plot_on:
 z_source_matrix_multiturn = z_source_matrix_multiturn[:, :, ::-1] # last turn on top
 dipole_moment_matrix_multiturn = dipole_moment_matrix_multiturn[:, :, ::-1] # last turn on top
 
-from wakefield import Wakefield, TempResonatorFunction
-
-wf = Wakefield(
-    source_moments=['num_particles', 'x'],
-    kick=None,
-    scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
-    function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
-    z_slice_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
-    slicer=None, # alternatively, a slicer can be used
-    num_slices=n_slices, # Per bunch, this is N_1 in the paper
-    z_period=bunch_spacing_buckets*bucket_length, # This is P in the paper
-    #num_periods=n_bunches, # This is N_S
-    num_periods=h_RF//bunch_spacing_buckets, # This is N_S
-    num_turns=n_turns_wake,
-    circumference=circumference,
-    _flatten=flatten
-)
 
 for i_turn in range(n_turns_wake):
     for i_bunch in range(n_bunches):
