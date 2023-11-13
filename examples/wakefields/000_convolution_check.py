@@ -332,10 +332,9 @@ for i_turn in range(n_turns_wake):
         #     },
         #     i_turn=i_turn, i_source=i_bunch)
 
-        mom_xf = xf_slicer_list[::-1][i_turn].mean('x')[i_bunch, :] * xf_slicer_list[::-1][i_turn].particles_per_slice[i_bunch, :]
         wf.moments_data.set_moments(moments={
-             'x': mom_xf,
-             'num_particles': np.ones_like(mom_xf),
+             'x': xf_slicer_list[::-1][i_turn].mean('x')[i_bunch, :],
+             'num_particles': xf_slicer_list[::-1][i_turn].particles_per_slice[i_bunch, :],
              },
             i_turn=i_turn, i_source=i_bunch)
 
