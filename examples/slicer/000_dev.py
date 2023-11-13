@@ -246,7 +246,7 @@ p1 = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  weight=[1, 2, 1],
                  x = [99, 100, 101],
                  y = [201,200, 199])
-p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) + 2 * bunch_spacing_zeta,
+p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) - 2 * bunch_spacing_zeta,
                     weight=[1, 2, 1],
                     x = [99, 100, 101],
                     y = [201,200, 199])
@@ -263,7 +263,7 @@ assert slicer_multi_bunch_part.i_bunch_0 == 1
 slicer_multi_bunch.slice(p)
 slicer_multi_bunch_part.slice(p)
 
-assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [9, 10, 11], [19, 20, 21], [29, 30, 31]]), rtol=0, atol=1e-12)
+assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [-11, -10, -9], [-21, -20, -19], [-31, -30, -29]]), rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.particles_per_slice, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.sum('x'), [[0, 0, (p1.x * p1.weight).sum()], [0, 0, 0], [0, (p2.x * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.sum('y'), [[0, 0, (p1.y * p1.weight).sum()], [0, 0, 0], [0, (p2.y * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
@@ -366,7 +366,7 @@ for mm in moms:
                     weight=[1, 2, 1],
                     **{c1_name: [99, 100, 101],
                        c2_name: [201,200, 199]})
-    p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) + 2 * bunch_spacing_zeta,
+    p2 = xt.Particles(zeta=np.array([-0.01, 0, 0.01]) - 2 * bunch_spacing_zeta,
                         weight=[1, 2, 1],
                         **{c1_name: [99, 100, 101],
                            c2_name: [201,200, 199]})
@@ -381,7 +381,7 @@ for mm in moms:
     c1_p2 = getattr(p2, c1_name)
     c2_p2 = getattr(p2, c2_name)
 
-    assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [9, 10, 11], [19, 20, 21], [29, 30, 31]]), rtol=0, atol=1e-12)
+    assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [-11, -10, -9], [-21, -20, -19], [-31, -30, -29]]), rtol=0, atol=1e-12)
     assert np.allclose(slicer_multi_bunch.particles_per_slice, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
     assert np.allclose(slicer_multi_bunch.sum(c1_name), [[0, 0, (c1_p1 * p1.weight).sum()], [0, 0, 0], [0, (c1_p2 * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
     assert np.allclose(slicer_multi_bunch.sum(c2_name), [[0, 0, (c2_p1 * p1.weight).sum()], [0, 0, 0], [0, (c2_p2 * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)

@@ -151,7 +151,7 @@ class UniformBinSlicer(xt.BeamElement):
         else:
             out = np.zeros((self.num_bunches, self.num_slices))
             for ii in range(self.num_bunches):
-                out[ii, :] = (self._zeta_slices + (ii + self.i_bunch_0) * self.bunch_spacing_zeta)
+                out[ii, :] = (self._zeta_slices - (ii + self.i_bunch_0) * self.bunch_spacing_zeta)
             return out
 
     @property
