@@ -92,7 +92,7 @@ wavelength = 2
 allbunches.x = amplitude * np.sin(2 * np.pi * z_all / wavelength)
 allbunches.xp *= 0
 
-allbunches.x[z_all < 0] = 0
+# allbunches.x[z_all < 0] = 0
 
 for b_id in bucket_id_set:
     mask = allbunches.bucket_id == b_id
@@ -366,7 +366,7 @@ if plot_on:
     plt.figure(200)
     plt.plot(wf.z_wake.T, wf.G_aux.T * (-e**2 / (p0_SI * c)), alpha=0.5)
 
-    ax01.plot(z_profile, res_profile_scaled, 'bx')
+    ax01.plot(z_profile, res_profile_scaled, 'b.')
 
 print(f'T pyht accumulate ({mpi_settings}) {wake_field.wake_kicks[0].time_last_accumulate * 1e3:.2f} ms')
 print(f'T pyht convolution ({mpi_settings}) {wake_field.time_last_field_computation * 1e3:.2f} ms')
