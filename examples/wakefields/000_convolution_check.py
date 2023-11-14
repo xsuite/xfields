@@ -318,8 +318,6 @@ for i_turn in range(n_turns):
         rr = wf.moments_data.data[i_moment_res, i_turn_res, i_start_in_moments_data + i_slice]
         interpolated_result[ipart] = rr
 
-
-
     scaling_constant = -xt_part_temp.q0**2 * qe**2 / (xt_part_temp.p0c * qe)
     getattr(xt_part_temp, wf.kick)[:] += scaling_constant * interpolated_result # remember to handle lost particles!!!
     t1 = time.perf_counter()

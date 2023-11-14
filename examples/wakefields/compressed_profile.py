@@ -1,6 +1,13 @@
 import numpy as np
+import xobjects as xo
+import xtrack as xt
 
-class CompressedProfile:
+class CompressedProfile(xt.BeamElement):
+
+    _xofields = {
+        '_N_aux': xo.Int64,
+        '_N_S': xo.Int64,
+    }
 
     def __init__(self,
                 moments,
