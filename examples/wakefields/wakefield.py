@@ -39,9 +39,6 @@ class Wakefield:
                 num_turns=num_turns,
                 circumference=circumference)
 
-        # self.moments_data is sorted such that i_turn = 0 is the oldest stored
-        # turn.
-
         if not _flatten:
 
             self._N_aux = self.moments_data._N_aux
