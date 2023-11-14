@@ -265,7 +265,7 @@ for i_turn in range(n_turns):
     print(f'T xfields track {(t1 - t0)*1e3:.2f} ms')
 
     # measure slice moments after wake
-    xf_slicer_after.slice(xt_part_temp)
+    xf_slicer_after.track(xt_part_temp)
 
     # Back to pyheadtail
 

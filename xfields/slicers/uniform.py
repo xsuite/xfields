@@ -141,6 +141,9 @@ class UniformBinSlicer(xt.BeamElement):
                     i_slice_particles=i_slice_particles,
                     i_bunch_particles=i_bunch_particles)
 
+    def track(self, particles):
+        self.slice(particles)
+
     @property
     def zeta_centers(self):
         """
