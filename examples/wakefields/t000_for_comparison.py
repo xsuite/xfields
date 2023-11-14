@@ -200,12 +200,12 @@ wf = Wakefield(
     kick=None,
     scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
-    z_slice_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
+    zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
     slicer=None, # alternatively, a slicer can be used
     num_slices=n_slices, # Per bunch, this is N_1 in the paper
-    z_period=bunch_spacing_buckets*bucket_length, # This is P in the paper
+    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
     #num_periods=n_bunches, # This is N_S
-    num_periods=h_RF//bunch_spacing_buckets, # This is N_S
+    num_bunches=h_RF//bunch_spacing_buckets, # This is N_S
     num_turns=n_turns_wake,
     circumference=circumference,
     _flatten=flatten

@@ -29,11 +29,9 @@ class CompressedProfile(xt.BeamElement):
 
     def __init__(self,
                 moments,
-                z_slice_range=None, # These are [a, b] in the paper
+                zeta_range=None, # These are [a, b] in the paper
                 num_slices=None, # Per bunch, this is N_1 in the paper
-                slicer=None, # alternatively, a slicer can be used
-                z_period=None, # This is P in the paper
-                i_period_range=None, # This is [A, B] in the paper
+                bunch_spacing_zeta=None, # This is P in the paper
                 num_periods=None,
                 num_turns=1,
                 num_targets=None,
@@ -43,23 +41,18 @@ class CompressedProfile(xt.BeamElement):
 
         self.xoinitialize()
 
-        if i_period_range is not None:
-            raise NotImplementedError('i_period_range is not implemented yet')
-
         if num_turns > 1:
             assert circumference is not None, (
                 'circumference must be specified if num_turns > 1')
 
         self.circumference = circumference
 
-        assert slicer is None, 'slicer is not implemented yet'
-
-        self.dz = (z_slice_range[1] - z_slice_range[0]) / num_slices # h in the paper
-        self._z_a = z_slice_range[0]
-        self._z_b = z_slice_range[1]
+        self.dz = (zeta_range[1] - zeta_range[0]) / num_slices # h in the paper
+        self._z_a = zeta_range[0]
+        self._z_b = zeta_range[1]
 
         self._N_1 = num_slices # N_1 in the
-        self._z_P = z_period # P in the paper
+        self._z_P = bunch_spacing_zeta # P in the paper
         self._N_S = num_periods # N_S in the paper
 
         if num_slices_target is not None:

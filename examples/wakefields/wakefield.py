@@ -11,34 +11,31 @@ class Wakefield:
                 kick,
                 scale_kick,
                 function,
-                z_slice_range=None, # These are [a, b] in the paper
+                zeta_range=None, # These are [a, b] in the paper
                 num_slices=None, # Per bunch, this is N_1 in the paper
-                slicer=None, # alternatively, a slicer can be used
-                z_period=None, # This is P in the paper
-                i_period_range=None, # This is [A, B] in the paper
-                num_periods=None,
+                bunch_spacing_zeta=None, # This is P in the paper
+                num_bunches=None,
+                i_bunch_0=None,
                 num_turns=1,
                 circumference=None,
                 _flatten=False):
 
         self._flatten = _flatten
 
+        if i_bunch_0 is not None:
+            raise NotImplementedError('i_bunch_0 is not implemented yet')
+
         self.kick = kick
         self.scale_kick = scale_kick
-
-        if i_period_range is not None:
-            raise NotImplementedError('i_period_range is not implemented yet')
 
         self.function = function
 
         self.moments_data = CompressedProfile(
                 moments=source_moments + ['result'],
-                z_slice_range=z_slice_range,
+                zeta_range=zeta_range,
                 num_slices=num_slices,
-                slicer=slicer,
-                z_period=z_period,
-                i_period_range=i_period_range,
-                num_periods=num_periods,
+                bunch_spacing_zeta=bunch_spacing_zeta,
+                num_periods=num_bunches,
                 num_turns=num_turns,
                 circumference=circumference)
 
@@ -97,6 +94,9 @@ class Wakefield:
 
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
+
+    def track(particles):
+        ...
 
     def _compute_convolution(self, moment_names):
 
