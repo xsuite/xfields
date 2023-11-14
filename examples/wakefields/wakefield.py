@@ -23,6 +23,9 @@ class Wakefield:
 
         self._flatten = _flatten
 
+        self.kick = kick
+        self.scale_kick = scale_kick
+
         if i_period_range is not None:
             raise NotImplementedError('i_period_range is not implemented yet')
 

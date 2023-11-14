@@ -196,7 +196,7 @@ from wakefield import Wakefield, TempResonatorFunction
 
 wf = Wakefield(
     source_moments=['num_particles', 'x', 'y'],
-    kick=None,
+    kick='px',
     scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
     z_slice_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
@@ -211,6 +211,12 @@ wf = Wakefield(
 )
 
 xf_slicer = xf.UniformBinSlicer(
+    zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
+    num_slices=n_slices,
+    i_bunch_0=0, num_bunches=n_bunches,
+    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
+
+xf_slicer_after = xf.UniformBinSlicer(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,
     i_bunch_0=0, num_bunches=n_bunches,
@@ -258,9 +264,12 @@ for i_turn in range(n_turns):
         weight = beam.particlenumber_per_mp,
     )
 
-    # Measure slice moments
+    # Measure slice moments and get slice indeces
     t0 = time.perf_counter()
-    xf_slicer.slice(xt_part_temp)
+    i_slice_particles = xt_part_temp.particle_id * 0 + -999
+    i_bunch_particles = xt_part_temp.particle_id * 0 + -9999
+    xf_slicer.slice(xt_part_temp, i_slice_particles=i_slice_particles,
+                    i_bunch_particles=i_bunch_particles)
     t1 = time.perf_counter()
     print(f'T xfields slice {(t1 - t0)*1e3:.2f} ms')
 
@@ -275,7 +284,7 @@ for i_turn in range(n_turns):
     t0 = time.perf_counter()
     for i_bunch in range(n_bunches):
         wf.moments_data.set_moments(moments={
-             'x': xf_slicer.mean('x')[i_bunch, :],
+             'x': xf_slicer.mean('x')[i_bunch, :], # This is very slow!!!
              'num_particles': xf_slicer.particles_per_slice[i_bunch, :],
              },
             i_turn=0, i_source=i_bunch)
@@ -288,6 +297,18 @@ for i_turn in range(n_turns):
     t1 = time.perf_counter()
     dt_xht_sec = t1 - t0
     print(f'T xfields {dt_xht_sec * 1e3:.2f} ms')
+
+    # Apply kicks
+    wf.moments_data.moments_names
+    z_res, res =  wf.moments_data.get_moment_profile('result', i_turn=0)
+    interpolated_result = np.interp(xt_part_temp.zeta, z_res, res)
+    getattr(xt_part_temp, wf.kick)[:] += interpolated_result # remember to handle lost particles!!!
+
+    # measure slice moments after wake
+    xf_slicer_after.slice(xt_part_temp)
+
+    # Back to pyheadtail
+    wf.moments_data['result']
 
     wake_field.track(allbunches)
     wake_field_full_beam.track(beam)
@@ -345,6 +366,10 @@ for i_turn in range(n_turns):
             slice_set_after_wake_beam[-1].z_centers,
             slice_set_after_wake_beam[-1].mean_xp - slice_set_before_wake_beam[-1].mean_xp,
             '-', color=color_list[i_turn], label=f"turn {i_turn}")
+
+        ax01.plot(
+            xf_slicer.zeta_centers.T,
+            xf_slicer_after.mean('px').T - xf_slicer.mean('px').T, 'x', color=color_list[i_turn])
 
 
 if plot_on:
