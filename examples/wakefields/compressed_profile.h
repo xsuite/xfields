@@ -14,7 +14,7 @@ void CompressedProfile_interp_result(
     /*gpuglmem*/ double* data,
     /*gpuglmem*/ int64_t* i_bunch_particles,
     /*gpuglmem*/ int64_t* i_slice_particles,
-    /*gpuglmem*/ int64_t* out
+    /*gpuglmem*/ double* out
     ){
 
     int64_t const _N_S = CompressedProfileData_get__N_S(el);

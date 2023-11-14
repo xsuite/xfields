@@ -13,6 +13,20 @@ class CompressedProfile(xt.BeamElement):
 
     _extra_c_sources = [Path('./compressed_profile.h')]
 
+    _per_particle_kernels = {
+        '_interp_result': xo.Kernel(
+            c_name='CompressedProfile_interp_result',
+            args=[
+                xo.Arg(xo.Int64, name='data_shape_0'),
+                xo.Arg(xo.Int64, name='data_shape_1'),
+                xo.Arg(xo.Int64, name='data_shape_2'),
+                xo.Arg(xo.Float64, pointer=True, name='data'),
+                xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles'),
+                xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
+                xo.Arg(xo.Float64, pointer=True, name='out'),
+            ]),
+        }
+
     def __init__(self,
                 moments,
                 z_slice_range=None, # These are [a, b] in the paper
