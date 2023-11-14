@@ -259,19 +259,28 @@ for i_turn in range(n_turns):
     )
 
     # Measure slice moments
+    t0 = time.perf_counter()
     xf_slicer.slice(xt_part_temp)
+    t1 = time.perf_counter()
+    print(f'T xfields slice {(t1 - t0)*1e3:.2f} ms')
 
     # Trash oldest turn
+    t0 = time.perf_counter()
     wf.moments_data.data[:, 1:, :] = wf.moments_data.data[:, :-1, :]
     wf.moments_data.data[:, 0, :] = 0
+    t1 = time.perf_counter()
+    print(f'T xfields trash {(t1 - t0)*1e3:.2f} ms')
 
     # Set moments for latest turn
+    t0 = time.perf_counter()
     for i_bunch in range(n_bunches):
         wf.moments_data.set_moments(moments={
              'x': xf_slicer.mean('x')[i_bunch, :],
              'num_particles': xf_slicer.particles_per_slice[i_bunch, :],
              },
             i_turn=0, i_source=i_bunch)
+    t1 = time.perf_counter()
+    print(f'T xfields set bunch moments {(t1 - t0)*1e3:.2f} ms')
 
     # Compute convolution
     t0 = time.perf_counter()
