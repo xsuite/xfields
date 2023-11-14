@@ -1,5 +1,6 @@
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 from scipy.constants import c, e, m_p
 from numpy.fft import fft, ifft
 
@@ -244,7 +245,7 @@ for i_turn in range(n_turns):
     x_at_wake_beam.append(beam.x.copy())
     xp_before_wake_beam.append(beam.xp.copy())
 
-    # Xfields wake
+    # Xfields wake implementation
     xt_part_temp = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
         gamma0=beam.gamma,
@@ -257,17 +258,27 @@ for i_turn in range(n_turns):
         weight = beam.particlenumber_per_mp,
     )
 
+    # Measure slice moments
     xf_slicer.slice(xt_part_temp)
 
+    # Trash oldest turn
     wf.moments_data.data[:, 1:, :] = wf.moments_data.data[:, :-1, :]
     wf.moments_data.data[:, 0, :] = 0
 
+    # Set moments for latest turn
     for i_bunch in range(n_bunches):
         wf.moments_data.set_moments(moments={
              'x': xf_slicer.mean('x')[i_bunch, :],
              'num_particles': xf_slicer.particles_per_slice[i_bunch, :],
              },
             i_turn=0, i_source=i_bunch)
+
+    # Compute convolution
+    t0 = time.perf_counter()
+    wf._compute_convolution(moment_names=['x', 'num_particles'])
+    t1 = time.perf_counter()
+    dt_xht_sec = t1 - t0
+    print(f'T xfields {dt_xht_sec * 1e3:.2f} ms')
 
     wake_field.track(allbunches)
     wake_field_full_beam.track(beam)
@@ -335,12 +346,7 @@ dipole_moment_matrix_multiturn = dipole_moment_matrix_multiturn[:, :, ::-1] # la
 
 print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f} %')
 
-import time
-t0 = time.perf_counter()
-wf._compute_convolution(moment_names=['x', 'num_particles'])
-t1 = time.perf_counter()
-dt_xht_sec = t1 - t0
-print(f'T xheadtail {dt_xht_sec * 1e3:.2f} ms')
+
 
 # t0 = time.perf_counter()
 # wf._compute_convolution(moment_names=['x', 'num_particles'])
