@@ -191,6 +191,8 @@ store_particlenumber_per_mp = allbunches.particlenumber_per_mp
 z_source_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
+xf_slicer_list = []
+
 from wakefield import Wakefield, TempResonatorFunction
 
 wf = Wakefield(
@@ -209,23 +211,23 @@ wf = Wakefield(
     _flatten=flatten
 )
 
-xf_slicer = xf.UniformBinSlicer(
-    zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
-    num_slices=n_slices,
-    i_bunch_0=0, num_bunches=n_bunches,
-    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
 
 
 color_list = ['r', 'g', 'b', 'c', 'm', 'y', 'k']
 for i_turn in range(n_turns):
 
-    needs_restore = False
-    x_beam_before_wake = beam.x.copy()
-    x_allbunches_before_wake = allbunches.x.copy()
+    # if i_turn>0:
+    #     allbunches.x[:] = 0
+    #     beam.x[] = 0
+
     # if i_turn != 0:
     #     beam.x[:] = 0
     #     allbunches.x[:] = 0
     #     needs_restore = True
+
+    needs_restore = False
+    x_beam_before_wake = beam.x.copy()
+    x_allbunches_before_wake = allbunches.x.copy()
 
     allbunches.clean_slices()
     slice_set_before_wake_allbunches.append(allbunches.get_slices(slicer,
@@ -244,7 +246,7 @@ for i_turn in range(n_turns):
     x_at_wake_beam.append(beam.x.copy())
     xp_before_wake_beam.append(beam.xp.copy())
 
-    # Xfields wake
+    # Measure with xfields slicer
     xt_part_temp = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
         gamma0=beam.gamma,
@@ -256,18 +258,13 @@ for i_turn in range(n_turns):
         delta=beam.dp,
         weight = beam.particlenumber_per_mp,
     )
-
+    xf_slicer = xf.UniformBinSlicer(
+        zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
+        num_slices=n_slices,
+        i_bunch_0=0, num_bunches=n_bunches,
+        bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
     xf_slicer.slice(xt_part_temp)
-
-    wf.moments_data.data[:, 1:, :] = wf.moments_data.data[:, :-1, :]
-    wf.moments_data.data[:, 0, :] = 0
-
-    for i_bunch in range(n_bunches):
-        wf.moments_data.set_moments(moments={
-             'x': xf_slicer.mean('x')[i_bunch, :],
-             'num_particles': xf_slicer.particles_per_slice[i_bunch, :],
-             },
-            i_turn=0, i_source=i_bunch)
+    xf_slicer_list.append(xf_slicer)
 
     wake_field.track(allbunches)
     wake_field_full_beam.track(beam)
@@ -318,8 +315,8 @@ for i_turn in range(n_turns):
                 label=f"turn {i_turn}")
 
         ax00.plot(
-            xf_slicer.zeta_centers.T,
-            xf_slicer.mean('x').T, '.', color=color_list[i_turn])
+            xf_slicer_list[-1].zeta_centers.T,
+            xf_slicer_list[-1].mean('x').T, '.', color=color_list[i_turn])
 
         ax01.plot(
             slice_set_after_wake_beam[-1].z_centers,
@@ -332,6 +329,22 @@ if plot_on:
 
 z_source_matrix_multiturn = z_source_matrix_multiturn[:, :, ::-1] # last turn on top
 dipole_moment_matrix_multiturn = dipole_moment_matrix_multiturn[:, :, ::-1] # last turn on top
+
+
+for i_turn in range(n_turns_wake):
+    for i_bunch in range(n_bunches):
+        # mom = dipole_moment_matrix_multiturn[::-1,:,:][i_bunch, :, i_turn]
+        # wf.moments_data.set_moments(moments={
+        #     'x': mom,
+        #     'num_particles': np.ones_like(mom),
+        #     },
+        #     i_turn=i_turn, i_source=i_bunch)
+
+        wf.moments_data.set_moments(moments={
+             'x': xf_slicer_list[::-1][i_turn].mean('x')[i_bunch, :],
+             'num_particles': xf_slicer_list[::-1][i_turn].particles_per_slice[i_bunch, :],
+             },
+            i_turn=i_turn, i_source=i_bunch)
 
 print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f} %')
 
