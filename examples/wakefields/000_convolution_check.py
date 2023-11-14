@@ -282,12 +282,21 @@ for i_turn in range(n_turns):
 
     # Set moments for latest turn
     t0 = time.perf_counter()
+
+    means = {}
+    for mm in wf.moments_data.moments_names:
+        if mm == 'num_particles' or mm == 'result':
+            continue
+        means[mm] = xf_slicer.mean(mm)
+
     for i_bunch in range(n_bunches):
-        wf.moments_data.set_moments(moments={
-             'x': xf_slicer.mean('x')[i_bunch, :], # This is very slow!!!
-             'num_particles': xf_slicer.particles_per_slice[i_bunch, :],
-             },
-            i_turn=0, i_source=i_bunch)
+        moments_bunch = {}
+        for nn in means.keys():
+            moments_bunch[nn] = means[nn][i_bunch, :]
+        moments_bunch['num_particles'] = xf_slicer.particles_per_slice[i_bunch, :]
+        wf.moments_data.set_moments(moments=moments_bunch,
+                                    i_turn=0, i_source=i_bunch)
+
     t1 = time.perf_counter()
     print(f'T xfields set bunch moments {(t1 - t0)*1e3:.2f} ms')
 
