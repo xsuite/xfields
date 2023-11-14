@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from scipy.constants import c, e, m_p
+from scipy.constants import e as qe
 from numpy.fft import fft, ifft
 
 from PyHEADTAIL.particles.slicing import UniformBinSlicer as PyHTUniformBinSlicer
@@ -302,7 +303,8 @@ for i_turn in range(n_turns):
     wf.moments_data.moments_names
     z_res, res =  wf.moments_data.get_moment_profile('result', i_turn=0)
     interpolated_result = np.interp(xt_part_temp.zeta, z_res, res)
-    getattr(xt_part_temp, wf.kick)[:] += interpolated_result # remember to handle lost particles!!!
+    scaling_constant = -xt_part_temp.q0**2 * qe**2 / (xt_part_temp.p0c * qe)
+    getattr(xt_part_temp, wf.kick)[:] += scaling_constant*interpolated_result # remember to handle lost particles!!!
 
     # measure slice moments after wake
     xf_slicer_after.slice(xt_part_temp)
