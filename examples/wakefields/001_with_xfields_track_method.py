@@ -195,6 +195,8 @@ dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
 from wakefield import Wakefield, TempResonatorFunction
 
+n_bunches_wake = 120 # Can be longer than filling scheme
+
 wf = Wakefield(
     source_moments=['num_particles', 'x', 'y'],
     kick='px',
@@ -203,8 +205,7 @@ wf = Wakefield(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
     num_slices=n_slices, # Per bunch, this is N_1 in the paper
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
-    num_bunches=n_bunches, # This is N_S
-    # num_bunches=h_RF//bunch_spacing_buckets, # This is N_S
+    num_bunches=n_bunches_wake, # This is N_S
     num_turns=n_turns_wake,
     circumference=circumference,
     _flatten=flatten
@@ -213,7 +214,7 @@ wf = Wakefield(
 xf_slicer_after = xf.UniformBinSlicer(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,
-    i_bunch_0=0, num_bunches=n_bunches,
+    i_bunch_0=0, num_bunches=n_bunches_wake,
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
 
 
