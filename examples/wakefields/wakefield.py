@@ -29,6 +29,9 @@ class Wakefield:
         if i_bunch_0 is not None:
             raise NotImplementedError('i_bunch_0 is not implemented yet')
 
+        assert isinstance(source_moments, (list, tuple))
+        assert isinstance(log_moments, (list, tuple)) or log_moments is None
+
         self.kick = kick
         self.scale_kick = scale_kick
 
@@ -38,6 +41,8 @@ class Wakefield:
         if log_moments is not None:
             slicer_moments += log_moments
         slicer_moments = list(set(slicer_moments))
+        if 'num_particles' in slicer_moments:
+            slicer_moments.remove('num_particles')
 
         self.slicer = xf.UniformBinSlicer(
             zeta_range=zeta_range,
@@ -136,7 +141,7 @@ class Wakefield:
             for nn in means.keys():
                 moments_bunch[nn] = means[nn][i_bunch, :]
             moments_bunch['num_particles'] = (
-                self.slicer.particles_per_slice[i_bunch, :])
+                self.slicer.num_particles[i_bunch, :])
             self.moments_data.set_moments(moments=moments_bunch,
                                         i_turn=0, i_source=i_bunch)
         # Compute convolution

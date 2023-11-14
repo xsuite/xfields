@@ -23,7 +23,7 @@ _xof = {
     'i_bunch_0': xo.Int64,
     'num_bunches': xo.Int64,
     'bunch_spacing_zeta': xo.Float64,
-    'particles_per_slice': xo.Float64[:],
+    'num_particles': xo.Float64[:],
 }
 for cc in COORDS:
     _xof['sum_'+cc] = xo.Float64[:]
@@ -113,14 +113,14 @@ class UniformBinSlicer(xt.BeamElement):
                           dzeta=self.dzeta,
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
-                          particles_per_slice=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
+                          num_particles=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
                           **allocated_sizes, **kwargs)
 
         self._slice_kernel = self._slice_kernel_all
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
-        self.particles_per_slice[:] = 0
+        self.num_particles[:] = 0
 
         if i_bunch_particles is not None:
             use_bunch_index_array = 1
@@ -211,11 +211,11 @@ class UniformBinSlicer(xt.BeamElement):
         return out
 
     @property
-    def particles_per_slice(self):
+    def num_particles(self):
         """
         Number of particles per slice
         """
-        return self._reshape_for_multibunch(self._particles_per_slice)
+        return self._reshape_for_multibunch(self._num_particles)
 
     def sum(self, cc, cc2=None):
         """
@@ -233,10 +233,10 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Mean of the quantity cc per slice
         """
-        out = 0 * self.particles_per_slice
-        mask_nonzero = self.particles_per_slice > 0
+        out = 0 * self.num_particles
+        mask_nonzero = self.num_particles > 0
         out[mask_nonzero] = (self.sum(cc, cc2)[mask_nonzero]
-                             / self.particles_per_slice[mask_nonzero])
+                             / self.num_particles[mask_nonzero])
         return out
 
     def cov(self, cc1, cc2=None):

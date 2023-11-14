@@ -298,6 +298,7 @@ wf = Wakefield(
     num_bunches=n_bunches_wake, # This is N_S
     num_turns=n_turns_wake,
     circumference=circumference,
+    log_moments=['px'],
     _flatten=flatten
 )
 
@@ -305,7 +306,8 @@ slicer_after_wf = xf.UniformBinSlicer(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,
     i_bunch_0=0, num_bunches=n_bunches_wake,
-    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length)
+    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
+    moments=['x', 'px'])
 
 betatron_map = xt.LineSegmentMap(
     length=circumference, betx=beta_x, bety=beta_y,
