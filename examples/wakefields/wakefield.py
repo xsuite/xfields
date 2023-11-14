@@ -21,6 +21,7 @@ class Wakefield:
                 i_bunch_0=None,
                 num_turns=1,
                 circumference=None,
+                log_moments=None,
                 _flatten=False):
 
         self._flatten = _flatten
@@ -33,11 +34,18 @@ class Wakefield:
 
         self.function = function
 
+        slicer_moments = source_moments.copy()
+        if log_moments is not None:
+            slicer_moments += log_moments
+        slicer_moments = list(set(slicer_moments))
+
         self.slicer = xf.UniformBinSlicer(
             zeta_range=zeta_range,
             num_slices=num_slices,
             i_bunch_0=0, num_bunches=num_bunches,
-            bunch_spacing_zeta=bunch_spacing_zeta)
+            bunch_spacing_zeta=bunch_spacing_zeta,
+            moments=slicer_moments
+            )
 
         self.moments_data = CompressedProfile(
                 moments=source_moments + ['result'],

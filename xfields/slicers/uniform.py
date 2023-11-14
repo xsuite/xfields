@@ -41,8 +41,11 @@ for kk in _xof.keys():
     _rnm[kk] = '_' + kk
 
 class UniformBinSlicer(xt.BeamElement):
+
     _xofields = _xof
     _rename = _rnm
+
+    iscollective = True
 
     _extra_c_sources = [
         xt.general._pkg_root.joinpath('headers/atomicadd.h'),
