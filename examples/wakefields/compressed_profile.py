@@ -2,12 +2,16 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 
+from pathlib import Path
+
 class CompressedProfile(xt.BeamElement):
 
     _xofields = {
         '_N_aux': xo.Int64,
         '_N_S': xo.Int64,
     }
+
+    _extra_c_sources = [Path('./compressed_profile.h')]
 
     def __init__(self,
                 moments,
@@ -22,6 +26,8 @@ class CompressedProfile(xt.BeamElement):
                 num_slices_target=None,
                 circumference=None
                 ):
+
+        self.xoinitialize()
 
         if i_period_range is not None:
             raise NotImplementedError('i_period_range is not implemented yet')
