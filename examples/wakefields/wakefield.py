@@ -234,7 +234,7 @@ class Wakefield:
         return self.moments_data.num_slices
 
     @property
-    def num_periods(self):
+    def num_bunches(self):
         return self.moments_data.num_periods
 
     @property
@@ -284,30 +284,6 @@ class Wakefield:
                 moment_name, i_turn)
 
         return z_out, moment_out
-
-    def track(self, particles):
-
-        self._next_turn() # Trash the oldest turn and make space for new one
-
-        i_bin_particles = self._update_moments(particles) # associate to each particle
-
-        self._mpi_sync()
-
-        conv_res = self._convolve_with_G_hat() # Conv res has a similar structure to moments_data (M_aux, n_turns)
-
-        conv_res_tot = np.sum(conv_res, axis=1) # Sum over n_turns
-
-        conv_res_particles = np.take(conv_res_tot, i_bin_particles, axis=0) # Reorder the convolved result to match the particles
-
-        kick_per_particle = conv_res_particles
-
-        for nn in self.scale_kick:
-            if isinstance(nn, str):
-                kick_per_particle *= getattr(particles, nn)
-            else:
-                kick_per_particle *= nn
-
-        getattr(particles, self.kick)[:] += kick_per_particle
 
 
 class TempResonatorFunction:
