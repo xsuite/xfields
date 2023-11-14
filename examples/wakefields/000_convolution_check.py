@@ -301,7 +301,6 @@ for i_turn in range(n_turns):
 
     # Apply kicks
     wf.moments_data.moments_names
-    z_res, res =  wf.moments_data.get_moment_profile('result', i_turn=0)
     t0 = time.perf_counter()
     # interpolated_result = np.interp(xt_part_temp.zeta, z_res, res)
 
@@ -321,6 +320,8 @@ for i_turn in range(n_turns):
     #     # rr = wf.moments_data.data[i_moment_res, i_turn_res, i_start_in_moments_data + i_slice]
     #     interpolated_result[ipart] = rr
 
+
+
     wf.moments_data._interp_result(particles=xt_part_temp,
                 data_shape_0=md.data.shape[0],
                 data_shape_1=md.data.shape[1],
@@ -330,6 +331,7 @@ for i_turn in range(n_turns):
                 i_slice_particles=i_slice_particles,
                 out=interpolated_result)
 
+    # interpolated result will be zero for lost particles (so nothing to do for them)
     scaling_constant = -xt_part_temp.q0**2 * qe**2 / (xt_part_temp.p0c * qe)
     getattr(xt_part_temp, wf.kick)[:] += scaling_constant * interpolated_result # remember to handle lost particles!!!
     t1 = time.perf_counter()
