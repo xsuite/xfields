@@ -297,14 +297,17 @@ for i_turn in range(n_turns):
     wf._compute_convolution(moment_names=['x', 'num_particles'])
     t1 = time.perf_counter()
     dt_xht_sec = t1 - t0
-    print(f'T xfields {dt_xht_sec * 1e3:.2f} ms')
+    print(f'T xfields convolution {dt_xht_sec * 1e3:.2f} ms')
 
     # Apply kicks
     wf.moments_data.moments_names
     z_res, res =  wf.moments_data.get_moment_profile('result', i_turn=0)
+    t0 = time.perf_counter()
     interpolated_result = np.interp(xt_part_temp.zeta, z_res, res)
     scaling_constant = -xt_part_temp.q0**2 * qe**2 / (xt_part_temp.p0c * qe)
-    getattr(xt_part_temp, wf.kick)[:] += scaling_constant*interpolated_result # remember to handle lost particles!!!
+    getattr(xt_part_temp, wf.kick)[:] += scaling_constant * interpolated_result # remember to handle lost particles!!!
+    t1 = time.perf_counter()
+    print(f'T xfields apply kicks {(t1 - t0)*1e3:.2f} ms')
 
     # measure slice moments after wake
     xf_slicer_after.slice(xt_part_temp)
