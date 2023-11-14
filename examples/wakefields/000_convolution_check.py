@@ -308,6 +308,8 @@ for i_turn in range(n_turns):
     interpolated_result = xt_part_temp.zeta * 0
     assert wf.moments_data.moments_names[-1] == 'result'
     md = wf.moments_data
+    data = md.data
+    data_1d = md.data.flatten()
     for ipart in range(len(i_bunch_particles)):
         print(f'ipart = {ipart} / {len(i_bunch_particles)}', end='\r', flush=True)
         i_bunch = i_bunch_particles[ipart]
@@ -315,7 +317,10 @@ for i_turn in range(n_turns):
         i_moment_res = -1
         i_turn_res = 0
         i_start_in_moments_data = (md._N_S - i_bunch - 1) * md._N_aux
-        rr = wf.moments_data.data[i_moment_res, i_turn_res, i_start_in_moments_data + i_slice]
+        rr = data_1d[data.shape[2] * data.shape[1] * (data.shape[0] - 1) +
+                     # data.shape[0] * (i_turn) # i_turn is zero for the result
+                     i_start_in_moments_data + i_slice]
+        # rr = wf.moments_data.data[i_moment_res, i_turn_res, i_start_in_moments_data + i_slice]
         interpolated_result[ipart] = rr
 
     scaling_constant = -xt_part_temp.q0**2 * qe**2 / (xt_part_temp.p0c * qe)
