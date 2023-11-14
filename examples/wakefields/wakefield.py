@@ -4,6 +4,8 @@ from compressed_profile import CompressedProfile
 from scipy.constants import c as clight
 from scipy.signal import fftconvolve
 
+import xfields as xf
+
 class Wakefield:
 
     def __init__(self,
@@ -29,6 +31,12 @@ class Wakefield:
         self.scale_kick = scale_kick
 
         self.function = function
+
+        self.slicer = xf.UniformBinSlicer(
+            zeta_range=zeta_range,
+            num_slices=num_slices,
+            i_bunch_0=0, num_bunches=num_bunches,
+            bunch_spacing_zeta=bunch_spacing_zeta)
 
         self.moments_data = CompressedProfile(
                 moments=source_moments + ['result'],
@@ -95,8 +103,76 @@ class Wakefield:
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
 
-    def track(particles):
-        ...
+    def track(self, particles):
+
+        # Measure slice moments and get slice indeces
+        i_slice_particles = particles.particle_id * 0 + -999
+        i_bunch_particles = particles.particle_id * 0 + -9999
+        self.slicer.slice(particles, i_slice_particles=i_slice_particles,
+                        i_bunch_particles=i_bunch_particles)
+
+        # Trash oldest turn
+        self.moments_data.data[:, 1:, :] = self.moments_data.data[:, :-1, :]
+        self.moments_data.data[:, 0, :] = 0
+
+        # Set moments for latest turn
+        for i_bunch in range(self.num_bunches):
+            self.moments_data.set_moments(moments={
+                'x': xf_slicer.mean('x')[i_bunch, :], # This is very slow!!!
+                'num_particles': xf_slicer.particles_per_slice[i_bunch, :],
+                },
+                i_turn=0, i_source=i_bunch)
+        t1 = time.perf_counter()
+        print(f'T xfields set bunch moments {(t1 - t0)*1e3:.2f} ms')
+
+        # Compute convolution
+        t0 = time.perf_counter()
+        wf._compute_convolution(moment_names=['x', 'num_particles'])
+        t1 = time.perf_counter()
+        dt_xht_sec = t1 - t0
+        print(f'T xfields convolution {dt_xht_sec * 1e3:.2f} ms')
+
+        # Apply kicks
+        wf.moments_data.moments_names
+        t0 = time.perf_counter()
+        # interpolated_result = np.interp(xt_part_temp.zeta, z_res, res)
+
+        interpolated_result = xt_part_temp.zeta * 0
+        assert wf.moments_data.moments_names[-1] == 'result'
+        md = wf.moments_data
+        # data = md.data
+        # data_1d = md.data.flatten()
+        # for ipart in range(len(i_bunch_particles)):
+        #     print(f'ipart = {ipart} / {len(i_bunch_particles)}', end='\r', flush=True)
+        #     i_bunch = i_bunch_particles[ipart]
+        #     i_slice = i_slice_particles[ipart]
+        #     i_start_in_moments_data = (md._N_S - i_bunch - 1) * md._N_aux
+        #     rr = data_1d[data.shape[2] * data.shape[1] * (data.shape[0] - 1) +
+        #                  # data.shape[0] * (i_turn) # i_turn is zero for the result
+        #                  i_start_in_moments_data + i_slice]
+        #     # rr = wf.moments_data.data[i_moment_res, i_turn_res, i_start_in_moments_data + i_slice]
+        #     interpolated_result[ipart] = rr
+
+
+
+        wf.moments_data._interp_result(particles=xt_part_temp,
+                    data_shape_0=md.data.shape[0],
+                    data_shape_1=md.data.shape[1],
+                    data_shape_2=md.data.shape[2],
+                    data=md.data,
+                    i_bunch_particles=i_bunch_particles,
+                    i_slice_particles=i_slice_particles,
+                    out=interpolated_result)
+
+        # interpolated result will be zero for lost particles (so nothing to do for them)
+        scaling_constant = -xt_part_temp.q0**2 * qe**2 / (xt_part_temp.p0c * qe)
+        getattr(xt_part_temp, wf.kick)[:] += scaling_constant * interpolated_result # remember to handle lost particles!!!
+        t1 = time.perf_counter()
+        print(f'T xfields apply kicks {(t1 - t0)*1e3:.2f} ms')
+
+        # measure slice moments after wake
+        xf_slicer_after.slice(xt_part_temp)
+
 
     def _compute_convolution(self, moment_names):
 

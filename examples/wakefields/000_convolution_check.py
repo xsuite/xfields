@@ -340,7 +340,6 @@ for i_turn in range(n_turns):
     xf_slicer_after.slice(xt_part_temp)
 
     # Back to pyheadtail
-    wf.moments_data['result']
 
     wake_field.track(allbunches)
     wake_field_full_beam.track(beam)
