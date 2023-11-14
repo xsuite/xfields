@@ -314,8 +314,6 @@ for i_turn in range(n_turns):
         print(f'ipart = {ipart} / {len(i_bunch_particles)}', end='\r', flush=True)
         i_bunch = i_bunch_particles[ipart]
         i_slice = i_slice_particles[ipart]
-        i_moment_res = -1
-        i_turn_res = 0
         i_start_in_moments_data = (md._N_S - i_bunch - 1) * md._N_aux
         rr = data_1d[data.shape[2] * data.shape[1] * (data.shape[0] - 1) +
                      # data.shape[0] * (i_turn) # i_turn is zero for the result
