@@ -46,12 +46,8 @@ epsn_y = 2e-6
 sigma_z = 0.09
 
 machine = PyHTSynchrotron(
-        optics_mode='smooth', circumference=circumference,
-        n_segments=1, s=None, name=None,
-        alpha_x=None, beta_x=beta_x, D_x=0,
-        alpha_y=None, beta_y=beta_y, D_y=0,
-        accQ_x=accQ_x, accQ_y=accQ_y, Qp_x=chroma, Qp_y=chroma,
-        app_x=0, app_y=0, app_xy=0,
+        optics_mode='smooth', n_segments=1, circumference=circumference,
+        accQ_x=accQ_x, accQ_y=accQ_y, beta_x=beta_x, beta_y=beta_y, D_x=0, D_y=0,
         alpha_mom_compaction=alpha, longitudinal_mode='linear',
         h_RF=np.atleast_1d(h_RF), p0=p0,
         charge=e, mass=m_p, wrap_z=False, Q_s=Q_s)
@@ -180,7 +176,6 @@ wf = Wakefield(
     log_moments=['px'],
     _flatten=flatten
 )
-
 
 slicer_after_wf = xf.UniformBinSlicer(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
