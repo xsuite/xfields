@@ -163,6 +163,10 @@ class Wakefield:
 
         # interpolated result will be zero for lost particles (so nothing to do for them)
         scaling_constant = -particles.q0**2 * qe**2 / (particles.p0c * qe)
+
+        if self.scale_kick is not None:
+            scaling_constant *= getattr(particles, self.scale_kick)
+
         getattr(particles, self.kick)[:] += scaling_constant * interpolated_result # remember to handle lost particles!!!
 
     def _compute_convolution(self, moment_names):

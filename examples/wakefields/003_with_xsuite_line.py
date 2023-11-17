@@ -77,8 +77,8 @@ for b_id in bucket_id_set:
     mask = bunches.bucket_id == b_id
     z_centroid = np.mean(bunches.z[mask])
     z_std = np.std(bunches.z[mask])
-    mask_tails = mask & (np.abs(bunches.z - z_centroid) > z_std)
-    bunches.x[mask_tails] = 0
+    # mask_tails = mask & (np.abs(bunches.z - z_centroid) > z_std)
+    # bunches.x[mask_tails] = 0
 
 
 # Initialise wakes
@@ -163,7 +163,7 @@ n_bunches_wake = 120 # Can be longer than filling scheme
 from wakefield import Wakefield, TempResonatorFunction
 
 wf = Wakefield(
-    source_moments=['num_particles', 'x', 'y'],
+    source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
