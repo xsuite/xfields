@@ -210,7 +210,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     flag_luminosity=0,
 
                     flag_crabwaist=0,
-                    _phi=0,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -408,7 +407,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._init_luminosity(flag_luminosity)
 
         self.flag_crabwaist = flag_crabwaist
-        self._phi = _phi
+        self._phi = phi
 
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
