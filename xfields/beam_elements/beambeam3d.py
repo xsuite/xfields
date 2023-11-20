@@ -70,6 +70,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         'scale_strength': xo.Float64,
 
+        '_phi': xo.Float64,
         '_sin_phi': xo.Float64,
         '_cos_phi': xo.Float64,
         '_tan_phi': xo.Float64,
@@ -138,6 +139,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
          #lumi
          'flag_luminosity': xo.Int64,
+
+         #crabwaist
+         'flag_crabwaist': xo.Int64,
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
@@ -204,6 +208,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     flag_beamsize_effect=1,
 
                     flag_luminosity=0,
+
+                    flag_crabwaist=0,
+                    _phi=0,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -399,6 +406,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
 
         self._init_luminosity(flag_luminosity)
+
+        self.flag_crabwaist = flag_crabwaist
+        self._phi = _phi
 
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0

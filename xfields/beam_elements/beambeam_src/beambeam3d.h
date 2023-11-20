@@ -316,6 +316,16 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, Loca
         const double q0 = LocalParticle_get_q0(part);
         const double p0c = LocalParticle_get_p0c(part); // eV
 
+        // crabwaist here
+        double acw;
+        const int flag_crabwaist = BeamBeamBiGaussian3DData_get_flag_crabwaist(el);
+        if (flag_crabwaist){
+          double const phi = BeamBeamBiGaussian3DData_get__phi(el);
+          acw = -1.0/tan(2*phi);
+          px += 0.5 * acw * py*py;
+          y  -= acw * x*py;
+        }
+
         // Change reference frame
         change_ref_frame_coordinates(
             &x, &px, &y, &py, &zeta, &pzeta,
@@ -344,6 +354,12 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, Loca
             post_subtract_y, post_subtract_py,
             post_subtract_zeta, post_subtract_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
+
+        // de-crabwaist here
+        if (flag_crabwaist){
+          px -= 0.5 * acw * py*py;
+          y  += acw * x*py;
+        }
 
         // Store
         LocalParticle_set_x(part, x);
