@@ -160,36 +160,17 @@ print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f}
 
 n_bunches_wake = 120 # Can be longer than filling scheme
 
-from wakefield import Wakefield, TempResonatorFunction
+from wakefield import Wakefield, TempResonatorFunction, MultiWakefield
 
-wf = Wakefield(
+wfx = Wakefield(
     source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
-    zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
-    num_slices=n_slices, # Per bunch, this is N_1 in the paper
-    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
-    num_bunches=n_bunches_wake, # This is N_S
-    num_turns=n_turns_wake,
-    circumference=circumference,
-    log_moments=['px'],
-    _flatten=flatten
 )
 
-dipolar_x_wfun = TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
-
-resonator = ResonatorWakefield(Q, 
-
-
-wf = Wakefield(
-    sub_wakefields=[
-        resonator,
-        xt.Wakefield(source_moments=['num_particles', 'x'], kick='px',
-                   scale_kick=None, function=dipolar_x_wfun),
-        xt.Wakefield(source_moments=['num_particles', 'y'], kick='py',
-                     scale_kick=None, function=dipolar_x_wfun),
-    ],
+wf = MultiWakefield(
+    wakefields=[wfx],
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
     num_slices=n_slices, # Per bunch, this is N_1 in the paper
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
@@ -229,7 +210,7 @@ ax01.plot(z_all[::n_skip], xp_after_wake[-1][::n_skip] - xp_before_wake[-1][::n_
           '.', color='r', markersize=1)
 
 plt.figure(200)
-plt.plot(wf.z_wake.T, wf.G_aux.T * (-e**2 / (p0_SI * c)), alpha=0.5)
+plt.plot(wfx.z_wake.T, wfx.G_aux.T * (-e**2 / (p0_SI * c)), alpha=0.5)
 
 t0 = time.time()
 line.track(particles)
