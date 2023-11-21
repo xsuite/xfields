@@ -3,9 +3,63 @@ from compressed_profile import CompressedProfile
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
-from scipy.signal import fftconvolve
 
 import xfields as xf
+
+class MultiWakefield:
+
+    def __init__(self, wakefields,
+                zeta_range=None, # These are [a, b] in the paper
+                num_slices=None, # Per bunch, this is N_1 in the paper
+                bunch_spacing_zeta=None, # This is P in the paper
+                num_bunches=None,
+                i_bunch_0=None,
+                num_turns=1,
+                circumference=None,
+                log_moments=None,
+                _flatten=False):
+
+        self.wakefields = wakefields
+
+        all_slicer_moments = []
+        for wf in self.wakefields:
+            assert wf.moments_data is None
+            wf._initialize_moments_and_conv_data(
+                    zeta_range=zeta_range, # These are [a, b] in the paper
+                    num_slices=num_slices, # Per bunch, this is N_1 in the paper
+                    bunch_spacing_zeta=bunch_spacing_zeta, # This is P in the paper
+                    num_bunches=num_bunches,
+                    i_bunch_0=i_bunch_0,
+                    num_turns=num_turns,
+                    circumference=circumference,
+                    log_moments=log_moments,
+                    _flatten=_flatten)
+            all_slicer_moments += wf.slicer.moments
+
+        all_slicer_moments = list(set(all_slicer_moments))
+
+        self.slicer = xf.UniformBinSlicer(
+            zeta_range=zeta_range,
+            num_slices=num_slices,
+            i_bunch_0=0, num_bunches=num_bunches,
+            bunch_spacing_zeta=bunch_spacing_zeta,
+            moments=all_slicer_moments
+            )
+
+    def track(self, particles):
+
+        i_slice_particles = particles.particle_id * 0 + -999
+        i_bunch_particles = particles.particle_id * 0 + -9999
+        self.slicer.slice(particles, i_slice_particles=i_slice_particles,
+                        i_bunch_particles=i_bunch_particles)
+
+        _slice_result = {'i_slice_particles': i_slice_particles,
+                        'i_bunch_particles': i_bunch_particles,
+                        'slicer': self.slicer}
+
+        for wf in self.wakefields:
+            wf.track(particles, _slice_result=_slice_result)
+
 
 class Wakefield:
 
