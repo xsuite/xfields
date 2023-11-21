@@ -26,7 +26,6 @@ class Wakefield:
 
         self._flatten = _flatten
 
-
         assert isinstance(source_moments, (list, tuple))
         assert isinstance(log_moments, (list, tuple)) or log_moments is None
 
@@ -34,17 +33,19 @@ class Wakefield:
         self.scale_kick = scale_kick
         self.source_moments = source_moments
         self.function = function
+        self.moments_data = None
 
-        self._initialize_moments_and_conv_data(
-                zeta_range=zeta_range, # These are [a, b] in the paper
-                num_slices=num_slices, # Per bunch, this is N_1 in the paper
-                bunch_spacing_zeta=bunch_spacing_zeta, # This is P in the paper
-                num_bunches=num_bunches,
-                i_bunch_0=i_bunch_0,
-                num_turns=num_turns,
-                circumference=circumference,
-                log_moments=log_moments,
-                _flatten=_flatten)
+        if zeta_range is not None:
+            self._initialize_moments_and_conv_data(
+                    zeta_range=zeta_range, # These are [a, b] in the paper
+                    num_slices=num_slices, # Per bunch, this is N_1 in the paper
+                    bunch_spacing_zeta=bunch_spacing_zeta, # This is P in the paper
+                    num_bunches=num_bunches,
+                    i_bunch_0=i_bunch_0,
+                    num_turns=num_turns,
+                    circumference=circumference,
+                    log_moments=log_moments,
+                    _flatten=_flatten)
 
     def _initialize_moments_and_conv_data(self,
                 zeta_range=None, # These are [a, b] in the paper
@@ -141,6 +142,10 @@ class Wakefield:
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
 
     def track(self, particles, _slice_result=None):
+
+        if self.moments_data is None:
+            raise ValueError('moments_data is None. '
+                             'Please initialize it before tracking.')
 
         if _slice_result is not None:
             i_slice_particles = _slice_result['i_slice_particles']
