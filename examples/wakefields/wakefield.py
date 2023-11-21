@@ -233,7 +233,7 @@ class Wakefield:
             self.moments_data.set_moments(moments=moments_bunch,
                                         i_turn=0, i_source=i_bunch)
         # Compute convolution
-        self._compute_convolution(moment_names=['x', 'num_particles'])
+        self._compute_convolution(moment_names=self.source_moments)
 
         # Apply kicks
         interpolated_result = particles.zeta * 0

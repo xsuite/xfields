@@ -169,8 +169,15 @@ wfx = Wakefield(
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
 )
 
+wfy = Wakefield(
+    source_moments=['num_particles', 'y'],
+    kick='py',
+    scale_kick=None,
+    function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
+)
+
 wf = MultiWakefield(
-    wakefields=[wfx],
+    wakefields=[wfx, wfy],
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
     num_slices=n_slices, # Per bunch, this is N_1 in the paper
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
