@@ -26,8 +26,6 @@ class Wakefield:
 
         self._flatten = _flatten
 
-        if i_bunch_0 is not None:
-            raise NotImplementedError('i_bunch_0 is not implemented yet')
 
         assert isinstance(source_moments, (list, tuple))
         assert isinstance(log_moments, (list, tuple)) or log_moments is None
@@ -37,7 +35,32 @@ class Wakefield:
         self.source_moments = source_moments
         self.function = function
 
-        slicer_moments = source_moments.copy()
+        self._initialize_moments_and_conv_data(
+                zeta_range=zeta_range, # These are [a, b] in the paper
+                num_slices=num_slices, # Per bunch, this is N_1 in the paper
+                bunch_spacing_zeta=bunch_spacing_zeta, # This is P in the paper
+                num_bunches=num_bunches,
+                i_bunch_0=i_bunch_0,
+                num_turns=num_turns,
+                circumference=circumference,
+                log_moments=log_moments,
+                _flatten=_flatten)
+
+    def _initialize_moments_and_conv_data(self,
+                zeta_range=None, # These are [a, b] in the paper
+                num_slices=None, # Per bunch, this is N_1 in the paper
+                bunch_spacing_zeta=None, # This is P in the paper
+                num_bunches=None,
+                i_bunch_0=None,
+                num_turns=1,
+                circumference=None,
+                log_moments=None,
+                _flatten=False):
+
+        if i_bunch_0 is not None:
+            raise NotImplementedError('i_bunch_0 is not implemented yet')
+
+        slicer_moments = self.source_moments.copy()
         if log_moments is not None:
             slicer_moments += log_moments
         slicer_moments = list(set(slicer_moments))
@@ -53,7 +76,7 @@ class Wakefield:
             )
 
         self.moments_data = CompressedProfile(
-                moments=source_moments + ['result'],
+                moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
