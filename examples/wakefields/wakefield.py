@@ -34,7 +34,7 @@ class Wakefield:
 
         self.kick = kick
         self.scale_kick = scale_kick
-
+        self.source_moments = source_moments
         self.function = function
 
         slicer_moments = source_moments.copy()
@@ -117,13 +117,19 @@ class Wakefield:
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
 
-    def track(self, particles):
+    def track(self, particles, _slice_result=None):
 
-        # Measure slice moments and get slice indeces
-        i_slice_particles = particles.particle_id * 0 + -999
-        i_bunch_particles = particles.particle_id * 0 + -9999
-        self.slicer.slice(particles, i_slice_particles=i_slice_particles,
-                        i_bunch_particles=i_bunch_particles)
+        if _slice_result is not None:
+            i_slice_particles = _slice_result['i_slice_particles']
+            i_bunch_particles = _slice_result['i_bunch_particles']
+            slicer = _slice_result['slicer']
+        else:
+            # Measure slice moments and get slice indeces
+            i_slice_particles = particles.particle_id * 0 + -999
+            i_bunch_particles = particles.particle_id * 0 + -9999
+            self.slicer.slice(particles, i_slice_particles=i_slice_particles,
+                            i_bunch_particles=i_bunch_particles)
+            slicer = self.slicer
 
         # Trash oldest turn
         self.moments_data.data[:, 1:, :] = self.moments_data.data[:, :-1, :]
@@ -134,14 +140,14 @@ class Wakefield:
         for mm in self.moments_data.moments_names:
             if mm == 'num_particles' or mm == 'result':
                 continue
-            means[mm] = self.slicer.mean(mm)
+            means[mm] = slicer.mean(mm)
 
         for i_bunch in range(self.num_bunches):
             moments_bunch = {}
             for nn in means.keys():
                 moments_bunch[nn] = means[nn][i_bunch, :]
             moments_bunch['num_particles'] = (
-                self.slicer.num_particles[i_bunch, :])
+                slicer.num_particles[i_bunch, :])
             self.moments_data.set_moments(moments=moments_bunch,
                                         i_turn=0, i_source=i_bunch)
         # Compute convolution
@@ -181,7 +187,6 @@ class Wakefield:
             rho_aux *= self.moments_data[nn]
 
         if not self._flatten:
-            print('not flatten')
             rho_hat = np.fft.rfft(rho_aux, axis=1)
             res = np.fft.irfft(rho_hat * self._G_hat_dephased, axis=1)
         else:
