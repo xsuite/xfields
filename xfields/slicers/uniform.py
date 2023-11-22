@@ -283,6 +283,7 @@ class UniformBinSlicer(xt.BeamElement):
 
     @classmethod
     def _from_npbuffer(cls, buffer):
+
         assert isinstance(buffer, np.ndarray)
         assert buffer.dtype == np.int8
         xobuffer = xo.context_default.new_buffer(capacity=len(buffer))
@@ -290,3 +291,23 @@ class UniformBinSlicer(xt.BeamElement):
         offset = xobuffer.allocate(size=len(buffer))
         assert offset == 0
         return cls(_xobject=xf.UniformBinSlicer._XoStruct._from_buffer(xobuffer))
+
+    def __iadd__(self, other):
+
+        assert isinstance(other, UniformBinSlicer)
+        assert self.num_slices == other.num_slices
+        assert self.dzeta == other.dzeta
+        assert self.num_bunches == other.num_bunches
+        assert self.i_bunch_0 == other.i_bunch_0
+
+        for cc in COORDS:
+            if len(getattr(self, '_sum_' + cc)) > 0:
+                assert len(getattr(other, '_sum_' + cc)) > 0
+                getattr(self, '_sum_' + cc)[:] += getattr(other, '_sum_' + cc)
+        for ss in SECOND_MOMENTS:
+            if len(getattr(self, '_sum_' + ss)) > 0:
+                assert len(getattr(other, '_sum_' + ss)) > 0
+                getattr(self, '_sum_' + ss)[:] += getattr(other, '_sum_' + ss)
+        self.num_particles[:] += other.num_particles
+
+        return self
