@@ -202,6 +202,9 @@ for mm in moms:
 
     slicer_single_bunch.slice(p)
 
+    # Test copy
+    slicer_single_bunch = slicer_single_bunch.copy()
+
     assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
     assert np.allclose(slicer_single_bunch.num_particles, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
     assert np.allclose(slicer_single_bunch.sum(c1_name), [0, 0, (c1 * p.weight).sum()], rtol=0, atol=1e-12)
@@ -265,6 +268,9 @@ assert slicer_multi_bunch_part.i_bunch_0 == 1
 
 slicer_multi_bunch.slice(p)
 slicer_multi_bunch_part.slice(p)
+
+# Test copy
+slicer_multi_bunch = slicer_multi_bunch.copy()
 
 assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [-11, -10, -9], [-21, -20, -19], [-31, -30, -29]]), rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.num_particles, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
@@ -378,6 +384,9 @@ for mm in moms:
 
     slicer_multi_bunch.slice(p)
     slicer_multi_bunch_part.slice(p)
+
+    # Test copy
+    slicer_multi_bunch = slicer_multi_bunch.copy()
 
     c1_p1 = getattr(p1, c1_name)
     c2_p1 = getattr(p1, c2_name)
@@ -493,6 +502,9 @@ p = xt.Particles.merge([p1, p2])
 
 slicer_multi_bunch_mom.slice(p)
 slicer_multi_bunch.slice(p)
+
+# Test copy
+slicer_multi_bunch_mom = slicer_multi_bunch_mom.copy()
 
 assert np.allclose(slicer_multi_bunch_mom.num_particles,
                      slicer_multi_bunch.num_particles,
