@@ -23,6 +23,7 @@ _xof = {
     'i_bunch_0': xo.Int64,
     'num_bunches': xo.Int64,
     'bunch_spacing_zeta': xo.Float64,
+    'zeta_slices': xo.Float64[:],
     'num_particles': xo.Float64[:],
 }
 for cc in COORDS:
@@ -75,7 +76,7 @@ class UniformBinSlicer(xt.BeamElement):
                  num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
-        self._zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, num_slices)
+        _zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, num_slices)
         num_bunches = num_bunches or 0
         i_bunch_0 = i_bunch_0 or 0
         bunch_spacing_zeta = bunch_spacing_zeta or 0
@@ -105,15 +106,16 @@ class UniformBinSlicer(xt.BeamElement):
         allocated_sizes = {}
         for mm in all_moments:
             if mm in selected_moments:
-                allocated_sizes['sum_' + mm] = (num_bunches or 1) * self.num_slices
+                allocated_sizes['sum_' + mm] = (num_bunches or 1) * num_slices
             else:
                 allocated_sizes['sum_' + mm] = 0
 
-        self.xoinitialize(z_min=self._zeta_slices[0], num_slices=self.num_slices,
-                          dzeta=self.dzeta,
+        self.xoinitialize(_zeta_slices=_zeta_slices,
+                          z_min=_zeta_slices[0], num_slices=len(_zeta_slices),
+                          dzeta=_zeta_slices[1] - _zeta_slices[0],
                           num_bunches=num_bunches, i_bunch_0=i_bunch_0,
                           bunch_spacing_zeta=bunch_spacing_zeta,
-                          num_particles=(num_bunches or 1) * self.num_slices, # initialization with tuple not working
+                          num_particles=(num_bunches or 1) * len(_zeta_slices),
                           **allocated_sizes, **kwargs)
 
         self._slice_kernel = self._slice_kernel_all
