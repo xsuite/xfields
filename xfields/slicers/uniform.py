@@ -76,6 +76,8 @@ class UniformBinSlicer(xt.BeamElement):
                  num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
+        self._slice_kernel = self._slice_kernel_all
+
         if '_xobject' in kwargs:
             self.xoinitialize(_xobject=kwargs['_xobject'])
             return
@@ -122,7 +124,6 @@ class UniformBinSlicer(xt.BeamElement):
                           num_particles=(num_bunches or 1) * len(_zeta_slices),
                           **allocated_sizes, **kwargs)
 
-        self._slice_kernel = self._slice_kernel_all
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
