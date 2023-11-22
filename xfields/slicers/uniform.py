@@ -127,7 +127,7 @@ class UniformBinSlicer(xt.BeamElement):
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
-        self.num_particles[:] = 0
+        self.clear()
 
         if i_bunch_particles is not None:
             use_bunch_index_array = 1
@@ -140,11 +140,6 @@ class UniformBinSlicer(xt.BeamElement):
             use_slice_index_array = 0
             i_slice_particles = particles.particle_id[:1] # Dummy
 
-        for cc in COORDS:
-            getattr(self, '_sum_' + cc)[:] = 0
-        for ss in SECOND_MOMENTS:
-            getattr(self, '_sum_' + ss)[:] = 0
-
         self._slice_kernel(particles=particles,
                     use_bunch_index_array=use_bunch_index_array,
                     use_slice_index_array=use_slice_index_array,
@@ -153,6 +148,13 @@ class UniformBinSlicer(xt.BeamElement):
 
     def track(self, particles):
         self.slice(particles)
+
+    def clear(self):
+        for cc in COORDS:
+            getattr(self, '_sum_' + cc)[:] = 0
+        for ss in SECOND_MOMENTS:
+            getattr(self, '_sum_' + ss)[:] = 0
+        self.num_particles[:] = 0
 
     @property
     def zeta_centers(self):
