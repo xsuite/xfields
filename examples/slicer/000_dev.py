@@ -142,6 +142,10 @@ slicer_single_bunch.slice(p)
 # Test copy
 slicer_single_bunch = slicer_single_bunch.copy()
 
+# try round-trip with _to/_from_npbuffer
+slicer_single_bunch = UniformBinSlicer._from_npbuffer(
+                                    slicer_single_bunch._to_npbuffer())
+
 assert slicer_single_bunch.bunch_spacing_zeta == 0
 
 assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
@@ -204,6 +208,11 @@ for mm in moms:
 
     # Test copy
     slicer_single_bunch = slicer_single_bunch.copy()
+
+    # Test round-trip with _to/_from_npbuffer
+    slicer_single_bunch = UniformBinSlicer._from_npbuffer(
+                                        slicer_single_bunch._to_npbuffer())
+
 
     assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
     assert np.allclose(slicer_single_bunch.num_particles, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
@@ -271,6 +280,10 @@ slicer_multi_bunch_part.slice(p)
 
 # Test copy
 slicer_multi_bunch = slicer_multi_bunch.copy()
+
+# Test round-trip with _to/_from_npbuffer
+slicer_multi_bunch = UniformBinSlicer._from_npbuffer(
+                                    slicer_multi_bunch._to_npbuffer())
 
 assert np.allclose(slicer_multi_bunch.zeta_centers, np.array([[-1, 0, 1], [-11, -10, -9], [-21, -20, -19], [-31, -30, -29]]), rtol=0, atol=1e-12)
 assert np.allclose(slicer_multi_bunch.num_particles, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
@@ -387,6 +400,10 @@ for mm in moms:
 
     # Test copy
     slicer_multi_bunch = slicer_multi_bunch.copy()
+
+    # Test round-trip with _to/_from_npbuffer
+    slicer_multi_bunch = UniformBinSlicer._from_npbuffer(
+                                        slicer_multi_bunch._to_npbuffer())
 
     c1_p1 = getattr(p1, c1_name)
     c2_p1 = getattr(p1, c2_name)
@@ -505,6 +522,10 @@ slicer_multi_bunch.slice(p)
 
 # Test copy
 slicer_multi_bunch_mom = slicer_multi_bunch_mom.copy()
+
+# Test round-trip with _to/_from_npbuffer
+slicer_multi_bunch_mom = UniformBinSlicer._from_npbuffer(
+                                    slicer_multi_bunch_mom._to_npbuffer())
 
 assert np.allclose(slicer_multi_bunch_mom.num_particles,
                      slicer_multi_bunch.num_particles,
