@@ -76,6 +76,10 @@ class UniformBinSlicer(xt.BeamElement):
                  num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
+        if '_xobject' in kwargs:
+            self.xoinitialize(_xobject=kwargs['_xobject'])
+            return
+
         _zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, num_slices)
         num_bunches = num_bunches or 0
         i_bunch_0 = i_bunch_0 or 0

@@ -133,6 +133,9 @@ assert np.allclose(slicer.num_particles, expected_num_particles,
 
 slicer_single_bunch = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3)
 
+
+prrrr
+
 p = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  weight=[1, 2, 1],
                  x = [99, 100, 101],
