@@ -149,11 +149,11 @@ slicer_single_bunch_buffer = UniformBinSlicer._from_npbuffer(
                                     slicer_single_bunch._to_npbuffer())
 
 # Test sum
-p1 = p.filter(p.zeta < 1.)
-p2 = p.filter(p.zeta >= 1.)
+pp1 = p.filter(p.zeta < 1.)
+pp2 = p.filter(p.zeta >= 1.)
 
-slicer_single_bunch_1.slice(p1)
-slicer_single_bunch_2.slice(p2)
+slicer_single_bunch_1.slice(pp1)
+slicer_single_bunch_2.slice(pp2)
 slicer_single_bunch_sum = sum([slicer_single_bunch_1, slicer_single_bunch_2])
 
 
@@ -227,11 +227,11 @@ for mm in moms:
                                         slicer_single_bunch._to_npbuffer())
 
     # Test sum
-    p1 = p.filter(p.zeta < 1.)
-    p2 = p.filter(p.zeta >= 1.)
+    pp1 = p.filter(p.zeta < 1.)
+    pp2 = p.filter(p.zeta >= 1.)
 
-    slicer_single_bunch_1.slice(p1)
-    slicer_single_bunch_2.slice(p2)
+    slicer_single_bunch_1.slice(pp1)
+    slicer_single_bunch_2.slice(pp2)
     slicer_single_bunch_sum = sum([slicer_single_bunch_1, slicer_single_bunch_2])
 
     for sl in [slicer_single_bunch, slicer_single_bunch_copy, slicer_single_bunch_buffer,
@@ -276,9 +276,13 @@ for mm in moms:
 
 slicer_multi_bunch = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
                                         num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
+slicer_multi_bunch_1 = slicer_multi_bunch.copy()
+slicer_multi_bunch_2 = slicer_multi_bunch.copy()
 
 slicer_multi_bunch_part = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3, i_bunch_0=1,
                                         num_bunches=3, bunch_spacing_zeta=bunch_spacing_zeta)
+slicer_multi_bunch_part_1 = slicer_multi_bunch_part.copy()
+slicer_multi_bunch_part_2 = slicer_multi_bunch_part.copy()
 
 p1 = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  weight=[1, 2, 1],
@@ -311,7 +315,20 @@ slicer_multi_bunch_buffer = UniformBinSlicer._from_npbuffer(
 slicer_multi_bunch_part_buffer = UniformBinSlicer._from_npbuffer(
                                     slicer_multi_bunch_part._to_npbuffer())
 
-for sl in [slicer_multi_bunch, slicer_multi_bunch_copy, slicer_multi_bunch_buffer]:
+# Test sum
+pp1 = p.filter(p.zeta < 0.5)
+pp2 = p.filter(p.zeta >= 0.5)
+
+slicer_multi_bunch_1.slice(pp1)
+slicer_multi_bunch_2.slice(pp2)
+slicer_multi_bunch_sum = sum([slicer_multi_bunch_1, slicer_multi_bunch_2])
+
+slicer_multi_bunch_part_1.slice(pp1)
+slicer_multi_bunch_part_2.slice(pp2)
+slicer_multi_bunch_part_sum = sum([slicer_multi_bunch_part_1, slicer_multi_bunch_part_2])
+
+for sl in [slicer_multi_bunch, slicer_multi_bunch_copy, slicer_multi_bunch_buffer,
+           slicer_multi_bunch_sum]:
     assert np.allclose(sl.zeta_centers, np.array([[-1, 0, 1], [-11, -10, -9], [-21, -20, -19], [-31, -30, -29]]), rtol=0, atol=1e-12)
     assert np.allclose(sl.num_particles, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
     assert np.allclose(sl.sum('x'), [[0, 0, (p1.x * p1.weight).sum()], [0, 0, 0], [0, (p2.x * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
@@ -352,7 +369,8 @@ for sl in [slicer_multi_bunch, slicer_multi_bunch_copy, slicer_multi_bunch_buffe
     assert np.all(sl.cov('x', 'y') == sl.cov('x_y'))
 
 # Check slicer_part
-for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy, slicer_multi_bunch_part_buffer]:
+for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy, slicer_multi_bunch_part_buffer,
+           slicer_multi_bunch_part_sum]:
     assert np.allclose(sl.zeta_centers, slicer_multi_bunch.zeta_centers[1:],
                         rtol=0, atol=1e-12)
     assert np.allclose(sl.num_particles, slicer_multi_bunch.num_particles[1:],
@@ -426,6 +444,17 @@ for mm in moms:
     slicer_multi_bunch.slice(p)
     slicer_multi_bunch_part.slice(p)
 
+    pp1 = p.filter(p.zeta < 0.5)
+    pp2 = p.filter(p.zeta >= 0.5)
+
+    slicer_multi_bunch_1.slice(pp1)
+    slicer_multi_bunch_2.slice(pp2)
+    slicer_multi_bunch_sum = sum([slicer_multi_bunch_1, slicer_multi_bunch_2])
+
+    slicer_multi_bunch_part_1.slice(pp1)
+    slicer_multi_bunch_part_2.slice(pp2)
+    slicer_multi_bunch_part_sum = sum([slicer_multi_bunch_part_1, slicer_multi_bunch_part_2])
+
     # Test copy
     slicer_multi_bunch_copy = slicer_multi_bunch.copy()
     slicer_multi_bunch_part_copy = slicer_multi_bunch_part.copy()
@@ -440,7 +469,8 @@ for mm in moms:
     c2_p1 = getattr(p1, c2_name)
     c1_p2 = getattr(p2, c1_name)
     c2_p2 = getattr(p2, c2_name)
-    for sl in [slicer_multi_bunch, slicer_multi_bunch_copy, slicer_multi_bunch_buffer]:
+    for sl in [slicer_multi_bunch, slicer_multi_bunch_copy, slicer_multi_bunch_buffer,
+               slicer_multi_bunch_sum]:
         assert np.allclose(sl.zeta_centers, np.array([[-1, 0, 1], [-11, -10, -9], [-21, -20, -19], [-31, -30, -29]]), rtol=0, atol=1e-12)
         assert np.allclose(sl.num_particles, [[0, 0, p1.weight.sum()], [0, 0, 0], [0, p2.weight.sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
         assert np.allclose(sl.sum(c1_name), [[0, 0, (c1_p1 * p1.weight).sum()], [0, 0, 0], [0, (c1_p2 * p2.weight).sum(), 0], [0, 0, 0]], rtol=0, atol=1e-12)
@@ -481,7 +511,8 @@ for mm in moms:
         assert np.all(sl.cov(c1_name, c2_name) == sl.cov(c1_name + '_' + c2_name))
 
     # Check slicer_part
-    for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy, slicer_multi_bunch_part_buffer]:
+    for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy, slicer_multi_bunch_part_buffer,
+               slicer_multi_bunch_part_sum]:
         assert np.allclose(sl.zeta_centers, slicer_multi_bunch.zeta_centers[1:],
                             rtol=0, atol=1e-12)
         assert np.allclose(sl.num_particles, slicer_multi_bunch.num_particles[1:],
@@ -535,6 +566,8 @@ slicer_multi_bunch_mom = UniformBinSlicer(
     zeta_range=(-1, 1), num_slices=3,
     num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta,
     moments=['delta', 'xy', 'px_px'])
+slicer_multi_bunch_mom_1 = slicer_multi_bunch_mom.copy()
+slicer_multi_bunch_mom_2 = slicer_multi_bunch_mom.copy()
 
 assert np.all(np.array(slicer_multi_bunch_mom.moments) == np.array(
     ['x', 'px', 'y', 'delta', 'x_y', 'px_px']))
@@ -559,7 +592,15 @@ slicer_multi_bunch_mom_copy = slicer_multi_bunch_mom.copy()
 slicer_multi_bunch_mom_buffer = UniformBinSlicer._from_npbuffer(
                                     slicer_multi_bunch_mom._to_npbuffer())
 
-for sl in [slicer_multi_bunch_mom, slicer_multi_bunch_mom_copy, slicer_multi_bunch_mom_buffer]:
+# Test sum
+pp1 = p.filter(p.zeta < 10)
+pp2 = p.filter(p.zeta >= 10)
+slicer_multi_bunch_mom_1.slice(pp1)
+slicer_multi_bunch_mom_2.slice(pp2)
+slicer_multi_bunch_mom_sum = sum([slicer_multi_bunch_mom_1, slicer_multi_bunch_mom_2])
+
+for sl in [slicer_multi_bunch_mom, slicer_multi_bunch_mom_copy,
+           slicer_multi_bunch_mom_buffer, slicer_multi_bunch_mom_sum]:
     assert np.allclose(sl.num_particles,
                         slicer_multi_bunch.num_particles,
                         rtol=0, atol=1e-12)
