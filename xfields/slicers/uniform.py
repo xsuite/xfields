@@ -311,3 +311,15 @@ class UniformBinSlicer(xt.BeamElement):
         self.num_particles[:] += other.num_particles
 
         return self
+
+    def __add__(self, other):
+        if other == 0:
+            return self.copy()
+        out = self.copy()
+        out += other
+        return out
+
+    def __radd__(self, other):
+        if other == 0:
+            return self.copy()
+        return self.__add__(other)
