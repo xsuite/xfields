@@ -460,53 +460,54 @@ for mm in moms:
         assert np.all(sl.cov(c1_name, c2_name) == sl.cov(c1_name + '_' + c2_name))
 
     # Check slicer_part
-    assert np.allclose(slicer_multi_bunch_part.zeta_centers, slicer_multi_bunch.zeta_centers[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.num_particles, slicer_multi_bunch.num_particles[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum(c1_name), slicer_multi_bunch.sum(c1_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum(c2_name), slicer_multi_bunch.sum(c2_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum('zeta'), slicer_multi_bunch.sum('zeta')[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum(c1_name + c1_name), slicer_multi_bunch.sum(c1_name + c1_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum(c2_name + c2_name), slicer_multi_bunch.sum(c2_name + c2_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum(c1_name + c2_name), slicer_multi_bunch.sum(c1_name + c2_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum('zetazeta'), slicer_multi_bunch.sum('zetazeta')[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.sum(c1_name + 'zeta'), slicer_multi_bunch.sum(c1_name + 'zeta')[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.mean(c1_name), slicer_multi_bunch.mean(c1_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.mean(c2_name), slicer_multi_bunch.mean(c2_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.mean(c1_name + c1_name), slicer_multi_bunch.mean(c1_name + c1_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.mean(c2_name + c2_name), slicer_multi_bunch.mean(c2_name + c2_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.mean(c1_name + c2_name), slicer_multi_bunch.mean(c1_name + c2_name)[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.mean(c1_name + 'zeta'), slicer_multi_bunch.mean(c1_name + 'zeta')[1:],
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.cov(c1_name, c2_name),
-        slicer_multi_bunch_part.mean(c1_name + c2_name) - slicer_multi_bunch_part.mean(c1_name) * slicer_multi_bunch_part.mean(c2_name),
-        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.var(c1_name), slicer_multi_bunch_part.cov(c1_name, c1_name),
-        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.var(c1_name), slicer_multi_bunch_part.mean(c1_name + c1_name) - slicer_multi_bunch_part.mean(c1_name)**2,
-        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.var('zeta'), slicer_multi_bunch_part.mean('zetazeta') - slicer_multi_bunch_part.mean('zeta')**2,
-        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.std(c1_name), np.sqrt(slicer_multi_bunch_part.var(c1_name)),
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.std(c2_name), np.sqrt(slicer_multi_bunch_part.var(c2_name)),
-                        rtol=0, atol=1e-12)
-    assert np.allclose(slicer_multi_bunch_part.std('zeta'), np.sqrt(slicer_multi_bunch_part.var('zeta')),
-                        rtol=0, atol=1e-12)
+    for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy, slicer_multi_bunch_part_buffer]:
+        assert np.allclose(sl.zeta_centers, slicer_multi_bunch.zeta_centers[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.num_particles, slicer_multi_bunch.num_particles[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum(c1_name), slicer_multi_bunch.sum(c1_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum(c2_name), slicer_multi_bunch.sum(c2_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum('zeta'), slicer_multi_bunch.sum('zeta')[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum(c1_name + c1_name), slicer_multi_bunch.sum(c1_name + c1_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum(c2_name + c2_name), slicer_multi_bunch.sum(c2_name + c2_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum(c1_name + c2_name), slicer_multi_bunch.sum(c1_name + c2_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum('zetazeta'), slicer_multi_bunch.sum('zetazeta')[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.sum(c1_name + 'zeta'), slicer_multi_bunch.sum(c1_name + 'zeta')[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.mean(c1_name), slicer_multi_bunch.mean(c1_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.mean(c2_name), slicer_multi_bunch.mean(c2_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.mean(c1_name + c1_name), slicer_multi_bunch.mean(c1_name + c1_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.mean(c2_name + c2_name), slicer_multi_bunch.mean(c2_name + c2_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.mean(c1_name + c2_name), slicer_multi_bunch.mean(c1_name + c2_name)[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.mean(c1_name + 'zeta'), slicer_multi_bunch.mean(c1_name + 'zeta')[1:],
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.cov(c1_name, c2_name),
+            sl.mean(c1_name + c2_name) - sl.mean(c1_name) * sl.mean(c2_name),
+            rtol=0, atol=1e-12)
+        assert np.allclose(sl.var(c1_name), sl.cov(c1_name, c1_name),
+            rtol=0, atol=1e-12)
+        assert np.allclose(sl.var(c1_name), sl.mean(c1_name + c1_name) - sl.mean(c1_name)**2,
+            rtol=0, atol=1e-12)
+        assert np.allclose(sl.var('zeta'), sl.mean('zetazeta') - sl.mean('zeta')**2,
+            rtol=0, atol=1e-12)
+        assert np.allclose(sl.std(c1_name), np.sqrt(sl.var(c1_name)),
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.std(c2_name), np.sqrt(sl.var(c2_name)),
+                            rtol=0, atol=1e-12)
+        assert np.allclose(sl.std('zeta'), np.sqrt(sl.var('zeta')),
+                            rtol=0, atol=1e-12)
 
 # Try selected moments
 slicer_multi_bunch_mom = UniformBinSlicer(
