@@ -140,53 +140,54 @@ p = xt.Particles(zeta=[0.99, 1.0, 1.01],
 slicer_single_bunch.slice(p)
 
 # Test copy
-slicer_single_bunch = slicer_single_bunch.copy()
+slicer_single_bunch_copy = slicer_single_bunch.copy()
 
 # try round-trip with _to/_from_npbuffer
-slicer_single_bunch = UniformBinSlicer._from_npbuffer(
+slicer_single_bunch_buffer = UniformBinSlicer._from_npbuffer(
                                     slicer_single_bunch._to_npbuffer())
 
-assert slicer_single_bunch.bunch_spacing_zeta == 0
+for sl in [slicer_single_bunch, slicer_single_bunch_copy, slicer_single_bunch_buffer]:
+    assert sl.bunch_spacing_zeta == 0
 
-assert np.allclose(slicer_single_bunch.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.num_particles, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('x'), [0, 0, (p.x * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('y'), [0, 0, (p.y * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('zeta'), [0, 0, (p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('xx'), [0, 0, (p.x**2 * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('yy'), [0, 0, (p.y**2 * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('zetazeta'), [0, 0, (p.zeta**2 * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('xy'), [0, 0, (p.x * p.y * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.sum('xzeta'), [0, 0, (p.x * p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('x'), [0, 0, (p.x * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('y'), [0, 0, (p.y * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('xx'), [0, 0, (p.x**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('yy'), [0, 0, (p.y**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('zetazeta'), [0, 0, (p.zeta**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('xy'), [0, 0, (p.x * p.y * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.mean('xzeta'), [0, 0, (p.x * p.zeta * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.cov('x', 'y'),
-    slicer_single_bunch.mean('xy') - slicer_single_bunch.mean('x') * slicer_single_bunch.mean('y'),
-    rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.var('x'), slicer_single_bunch.cov('x', 'x'),
-    rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.var('x'), slicer_single_bunch.mean('xx') - slicer_single_bunch.mean('x')**2,
-    rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.var('zeta'), slicer_single_bunch.mean('zetazeta') - slicer_single_bunch.mean('zeta')**2,
-    rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.std('x'), np.sqrt(slicer_single_bunch.var('x')),
-    rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.std('y'), np.sqrt(slicer_single_bunch.var('y')),
-    rtol=0, atol=1e-12)
-assert np.allclose(slicer_single_bunch.std('zeta'), np.sqrt(slicer_single_bunch.var('zeta')),
-    rtol=0, atol=1e-12)
+    assert np.allclose(sl.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
+    assert np.allclose(sl.num_particles, [0, 0, p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('x'), [0, 0, (p.x * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('y'), [0, 0, (p.y * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('zeta'), [0, 0, (p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('xx'), [0, 0, (p.x**2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('yy'), [0, 0, (p.y**2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('zetazeta'), [0, 0, (p.zeta**2 * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('xy'), [0, 0, (p.x * p.y * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('xzeta'), [0, 0, (p.x * p.zeta * p.weight).sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('x'), [0, 0, (p.x * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('y'), [0, 0, (p.y * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('xx'), [0, 0, (p.x**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('yy'), [0, 0, (p.y**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('zetazeta'), [0, 0, (p.zeta**2 * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('xy'), [0, 0, (p.x * p.y * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.mean('xzeta'), [0, 0, (p.x * p.zeta * p.weight).sum() / p.weight.sum()], rtol=0, atol=1e-12)
+    assert np.allclose(sl.cov('x', 'y'),
+        sl.mean('xy') - sl.mean('x') * sl.mean('y'),
+        rtol=0, atol=1e-12)
+    assert np.allclose(sl.var('x'), sl.cov('x', 'x'),
+        rtol=0, atol=1e-12)
+    assert np.allclose(sl.var('x'), sl.mean('xx') - sl.mean('x')**2,
+        rtol=0, atol=1e-12)
+    assert np.allclose(sl.var('zeta'), sl.mean('zetazeta') - sl.mean('zeta')**2,
+        rtol=0, atol=1e-12)
+    assert np.allclose(sl.std('x'), np.sqrt(sl.var('x')),
+        rtol=0, atol=1e-12)
+    assert np.allclose(sl.std('y'), np.sqrt(sl.var('y')),
+        rtol=0, atol=1e-12)
+    assert np.allclose(sl.std('zeta'), np.sqrt(sl.var('zeta')),
+        rtol=0, atol=1e-12)
 
-assert np.all(slicer_single_bunch.sum('xy') == slicer_single_bunch.sum('x_y'))
-assert np.all(slicer_single_bunch.sum('x', 'y') == slicer_single_bunch.sum('x_y'))
-assert np.all(slicer_single_bunch.mean('xy') == slicer_single_bunch.mean('x_y'))
-assert np.all(slicer_single_bunch.mean('x', 'y') == slicer_single_bunch.mean('x_y'))
-assert np.all(slicer_single_bunch.cov('xy') == slicer_single_bunch.cov('x_y'))
-assert np.all(slicer_single_bunch.cov('x', 'y') == slicer_single_bunch.cov('x_y'))
+    assert np.all(sl.sum('xy') == sl.sum('x_y'))
+    assert np.all(sl.sum('x', 'y') == sl.sum('x_y'))
+    assert np.all(sl.mean('xy') == sl.mean('x_y'))
+    assert np.all(sl.mean('x', 'y') == sl.mean('x_y'))
+    assert np.all(sl.cov('xy') == sl.cov('x_y'))
+    assert np.all(sl.cov('x', 'y') == sl.cov('x_y'))
 
 # # Same parametrized
 
