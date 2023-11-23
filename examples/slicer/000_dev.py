@@ -532,39 +532,40 @@ slicer_multi_bunch_mom.slice(p)
 slicer_multi_bunch.slice(p)
 
 # Test copy
-slicer_multi_bunch_mom = slicer_multi_bunch_mom.copy()
+slicer_multi_bunch_mom_copy = slicer_multi_bunch_mom.copy()
 
 # Test round-trip with _to/_from_npbuffer
-slicer_multi_bunch_mom = UniformBinSlicer._from_npbuffer(
+slicer_multi_bunch_mom_buffer = UniformBinSlicer._from_npbuffer(
                                     slicer_multi_bunch_mom._to_npbuffer())
 
-assert np.allclose(slicer_multi_bunch_mom.num_particles,
-                     slicer_multi_bunch.num_particles,
-                     rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.zeta_centers,
-                        slicer_multi_bunch.zeta_centers,
+for sl in [slicer_multi_bunch_mom, slicer_multi_bunch_mom_copy, slicer_multi_bunch_mom_buffer]:
+    assert np.allclose(sl.num_particles,
+                        slicer_multi_bunch.num_particles,
                         rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.sum('x'),
-                        slicer_multi_bunch.sum('x'),
-                        rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.sum('y'),
-                        slicer_multi_bunch.sum('y'),
-                        rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.sum('px'),
-                        slicer_multi_bunch.sum('px'),
-                        rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.sum('delta'),
-                        slicer_multi_bunch.sum('delta'),
-                        rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.cov('x_y'),
-                        slicer_multi_bunch.cov('x_y'),
-                        rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.cov('px_px'),
-                        slicer_multi_bunch.cov('px_px'),
-                        rtol=0, atol=1e-12)
-assert np.allclose(slicer_multi_bunch_mom.var('px'),
-                        slicer_multi_bunch.var('px'),
-                        rtol=0, atol=1e-12)
+    assert np.allclose(sl.zeta_centers,
+                            slicer_multi_bunch.zeta_centers,
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('x'),
+                            slicer_multi_bunch.sum('x'),
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('y'),
+                            slicer_multi_bunch.sum('y'),
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('px'),
+                            slicer_multi_bunch.sum('px'),
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.sum('delta'),
+                            slicer_multi_bunch.sum('delta'),
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.cov('x_y'),
+                            slicer_multi_bunch.cov('x_y'),
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.cov('px_px'),
+                            slicer_multi_bunch.cov('px_px'),
+                            rtol=0, atol=1e-12)
+    assert np.allclose(sl.var('px'),
+                            slicer_multi_bunch.var('px'),
+                            rtol=0, atol=1e-12)
 
 p = xt.Particles(zeta=np.random.uniform(-1, 1, int(1e6)),
                  x = np.random.normal(0, 1, int(1e6)))
