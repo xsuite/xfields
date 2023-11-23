@@ -132,6 +132,8 @@ assert np.allclose(slicer.num_particles, expected_num_particles,
 #####################################
 
 slicer_single_bunch = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3)
+slicer_single_bunch_1 = slicer_single_bunch.copy()
+slicer_single_bunch_2 = slicer_single_bunch.copy()
 
 p = xt.Particles(zeta=[0.99, 1.0, 1.01],
                  weight=[1, 2, 1],
@@ -146,7 +148,18 @@ slicer_single_bunch_copy = slicer_single_bunch.copy()
 slicer_single_bunch_buffer = UniformBinSlicer._from_npbuffer(
                                     slicer_single_bunch._to_npbuffer())
 
-for sl in [slicer_single_bunch, slicer_single_bunch_copy, slicer_single_bunch_buffer]:
+# Test sum
+p1 = p.filter(p.zeta < 1.)
+p2 = p.filter(p.zeta >= 1.)
+
+slicer_single_bunch_1.slice(p1)
+slicer_single_bunch_2.slice(p2)
+slicer_single_bunch_sum = sum([slicer_single_bunch_1, slicer_single_bunch_2])
+
+
+
+for sl in [slicer_single_bunch, slicer_single_bunch_copy, slicer_single_bunch_buffer,
+           slicer_single_bunch_sum]:
     assert sl.bunch_spacing_zeta == 0
 
     assert np.allclose(sl.zeta_centers, np.array([-1, 0, 1]), rtol=0, atol=1e-12)
