@@ -135,7 +135,7 @@ void synchrobeam_kick(
 
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
         get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
-        wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+        wgt = LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
 
         // init record table
         BeamBeamBiGaussian3DRecordData lumi_record = NULL;
@@ -147,7 +147,7 @@ void synchrobeam_kick(
             lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
         const int at_turn = LocalParticle_get_at_turn(part);
-        double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);
+        /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);
         atomicAdd(lumi_address, wgt);
         }
     }
