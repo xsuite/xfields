@@ -9,7 +9,7 @@ import xobjects as xo
 import xpart as xp
 import xtrack as xt
 
-from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
+from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D, FFTSolver2p5DAveraged
 from ..general import _pkg_root
 
 _TriLinearInterpolatedFielmap_kernels = {
@@ -530,6 +530,14 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     fftplan=fftplan)
         elif solver == 'FFTSolver2p5D':
             solver = FFTSolver2p5D(
+                    dx=self.dx*scale_dx,
+                    dy=self.dy*scale_dy,
+                    dz=self.dz*scale_dz,
+                    nx=self.nx, ny=self.ny, nz=self.nz,
+                    context=self._buffer.context,
+                    fftplan=fftplan)
+        elif solver == 'FFTSolver2p5DAveraged':
+            solver = FFTSolver2p5DAveraged(
                     dx=self.dx*scale_dx,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,
