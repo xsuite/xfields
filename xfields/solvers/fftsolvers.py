@@ -278,7 +278,7 @@ class FFTSolver2p5DAveraged(Solver):
         _workspace_dev = self.context.zeros(
                 (2*self.nx, 2*self.ny), dtype=np.complex128, order='F')
 
-        sum_rho_xy = rho.sum(axis=0).sum(axis=1)
+        sum_rho_xy = rho.sum(axis=0).sum(axis=0)
         sum_rho = sum_rho_xy.sum()
         _workspace_dev[:self.nx, :self.ny] = rho.sum(axis=2)
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
@@ -292,6 +292,9 @@ class FFTSolver2p5DAveraged(Solver):
         phi = 0 * rho
         for iz in range(self.nz):
             phi[:, :, iz] = phi_sum * sum_rho_xy[iz] / sum_rho
+
+        self._sum_rho_xy = sum_rho_xy
+        self._sum_rho = sum_rho
 
         return phi
 
