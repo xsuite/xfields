@@ -168,8 +168,6 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
     _kernels = _TriLinearInterpolatedFielmap_kernels
 
-    _average_transverse_distribution = False
-
     def __init__(self,
                  _context=None,
                  _buffer=None,
@@ -385,20 +383,10 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     grid1d_offset=self._xobject.rho._offset
                                  +self._xobject.rho._data_offset)
 
-        if self._average_transverse_distribution:
-            # To be put back when the new solver is ready
-            # raise NotImplementedError(
-            #     '`_average_transverse_distribution` has been removed, '
-            #     'use `solver=FFTSolver2p5DAveraged` instead')
-
-            self._rho_before_average = self.rho.copy()
-            charge_per_slice = self.rho.sum(axis=(0,1))
-            total_transverse_distribution = self.rho.sum(axis=2)
-            total_charge = charge_per_slice.sum()
-
-            for ii in range(self.nz):
-                self.rho[:,:,ii] = (total_transverse_distribution
-                                    * charge_per_slice[ii] / total_charge)
+        if hasattr(self, '_average_transverse_distribution'):
+            raise NotImplementedError(
+                '`_average_transverse_distribution` has been removed, '
+                'use `solver=FFTSolver2p5DAveraged` instead')
 
         if update_phi:
             self.update_phi_from_rho(solver=solver)

@@ -227,9 +227,9 @@ def replace_spacecharge_with_PIC(
         line,
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
+        solver='FFTSolver2p5D',
         _context=None,
-        _buffer=None,
-        _average_transverse_distribution=False):
+        _buffer=None):
 
     '''
     Replace spacecharge elements with Particle In Cell (PIC) elements.
@@ -290,7 +290,8 @@ def replace_spacecharge_with_PIC(
         nx_grid=nx_grid, ny_grid=ny_grid, nz_grid=nz_grid,
         x_lim_min=x_lim_min, x_lim_max=x_lim_max, n_lims_x=n_lims_x,
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,
-        z_range=z_range)
+        z_range=z_range,
+        solver=solver)
 
     all_pics = []
     for nn, ee in zip(name_sc_elems, all_sc_elems):
@@ -298,7 +299,6 @@ def replace_spacecharge_with_PIC(
         ylim = n_sigmas_range_pic_y*ee.sigma_y
         base_sc = pic_collection.get_pic(xlim, ylim)
         sc = base_sc.copy(_buffer=base_sc._buffer)
-        sc.fieldmap._average_transverse_distribution = _average_transverse_distribution
         sc.length = ee.length
         line.element_dict[nn] = sc
         all_pics.append(sc)

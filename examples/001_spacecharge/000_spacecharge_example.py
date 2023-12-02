@@ -75,8 +75,6 @@ spcharge = SpaceCharge3D(
         # solver='FFTSolver2p5D',
         solver='FFTSolver2p5DAveraged',
         gamma0=particles_dtk.gamma0[0])
-# spcharge.fieldmap._average_transverse_distribution = True
-
 
 spcharge.track(particles)
 

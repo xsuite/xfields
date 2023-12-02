@@ -211,8 +211,6 @@ class FFTSolver2p5DAveraged(Solver):
 
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
-        raise NotImplementedError # Untested
-
         if context is None:
             context = context_default
         self.context = context
