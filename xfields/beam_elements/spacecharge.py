@@ -182,11 +182,6 @@ class SpaceCharge3D(xt.BeamElement):
         # call C tracking kernel
         super().track(particles)
 
-
-
-
-
-
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {

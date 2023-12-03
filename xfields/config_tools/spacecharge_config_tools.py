@@ -114,7 +114,7 @@ def install_spacecharge_frozen(line=None, particle_ref=None,
 
 
 def replace_spacecharge_with_quasi_frozen(
-                        line, _buffer,
+                        line, _buffer=None,
                         update_mean_x_on_track=True,
                         update_mean_y_on_track=True,
                         update_sigma_x_on_track=True,
@@ -143,6 +143,11 @@ def replace_spacecharge_with_quasi_frozen(
     spacecharge_elements : list
         List of spacecharge elements.
     '''
+
+    if _buffer is None:
+        if not line._has_valid_tracker():
+            line.build_tracker()
+        _buffer = line._buffer
 
     spch_elements = []
     for ii, ee in enumerate(line.elements):
