@@ -135,7 +135,8 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
               * np.max(np.abs(p_dtk.py)))
 
 
-@pytest.mark.parametrize('solver', ['FFTSolver2p5D', 'FFTSolver3D'])
+@pytest.mark.parametrize('solver',
+        ['FFTSolver2p5D', 'FFTSolver2p5DAveraged', 'FFTSolver3D'])
 @for_all_test_contexts
 def test_spacecharge_pic(solver, test_context):
     #################################
