@@ -12,10 +12,11 @@ from ..beam_elements.spacecharge import SpaceCharge3D
 import xpart as xp
 import xobjects as xo
 
-def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
-                               nemitt_x, nemitt_y, sigma_z,
-                               num_spacecharge_interactions,
-                               tol_spacecharge_position,
+def install_spacecharge_frozen(line=None, particle_ref=None,
+                               longitudinal_profile=None,
+                               nemitt_x=None, nemitt_y=None, sigma_z=None,
+                               num_spacecharge_interactions=None,
+                               tol_spacecharge_position=None,
                                s_spacecharge=None):
 
     '''
@@ -47,6 +48,10 @@ def install_spacecharge_frozen(line, particle_ref, longitudinal_profile,
     spacecharge_elements : list
         List of spacecharge elements.
     '''
+
+    if particle_ref is None:
+        particle_ref = line.particle_ref
+        assert particle_ref is not None
 
     line_no_sc = line.copy(_context=xo.ContextCpu())
     line_no_sc.build_tracker()
