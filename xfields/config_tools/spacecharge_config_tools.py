@@ -74,6 +74,7 @@ def install_spacecharge_frozen(line=None, particle_ref=None,
     # Create spacecharge elements (dummy)
     sc_elements = []
     sc_names = []
+    insertions = []
     for ii in progress(range(len(s_spacecharge)),
                            desc='Creating spacecharge elements'):
 
@@ -89,10 +90,10 @@ def install_spacecharge_frozen(line=None, particle_ref=None,
             sigma_y=1.))
         sc_names.append(f'spacecharge_{ii}')
 
-        #TODO Replace loop with single insert_element when available in xtrack
-        line.insert_element(name=sc_names[-1], element=sc_elements[-1],
-                            at_s=ss, s_tol=tol_spacecharge_position)
+        insertions.append((ss, [(sc_names[-1], sc_elements[-1])]))
 
+    # Insert spacecharge elements
+    line._insert_thin_elements_at_s(insertions)
 
     actual_s_spch = line.get_s_position(sc_names)
 
@@ -152,7 +153,7 @@ def replace_spacecharge_with_quasi_frozen(
 
     if _buffer is None:
         if not line._has_valid_tracker():
-            line.build_tracker()
+            line.build_tracker(compile=False) # Put everything in the same buffer
         _buffer = line._buffer
 
     spch_elements = []
