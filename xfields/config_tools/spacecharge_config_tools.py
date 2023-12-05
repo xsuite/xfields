@@ -295,6 +295,10 @@ def replace_spacecharge_with_PIC(
         List of all PIC elements.
     '''
 
+    if _buffer is None and _context is None:
+        if not line._has_valid_tracker():
+            line.build_tracker(compile=False) # Put everything in the same buffer
+        _buffer = line._buffer
 
     all_sc_elems = []
     name_sc_elems = []
