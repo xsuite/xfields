@@ -14,7 +14,8 @@ from ..beam_elements.spacecharge import SpaceCharge3D
 import xpart as xp
 import xobjects as xo
 
-def install_spacecharge_frozen(line=None, particle_ref=None,
+def install_spacecharge_frozen(line=None, _buffer=None,
+                               particle_ref=None,
                                longitudinal_profile=None,
                                nemitt_x=None, nemitt_y=None, sigma_z=None,
                                num_spacecharge_interactions=None,
@@ -51,6 +52,14 @@ def install_spacecharge_frozen(line=None, particle_ref=None,
         List of spacecharge elements.
     '''
 
+    if _buffer is None:
+        if not line._has_valid_tracker():
+            line.build_tracker(compile=False) # Put everything in the same buffer
+        _buffer = line._buffer
+
+    if tol_spacecharge_position is not None:
+        raise NotImplementedError('tol_spacecharge_position not implemented')
+
     if particle_ref is None:
         particle_ref = line.particle_ref
         assert particle_ref is not None
@@ -81,6 +90,7 @@ def install_spacecharge_frozen(line=None, particle_ref=None,
         ss = s_spacecharge[ii]
 
         sc_elements.append(SpaceChargeBiGaussian(
+            _buffer=_buffer,
             length=-9999,
             apply_z_kick=False,
             longitudinal_profile=longitudinal_profile,
