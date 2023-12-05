@@ -6,6 +6,8 @@
 import numpy as np
 import pandas as pd
 
+from xtrack.progress_indicator import progress
+
 from ..beam_elements.spacecharge import SpaceChargeBiGaussian
 from ..beam_elements.spacecharge import SpaceCharge3D
 
@@ -72,7 +74,11 @@ def install_spacecharge_frozen(line=None, particle_ref=None,
     # Create spacecharge elements (dummy)
     sc_elements = []
     sc_names = []
-    for ii, ss in enumerate(s_spacecharge):
+    for ii in progress(range(len(s_spacecharge)),
+                           desc='Creating spacecharge elements'):
+
+        ss = s_spacecharge[ii]
+
         sc_elements.append(SpaceChargeBiGaussian(
             length=-9999,
             apply_z_kick=False,
