@@ -112,7 +112,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
     sc_lengths[-1] = line.get_length() - np.sum(sc_lengths[:-1])
 
     # Twiss at spacecharge
-    line_sc_off = line.filter_elements(exclude_types_starting_with='SpaceCh')
+    line_sc_off = line.copy(_context=xo.ContextCpu()).filter_elements(
+                                           exclude_types_starting_with='SpaceCh')
     line_sc_off.build_tracker(
             track_kernel=line_no_sc.tracker.track_kernel)
     tw_at_sc = line_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
