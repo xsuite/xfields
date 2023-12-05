@@ -14,8 +14,7 @@ from ..beam_elements.spacecharge import SpaceCharge3D
 import xpart as xp
 import xobjects as xo
 
-def install_spacecharge_frozen(line=None, _buffer=None,
-                               particle_ref=None,
+def install_spacecharge_frozen(line=None, particle_ref=None,
                                longitudinal_profile=None,
                                nemitt_x=None, nemitt_y=None, sigma_z=None,
                                num_spacecharge_interactions=None,
@@ -90,7 +89,6 @@ def install_spacecharge_frozen(line=None, _buffer=None,
         ss = s_spacecharge[ii]
 
         sc_elements.append(SpaceChargeBiGaussian(
-            _buffer=_buffer,
             length=-9999,
             apply_z_kick=False,
             longitudinal_profile=longitudinal_profile,
@@ -112,8 +110,7 @@ def install_spacecharge_frozen(line=None, _buffer=None,
     sc_lengths[-1] = line.get_length() - np.sum(sc_lengths[:-1])
 
     # Twiss at spacecharge
-    line_sc_off = line.copy(_context=xo.ContextCpu()).filter_elements(
-                                           exclude_types_starting_with='SpaceCh')
+    line_sc_off = line.filter_elements(exclude_types_starting_with='SpaceCh')
     line_sc_off.build_tracker(
             track_kernel=line_no_sc.tracker.track_kernel)
     tw_at_sc = line_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
@@ -295,6 +292,10 @@ def replace_spacecharge_with_PIC(
         List of all PIC elements.
     '''
 
+    if _buffer is None and _context is None:
+        if not line._has_valid_tracker():
+            line.build_tracker(compile=False) # Put everything in the same buffer
+        _buffer = line._buffer
 
     all_sc_elems = []
     name_sc_elems = []
