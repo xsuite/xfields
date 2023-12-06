@@ -57,6 +57,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
             line.build_tracker(compile=False) # Put everything in the same buffer
         _buffer = line._buffer
 
+    line.discard_tracker() # as we will be changing element types
+
     if tol_spacecharge_position is not None:
         raise NotImplementedError('tol_spacecharge_position not implemented')
 
@@ -79,7 +81,6 @@ def install_spacecharge_frozen(line=None, _buffer=None,
         s_spacecharge = np.linspace(0, line.get_length(),
                                     num_spacecharge_interactions+1)[:-1]
 
-    line.discard_tracker()
     # Create spacecharge elements (dummy)
     sc_elements = []
     sc_names = []
@@ -166,6 +167,8 @@ def replace_spacecharge_with_quasi_frozen(
         if not line._has_valid_tracker():
             line.build_tracker(compile=False) # Put everything in the same buffer
         _buffer = line._buffer
+
+    line.discard_tracker() # as we will be changing element types
 
     spch_elements = []
     for ii, ee in enumerate(line.elements):
