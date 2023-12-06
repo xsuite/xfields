@@ -14,7 +14,9 @@ import xpart as xp
 
 import ducktrack as dtk
 
+import xobjects as xo
 from xobjects.test_helpers import for_all_test_contexts
+
 
 pmass = pmass_kg*clight**2/qe
 
@@ -140,7 +142,7 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
 @for_all_test_contexts
 def test_spacecharge_pic(solver, test_context):
 
-    if isinstance(test_context, xp.ContextPyopencl and solver=='FFTSolver2p5DAveraged'):
+    if isinstance(test_context, xo.ContextPyopencl and solver=='FFTSolver2p5DAveraged'):
         pytest.skip('Not implemented')
 
     #################################
