@@ -142,7 +142,8 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
 @for_all_test_contexts
 def test_spacecharge_pic(solver, test_context):
 
-    if isinstance(test_context, xo.ContextPyopencl and solver=='FFTSolver2p5DAveraged'):
+    if (isinstance(test_context, xo.ContextPyopencl)
+                and solver=='FFTSolver2p5DAveraged'):
         pytest.skip('Not implemented')
 
     #################################
