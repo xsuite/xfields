@@ -139,6 +139,10 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
         ['FFTSolver2p5D', 'FFTSolver2p5DAveraged', 'FFTSolver3D'])
 @for_all_test_contexts
 def test_spacecharge_pic(solver, test_context):
+
+    if isinstance(test_context, xp.ContextPyopencl and solver=='FFTSolver2p5DAveraged'):
+        pytest.skip('Not implemented')
+
     #################################
     # Generate particles and probes #
     #################################
