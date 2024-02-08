@@ -203,6 +203,7 @@ class PICCollection:
                  n_lims_y,
                  solver='FFTSolver2p5D',
                  apply_z_kick=False,
+                 gamma0 = None,
                  _context=None,
                  _buffer=None,
                      ):
@@ -217,6 +218,7 @@ class PICCollection:
         self.z_range = z_range
         self.solver = solver
         self.apply_z_kick = apply_z_kick
+        self.gamma0 = gamma0
 
         self.x_lims = np.linspace(x_lim_min, x_lim_max, n_lims_x)
         self.y_lims = np.linspace(y_lim_min, y_lim_max, n_lims_y)
@@ -249,6 +251,7 @@ class PICCollection:
                 z_range=self.z_range,
                 nx=self.nx_grid, ny=self.ny_grid, nz=self.nz_grid,
                 solver=self.solver,
+                gamma0=self.gamma0,
                 fftplan=self._fftplan)
             new_pic._buffer.grow(10*1024**2) # Add 10 MB for sc copies
             if self._fftplan is None:
@@ -331,7 +334,8 @@ def replace_spacecharge_with_PIC(
         x_lim_min=x_lim_min, x_lim_max=x_lim_max, n_lims_x=n_lims_x,
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,
         z_range=z_range,
-        solver=solver)
+        solver=solver,
+        gamma0=line.particle_ref.gamma0[0])
 
     all_pics = []
     for nn, ee in zip(name_sc_elems, all_sc_elems):
