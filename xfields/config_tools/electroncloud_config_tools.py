@@ -11,7 +11,7 @@ import xtrack as xt
 
 
 def get_electroncloud_fieldmap_from_h5(
-        filename, tau_max=None, buffer=None, ecloud_name="e-cloud"):
+        filename, zeta_max=None, buffer=None, ecloud_name="e-cloud"):
     assert buffer is not None
     import h5py
     ff = h5py.File(filename, "r")
@@ -24,8 +24,8 @@ def get_electroncloud_fieldmap_from_h5(
     iy1 = 0
     iy2 = ny
 
-    # Select a subset of slices (from -tau_max to +tau_max)
-    if tau_max is None:
+    # Select a subset of slices (from -zeta_max to +zeta_max)
+    if zeta_max is None:
         nz = len(ff["grid/zg"][()])
         iz1 = 0
         iz2 = nz
@@ -33,12 +33,12 @@ def get_electroncloud_fieldmap_from_h5(
         zg = ff["grid/zg"][()]
         nz = len(zg)
         # add one index to make sure range is included
-        min_index = np.argmin(np.abs(zg + np.abs(tau_max))) - 1
-        max_index = np.argmin(np.abs(zg - np.abs(tau_max))) + 1
+        min_index = np.argmin(np.abs(zg + np.abs(zeta_max))) - 1
+        max_index = np.argmin(np.abs(zg - np.abs(zeta_max))) + 1
 
         if min_index < 0 or max_index > nz:
             raise Exception(
-                f"Range ({-np.abs(tau_max):.4f}, {np.abs(tau_max):.4f}) not in maximum range of z_grid: ({zg[0]:.4f},{zg[-1:]:.3f}) of file: {filename}")
+                f"Range ({-np.abs(zeta_max):.4f}, {np.abs(zeta_max):.4f}) not in maximum range of z_grid: ({zg[0]:.4f},{zg[-1:]:.3f}) of file: {filename}")
 
         iz1 = min_index
         iz2 = max_index
@@ -134,15 +134,18 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
             if shift_to_closed_orbit:
                 line.elements[ii].x_shift = twiss["x"][ii]
                 line.elements[ii].y_shift = twiss["y"][ii]
-                part.delta = twiss["delta"][ii]
-                part.zeta = twiss["zeta"][ii]
-                line.elements[ii].tau_shift = part.zeta[0] / \
-                    (part.beta0[0] * part.rvv[0])
+                line.elements[ii].zeta_shift = twiss["zeta"][ii]
 
             if subtract_dipolar_kicks:
-                line.elements[ii].dipolar_px_kick = dipolar_kicks[ecloud_type][0] * length
-                line.elements[ii].dipolar_py_kick = dipolar_kicks[ecloud_type][1] * length
-                line.elements[ii].dipolar_ptau_kick = dipolar_kicks[ecloud_type][2] * length
+                temp_part = line.particle_ref.copy(_context=line._context)
+                temp_part.x = twiss["x"][ii]
+                temp_part.y = twiss["x"][ii]
+                temp_part.zeta = twiss["zeta"][ii]
+                line.elements[ii].track(temp_part)
+
+                line.elements[ii].dipolar_px_kick = temp_part.px
+                line.elements[ii].dipolar_py_kick = temp_part.py
+                line.elements[ii].dipolar_pzeta_kick = temp_part.pzeta
 
 
 def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
@@ -158,19 +161,19 @@ def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
     ecloud.track(part)
     px = part.px[0]
     py = part.py[0]
-    ptau = part.ptau[0]
-    return [px, py, ptau]
+    pzeta = part.pzeta[0]
+    return [px, py, pzeta]
 
 
 def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, context=None,
-                             tau_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True):
+                             zeta_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True):
 
     buffer = context.new_buffer()
     fieldmaps = {
         ecloud_type: get_electroncloud_fieldmap_from_h5(
             filename=filename,
             buffer=buffer,
-            tau_max=tau_max,
+            zeta_max=zeta_max,
             ecloud_name=ecloud_type) for (
             ecloud_type,
             filename) in filenames.items()}

@@ -67,24 +67,24 @@ def test_tricubic_interpolation(test_context):
     rng = default_rng(12345)
     x_test = rng.random(n_parts) * 1.2 - 0.6
     y_test = rng.random(n_parts) * 1.2 - 0.6
-    tau_test = rng.random(n_parts) * 1.2 - 0.6
+    zeta_test = rng.random(n_parts) * 1.2 - 0.6
 
 
     p0c = 450e9
     testp0 = xp.Particles(p0c=p0c)
     beta0 = testp0.beta0
     part = xp.Particles(_context=test_context, x=x_test, y=y_test,
-                        zeta=beta0*tau_test, p0c=p0c)
+                        zeta=zeta_test, p0c=p0c)
     ecloud.track(part)
 
     part.move(_context=xo.ContextCpu())
     mask_p = part.state != -11
     true_px = np.array([-dfdx(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
-                                                                part.zeta[mask_p] / part.beta0[mask_p])])
+                                                                part.zeta[mask_p])])
     true_py = np.array([-dfdy(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
-                                                                part.zeta[mask_p] / part.beta0[mask_p])])
-    true_ptau = np.array([-dfdz(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
-                                                                part.zeta[mask_p] / part.beta0[mask_p])])
+                                                                part.zeta[mask_p])])
+    true_pzeta = np.array([-dfdz(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
+                                                                part.zeta[mask_p])])
 
     # print(true_px[:5])
     # print(part.ptau[:5])
@@ -101,4 +101,4 @@ def test_tricubic_interpolation(test_context):
 
     assert np.allclose(part.px[mask_p], true_px, atol=1.e-13, rtol=1.e-13)
     assert np.allclose(part.py[mask_p], true_py, atol=1.e-13, rtol=1.e-13)
-    assert np.allclose(part.ptau[mask_p], true_ptau, atol=1.e-13, rtol=1.e-13)
+    assert np.allclose(part.pzeta[mask_p], true_pzeta, atol=1.e-13, rtol=1.e-13)
