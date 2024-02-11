@@ -107,7 +107,7 @@ def insert_electronclouds(eclouds, fieldmap=None, line=None):
 
 
 def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_orbit=False,
-                          subtract_dipolar_kicks=False, fieldmaps=None, ecloud_strength=1.):
+                          subtract_dipolar_kicks=False, fieldmaps=None):
     assert twiss is not None
     assert ecloud_info is not None
     if subtract_dipolar_kicks:
@@ -118,9 +118,8 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
             dipolar_kicks[key] = electroncloud_dipolar_kicks_of_fieldmap(
                 fieldmap=fieldmap, p0c=line.particle_ref.p0c)
 
-    length_factor = ecloud_strength / \
+    length_factor = line.vars['ecloud_strength'] / \
         (line.particle_ref.p0c[0] * line.particle_ref.beta0[0])
-    part = twiss["particle_on_co"].copy()
     for ii, el_name in enumerate(twiss["name"]):
         if 'ecloud' in el_name:
             # naming format is "ecloud.ecloud_type.sector.index_in_sector",
@@ -128,7 +127,8 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
             ecloud_type = el_name.split(".")[1]
             length = ecloud_info[ecloud_type][el_name]["length"] * \
                 length_factor
-            line.elements[ii].length = length
+            line.element_refs[el_name].length = length
+            # line.elements[ii].length = length
             assert el_name == line.element_names[ii]
 
             if shift_to_closed_orbit:
@@ -143,9 +143,9 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
                 temp_part.zeta = twiss["zeta"][ii]
                 line.elements[ii].track(temp_part)
 
-                line.elements[ii].dipolar_px_kick = temp_part.px
-                line.elements[ii].dipolar_py_kick = temp_part.py
-                line.elements[ii].dipolar_pzeta_kick = temp_part.pzeta
+                line.elements[ii].dipolar_px_kick = temp_part.px[0]
+                line.elements[ii].dipolar_py_kick = temp_part.py[0]
+                line.elements[ii].dipolar_pzeta_kick = temp_part.pzeta[0]
 
 
 def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
@@ -178,6 +178,8 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
             ecloud_type,
             filename) in filenames.items()}
 
+    line.vars['ecloud_strength'] = 1
+
     for ecloud_type, fieldmap in fieldmaps.items():
         print(f"Inserting \"{ecloud_type}\" electron clouds...")
         insert_electronclouds(
@@ -194,8 +196,8 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
         ecloud_info=ecloud_info,
         subtract_dipolar_kicks=subtract_dipolar_kicks,
         shift_to_closed_orbit=shift_to_closed_orbit,
-        fieldmaps=fieldmaps,
-        ecloud_strength=1)
+        fieldmaps=fieldmaps
+        )
     twiss_with_ecloud = line.twiss()
 
-    return line, twiss_without_ecloud, twiss_with_ecloud
+    return twiss_without_ecloud, twiss_with_ecloud
