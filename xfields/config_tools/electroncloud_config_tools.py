@@ -7,8 +7,9 @@ import numpy as np
 
 import xfields as xf
 import xpart as xp
-import xtrack as xt
 
+from xobjects.general import _print
+from xtrack.progress_indicator import progress
 
 def get_electroncloud_fieldmap_from_h5(
         filename, zeta_max=None, buffer=None, ecloud_name="e-cloud"):
@@ -50,22 +51,17 @@ def get_electroncloud_fieldmap_from_h5(
     mirror2D = ff["settings/symmetric2D"][()]
     # (in GB), 8 bytes per double-precision number
     memory_estimate = (ix2 - ix1) * (iy2 - iy1) * (iz2 - iz1) * 8 * 8 * 1.e-9
-    print(f"Creating fieldmap... (Memory estimate = {memory_estimate:.2f} GB)")
     fieldmap = xf.TriCubicInterpolatedFieldMap(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
                                                mirror_x=mirror2D, mirror_y=mirror2D, mirror_z=0, _buffer=buffer)
-    print(f"Reading {ecloud_name}: ")
-    kk = 0.
+
     scale = [1., fieldmap.dx, fieldmap.dy, fieldmap.dz,
              fieldmap.dx * fieldmap.dy, fieldmap.dx *
              fieldmap.dz, fieldmap.dy * fieldmap.dz,
              fieldmap.dx * fieldmap.dy * fieldmap.dz]
 
     ####### Optimized version of the loop in the block below. ################
-    for iz in range(iz1, iz2):
-        if (iz - iz1) / (iz2 - iz1) > kk:
-            while (iz - iz1) / (iz2 - iz1) > kk:
-                kk += 0.2
-            print(f"{int(np.round(100*kk)):d}%..")
+    _prog = progress(range(iz1, iz2), desc=f'Reading ecloud {ecloud_name} (~ {memory_estimate:.2f} GB)')
+    for iz in _prog:
         phi_slice = ff[f"slices/slice{iz}/phi"][ix1:ix2,
                                                 iy1:iy2, :].transpose(1, 0, 2)
         for ll in range(8):
@@ -181,7 +177,7 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
     line.vars['ecloud_strength'] = 1
 
     for ecloud_type, fieldmap in fieldmaps.items():
-        print(f"Inserting \"{ecloud_type}\" electron clouds...")
+        _print(f"Inserting \"{ecloud_type}\" electron clouds...")
         insert_electronclouds(
             ecloud_info[ecloud_type],
             fieldmap=fieldmap,
