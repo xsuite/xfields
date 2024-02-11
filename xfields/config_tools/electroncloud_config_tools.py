@@ -5,7 +5,9 @@
 
 import numpy as np
 
-import xfields as xf
+from ..beam_elements.electroncloud import ElectronCloud
+from ..fieldmaps.tricubicinterpolated import TriCubicInterpolatedFieldMap
+
 import xpart as xp
 
 from xobjects.general import _print
@@ -51,7 +53,7 @@ def get_electroncloud_fieldmap_from_h5(
     mirror2D = ff["settings/symmetric2D"][()]
     # (in GB), 8 bytes per double-precision number
     memory_estimate = (ix2 - ix1) * (iy2 - iy1) * (iz2 - iz1) * 8 * 8 * 1.e-9
-    fieldmap = xf.TriCubicInterpolatedFieldMap(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
+    fieldmap = TriCubicInterpolatedFieldMap(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
                                                mirror_x=mirror2D, mirror_y=mirror2D, mirror_z=0, _buffer=buffer)
 
     scale = [1., fieldmap.dx, fieldmap.dy, fieldmap.dz,
@@ -94,7 +96,7 @@ def insert_electronclouds(eclouds, fieldmap=None, line=None):
         s = eclouds[name]["s"]
         length = 0.
         line.insert_element(
-            element=xf.ElectronCloud(
+            element=ElectronCloud(
                 length=length,
                 fieldmap=fieldmap,
                 _buffer=fieldmap._buffer),
@@ -150,7 +152,7 @@ def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
     assert fieldmap is not None
 
     part = xp.Particles(_context=fieldmap._context, p0c=p0c)
-    ecloud = xf.ElectronCloud(
+    ecloud = ElectronCloud(
         length=1,
         fieldmap=fieldmap,
         _buffer=fieldmap._buffer)
