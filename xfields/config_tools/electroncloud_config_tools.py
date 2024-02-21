@@ -141,9 +141,9 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
                 temp_part.zeta = twiss["zeta"][ii]
                 line.elements[ii].track(temp_part)
 
-                line.elements[ii].dipolar_px_kick = temp_part.px[0]
-                line.elements[ii].dipolar_py_kick = temp_part.py[0]
-                line.elements[ii].dipolar_pzeta_kick = temp_part.pzeta[0]
+                line.element_refs[el_name].dipolar_px_kick = temp_part.px[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                line.element_refs[el_name].dipolar_py_kick = temp_part.py[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                line.element_refs[el_name].dipolar_pzeta_kick = temp_part.pzeta[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
 
 
 def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
@@ -164,7 +164,8 @@ def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
 
 
 def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, context=None,
-                             zeta_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True):
+                             zeta_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True,
+                             steps_r_matrix=None):
 
     buffer = context.new_buffer()
     fieldmaps = {
@@ -196,6 +197,6 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
         shift_to_closed_orbit=shift_to_closed_orbit,
         fieldmaps=fieldmaps
         )
-    twiss_with_ecloud = line.twiss()
+    twiss_with_ecloud = line.twiss(steps_r_matrix=steps_r_matrix)
 
     return twiss_without_ecloud, twiss_with_ecloud
