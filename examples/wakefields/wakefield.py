@@ -390,11 +390,13 @@ class Wakefield:
         return z_out, moment_out
 
 
+
 class TempResonatorFunction:
-    def __init__(self, R_shunt, frequency, Q):
+    def __init__(self, R_shunt, frequency, Q, beta):
         self.R_shunt = R_shunt
         self.frequency = frequency
         self.Q = Q
+        self.beta = beta
 
     def __call__(self, z):
         R_s = self.R_shunt
@@ -402,12 +404,29 @@ class TempResonatorFunction:
         f_r = self.frequency
         omega_r = 2 * np.pi * f_r
         alpha_t = omega_r / (2 * Q)
-        omega_bar = np.sqrt(omega_r**2 - alpha_t**2)
+        omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
+        res = np.zeros_like(z)
 
-        res = (z < 0) * (R_s * omega_r**2 / (Q * omega_bar)
-               * np.exp(alpha_t * z / clight)
-                * np.sin(omega_bar * z / clight))# Wake definition
+        res[z < 0] = (R_s * omega_r ** 2 / (Q * omega_bar)
+                      * np.exp(alpha_t * z[z < 0] / (clight*self.beta))
+                      * np.sin(omega_bar * z[z < 0] / (clight*self.beta)))  # Wake definition
+
         return res
+
+
+class TempTableFunction:
+    def __init__(self, table, beta):
+        self.table = table
+        self.beta = beta
+
+    def __call__(self, z):
+        res = np.zeros_like(z)
+
+        res[z < 0] = np.interp(-z[z < 0] / (clight*self.beta), self.table[0],
+                               self.table[1])  # Wake definition
+
+        return res
+
 
 def _build_z_wake(z_a, z_b, num_turns, N_aux, M_aux, circumference, dz,
                  AA, BB, CC, DD, z_P):
