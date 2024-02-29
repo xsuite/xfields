@@ -70,7 +70,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         'scale_strength': xo.Float64,
 
-        '_phi': xo.Float64,
         '_sin_phi': xo.Float64,
         '_cos_phi': xo.Float64,
         '_tan_phi': xo.Float64,
@@ -410,7 +409,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self.flag_crabwaist = flag_crabwaist
         self.k2_factor = k2_factor
-        self._phi = phi
 
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0

@@ -359,10 +359,10 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, Loca
         double acw;
         const int flag_crabwaist = BeamBeamBiGaussian3DData_get_flag_crabwaist(el);
         if (flag_crabwaist){
-          double const phi = BeamBeamBiGaussian3DData_get__phi(el);
 	  double const k2_factor = BeamBeamBiGaussian3DData_get_k2_factor(el);
 
-          acw = -k2_factor/tan(2*phi);
+          double tan_2phi = 2.0*tan_phi / (1.0 - tan_phi*tan_phi)  // trig id
+          acw = -k2_factor/tan_2phi;
           px += 0.5 * acw * py*py;
           y  -= acw * x*py;
         }
