@@ -16,8 +16,14 @@ import xpart as xp
 lumi_qss_b1 = []
 lumi_averages_b1 = []
 
+combilumi_qss_b1 = []
+combilumi_averages_b1 = []
+
 lumi_qss_b1_nobeambeam = []
 lumi_averages_b1_nobeambeam = []
+
+combilumi_qss_b1_nobeambeam = []
+combilumi_averages_b1_nobeambeam = []
 
 
 context = xo.ContextCpu(omp_num_threads=0)
@@ -123,7 +129,8 @@ for i in range(len(xshift)):
                 config_for_update = config_for_update_IP1,
                 ref_shift_x = xshift[i]*np.sqrt(physemit_x*beta_x_IP1),
                 ref_shift_y = yshift[i]*np.sqrt(physemit_y*beta_y_IP1),
-                flag_luminosity = 1)
+                flag_luminosity = 1,
+                flag_combilumi = 1)
 
 #################################################################
 # arcs (here they are all the same with half the phase advance) #
@@ -156,7 +163,8 @@ for i in range(len(xshift)):
                                                                 capacity={
                                                                     "beamstrahlungtable": int(0),
                                                                     "bhabhatable": int(0),
-                                                                    "lumitable": num_turns
+                                                                    "lumitable": num_turns,
+                                                                    "combilumitable": num_turns
                                                                 })
 
 
@@ -167,10 +175,13 @@ for i in range(len(xshift)):
 
  
     lumi_b1 = record_qss_b1.lumitable.luminosity
+    combilumi_b1 = record_qss_b1.combilumitable.combilumi
     
     lumi_qss_b1.append(lumi_b1)
+    combilumi_qss_b1.append(lumi_b1)
 
-    lumi_averages_b1.append(np.mean(lumi_b1))
+    lumi_averages_b1.append(np.mean(lumi_b1[200:]))
+    combilumi_averages_b1.append(np.mean(lumi_b1[200:]))
     
     
     ########################
@@ -253,7 +264,8 @@ for i in range(len(xshift)):
                 config_for_update = config_for_update_IP1,
                 other_beam_shift_x = xshift[i]*np.sqrt(physemit_x*beta_x_IP1)/2,
                 #other_beam_shift_y = yshift[i]*np.sqrt(physemit_y*beta_y_IP1)/2,
-                flag_luminosity = 1)
+                flag_luminosity = 1,
+                flag_combilumi = 1)
 
 
 #################################################################
@@ -287,7 +299,8 @@ for i in range(len(xshift)):
                                                             capacity={
                                                                 "beamstrahlungtable": int(0),
                                                                 "bhabhatable": int(0),
-                                                                "lumitable": num_turns
+                                                                "lumitable": num_turns,
+                                                                "combilumitable": num_turns
                                                             })
 
 
@@ -297,10 +310,13 @@ for i in range(len(xshift)):
     record_qss_b1.move(_context=xo.context_default)
  
     lumi_b1_nobeambeam = record_qss_b1.lumitable.luminosity
+    combilumi_b1_nobeambeam = record_qss_b1.combilumitable.luminosity
     
     lumi_qss_b1_nobeambeam.append(lumi_b1_nobeambeam)
+    combilumi_qss_b1_nobeambeam.append(combilumi_b1_nobeambeam)
 
     lumi_averages_b1_nobeambeam.append(np.mean(lumi_b1_nobeambeam))
+    combilumi_averages_b1_nobeambeam.append(np.mean(combilumi_b1_nobeambeam))
 #################################################################
 # Tracking  (Same as usual)                                     #
 #################################################################
@@ -319,7 +335,7 @@ def Lumi_analytical(Nb, N1, N2, frev, Delta_i, sig_i, sig_x, sig_y):
     return ((Nb * N1 * N2 * frev * W)/(4 * np.pi * 100 * sig_x * 100 * sig_y))
 
 for i in range(len(separation)):
-    lumis.append(Lumi_analytical(n_macroparticles, bunch_intensity, bunch_intensity, frev, separation[i]*np.sqrt(physemit_x*beta_x_IP1),np.sqrt(physemit_x*beta_x_IP1), np.sqrt(physemit_x*beta_x_IP1), np.sqrt(physemit_y*beta_x_IP1)))
+    lumis.append(Lumi_analytical(2808), bunch_intensity, bunch_intensity, frev, separation[i]*np.sqrt(physemit_x*beta_x_IP1),np.sqrt(physemit_x*beta_x_IP1), np.sqrt(physemit_x*beta_x_IP1), np.sqrt(physemit_y*beta_x_IP1))
 
 fig0, ax1 = plt.subplots()
 fig1, ax2 = plt.subplots()
@@ -328,8 +344,10 @@ ax1.set_title("Luminosity as a function of beam separation")
 ax1.set_xlabel("Separation (sigma)")
 ax1.set_ylabel("Luminosity")
 ax1.plot(separation, lumis, label = "Analytical")
-ax1.plot(xshift, (frev*np.array(lumi_averages_b1)), label = "With beam beam") #Here i am confused- this is in m^-2 or cm^-2
-ax1.plot(xshift, (frev*np.array(lumi_averages_b1_nobeambeam)), label = "Without beam beam")
+ax1.plot(xshift, (2808*frev*np.array(lumi_averages_b1))/10000, label = "With beam beam") 
+ax1.plot(xshift, (2808*frev*np.array(lumi_averages_b1_nobeambeam))/10000, label = "Without beam beam")
+ax1.plot(xshift, (np.array(combilumi_averages_b1)), label = "Combi with beam beam") 
+ax1.plot(xshift, (np.array(combilumi_averages_b1_nobeambeam)), label = "Combi without beam beam")
 ax1.legend()
 
 

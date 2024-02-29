@@ -56,12 +56,21 @@ class LumiTable(xo.HybridClass):
       'luminosity': xo.Float64[:],
         }
 
+class CombiLumiTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'combilumi': xo.Float64[:],
+        }
 
 class BeamBeamBiGaussian3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
         'bhabhatable': BhabhaTable,
         'lumitable': LumiTable,
+        'combilumitable': CombiLumiTable,
        }
 
 class BeamBeamBiGaussian3D(xt.BeamElement):
@@ -138,6 +147,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
          #lumi
          'flag_luminosity': xo.Int64,
+         'flag_combilumi': xo.Int64
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
@@ -152,6 +162,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
+        _pkg_root.joinpath('headers/lumicalc.h'),
         _pkg_root.joinpath('headers','particle_states.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
@@ -206,6 +217,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     flag_beamsize_effect=1,
 
                     flag_luminosity=0,
+                    flag_combilumi = 0,
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -401,6 +413,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
 
         self._init_luminosity(flag_luminosity)
+        self._init_combilumi(flag_combilumi)
 
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
@@ -576,6 +589,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     def _init_luminosity(self, flag_luminosity):
         self.flag_luminosity = flag_luminosity
+        
+    def _init_combilumi(self, flag_combilumi):
+        self.flag_combilumi = flag_combilumi
 
     def _init_from_old_interface(self, old_interface, **kwargs):
 
