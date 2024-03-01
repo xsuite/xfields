@@ -1,5 +1,7 @@
 #L0 with combi formula
 
+%load_ext wurlitzer
+
 import time
 
 import numpy as np
@@ -9,7 +11,7 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
-print(test_function(1))
+
 
 #testing
 ###################
@@ -160,14 +162,20 @@ for i in range(len(xshift)):
     branch = xt.PipelineBranch(line, particles)
 # The multitracker can deal with a set of branches (here only one)
     multitracker = xt.PipelineMultiTracker(branches=[branch])
+    x = context.nparray_from_context_array(particles.x)
+    y = context.nparray_from_context_array(particles.y)
+    print(np.mean(x))
+    print(np.mean(y))
     num_turns= 1000
     record_qss_b1 = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                                 capacity={
                                                                     "beamstrahlungtable": int(0),
                                                                     "bhabhatable": int(0),
                                                                     "lumitable": num_turns,
-                                                                    "combilumitable": num_turns
-                                                                })
+                                                                    "combilumitable": num_turns,
+                                                                    })
+                                                                    #
+                                                                
 
 
     multitracker.track(num_turns=num_turns)
@@ -190,135 +198,143 @@ for i in range(len(xshift)):
     #NO beam beam
     ########################
     
-for i in range(len(xshift)):
-    context = xo.ContextCpu(omp_num_threads=0)
+# for i in range(len(xshift)):
+#     context = xo.ContextCpu(omp_num_threads=0)
 
-####################
-# Pipeline manager #
-####################
+# ####################
+# # Pipeline manager #
+# ####################
 
-# Retrieving MPI info
-
-
-# Building the pipeline manager based on a MPI communicator
-    pipeline_manager = xt.PipelineManager()
-
-    # Add information about the Particles instance that require
-    # communication through the pipeline manager.
-    # Each Particles instance must be identifiable by a unique name
-    # The second argument is the MPI rank in which the Particles object
-    # lives.
-    pipeline_manager.add_particles('B1b1',0)
-    pipeline_manager.add_particles('B2b1',1)
-    # Add information about the elements that require communication
-    # through the pipeline manager.
-    # Each Element instance must be identifiable by a unique name
-    # All Elements are instanciated in all ranks
-    pipeline_manager.add_element('IP1')
-
-    print('Initialising particles')
-    particles = xp.Particles(_context=context,
-        p0c=p0c,
-        x=np.sqrt(physemit_x*beta_x_IP1)
-            *(np.random.randn(n_macroparticles)),
-        px=np.sqrt(physemit_x/beta_x_IP1)
-            *np.random.randn(n_macroparticles),
-        y=np.sqrt(physemit_y*beta_y_IP1)
-            *(np.random.randn(n_macroparticles)),
-        py=np.sqrt(physemit_y/beta_y_IP1)
-            *np.random.randn(n_macroparticles),
-        zeta=sigma_z*np.random.randn(n_macroparticles),
-        delta=sigma_delta*np.random.randn(n_macroparticles),
-        weight=bunch_intensity/n_macroparticles
-    )
-    # Initialise the Particles object with its unique name
-    # (must match the info provided to the pipeline manager)
-    particles.init_pipeline('B1b1')
-    # Keep in memory the name of the Particles object with which this
-    # rank will communicate
-    # (must match the info provided to the pipeline manager)
-    partner_particles_name = 'B2b1'
-
-#############
-# Beam-beam #
-#############
-
-    nb_slice = 1 #normally this is 11
-    slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=nb_slice, mode = "shatilov") #or shatilov
-    config_for_update_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
-        pipeline_manager=pipeline_manager,
-        element_name='IP1', # The element name must be unique and match the
-                   # one given to the pipeline manager
-        partner_particles_name = partner_particles_name, # the name of the
-                   # Particles object with which to collide
-        slicer=slicer,
-        update_every=10,
-    #update_every=1 # Setup for strong-strong simulation
-        )
+# # Retrieving MPI info
 
 
+# # Building the pipeline manager based on a MPI communicator
+#     pipeline_manager = xt.PipelineManager()
 
-    print('build bb elements...')
-    bbeamIP1 = xf.BeamBeamBiGaussian3D(
-                _context=context,
-                other_beam_q0 = 0,
-                phi = 0,alpha=0.0,
-                config_for_update = config_for_update_IP1,
-                other_beam_shift_x = xshift[i]*np.sqrt(physemit_x*beta_x_IP1)/2,
-                #other_beam_shift_y = yshift[i]*np.sqrt(physemit_y*beta_y_IP1)/2,
-                flag_luminosity = 1,
-                flag_combilumi = 1)
+#     # Add information about the Particles instance that require
+#     # communication through the pipeline manager.
+#     # Each Particles instance must be identifiable by a unique name
+#     # The second argument is the MPI rank in which the Particles object
+#     # lives.
+#     pipeline_manager.add_particles('B1b1',0)
+#     pipeline_manager.add_particles('B2b1',1)
+#     # Add information about the elements that require communication
+#     # through the pipeline manager.
+#     # Each Element instance must be identifiable by a unique name
+#     # All Elements are instanciated in all ranks
+#     pipeline_manager.add_element('IP1')
+
+#     print('Initialising particles')
+#     particles = xp.Particles(_context=context,
+#         p0c=p0c,
+#         x=np.sqrt(physemit_x*beta_x_IP1)
+#             *(np.random.randn(n_macroparticles)),
+#         px=np.sqrt(physemit_x/beta_x_IP1)
+#             *np.random.randn(n_macroparticles),
+#         y=np.sqrt(physemit_y*beta_y_IP1)
+#             *(np.random.randn(n_macroparticles)),
+#         py=np.sqrt(physemit_y/beta_y_IP1)
+#             *np.random.randn(n_macroparticles),
+#         zeta=sigma_z*np.random.randn(n_macroparticles),
+#         delta=sigma_delta*np.random.randn(n_macroparticles),
+#         weight=bunch_intensity/n_macroparticles
+#     )
+#     # Initialise the Particles object with its unique name
+#     # (must match the info provided to the pipeline manager)
+#     particles.init_pipeline('B1b1')
+#     # Keep in memory the name of the Particles object with which this
+#     # rank will communicate
+#     # (must match the info provided to the pipeline manager)
+#     partner_particles_name = 'B2b1'
+
+# #############
+# # Beam-beam #
+# #############
+
+#     nb_slice = 1 #normally this is 11
+#     slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=nb_slice, mode = "shatilov") #or shatilov
+#     config_for_update_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
+#         pipeline_manager=pipeline_manager,
+#         element_name='IP1', # The element name must be unique and match the
+#                    # one given to the pipeline manager
+#         partner_particles_name = partner_particles_name, # the name of the
+#                    # Particles object with which to collide
+#         slicer=slicer,
+#         update_every=10,
+#     #update_every=1 # Setup for strong-strong simulation
+#         )
 
 
-#################################################################
-# arcs (here they are all the same with half the phase advance) #
-#################################################################
 
-    arc12 = xt.LineSegmentMap(
-            betx = beta_x_IP1,bety = beta_y_IP1,
-            qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
-
-    arc21 = xt.LineSegmentMap(
-            betx = beta_x_IP1,bety = beta_y_IP1,
-            qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
-
-#################################################################
-# Tracker                                                       #
-#################################################################
-
-# In this example there is one Particles object per rank
-# We build its line and tracker as usual
-    elements = [arc12, bbeamIP1, arc21]
-    line = xt.Line(elements=elements)
-    line.build_tracker()
-# A pipeline branch is a line and Particles object that will
-# be tracked through it
-    branch = xt.PipelineBranch(line, particles)
-# The multitracker can deal with a set of branches (here only one)
-    multitracker = xt.PipelineMultiTracker(branches=[branch])
-    num_turns= 1000
-    record_qss_b1 = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
-                                                            capacity={
-                                                                "beamstrahlungtable": int(0),
-                                                                "bhabhatable": int(0),
-                                                                "lumitable": num_turns,
-                                                                "combilumitable": num_turns
-                                                            })
+#     print('build bb elements...')
+#     bbeamIP1 = xf.BeamBeamBiGaussian3D(
+#                 _context=context,
+#                 other_beam_q0 = 0,
+#                 phi = 0,alpha=0.0,
+#                 config_for_update = config_for_update_IP1,
+#                 other_beam_shift_x = xshift[i]*np.sqrt(physemit_x*beta_x_IP1)/2,
+#                 #other_beam_shift_y = yshift[i]*np.sqrt(physemit_y*beta_y_IP1)/2,
+#                 flag_luminosity = 1,
+#                 flag_combilumi = 1)
 
 
-    multitracker.track(num_turns=num_turns)
-    line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+# #################################################################
+# # arcs (here they are all the same with half the phase advance) #
+# #################################################################
 
-    record_qss_b1.move(_context=xo.context_default)
- 
-    lumi_b1_nobeambeam = record_qss_b1.lumitable.luminosity
-    combilumi_b1_nobeambeam = record_qss_b1.combilumitable.luminosity
+#     arc12 = xt.LineSegmentMap(
+#             betx = beta_x_IP1,bety = beta_y_IP1,
+#             qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
+
+#     arc21 = xt.LineSegmentMap(
+#             betx = beta_x_IP1,bety = beta_y_IP1,
+#             qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
+
+# #################################################################
+# # Tracker                                                       #
+# #################################################################
+
+# # In this example there is one Particles object per rank
+# # We build its line and tracker as usual
+#     elements = [arc12, bbeamIP1, arc21]
+#     line = xt.Line(elements=elements)
+#     line.build_tracker()
+# # A pipeline branch is a line and Particles object that will
+# # be tracked through it
+#     branch = xt.PipelineBranch(line, particles)
+# # The multitracker can deal with a set of branches (here only one)
+#     multitracker = xt.PipelineMultiTracker(branches=[branch])
     
-    lumi_qss_b1_nobeambeam.append(lumi_b1_nobeambeam)
-    combilumi_qss_b1_nobeambeam.append(combilumi_b1_nobeambeam)
+    
+#     x = context.nparray_from_context_array(particles.x)
+#     y = context.nparray_from_context_array(particles.y)
+    
+#     print(np.mean(x))
+#     print(np.mean(y))
+    
+#     num_turns= 1000
+#     record_qss_b1 = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
+#                                                             capacity={
+#                                                                 "beamstrahlungtable": int(0),
+#                                                                 "bhabhatable": int(0),
+#                                                                 "lumitable": num_turns,
+#                                                                 "combilumitable": num_turns
+#                                                             })
 
-    lumi_averages_b1_nobeambeam.append(np.mean(lumi_b1_nobeambeam))
-    combilumi_averages_b1_nobeambeam.append(np.mean(combilumi_b1_nobeambeam))
+
+#     multitracker.track(num_turns=num_turns)
+#     line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+
+#     record_qss_b1.move(_context=xo.context_default)
+ 
+#     lumi_b1_nobeambeam = record_qss_b1.lumitable.luminosity
+#     combilumi_b1_nobeambeam = record_qss_b1.combilumitable.luminosity
+    
+#     lumi_qss_b1_nobeambeam.append(lumi_b1_nobeambeam)
+#     combilumi_qss_b1_nobeambeam.append(combilumi_b1_nobeambeam)
+
+#     lumi_averages_b1_nobeambeam.append(np.mean(lumi_b1_nobeambeam))
+#     combilumi_averages_b1_nobeambeam.append(np.mean(combilumi_b1_nobeambeam))
 #################################################################
 # Tracking  (Same as usual)                                     #
 #################################################################

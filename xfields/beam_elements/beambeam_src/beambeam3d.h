@@ -157,8 +157,7 @@ void synchrobeam_kick(
     if (flag_combilumi == 1){
 
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev, &lumicombi);
-        combiwgt = combilumi
+        lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev, &combilumi);
         // init record table
         BeamBeamBiGaussian3DRecordData combi_lumi_record = NULL;
         CombiLumiTableData combilumi_table                   = NULL;
@@ -166,11 +165,11 @@ void synchrobeam_kick(
         combilumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
         if (combilumi_record){
             combilumi_table       = BeamBeamBiGaussian3DRecordData_getp_combilumitable(combilumi_record);
-            xombilumi_table_index =                      CombiLumiTableData_getp__index(combilumi_table);
+            combilumi_table_index =                      CombiLumiTableData_getp__index(combilumi_table);
 
         const int at_turn = LocalParticle_get_at_turn(part);
         /*gpuglmem*/ double* combilumi_address = CombiLumiTableData_getp1_combilumi(combilumi_table, at_turn);
-        atomicAdd(combilumi_address, combiwgt);
+        atomicAdd(combilumi_address, combilumi);
         }
     }
 

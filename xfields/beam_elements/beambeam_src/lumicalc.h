@@ -1,13 +1,17 @@
 #include <stdio.h>
-#include "const.h"
+//#include "const.h"
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_histogram2d.h>
+
+//to find particle coordinates:
+
+///Users/chenying/miniforge3/envs/xsuite-dev/include/
 
 int fillHistogram(gsl_histogram2d* h1, double* particleCoordinates,int npart){
     int countOutsideOfDomain = 0;
     int histOut;
     for(int i = 0;i<npart;++i) {
-        histOut = gsl_histogram2d_increment(h1, particleCoordinates[i*NCOORD+0], particleCoordinates[i*NCOORD+2]);
+        histOut = gsl_histogram2d_increment(h1, particleCoordinates[i*7+0], particleCoordinates[i*7+2]);
         if(histOut==GSL_EDOM){
             countOutsideOfDomain++;
         }       
@@ -15,7 +19,7 @@ int fillHistogram(gsl_histogram2d* h1, double* particleCoordinates,int npart){
     return countOutsideOfDomain;
 }
 
-void lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev, double *lumicalc) {
+void lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev, double *lumicombi) {
          double sum1= gsl_histogram2d_sum(h1);
          double sum2= gsl_histogram2d_sum(h2);
          float dx=( gsl_histogram2d_xmax(h1)- gsl_histogram2d_xmin(h1))/gsl_histogram2d_nx(h1);
