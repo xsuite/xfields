@@ -9,6 +9,8 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
+print(test_function(1))
+
 #testing
 ###################
 #To run this code:

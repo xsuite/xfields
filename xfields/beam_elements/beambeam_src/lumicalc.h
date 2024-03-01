@@ -15,7 +15,7 @@ int fillHistogram(gsl_histogram2d* h1, double* particleCoordinates,int npart){
     return countOutsideOfDomain;
 }
 
-double lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev) {
+void lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev, double *lumicalc) {
          double sum1= gsl_histogram2d_sum(h1);
          double sum2= gsl_histogram2d_sum(h2);
          float dx=( gsl_histogram2d_xmax(h1)- gsl_histogram2d_xmin(h1))/gsl_histogram2d_nx(h1);
@@ -43,6 +43,6 @@ double lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double
            fourthPart+= gsl_histogram2d_get(h1,0,i+1)+gsl_histogram2d_get(h1,gsl_histogram2d_nx(h1)-1,i+1);
          }
          double integralf= integral + 0.25*dx*dy*(4*secondPart+2*thirdPart+2*fourthPart);
-         return intensity1*intensity2*frev*integralf;
+         *lumicombi =  intensity1*intensity2*frev*integralf;
 }
 
