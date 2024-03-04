@@ -275,7 +275,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     _sin_phi=None, _cos_phi=None, _tan_phi=None,
                     _sin_alpha=None, _cos_alpha=None,
-
+                    
                     **kwargs):
 
         if '_xobject' in kwargs.keys():
@@ -414,7 +414,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self._init_luminosity(flag_luminosity)
         self._init_combilumi(flag_combilumi)
-
+        
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength

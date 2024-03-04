@@ -129,6 +129,10 @@ void synchrobeam_kick(
 
     double rho, wgt;
 
+    // Stuff for combi lumi
+    double combilumi;
+    
+
     // calculate luminosity
     const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
     if (flag_luminosity == 1){
@@ -157,7 +161,7 @@ void synchrobeam_kick(
     if (flag_combilumi == 1){
 
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        double combilumi = lumicalc(h1,h2,intensity1,intensity2,frev);
+        double combilumi = lumicalc(h1,h2,intensity1,intensity2);
         // init record table
         BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
         CombiLumiTableData combilumi_table                   = NULL;
