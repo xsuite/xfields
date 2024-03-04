@@ -17,14 +17,14 @@ extensions = []
 # Setup #
 #########
 
-version_file = Path(__file__).parent / 'xfields/_version.py'
+version_file = Path(__file__).parent / 'xfieldsdev/_version.py'
 dd = {}
 with open(version_file.absolute(), 'r') as fp:
     exec(fp.read(), dd)
 __version__ = dd['__version__']
 
 setup(
-    name='xfields',
+    name='xfieldsdev',
     version=__version__,
     description='Field Maps and Particle In Cell',
     long_description=("Python package for the computation of fields generated "
@@ -43,11 +43,11 @@ setup(
         ],
     author='G. Iadarola et al.',
     license='Apache 2.0',
-    download_url="https://pypi.python.org/pypi/xfields",
+    download_url="https://pypi.python.org/pypi/xfieldsdev",
     project_urls={
             "Bug Tracker": "https://github.com/xsuite/xsuite/issues",
             "Documentation": 'https://xsuite.readthedocs.io/',
-            "Source Code": "https://github.com/xsuite/xfields",
+            "Source Code": "https://github.com/xsuite/xfieldsdev",
         },
     extras_require={
             'tests': ['pytest'],
