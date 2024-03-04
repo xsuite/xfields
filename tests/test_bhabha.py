@@ -6,7 +6,7 @@ from scipy import constants as cst
 
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 
 from xobjects.test_helpers import for_all_test_contexts

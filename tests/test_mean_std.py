@@ -5,7 +5,7 @@
 
 import numpy as np
 
-import xfields as xf
+import xfieldsdev as xf
 
 from xobjects.test_helpers import for_all_test_contexts
 

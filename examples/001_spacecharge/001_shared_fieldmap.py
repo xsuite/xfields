@@ -39,7 +39,7 @@ r_max_probes = 2e-2
 z_probes = 1.2*sigma_z
 n_probes = 1000
 
-from xfields.test_support.temp_makepart import generate_particles_object
+from xfieldsdev.test_support.temp_makepart import generate_particles_object
 (particles_pyst, r_probes, x_probes,
         y_probes, z_probes) = generate_particles_object(
                             n_macroparticles,
@@ -65,7 +65,7 @@ x_lim = 5.*sigma_x
 y_lim = 5.*sigma_y
 z_lim = 5.*sigma_z
 
-from xfields import SpaceCharge3D
+from xfieldsdev import SpaceCharge3D
 spcharge_parent = SpaceCharge3D(
         _context=context,
         length=1, update_on_track=True, apply_z_kick=False,

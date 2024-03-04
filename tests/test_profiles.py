@@ -5,7 +5,7 @@
 
 import numpy as np
 
-from xfields import LongitudinalProfileQGaussian
+from xfieldsdev import LongitudinalProfileQGaussian
 from xobjects.test_helpers import for_all_test_contexts
 
 

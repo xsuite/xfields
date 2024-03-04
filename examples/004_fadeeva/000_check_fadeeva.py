@@ -1,5 +1,5 @@
 import xobjects as xo
-from xfields import _pkg_root
+from xfieldsdev import _pkg_root
 
 import time
 import numpy as np

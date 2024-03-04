@@ -308,7 +308,7 @@ for i in range(len(xshift)):
 #################################################################
 # Post-processing: raw data and spectrum                        #
 #################################################################
-# Complete source: xfields/examples/002_beambeam/006_beambeam6d_strongstrong_pipeline_MPI2Procs.py
+# Complete source: xfieldsdev/examples/002_beambeam/006_beambeam6d_strongstrong_pipeline_MPI2Procs.py
 
 lumis = []
 separation = [0, 1, 2, 3, 4, 5, 6]

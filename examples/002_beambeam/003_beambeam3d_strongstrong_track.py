@@ -8,7 +8,7 @@ from scipy.constants import e as qe
 
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 
 import ducktrack as dtk

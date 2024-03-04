@@ -5,7 +5,7 @@
 
 import numpy as np
 
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 import xtrack as xt
 

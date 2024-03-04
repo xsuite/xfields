@@ -5,7 +5,7 @@ import numpy as np
 from scipy.special import  erfinv
 
 from ._madpoint import MadPoint
-import xfields as xf
+import xfieldsdev as xf
 
 def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
             harmonic_number, bunch_spacing_buckets,
@@ -671,7 +671,7 @@ def setup_beam_beam_in_line(
     bb_df,
     bb_coupling=False,
 ):
-    import xfields as xf
+    import xfieldsdev as xf
     assert bb_coupling is False  # Not implemented
 
     for ii, (ee, eename) in enumerate(zip(line.elements, line.element_names)):

@@ -6,7 +6,7 @@
 import numpy as np
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 
 def test_beambeamstrongstrong2d_pi():

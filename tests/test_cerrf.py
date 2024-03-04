@@ -8,7 +8,7 @@ from scipy.special import wofz as wofz_scipy
 import pytest
 import xobjects as xo
 from xobjects.context import available
-from xfields.general import _pkg_root
+from xfieldsdev.general import _pkg_root
 from xobjects.test_helpers import for_all_test_contexts
 
 
