@@ -45,7 +45,7 @@ def test_beambeam(test_context):
     z_probes = 1.2*sigma_z
     n_probes = 1000
 
-    from xfields.test_support.temp_makepart import generate_particles_object
+    from xfieldsdev.test_support.temp_makepart import generate_particles_object
     (particles_b1, r_probes, _, _, _
             ) =  generate_particles_object(
                                 n_macroparticles_b1,
@@ -87,7 +87,7 @@ def test_beambeam(test_context):
     # Beam-beam #
     #############
 
-    from xfields import BeamBeamBiGaussian2D, mean_and_std
+    from xfieldsdev import BeamBeamBiGaussian2D, mean_and_std
 
     # if beta0 is array I just take the first
     beta0_b2 = test_context.nparray_from_context_array(particles_b2.beta0)[0]

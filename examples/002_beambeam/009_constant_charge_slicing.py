@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-import xfields as xf
+import xfieldsdev as xf
 
 
 constant_charge_slicing_gaussian = (

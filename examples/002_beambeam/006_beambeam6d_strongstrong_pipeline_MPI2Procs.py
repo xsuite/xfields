@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 from mpi4py import MPI
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 
 context = xo.ContextCpu(omp_num_threads=0)

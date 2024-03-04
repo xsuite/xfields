@@ -50,7 +50,7 @@ r_max_probes = 2e-2
 z_probes = 1.2*sigma_z
 n_probes = 1000
 
-from xfields.test_support.temp_makepart import generate_particles_object
+from xfieldsdev.test_support.temp_makepart import generate_particles_object
 print('Generate particles b1...')
 (particles_b1_gen, r_probes, _, _, _
         ) =  generate_particles_object(
@@ -95,7 +95,7 @@ particles_b2.y += mean_y_b2
 # Beam-beam #
 #############
 
-from xfields import BeamBeamBiGaussian2D, mean_and_std
+from xfieldsdev import BeamBeamBiGaussian2D, mean_and_std
 print('build bb elements...')
 bbeam_b1 = BeamBeamBiGaussian2D(
             _context=context,

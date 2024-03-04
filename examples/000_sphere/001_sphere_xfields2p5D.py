@@ -11,7 +11,7 @@ from scipy.constants import epsilon_0
 from numpy import pi
 
 from xobjects import ContextCpu, ContextCupy, ContextPyopencl
-from xfields import TriLinearInterpolatedFieldMap
+from xfieldsdev import TriLinearInterpolatedFieldMap
 
 context = ContextCpu()
 #context = ContextCupy(default_block_size=256)

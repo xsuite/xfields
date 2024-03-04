@@ -7,7 +7,7 @@ import numpy as np
 from numpy.random import default_rng
 import xobjects as xo
 import xpart as xp
-import xfields as xf
+import xfieldsdev as xf
 
 from xobjects.test_helpers import for_all_test_contexts
 

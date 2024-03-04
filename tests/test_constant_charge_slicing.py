@@ -1,6 +1,6 @@
 import numpy as np
 
-import xfields as xf
+import xfieldsdev as xf
 
 
 constant_charge_slicing_gaussian = (

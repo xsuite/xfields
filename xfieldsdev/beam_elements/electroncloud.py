@@ -40,7 +40,7 @@ class ElectronCloud(xt.BeamElement):
             meters.
         apply_z_kick (bool): If ``True``, the longitudinal kick on the
             particles is applied. The default is ``True``.
-        fieldmap (xfields.TriCubicInterpolatedFieldMap): Field map of the 
+        fieldmap (xfieldsdev.TriCubicInterpolatedFieldMap): Field map of the 
             electron cloud forces.
     Returns:
         (ElectronCloud): An electron cloud beam element.

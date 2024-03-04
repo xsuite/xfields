@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.constants import e as qe
 
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 
 sc = xf.SpaceCharge3D(

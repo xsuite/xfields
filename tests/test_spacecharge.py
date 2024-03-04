@@ -38,7 +38,7 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
     z_probes = 1.2*sigma_z
     n_probes = 1000
 
-    from xfields.test_support.temp_makepart import generate_particles_object
+    from xfieldsdev.test_support.temp_makepart import generate_particles_object
     (particles_dtk, r_probes, _, _, _) = generate_particles_object(
                                 n_macroparticles,
                                 bunch_intensity,
@@ -61,7 +61,7 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
     # Space charge #
     ################
 
-    from xfields import LongitudinalProfileQGaussian
+    from xfieldsdev import LongitudinalProfileQGaussian
     lprofile = LongitudinalProfileQGaussian(
             _context=test_context,
             number_of_particles=bunch_intensity,
@@ -71,7 +71,7 @@ def test_spacecharge_gauss_qgauss(frozen, test_context):
                            # only q=1 can be tested
             )
 
-    from xfields import SpaceChargeBiGaussian
+    from xfieldsdev import SpaceChargeBiGaussian
     # Just not to fool myself in the test
     if frozen:
         x0_init = x0
@@ -162,7 +162,7 @@ def test_spacecharge_pic(solver, test_context):
     z_probes = 1.2*sigma_z
     n_probes = 1000
 
-    from xfields.test_support.temp_makepart import generate_particles_object
+    from xfieldsdev.test_support.temp_makepart import generate_particles_object
     (particles_gen, r_probes, x_probes,
             y_probes, z_probes) = generate_particles_object(
                                 n_macroparticles,
@@ -188,7 +188,7 @@ def test_spacecharge_pic(solver, test_context):
     y_lim = 4.*sigma_y
     z_lim = 4.*sigma_z
 
-    from xfields import SpaceCharge3D
+    from xfieldsdev import SpaceCharge3D
 
     spcharge = SpaceCharge3D(
             _context=test_context,

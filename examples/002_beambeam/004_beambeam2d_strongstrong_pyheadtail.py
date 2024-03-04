@@ -10,7 +10,7 @@ from matplotlib import pyplot as plt
 
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 from PyHEADTAIL.trackers.transverse_tracking import TransverseSegmentMap
 
