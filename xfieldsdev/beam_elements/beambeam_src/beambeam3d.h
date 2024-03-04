@@ -157,7 +157,7 @@ void synchrobeam_kick(
     if (flag_combilumi == 1){
 
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        double combilumi = lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double frev);
+        double combilumi = lumicalc(h1,h2,intensity1,intensity2,frev);
         // init record table
         BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
         CombiLumiTableData combilumi_table                   = NULL;
