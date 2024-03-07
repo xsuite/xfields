@@ -30,10 +30,10 @@ void synchrobeam_kick(
     const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
     const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
     const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
-    const double particleCoordinates1 = BeamBeamBiGaussian3DData_get_beam_coordinates_x(el);
-    const double particleCoordinates1 = BeamBeamBiGaussian3DData_get_beam_coordinates_y(el);
-    const double particleCoordinates2 = BeamBeamBiGaussian3DData_get_other_beam_coordinates_x(el);
-    const double particleCoordinates2 = BeamBeamBiGaussian3DData_get_other_beam_coordinates_y(el);
+    const double particleCoordinates1x = BeamBeamBiGaussian3DData_get_beam_coordinates_x(el);
+    const double particleCoordinates1y = BeamBeamBiGaussian3DData_get_beam_coordinates_y(el);
+    const double particleCoordinates2x = BeamBeamBiGaussian3DData_get_other_beam_coordinates_x(el);
+    const double particleCoordinates2y = BeamBeamBiGaussian3DData_get_other_beam_coordinates_y(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -170,8 +170,8 @@ void synchrobeam_kick(
     if (flag_combilumi == 1){
 
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        fillHistogram(gsl_histogram2d* &h1, double* particleCoordinates1,int npart)
-        fillHistogram(gsl_histogram2d* &h2, double* particleCoordinates2,int npart)
+        fillHistogram(gsl_histogram2d* &h1, double* particleCoordinates1x, double* particleCoordinates1y, int npart)
+        fillHistogram(gsl_histogram2d* &h2, double* particleCoordinates2x, double* particleCoordinates2y, int npart)
         double combilumi = lumicalc(h1,h2,intensity1,intensity2);
         // init record table
         BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
