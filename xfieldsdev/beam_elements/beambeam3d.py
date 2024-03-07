@@ -84,6 +84,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         '_tan_phi': xo.Float64,
         '_sin_alpha': xo.Float64,
         '_cos_alpha': xo.Float64,
+        
+        'beam_intensity': xo.Float64,
+        'other_beam_intensity': xo.Float64,
+        'number_of_particles': xo.Float64,
+        'beam_coordinates_x': xo.Float64[:],
+        'beam_coordinates_y': xo.Float64[:],
+        'other_beam_coordinates_x': xo.Float64[:],
+        'other_beam_coordinates_y': xo.Float64[:],
 
         'ref_shift_x': xo.Float64,
         'ref_shift_px': xo.Float64,

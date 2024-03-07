@@ -1,0 +1,13 @@
+*.DS_Store
+*.swp
+*.so
+*.pyc
+.project
+.pydevproject
+*.png
+norepository_*
+*~
+build
+CyFPPS.cpp
+*.egg-info
+.idea/**
