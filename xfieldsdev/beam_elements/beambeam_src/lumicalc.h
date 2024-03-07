@@ -11,7 +11,7 @@ int fillHistogram(gsl_histogram2d* h1, double* particleCoordinates,int npart){
     int countOutsideOfDomain = 0;
     int histOut;
     for(int i = 0;i<npart;++i) {
-        histOut = gsl_histogram2d_increment(h1, particleCoordinates[i*7+0], particleCoordinates[i*7+2]);
+        histOut = gsl_histogram2d_increment(h1, particleCoordinates[i*2+0], particleCoordinates[i*2+1]);
         if(histOut==GSL_EDOM){
             countOutsideOfDomain++;
         }       

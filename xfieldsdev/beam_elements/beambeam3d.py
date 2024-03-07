@@ -204,6 +204,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_py_center=0.,
                     slices_other_beam_zeta_center=None,
                     slices_other_beam_pzeta_center=0.,
+                    
+                    beam_intensity = 0,
+                    other_beam_intensity = 0,
+                    number_of_particles = 0,
+                    beam_coordinates_x = [],
+                    beam_coordinates_y = [],
+                    other_beam_coordinates_x = [],
+                    other_beam_coordinates_y = [],
 
                     flag_beamstrahlung=0,
                     slices_other_beam_zeta_bin_width_beamstrahlung=None,
@@ -418,7 +426,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
+        
+        self.beam_intensity = beam_intensity
+        self.other_beam_intensity = other_beam_intensity
+        self.number_of_particles = number_of_particles
 
+        beam_coordinates_x = beam_coordinates_x
+        beam_coordinates_y = beam_coordinates_y
+        other_beam_coordinates_x = other_beam_coordinates_x
+        other_beam_coordinates_y = other_beam_coordinates_y
+        
         self.ref_shift_x = ref_shift_x
         self.ref_shift_px = ref_shift_px
         self.ref_shift_y = ref_shift_y

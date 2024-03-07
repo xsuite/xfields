@@ -27,6 +27,13 @@ void synchrobeam_kick(
     const double q0_bb  = scale_strength*BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
+    const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
+    const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
+    const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
+    const double particleCoordinates1 = BeamBeamBiGaussian3DData_get_beam_coordinates_x(el);
+    const double particleCoordinates1 = BeamBeamBiGaussian3DData_get_beam_coordinates_y(el);
+    const double particleCoordinates2 = BeamBeamBiGaussian3DData_get_other_beam_coordinates_x(el);
+    const double particleCoordinates2 = BeamBeamBiGaussian3DData_get_other_beam_coordinates_y(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -40,6 +47,8 @@ void synchrobeam_kick(
     double const Sig_44_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_44_star(el, i_slice);
 
     double const num_part_slice = BeamBeamBiGaussian3DData_get_slices_other_beam_num_particles(el, i_slice);
+
+
 
     // no kick if not sufficient macroparticles; should be taken care of when slicing
     if (num_part_slice == 0){
@@ -136,7 +145,7 @@ void synchrobeam_kick(
     // calculate luminosity
     const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
     if (flag_luminosity == 1){
-
+    
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
         get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
         wgt = LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
@@ -161,6 +170,8 @@ void synchrobeam_kick(
     if (flag_combilumi == 1){
 
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+        fillHistogram(gsl_histogram2d* &h1, double* particleCoordinates1,int npart)
+        fillHistogram(gsl_histogram2d* &h2, double* particleCoordinates2,int npart)
         double combilumi = lumicalc(h1,h2,intensity1,intensity2);
         // init record table
         BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
