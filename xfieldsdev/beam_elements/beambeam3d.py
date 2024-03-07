@@ -84,14 +84,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         '_tan_phi': xo.Float64,
         '_sin_alpha': xo.Float64,
         '_cos_alpha': xo.Float64,
-        
-        'beam_intensity': xo.Float64,
-        'other_beam_intensity': xo.Float64,
-        'number_of_particles': xo.Float64,
-        'beam_coordinates_x': xo.Float64[:],
-        'beam_coordinates_y': xo.Float64[:],
-        'other_beam_coordinates_x': xo.Float64[:],
-        'other_beam_coordinates_y': xo.Float64[:],
 
         'ref_shift_x': xo.Float64,
         'ref_shift_px': xo.Float64,
@@ -155,7 +147,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
          #lumi
          'flag_luminosity': xo.Int64,
-         'flag_combilumi': xo.Int64
+         'flag_combilumi': xo.Int64,
+         'beam_intensity': xo.Float64,
+         'other_beam_intensity': xo.Float64,
+         'number_of_particles': xo.Float64,
+         'beam_coordinates_x': xo.Float64[:],
+         'beam_coordinates_y': xo.Float64[:],
+         'other_beam_coordinates_x': xo.Float64[:],
+         'other_beam_coordinates_y': xo.Float64[:],
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
@@ -212,14 +211,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     slices_other_beam_py_center=0.,
                     slices_other_beam_zeta_center=None,
                     slices_other_beam_pzeta_center=0.,
-                    
-                    beam_intensity = 0.,
-                    other_beam_intensity = 0.,
-                    number_of_particles = 0.,
-                    beam_coordinates_x = np.empty(0),
-                    beam_coordinates_y = np.empty(0),
-                    other_beam_coordinates_x = np.empty(0),
-                    other_beam_coordinates_y = np.empty(0),
 
                     flag_beamstrahlung=0,
                     slices_other_beam_zeta_bin_width_beamstrahlung=None,
@@ -234,6 +225,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     flag_luminosity = 0,
                     flag_combilumi = 0,
+                    
+                    beam_intensity = 0.,
+                    other_beam_intensity = 0.,
+                    number_of_particles = 0.,
+                    beam_coordinates_x = np.empty(0),
+                    beam_coordinates_y = np.empty(0),
+                    other_beam_coordinates_x = np.empty(0),
+                    other_beam_coordinates_y = np.empty(0),
 
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -436,8 +435,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     beam_coordinates_x,
                     beam_coordinates_y,
                     other_beam_coordinates_x,
-                    other_beam_coordinates_y,
-                    )
+                    other_beam_coordinates_y
+        )
         
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
@@ -623,8 +622,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
     def _init_luminosity(self, flag_luminosity):
         self.flag_luminosity = flag_luminosity
         
-    def _init_combilumi(self, flag_combilumi):
+    def _init_combilumi(self, flag_combilumi, beam_intensity, other_beam_intensity, number_of_particles, beam_coordinates_x, beam_coordinates_y, other_beam_coordinates_x, other_beam_coordinates_y):
         self.flag_combilumi = flag_combilumi
+        self.beam_intensity = beam_intensity
+        self.other_beam_intensity = other_beam_intensity
+        self.number_of_particles = number_of_particles
+        self.beam_coordinates_x = beam_coordinates_x
+        self.beam_coordinates_y = beam_coordinates_y
+        self.other_beam_coordinates_x = other_beam_coordinates_x
+        self.other_beam_coordinates_y = other_beam_coordinates_y
+        
 
     def _init_from_old_interface(self, old_interface, **kwargs):
 
