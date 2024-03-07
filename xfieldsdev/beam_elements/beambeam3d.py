@@ -232,7 +232,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     compt_x_min=1e-4,
                     flag_beamsize_effect=1,
 
-                    flag_luminosity=0,
+                    flag_luminosity = 0,
                     flag_combilumi = 0,
 
                     slices_other_beam_x_center_star=None,
@@ -429,7 +429,15 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
 
         self._init_luminosity(flag_luminosity)
-        self._init_combilumi(flag_combilumi)
+        self._init_combilumi(flag_combilumi,                     
+                    beam_intensity,
+                    other_beam_intensity,
+                    number_of_particles,
+                    beam_coordinates_x,
+                    beam_coordinates_y,
+                    other_beam_coordinates_x,
+                    other_beam_coordinates_y,
+                    )
         
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
