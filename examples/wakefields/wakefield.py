@@ -1,7 +1,7 @@
 import numpy as np
 from compressed_profile import CompressedProfile
 
-from scipy.constants import c as clight
+from scipy.constants import c as clight, mu_0, epsilon_0
 from scipy.constants import e as qe
 
 import xfields as xf
@@ -409,7 +409,38 @@ class TempResonatorFunction:
 
         res[z < 0] = (R_s * omega_r ** 2 / (Q * omega_bar)
                       * np.exp(alpha_t * z[z < 0] / (clight*self.beta))
-                      * np.sin(omega_bar * z[z < 0] / (clight*self.beta)))  # Wake definition
+                      * np.sin(omega_bar * z[z < 0] / (clight*self.beta)))
+
+        return res
+
+
+class TempRWFunction:
+    def __init__(self,  pipe_radius, resistive_wall_length, conductivity, beta,
+                 yokoya_factor=1, dt_min=1e-12):
+        self.pipe_radius = pipe_radius
+        self.resistive_wall_length = resistive_wall_length
+        self.conductivity = conductivity
+        self.beta = beta
+        self.yokoya_factor = yokoya_factor
+        self.dt_min = dt_min
+
+    def __call__(self, z):
+        pipe_radius = self.pipe_radius
+        resistive_wall_length = self.resistive_wall_length
+        conductivity = self.conductivity
+        beta = self.beta
+        yokoya_factor = self.yokoya_factor
+        dt_min = self.dt_min
+
+        res = np.zeros_like(z)
+
+        Z_0 = np.sqrt(mu_0/epsilon_0)
+
+        dt = z[z < 0] / (beta * clight)
+        res[z < 0] = - (yokoya_factor * resistive_wall_length *
+                        1/(np.pi*pipe_radius**3) *
+                        np.sqrt(clight*Z_0/(np.pi*conductivity)) *
+                        np.sqrt(1/-dt.clip(max=-abs(dt_min))))
 
         return res
 
@@ -422,8 +453,8 @@ class TempTableFunction:
     def __call__(self, z):
         res = np.zeros_like(z)
 
-        res[z < 0] = np.interp(-z[z < 0] / (clight*self.beta), self.table[0],
-                               self.table[1])  # Wake definition
+        res[z < 0] = np.interp(-z[z < 0] / (clight * self.beta),
+                               self.table[:, 0], self.table[:, 1])
 
         return res
 
