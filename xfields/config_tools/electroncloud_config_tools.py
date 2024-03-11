@@ -141,9 +141,10 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
                 temp_part.zeta = twiss["zeta"][ii]
                 line.elements[ii].track(temp_part)
 
-                line.element_refs[el_name].dipolar_px_kick = temp_part.px[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
-                line.element_refs[el_name].dipolar_py_kick = temp_part.py[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
-                line.element_refs[el_name].dipolar_pzeta_kick = temp_part.pzeta[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                ctx_to_np = line._context.nparray_from_context_array
+                line.element_refs[el_name].dipolar_px_kick = ctx_to_np(temp_part.px)[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                line.element_refs[el_name].dipolar_py_kick = ctx_to_np(temp_part.py)[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                line.element_refs[el_name].dipolar_pzeta_kick = ctx_to_np(temp_part.pzeta)[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
 
 
 def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
