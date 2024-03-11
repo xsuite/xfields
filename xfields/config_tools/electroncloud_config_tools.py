@@ -137,7 +137,7 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
             if subtract_dipolar_kicks:
                 temp_part = line.particle_ref.copy(_context=line._context)
                 temp_part.x = twiss["x"][ii]
-                temp_part.y = twiss["x"][ii]
+                temp_part.y = twiss["y"][ii]
                 temp_part.zeta = twiss["zeta"][ii]
                 line.elements[ii].track(temp_part)
 
