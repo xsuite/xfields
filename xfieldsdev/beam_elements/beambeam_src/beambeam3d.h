@@ -19,23 +19,21 @@
 //            double y = LocalParticle_get_y(part);
 
         /*gpuglmem*/ 
-            //double * count = BeamBeamBiGaussian3DRecordData_getp1_count(record);
-            //atomicAdd(count, 1.0);
+//            double * count = BeamBeamBiGaussian3DRecordData_getp1_count(record);
+//            atomicAdd(count, 1.0);
 
         /*gpuglmem*/ 
-            //double * x_sum = BeamBeamBiGaussian3DRecordData_getp1_x_sum(record);
-           // atomicAdd(x_sum, x);
-//
-        ///*gpuglmem*/ double * y_sum = BeamBeamBiGaussian3DRecordData_getp1_y_sum(record);
-         //   atomicAdd(y_sum, y);
+//            double * x_sum = BeamBeamBiGaussian3DRecordData_getp1_x_sum(record);
+//            atomicAdd(x_sum, x);
 
-	//end_per_particle_block
-    //x_centroid = x_sum/count;
-    //y_centroid = y_sum/count;
-   //}
-
+//        /*gpuglmem*/ double * y_sum = BeamBeamBiGaussian3DRecordData_getp1_y_sum(record);
+//            atomicAdd(y_sum, y);
+//            }
+//	end_per_particle_block
+//    x_centroid = x_sum/count;
+//    y_centroid = y_sum/count;
+//   }
 //}
-
 
 
 
