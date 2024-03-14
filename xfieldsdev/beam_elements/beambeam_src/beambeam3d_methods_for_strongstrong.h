@@ -40,8 +40,8 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         double zeta = LocalParticle_get_zeta(part);
         double pzeta = LocalParticle_get_pzeta(part);
 
-        printf("The x value before shift is %f.\n", x);
-        printf("The y value before shift is %f.\n", y);
+        printf("The px value before shift is %f.\n", px);
+        printf("The py value before shift is %f.\n", py);
 
         // Change reference frame
         change_ref_frame_coordinates(
@@ -49,8 +49,8 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
             shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
 
-        printf("The x value after shift is %f.\n", x);
-        printf("The y value after shift is %f.\n", y);
+        printf("The px value after shift is %f.\n", px);
+        printf("The py value after shift is %f.\n", py);
 
         // Store
         LocalParticle_set_x(part, x);
@@ -114,8 +114,8 @@ void BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_parti
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
 
 
-        printf("The x value after shift back is %f.\n", x);
-        printf("The y value after shift back is %f.\n", y);
+        printf("The px value after shift back is %f.\n", px);
+        printf("The py value after shift back is %f.\n", py);
 
         // Store
         LocalParticle_set_x(part, x);
@@ -162,8 +162,8 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 &pzeta_star);
 
 
-            printf("The x value after kick is %f.\n", x_star);
-            printf("The y value after kick back is %f.\n", y_star);
+            printf("The px value after kick is %f.\n", px_star);
+            printf("The py value after kick is %f.\n", py_star);
 
             LocalParticle_set_x(part, x_star);
             LocalParticle_set_px(part, px_star);
