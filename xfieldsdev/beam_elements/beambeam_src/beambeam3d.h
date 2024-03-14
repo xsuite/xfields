@@ -5,7 +5,7 @@
 
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
-
+#include <stdio.h>
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif

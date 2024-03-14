@@ -40,6 +40,9 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         double zeta = LocalParticle_get_zeta(part);
         double pzeta = LocalParticle_get_pzeta(part);
 
+        printf("The x value before shift is %f.\n", x);
+        printf("The y value before shift is %f.\n", y);
+
         // Change reference frame
         change_ref_frame_coordinates(
             &x, &px, &y, &py, &zeta, &pzeta,
