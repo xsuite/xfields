@@ -158,6 +158,9 @@ void synchrobeam_kick(
     double Fx_star = Fx_hat_star*costheta - Fy_hat_star*sintheta;
     double Fy_star = Fx_hat_star*sintheta + Fy_hat_star*costheta;
 
+    printf("The Fx value is %f.\n", Fx_star);
+    printf("The Fy value is %f.\n", Fy_star);
+
     // Compute longitudinal kick
     double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
