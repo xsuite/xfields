@@ -161,6 +161,10 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 &zeta_star,
                 &pzeta_star);
 
+
+            printf("The x value after kick is %f.\n", x_star);
+            printf("The y value after kick back is %f.\n", y_star);
+
             LocalParticle_set_x(part, x_star);
             LocalParticle_set_px(part, px_star);
             LocalParticle_set_y(part, y_star);
