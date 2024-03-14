@@ -57,11 +57,11 @@ void synchrobeam_kick(
     const double q0_bb  = scale_strength*BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
-    const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
-    const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
-    const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
-    const double x_rms = BeamBeamBiGaussian3DData_get_x_rms(el);
-    const double y_rms = BeamBeamBiGaussian3DData_get_y_rms(el);
+    //const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
+    //const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
+    //const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
+    //const double x_rms = BeamBeamBiGaussian3DData_get_x_rms(el);
+    //const double y_rms = BeamBeamBiGaussian3DData_get_y_rms(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
