@@ -49,7 +49,7 @@ class BhabhaTable(xo.HybridClass):
       'photon_pzeta': xo.Float64[:],
       'primary_scattering_angle': xo.Float64[:],
       'photon_scattering_angle': xo.Float64[:],
-        }
+      }
 
 class LumiTable(xo.HybridClass):
     _xofields = {
@@ -58,7 +58,7 @@ class LumiTable(xo.HybridClass):
       'at_turn': xo.Int64[:],
       'particle_id': xo.Int64[:],
       'luminosity': xo.Float64[:],
-        }
+      }
 
 #class CombiLumiTable(xo.HybridClass):
     #_xofields = {
@@ -83,7 +83,7 @@ class BeamBeamBiGaussian3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
         'bhabhatable': BhabhaTable,
-        #'lumitable': LumiTable,
+        'lumitable': LumiTable,
         #'combilumitable': CombiLumiTable,
         #'centroidtable': CentroidTable,
        }
