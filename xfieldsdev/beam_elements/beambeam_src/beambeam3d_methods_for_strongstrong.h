@@ -46,8 +46,8 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
             shift_x, shift_px, shift_y, shift_py, shift_zeta, shift_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
 
-        printf("The x value is %f.\n", x);
-        printf("The y value is %f.\n", y);
+        printf("The x value after shift is %f.\n", x);
+        printf("The y value after shift is %f.\n", y);
 
         // Store
         LocalParticle_set_x(part, x);
@@ -109,6 +109,10 @@ void BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_parti
             post_subtract_y, post_subtract_py,
             post_subtract_zeta, post_subtract_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
+
+
+        printf("The x value after shift back is %f.\n", x);
+        printf("The y value after shift back is %f.\n", y);
 
         // Store
         LocalParticle_set_x(part, x);
