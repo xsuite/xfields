@@ -388,14 +388,14 @@ void synchrobeam_kick(
     #endif
 
     // Apply the kicks (Hirata's synchro-beam)
-    scanf("%lf", &*x_star);
-    scanf("%lf", &*y_star);
-    scanf("%lf", &*px_star);
-    scanf("%lf.", &*py_star);
-    printf("The x value before kick is %lf.\n", &*x_star);
-    printf("The y value before kick is %lf.\n", &*y_star);
-    printf("The px value before kick is %lf.\n", &*px_star);
-    printf("The py value before kick is %lf.\n", &*py_star);
+    scanf("%lf", & *x_star);
+    scanf("%lf", & *y_star);
+    scanf("%lf", & *px_star);
+    scanf("%lf.", & *py_star);
+    printf("The x value before kick is %lf.\n", *x_star);
+    printf("The y value before kick is %lf.\n", *y_star);
+    printf("The px value before kick is %lf.\n", *px_star);
+    printf("The py value before kick is %lf.\n", *py_star);
     *pzeta_star = *pzeta_star + Fz_star + 0.5*(
                 Fx_star*(*px_star+0.5*Fx_star + px_slice_star)+
                 Fy_star*(*py_star+0.5*Fy_star + py_slice_star));
@@ -407,10 +407,10 @@ void synchrobeam_kick(
     scanf("%lf", &*y_star);
     scanf("%lf", &*px_star);
     scanf("%lf.", &*py_star);
-    printf("The x value after kick is %lf.\n", &*x_star);
-    printf("The y value after kick is %lf.\n", &*y_star);
-    printf("The px value after kick is %lf.\n", &*px_star);
-    printf("The py value after kick is %lf.\n", &*py_star);
+    printf("The x value after kick is %lf.\n", *x_star);
+    printf("The y value after kick is %lf.\n", *y_star);
+    printf("The px value after kick is %lf.\n", *px_star);
+    printf("The py value after kick is %lf.\n", *py_star);
 }
 
 /*gpufun*/
