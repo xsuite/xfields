@@ -9,6 +9,8 @@
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
+std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
+std::cout << std::scientific <<  1.0/7.0 << '\n';
 
 //void BeamPositionMonitor_track_local_particle(BeamBeamBiGaussian3DRecordData el, LocalParticle* part0){
 //    const int64_t flag_centroids = BeamBeamBiGaussian3DData_get_flag_centroids(el);
@@ -391,6 +393,10 @@ void synchrobeam_kick(
     #endif
 
     // Apply the kicks (Hirata's synchro-beam)
+    printf("The x value after kick is %f.\n", x_star);
+    printf("The y value after kick is %f.\n", y_star);
+    printf("The px value after kick is %f.\n", px_star);
+    printf("The py value after kick is %f.\n", py_star);
     *pzeta_star = *pzeta_star + Fz_star + 0.5*(
                 Fx_star*(*px_star+0.5*Fx_star + px_slice_star)+
                 Fy_star*(*py_star+0.5*Fy_star + py_slice_star));
@@ -398,6 +404,10 @@ void synchrobeam_kick(
     *px_star = *px_star + Fx_star;
     *y_star = *y_star - S*Fy_star;
     *py_star = *py_star + Fy_star;
+    printf("The x value after kick is %f.\n", x_star);
+    printf("The y value after kick is %f.\n", y_star);
+    printf("The px value after kick is %f.\n", px_star);
+    printf("The py value after kick is %f.\n", py_star);
 }
 
 /*gpufun*/
