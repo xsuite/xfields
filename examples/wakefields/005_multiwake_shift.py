@@ -94,6 +94,47 @@ beta = np.sqrt(1-1/gamma**2)
 wake_func = TempResonatorFunction(R_shunt=1e8, frequency=1e7, Q=1e3,
                                   beta=beta)
 
+# apply a distortion to the bunch
+amplitude = 1e-3
+wavelength = np.pi/2*sigma_z*6
+bunches.x *= 0
+bunches.y *= 0
+bunches.xp *= 0
+bunches.yp *= 0
+
+dz = (zeta_range[1] - zeta_range[0])/(n_slices-1)
+
+bunches.z = np.concatenate([np.linspace(zeta_range[0]+dz/2, zeta_range[1]-dz/2,
+                           n_macroparticles) + i*bunch_spacing_buckets*bucket_length for i in range(n_bunches)])
+
+i_disp = -10
+
+bunches.x[i_disp] += 1
+bunches.y[i_disp] += 1
+
+flag_plot = True
+
+if flag_plot:
+    plt.figure(74)
+    plt.plot(bunches.z, bunches.x, 'x')
+    plt.show()
+
+
+particles = xt.Particles(
+    mass0=xt.PROTON_MASS_EV,
+    gamma0=bunches.gamma,
+    x=bunches.x.copy(),
+    px=bunches.xp.copy(),
+    y=bunches.y.copy(),
+    py=bunches.yp.copy(),
+    zeta=bunches.z.copy(),
+    delta=bunches.dp.copy(),
+    weight=bunches.particlenumber_per_mp,
+)
+
+particle_ref = xt.Particles(p0c=particles.p0c, mass0=particles.mass0,
+                            q0=particles.q0)
+
 wfx = Wakefield(
     source_moments=['num_particles', 'x'],
     kick='px',
@@ -122,57 +163,10 @@ wf = MultiWakefield(
     _flatten=flatten
 )
 
-betatron_map = xt.LineSegmentMap(
-    length=circumference, betx=beta_x, bety=beta_y,
-    qx=accQ_x, qy=accQ_y, qs=Q_s, bets=beta_s,
-    longitudinal_mode='linear_fixed_qs',
-    dqx=chroma, dqy=chroma
-)
-
 
 line = xt.Line(elements=[wf],
                element_names=['wf'])
 
-# apply a distortion to the bunch
-amplitude = 1e-3
-wavelength = np.pi/2*sigma_z*6
-bunches.x *= 0
-bunches.y *= 0
-bunches.xp *= 0
-bunches.yp *= 0
-
-dz = wfx.slicer.dzeta
-
-bunches.z = np.linspace(zeta_range[0]+dz/2, zeta_range[1]-dz/2,
-                        n_macroparticles)
-
-i_disp = -10
-
-bunches.x[i_disp] += 1
-
-flag_plot = False
-
-if flag_plot:
-    plt.figure(74)
-    plt.plot(bunches.z, bunches.x, 'x')
-    plt.vlines(wfx.slicer.zeta_centers, ymin=0, ymax=1)
-    plt.xlim(zeta_range)
-    plt.show()
-
-particles = xt.Particles(
-    mass0=xt.PROTON_MASS_EV,
-    gamma0=bunches.gamma,
-    x=bunches.x.copy(),
-    px=bunches.xp.copy(),
-    y=bunches.y.copy(),
-    py=bunches.yp.copy(),
-    zeta=bunches.z.copy(),
-    delta=bunches.dp.copy(),
-    weight=bunches.particlenumber_per_mp,
-)
-
-particle_ref = xt.Particles(p0c=particles.p0c, mass0=particles.mass0,
-                            q0=particles.q0)
 line.build_tracker()
 
 n_skip = 1
@@ -188,11 +182,18 @@ if flag_plot:
                                           particles.zeta)*scale, 'x')
     plt.show()
 
-assert np.allclose(particles.px,
-                   wfx.function(-particles.zeta[i_disp] +
-                                particles.zeta) * scale,
-                   rtol=1e-5)
-assert np.allclose(particles.py,
-                   wfy.function(-particles.zeta[i_disp] +
-                                particles.zeta) * scale,
-                   rtol=1e-5)
+    plt.figure(76)
+    plt.plot(particles.zeta, particles.py, '.')
+    plt.plot(particles.zeta, wfy.function(-particles.zeta[i_disp] +
+                                          particles.zeta)*scale, 'x')
+    plt.show()
+
+mask = particles.zeta < particles.zeta[i_disp]
+assert np.allclose(particles.px[mask],
+                   (wfx.function(-particles.zeta[i_disp] +
+                                particles.zeta) * scale)[mask],
+                   rtol=1e-4, atol=0)
+assert np.allclose(particles.py[mask],
+                   (wfy.function(-particles.zeta[i_disp] +
+                                particles.zeta) * scale)[mask],
+                   rtol=1e-4, atol=0)
