@@ -56,6 +56,8 @@ void get_transv_field_gauss_ellip(
         double* Ex_out,
         double* Ey_out)
 {
+  r2 = (x-Delta_x)*(x-Delta_x)+(y-Delta_y)*(y-Delta_y);
+  printf("The r value is %.9lf.\n", r2);
   double sigmax = sigma_x;
   double sigmay = sigma_y;
 
@@ -146,6 +148,8 @@ void get_Ex_Ey_gauss(
 
         // elliptical beam
 	else{
+      printf("The x value is %.9lf.\n", x);
+      printf("The y value is %.9lf.\n", y);
 	    get_transv_field_gauss_ellip(
 	            sigma_x, sigma_y, 0., 0., x, y, Ex_ptr, Ey_ptr);
 
