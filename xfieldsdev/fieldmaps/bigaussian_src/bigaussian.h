@@ -56,6 +56,7 @@ void get_transv_field_gauss_ellip(
         double* Ex_out,
         double* Ey_out)
 {
+  double r2;
   r2 = (x-Delta_x)*(x-Delta_x)+(y-Delta_y)*(y-Delta_y);
   printf("The r value is %.9lf.\n", r2);
   double sigmax = sigma_x;
