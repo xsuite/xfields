@@ -9,8 +9,6 @@
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
-std::cout.precision(std::numeric_limits<double>::max_digits10 - 1);
-std::cout << std::scientific <<  1.0/7.0 << '\n';
 
 //void BeamPositionMonitor_track_local_particle(BeamBeamBiGaussian3DRecordData el, LocalParticle* part0){
 //    const int64_t flag_centroids = BeamBeamBiGaussian3DData_get_flag_centroids(el);
@@ -159,9 +157,6 @@ void synchrobeam_kick(
     // Move kicks to coupled reference frame
     double Fx_star = Fx_hat_star*costheta - Fy_hat_star*sintheta;
     double Fy_star = Fx_hat_star*sintheta + Fy_hat_star*costheta;
-
-    printf("The Fx value is %f.\n", Fx_star);
-    printf("The Fy value is %f.\n", Fy_star);
 
     // Compute longitudinal kick
     double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
