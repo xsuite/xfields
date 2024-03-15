@@ -388,10 +388,10 @@ void synchrobeam_kick(
     #endif
 
     // Apply the kicks (Hirata's synchro-beam)
-    scanf("%Lf", &x_star);
-    scanf("%Lf", &y_star);
-    scanf("%Lf", &px_star);
-    scanf("%Lf.", &py_star);
+    scanf("%lf", &x_star);
+    scanf("%lf", &y_star);
+    scanf("%lf", &px_star);
+    scanf("%lf.", &py_star);
     printf("The x value before kick is %lf.\n", &x_star);
     printf("The y value before kick is %lf.\n", &y_star);
     printf("The px value before kick is %lf.\n", &px_star);
@@ -403,10 +403,10 @@ void synchrobeam_kick(
     *px_star = *px_star + Fx_star;
     *y_star = *y_star - S*Fy_star;
     *py_star = *py_star + Fy_star;
-    scanf("%Lf", &x_star);
-    scanf("%Lf", &y_star);
-    scanf("%Lf", &px_star);
-    scanf("%Lf.", &py_star);
+    scanf("%lf", &x_star);
+    scanf("%lf", &y_star);
+    scanf("%lf", &px_star);
+    scanf("%lf.", &py_star);
     printf("The x value after kick is %lf.\n", &x_star);
     printf("The y value after kick is %lf.\n", &y_star);
     printf("The px value after kick is %lf.\n", &px_star);
