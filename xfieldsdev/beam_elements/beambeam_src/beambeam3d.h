@@ -134,8 +134,7 @@ void synchrobeam_kick(
     // Compute derivatives of the transformation
     const double dS_x_bar_hat_star = x_bar_star * dS_costheta + y_bar_star * dS_sintheta;
     const double dS_y_bar_hat_star = -x_bar_star * dS_sintheta + y_bar_star * dS_costheta;
-    printf("The x_bar_star value is %.9lf.\n", x_bar_star);
-    printf("The y_bar_star value is %.9lf.\n", y_bar_star);
+
     // Get transverse fields
     double Ex, Ey;
     get_Ex_Ey_gauss(x_bar_hat_star, y_bar_hat_star,
