@@ -15,7 +15,7 @@ int compute_distribution_histogram(gsl_histogram2d* h1, ParticlesData particles,
     return countOutsideOfDomain;
 }
 
-int lumicalc(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double *lumicombi) {
+int compute_lumi_integral(gsl_histogram2d* h1,gsl_histogram2d* h2,double intensity1,double intensity2,double *lumicombi) {
          double sum1= gsl_histogram2d_sum(h1);
          double sum2= gsl_histogram2d_sum(h2);
          float dx=( gsl_histogram2d_xmax(h1)- gsl_histogram2d_xmin(h1))/gsl_histogram2d_nx(h1);

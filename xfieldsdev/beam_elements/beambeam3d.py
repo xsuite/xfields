@@ -145,18 +145,18 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         'slices_other_beam_sqrtSigma_55_beamstrahlung': xo.Float64[:],
 
          #bhabha
-         'flag_bhabha': xo.Int64,
-         'compt_x_min': xo.Float64,
-         'flag_beamsize_effect': xo.Int64,
+        'flag_bhabha': xo.Int64,
+        'compt_x_min': xo.Float64,
+        'flag_beamsize_effect': xo.Int64,
 
          #lumi
-         'flag_luminosity': xo.Int64,
-         'flag_combilumi': xo.Int64,
-         'beam_intensity': xo.Float64,
-         'other_beam_intensity': xo.Float64,
-         'number_of_particles': xo.Float64,
-         'x_rms': xo.Float64,
-         'y_rms': xo.Float64,
+        'flag_luminosity': xo.Int64,
+        'flag_combilumi': xo.Int64,
+        'beam_intensity': xo.Float64,
+        'other_beam_intensity': xo.Float64,
+        'number_of_particles': xo.Float64,
+        'x_rms': xo.Float64,
+        'y_rms': xo.Float64,
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
@@ -816,7 +816,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 self.change_back_ref_frame_and_subtract_dipolar(particles)
                 return None
             
-    def _apply_bb_kicks_in_boosted_frame(self, particles):
+    def _apply_bb_kicks_in_boosted_frame(self, particles, number_of_particles):
 
         n_slices_self_beam = self.config_for_update.slicer.num_slices
 
@@ -841,9 +841,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
                     
                     # NEW lumigrid my beam is computed here for all slices
-                    self.lumigrid_my_beam = particles.q0*self._buffer.context.nplike_lib.array(range(self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam)) #delete this and call the grid filling function here  # call C function to compute my beams lumigrid here, e.g. 2 slices, 3 by 3 grid for each slice
+                    #self.lumigrid_my_beam = particles.q0*self._buffer.context.nplike_lib.array(range(self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam)) #delete this and call the grid filling function here  # call C function to compute my beams lumigrid here, e.g. 2 slices, 3 by 3 grid for each slice
+                    self.lumigrid_my_beam = self.config_for_update.compute_distribution_histogram(particles, number_of_particles)
                     exchange_buffer = self._buffer.context.nplike_lib.hstack([self.moments, self.lumigrid_my_beam])
-                    exchange_buffer = self._buffer.context.nplike_lib.hstack([self.moments])
                     print("buffer to send: ", exchange_buffer, len(exchange_buffer), " moments: ", self.moments, " lumigrid my beam:", self.lumigrid_my_beam, " n_lumigrid_cells: ", self.config_for_update.n_lumigrid_cells)
 
                     self.config_for_update.pipeline_manager.send_message(self.moments,
