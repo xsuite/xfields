@@ -168,50 +168,50 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
 }
 
 /*gpufun*/
-//void BeamBeam3D_selective_compute_lumi_integral(BeamBeamBiGaussian3DData el,
-//                LocalParticle* part0,
-          //      /*gpuglmem*/ int64_t timestep,
-          //      /*gpuelmem*/ double* lumigrid_my_beam,
-          //      /*gpuglmem*/ double* lumigrid_other_beam,
-          //      /*gpuglmem*/ int64_t n_lumigrid_cells){
- //   double const intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
-   // double const intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
+void BeamBeam3D_selective_compute_lumi_integral(BeamBeamBiGaussian3DData el,
+                LocalParticle* part0,
+                /*gpuglmem*/ int64_t timestep,
+                /*gpuelmem*/ double* lumigrid_my_beam,
+                /*gpuglmem*/ double* lumigrid_other_beam,
+                /*gpuglmem*/ int64_t n_lumigrid_cells){
+    double const intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
+    double const intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
 
-//  FILE *fp;
-  //fp = fopen("../test_lumigrid.txt", "a");
-  //const int64_t N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
+  FILE *fp;
+  fp = fopen("../test_lumigrid.txt", "a");
+  const int64_t N_slices = BeamBeamBiGaussian3DData_get_num_slices_other_beam(el);
 
-  // loop over all lumigrids of my beam
-  //for (int i_slice=0; i_slice<N_slices; i_slice++){
+   //loop over all lumigrids of my beam
+  for (int i_slice=0; i_slice<N_slices; i_slice++){
 
     // get which other beam slice my slice should interact with
-    //int64_t i_slice_other_beam = timestep - i_slice;
+    int64_t i_slice_other_beam = timestep - i_slice;
 
     // interact only if my slice is overlapping with other beam slice
-    //if (i_slice_other_beam >= 0 && i_slice_other_beam < N_slices){
+    if (i_slice_other_beam >= 0 && i_slice_other_beam < N_slices){
 
       // get inex range of my beam
-      //int64_t lumigrid_my_beam_slice_start_idx    = n_lumigrid_cells*n_lumigrid_cells * i_slice;
-      //int64_t lumigrid_my_beam_slice_end_idx      = n_lumigrid_cells*n_lumigrid_cells * (i_slice+1);
-      //int64_t lumigrid_other_beam_slice_start_idx = n_lumigrid_cells*n_lumigrid_cells * i_slice_other_beam;
-     // int64_t lumigrid_other_beam_slice_end_idx   = n_lumigrid_cells*n_lumigrid_cells * (i_slice_other_beam+1);
+      int64_t lumigrid_my_beam_slice_start_idx    = n_lumigrid_cells*n_lumigrid_cells * i_slice;
+      int64_t lumigrid_my_beam_slice_end_idx      = n_lumigrid_cells*n_lumigrid_cells * (i_slice+1);
+      int64_t lumigrid_other_beam_slice_start_idx = n_lumigrid_cells*n_lumigrid_cells * i_slice_other_beam;
+      int64_t lumigrid_other_beam_slice_end_idx   = n_lumigrid_cells*n_lumigrid_cells * (i_slice_other_beam+1);
 
-     // fprintf(fp, "timestep: %d - ", timestep);
-     // for (int j=lumigrid_my_beam_slice_start_idx; j<lumigrid_my_beam_slice_end_idx; j++){
-     //   fprintf(fp, "%g ", lumigrid_my_beam[j]);
-      //}
-      //fprintf(fp, "- ");
-      //for (int j=lumigrid_other_beam_slice_start_idx; j<lumigrid_other_beam_slice_end_idx; j++){
-        //fprintf(fp, "%g ", lumigrid_other_beam[j]);
-      //}
-      //fprintf(fp, "\n");
-      //lumicalc(el, lumigrid_my_beam, lumigrid_other_beam, intensity1, intensity2);
+      fprintf(fp, "timestep: %d - ", timestep);
+      for (int j=lumigrid_my_beam_slice_start_idx; j<lumigrid_my_beam_slice_end_idx; j++){
+        fprintf(fp, "%g ", lumigrid_my_beam[j]);
+      }
+      fprintf(fp, "- ");
+      for (int j=lumigrid_other_beam_slice_start_idx; j<lumigrid_other_beam_slice_end_idx; j++){
+        fprintf(fp, "%g ", lumigrid_other_beam[j]);
+      }
+      fprintf(fp, "\n");
+      lumicalc(el, lumigrid_my_beam, lumigrid_other_beam, intensity1, intensity2);
 
       // need to add to total lumi
 
-    //} // end if
-  //} // end for
-  //fclose(fp);
-//}
+    } // end if
+  }  //end for
+  fclose(fp);
+}
 
 #endif

@@ -60,32 +60,21 @@ class LumiTable(xo.HybridClass):
       'luminosity': xo.Float64[:],
       }
 
-#class CombiLumiTable(xo.HybridClass):
-    #_xofields = {
- #     '_index': xt.RecordIndex,
-  #    'at_element': xo.Int64[:],
-   #   'at_turn': xo.Int64[:],
-    #  'particle_id': xo.Int64[:],
-     # 'combilumi': xo.Float64[:],
-      #  }
-
-#class CentroidTable(xo.HybridClass):
- #   _xofields = {
-  #    '_index': xt.RecordIndex,
-   #   'at_element': xo.Int64[:],
-    #  'at_turn': xo.Int64[:],
-     # 'particle_id': xo.Int64[:],
-      #'x_centroid': xo.Float64[:],
-      #'y_centroid': xo.Float64[:],
-        #}
+class CombiLumiTable(xo.HybridClass):
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_element': xo.Int64[:],
+      'at_turn': xo.Int64[:],
+      'particle_id': xo.Int64[:],
+      'combilumi': xo.Float64[:],
+        }
     
 class BeamBeamBiGaussian3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
         'bhabhatable': BhabhaTable,
         'lumitable': LumiTable,
-        #'combilumitable': CombiLumiTable,
-        #'centroidtable': CentroidTable,
+        'combilumitable': CombiLumiTable,
        }
 
 class BeamBeamBiGaussian3D(xt.BeamElement):
@@ -162,15 +151,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
          #lumi
          'flag_luminosity': xo.Int64,
-         #'flag_combilumi': xo.Int64,
-         #'beam_intensity': xo.Float64,
-         #'other_beam_intensity': xo.Float64,
-         #'number_of_particles': xo.Float64,
-         #'x_rms': xo.Float64,
-         #'y_rms': xo.Float64,
-         
-         #centroids
-         #'flag_centroids': xo.Int64
+         'flag_combilumi': xo.Int64,
+         'beam_intensity': xo.Float64,
+         'other_beam_intensity': xo.Float64,
+         'number_of_particles': xo.Float64,
+         'x_rms': xo.Float64,
+         'y_rms': xo.Float64,
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
@@ -185,7 +171,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         xt.general._pkg_root.joinpath('headers/atomicadd.h'),
         _pkg_root.joinpath('headers/sincos.h'),
         _pkg_root.joinpath('headers/power_n.h'),
-        #_pkg_root.joinpath('headers/lumicalc.h'),
+        _pkg_root.joinpath('headers/lumicalc.h'),
         _pkg_root.joinpath('headers','particle_states.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
         _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
@@ -202,14 +188,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
    ]
     #make a new kernel like below for the computation of the grid, put input arguments of c funcgtion too
     _per_particle_kernels={
-        #'compute_lumi_integral': xo.Kernel(  # NEW
-        #    c_name='BeamBeam3D_selective_compute_lumi_integral',
-        #    args=[
-        #        xo.Arg(xo.Int64, pointer=False, name='timestep'),
-        #        xo.Arg(xo.Float64, pointer=True, name='lumigrid_my_beam'),
-        #        xo.Arg(xo.Float64, pointer=True, name='lumigrid_other_beam'),
-        #        xo.Arg(xo.Int64, pointer=False, name='n_lumigrid_cells'),
-        #    ]),
+        'compute_lumi_integral': xo.Kernel(  # NEW
+            c_name='BeamBeam3D_selective_compute_lumi_integral',
+            args=[
+                xo.Arg(xo.Int64, pointer=False, name='timestep'),
+                xo.Arg(xo.Float64, pointer=True, name='lumigrid_my_beam'),
+                xo.Arg(xo.Float64, pointer=True, name='lumigrid_other_beam'),
+                xo.Arg(xo.Int64, pointer=False, name='n_lumigrid_cells'),
+            ]),
         'synchro_beam_kick': xo.Kernel(
             c_name='BeamBeam3D_selective_apply_synchrobeam_kick_local_particle',
             args=[
@@ -247,15 +233,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     compt_x_min=1e-4,
                     flag_beamsize_effect=1,
 
-                    #flag_luminosity = 0,
-                    #flag_combilumi = 0,
-                    #flag_centroids = 0,
+                    flag_luminosity = 0,
+                    flag_combilumi = 0,
                     
-                    #beam_intensity = 0.,
-                    #other_beam_intensity = 0.,
-                    #number_of_particles = 0.,
-                    #x_rms = 0.,
-                    #y_rms = 0.,
+                    beam_intensity = 0.,
+                    other_beam_intensity = 0.,
+                    number_of_particles = 0.,
+                    x_rms = 0.,
+                    y_rms = 0.,
                     
                     slices_other_beam_x_center_star=None,
                     slices_other_beam_px_center_star=None,
@@ -352,9 +337,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             if slices_other_beam_num_particles is None:
                 slices_other_beam_num_particles = np.zeros_like(
                                             slices_other_beam_zeta_center)
-           # self.moments = None
-            #self.lumigrid_my_beam = None  # NEW
-            #self.lumigrid_other_beam = None  # NEW
+            self.moments = None
+            self.lumigrid_my_beam = None  # NEW
+            self.lumigrid_other_beam = None  # NEW
 
 
         else:
@@ -390,10 +375,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         if config_for_update is not None:
             self.partner_moments = self._buffer.context.nplike_lib.zeros(
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
-            #self.partner_lumigrid = self._buffer.context.nplike_lib.zeros(
-            #    self.config_for_update.n_lumigrid_cells**2*n_slices, dtype=float)  # NEW, nxn flattened grid, int but concat will make it float anyway
-            #self.partner_buffer = np.hstack([self.partner_moments, self.partner_lumigrid])  # NEW
-            self.partner_buffer = np.hstack([self.partner_moments])
+            self.partner_lumigrid = self._buffer.context.nplike_lib.zeros(
+                self.config_for_update.n_lumigrid_cells**2*n_slices, dtype=float)  # NEW, nxn flattened grid, int but concat will make it float anyway
+            self.partner_buffer = np.hstack([self.partner_moments, self.partner_lumigrid])  # NEW
 
         if phi is None:
             assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
@@ -456,26 +440,23 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         # initialize bhabha
         self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
 
-        #self._init_luminosity(flag_luminosity)
-        #self._init_combilumi(flag_combilumi,                     
-        #            beam_intensity,
-        #            other_beam_intensity,
-        #            number_of_particles,
-        #            x_rms,
-        #            y_rms
-        #)
-        
-        #self._init_centroids(flag_centroids)
-        
+        self._init_luminosity(flag_luminosity)
+        self._init_combilumi(flag_combilumi,                     
+                    beam_intensity,
+                    other_beam_intensity,
+                    number_of_particles,
+                    x_rms,
+                    y_rms
+        )
         assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
         
-        #self.beam_intensity = beam_intensity
-        #self.other_beam_intensity = other_beam_intensity
-        #self.number_of_particles = number_of_particles
-        #self.x_rms = x_rms
-        #self.y_rms = y_rms
+        self.beam_intensity = beam_intensity
+        self.other_beam_intensity = other_beam_intensity
+        self.number_of_particles = number_of_particles
+        self.x_rms = x_rms
+        self.y_rms = y_rms
 
         self.ref_shift_x = ref_shift_x
         self.ref_shift_px = ref_shift_px
@@ -645,19 +626,16 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 raise ValueError('compt_x_min must be larger than 0')
         self._flag_bhabha = flag_bhabha
 
-    #def _init_luminosity(self, flag_luminosity):
-    #    self.flag_luminosity = flag_luminosity
+    def _init_luminosity(self, flag_luminosity):
+        self.flag_luminosity = flag_luminosity
         
-    #def _init_combilumi(self, flag_combilumi, beam_intensity, other_beam_intensity, number_of_particles, x_rms, y_rms):
-    #    self.flag_combilumi = flag_combilumi
-    #    self.beam_intensity = beam_intensity
-    #    self.other_beam_intensity = other_beam_intensity
-    #    self.number_of_particles = number_of_particles
-    #    self.x_rms = x_rms
-    #    self.y_rms = y_rms
-        
-    #def _init_centroids(self, flag_centroids):
-    #    self.flag_centroids = flag_centroids
+    def _init_combilumi(self, flag_combilumi, beam_intensity, other_beam_intensity, number_of_particles, x_rms, y_rms):
+        self.flag_combilumi = flag_combilumi
+        self.beam_intensity = beam_intensity
+        self.other_beam_intensity = other_beam_intensity
+        self.number_of_particles = number_of_particles
+        self.x_rms = x_rms
+        self.y_rms = y_rms
 
     def _init_from_old_interface(self, old_interface, **kwargs):
 
@@ -772,11 +750,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_Sigma_34_star = self._arr2ctx(self.partner_moments[15*self.num_slices_other_beam:16*self.num_slices_other_beam]) * (-1.0)
         self.slices_other_beam_Sigma_44_star = self._arr2ctx(self.partner_moments[16*self.num_slices_other_beam:17*self.num_slices_other_beam])
 
-    #def update_from_received_lumigrid(self):  # NEW
-    #    row_start_indices = np.linspace(0, self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam, self.config_for_update.n_lumigrid_cells*self.num_slices_other_beam+1, dtype=int)[:-1]  # get index of first element of each row
-    #    lumigrid_other_beam = self._arr2ctx(self.partner_lumigrid)  # need to flip x dimension
-    #    self.lumigrid_other_beam = self._buffer.context.nplike_lib.hstack([lumigrid_other_beam[i:i+self.config_for_update.n_lumigrid_cells][::-1] for i in row_start_indices])  # x dim flipped, still 1D buffer
-    #    print("received lumigrid_other_beam:", self.lumigrid_other_beam)
+    def update_from_received_lumigrid(self):  # NEW
+        row_start_indices = np.linspace(0, self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam, self.config_for_update.n_lumigrid_cells*self.num_slices_other_beam+1, dtype=int)[:-1]  # get index of first element of each row
+        lumigrid_other_beam = self._arr2ctx(self.partner_lumigrid)  # need to flip x dimension
+        self.lumigrid_other_beam = self._buffer.context.nplike_lib.hstack([lumigrid_other_beam[i:i+self.config_for_update.n_lumigrid_cells][::-1] for i in row_start_indices])  # x dim flipped, still 1D buffer
+        print("received lumigrid_other_beam:", self.lumigrid_other_beam)
         # at this point I have lumigrid_my_beam and lumigrid_other_beam
 
     def _track_collective(self, particles, _force_suspend=False):
@@ -838,16 +816,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 self.change_back_ref_frame_and_subtract_dipolar(particles)
                 return None
             
-    #def __getattr__(self, attr):
-    #    if attr in self.properties:
-    #        return getattr(self.data, attr).to_nparray()
-
-    #    if attr in ('x_mean', 'y_mean', 'x_cen', 'y_cen', 'x_centroid', 'y_centroid'):
-    #        with np.errstate(invalid='ignore'):  # NaN for zero particles is expected behaviour
-    #            return getattr(self, attr[0]+"_sum") / self.count
-
-    #    return getattr(super(), attr)
-
     def _apply_bb_kicks_in_boosted_frame(self, particles):
 
         n_slices_self_beam = self.config_for_update.slicer.num_slices
@@ -873,10 +841,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
                     
                     # NEW lumigrid my beam is computed here for all slices
-                    #self.lumigrid_my_beam = particles.q0*self._buffer.context.nplike_lib.array(range(self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam)) #delete this and call the grid filling function here  # call C function to compute my beams lumigrid here, e.g. 2 slices, 3 by 3 grid for each slice
-                    #exchange_buffer = self._buffer.context.nplike_lib.hstack([self.moments, self.lumigrid_my_beam])
+                    self.lumigrid_my_beam = particles.q0*self._buffer.context.nplike_lib.array(range(self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam)) #delete this and call the grid filling function here  # call C function to compute my beams lumigrid here, e.g. 2 slices, 3 by 3 grid for each slice
+                    exchange_buffer = self._buffer.context.nplike_lib.hstack([self.moments, self.lumigrid_my_beam])
                     exchange_buffer = self._buffer.context.nplike_lib.hstack([self.moments])
-                    #print("buffer to send: ", exchange_buffer, len(exchange_buffer), " moments: ", self.moments, " lumigrid my beam:", self.lumigrid_my_beam, " n_lumigrid_cells: ", self.config_for_update.n_lumigrid_cells)
+                    print("buffer to send: ", exchange_buffer, len(exchange_buffer), " moments: ", self.moments, " lumigrid my beam:", self.lumigrid_my_beam, " n_lumigrid_cells: ", self.config_for_update.n_lumigrid_cells)
 
                     self.config_for_update.pipeline_manager.send_message(self.moments,
                                                      self.config_for_update.element_name,
@@ -897,9 +865,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     
                      # NEW
                     self.partner_moments = self.partner_buffer[:int(self.config_for_update.slicer.num_slices*17)]
-                #    self.partner_lumigrid = self.partner_buffer[int(self.config_for_update.slicer.num_slices*17):]
+                    self.partner_lumigrid = self.partner_buffer[int(self.config_for_update.slicer.num_slices*17):]
                     self.update_from_recieved_moments()
-                #    self.update_from_received_lumigrid()
+                    self.update_from_received_lumigrid()
                     
                 else:
                     return xt.PipelineStatus(on_hold=True)
@@ -911,11 +879,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.synchro_beam_kick(particles=particles,
                         i_slice_for_particles=self.config_for_update._other_beam_slice_index_for_particles)
 
-            #self.compute_lumi_integral(particles=particles,
-            #     timestep=self.config_for_update._i_step, 
-            #     lumigrid_my_beam=self.lumigrid_my_beam, 
-            #     lumigrid_other_beam=self.lumigrid_other_beam,
-            #     n_lumigrid_cells=self.config_for_update.n_lumigrid_cells)  # NEW, C function to compute integral based on 2 grids at timestep _i_step, grids contain the status at _i_step for every slice but only overlapping will interact
+            self.compute_lumi_integral(particles=particles,
+                 timestep=self.config_for_update._i_step, 
+                 lumigrid_my_beam=self.lumigrid_my_beam, 
+                 lumigrid_other_beam=self.lumigrid_other_beam,
+                 n_lumigrid_cells=self.config_for_update.n_lumigrid_cells)  # NEW, C function to compute integral based on 2 grids at timestep _i_step, grids contain the status at _i_step for every slice but only overlapping will interact
 
 
             self.config_for_update._i_step += 1
@@ -1572,7 +1540,7 @@ class ConfigForUpdateBeamBeamBiGaussian3D:
         partner_particles_name=None,
         update_every=None,
         quasistrongstrong=None,
-        #n_lumigrid_cells=None  # NEW
+        n_lumigrid_cells=None  # NEW
         ):
 
         self.pipeline_manager = pipeline_manager
@@ -1581,7 +1549,7 @@ class ConfigForUpdateBeamBeamBiGaussian3D:
         self.partner_particles_name = partner_particles_name
         self.update_every = update_every
         self.quasistrongstrong = quasistrongstrong
-       # self.n_lumigrid_cells = n_lumigrid_cells  # NEW
+        self.n_lumigrid_cells = n_lumigrid_cells  # NEW
 
         self._i_step = 0
         self._working_on_bunch = None

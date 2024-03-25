@@ -6,6 +6,8 @@
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
 #include <stdio.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_histogram2d.h>
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
@@ -55,11 +57,11 @@ void synchrobeam_kick(
     const double q0_bb  = scale_strength*BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
-    //const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
-    //const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
-    //const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
-    //const double x_rms = BeamBeamBiGaussian3DData_get_x_rms(el);
-    //const double y_rms = BeamBeamBiGaussian3DData_get_y_rms(el);
+    const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
+    const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
+    const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
+    const double x_rms = BeamBeamBiGaussian3DData_get_x_rms(el);
+    const double y_rms = BeamBeamBiGaussian3DData_get_y_rms(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -165,7 +167,7 @@ void synchrobeam_kick(
     double rho, wgt;
 
     // Stuff for combi lumi
-    //double combilumi;
+    double combilumi;
     
 
     // calculate luminosity
@@ -241,44 +243,44 @@ void synchrobeam_kick(
 
 
     // calculate combi luminosity
-    //const int64_t flag_combilumi = BeamBeamBiGaussian3DData_get_flag_combilumi(el);
-    //if (flag_combilumi == 1){
-     //   gsl_histogram2d* myHistogram;
-       // gsl_histogram2d* partnerHistogram;
-        //double lumiGridSizeX = 256;
-        //double lumiGridSizeY = 256;
-        //double nsig = 12;
-        //myHistogram = gsl_histogram2d_alloc (lumiSizeX,lumiGridSizeY);
-       // partnerHistogram = gsl_histogram2d_alloc (lumiGridSizeX,lumiGridSizeY);
-        // Resting histogram data
-        //gsl_histogram2d_set_ranges_uniform (myHistogram, -nsig*x_rms,nsig*x_rms,-nsig*y_rms,nsig*y_rms);
+    const int64_t flag_combilumi = BeamBeamBiGaussian3DData_get_flag_combilumi(el);
+    if (flag_combilumi == 1){
+        gsl_histogram2d* myHistogram;
+        gsl_histogram2d* partnerHistogram;
+        double lumiGridSizeX = 256;
+        double lumiGridSizeY = 256;
+        double nsig = 12;
+        myHistogram = gsl_histogram2d_alloc (lumiGridSizeX,lumiGridSizeY);
+        partnerHistogram = gsl_histogram2d_alloc (lumiGridSizeX,lumiGridSizeY);
+        //Resting histogram data
+        gsl_histogram2d_set_ranges_uniform (myHistogram, -nsig*x_rms,nsig*x_rms,-nsig*y_rms,nsig*y_rms);
         //Computing histogram (B2 only)
-        //int countOutsideOfDomain = fillHistogram(myHistogram,particles,npart);
-       // if(countOutsideOfDomain>0){
-       // printf("WARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
-       // }
-        // Setting histogram'ranges assuming that both beams are initialised with the same rms and reset the histogram data
-       // gsl_histogram2d_set_ranges_uniform (partnerHistogram, -nsig*x_rms,nsig*y_rms,-nsig*x_rms,nsig*y_rms);
-       // gsl_histogram2d_free(myHistogram);
-        //gsl_histogram2d_free(partnerHistogram);
-        // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-       // fillHistogram(gsl_histogram2d* &h1, particles, int npart);
-        //fillHistogram(gsl_histogram2d* &h2, particles, int npart);
-       // double combilumi = lumicalc(h1,h2,intensity1,intensity2);
-        // init record table
-       // BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
-       // CombiLumiTableData combilumi_table                   = NULL;
-       // RecordIndex combilumi_table_index               = NULL;
-      //  combilumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
-       // if (combilumi_record){
-       //     combilumi_table       = BeamBeamBiGaussian3DRecordData_getp_combilumitable(combilumi_record);
-       //     combilumi_table_index =                      CombiLumiTableData_getp__index(combilumi_table);
+        int countOutsideOfDomain = fillHistogram(myHistogram,particles2,npart);
+        if(countOutsideOfDomain>0){
+            printf("WARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
+        }
+         //Setting histogram'ranges assuming that both beams are initialised with the same rms and reset the histogram data
+        gsl_histogram2d_set_ranges_uniform (partnerHistogram, -nsig*x_rms,nsig*y_rms,-nsig*x_rms,nsig*y_rms);
+        gsl_histogram2d_free(myHistogram);
+        gsl_histogram2d_free(partnerHistogram);
+        //gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+        fillHistogram(gsl_histogram2d* &h1, particles1, int npart);
+        fillHistogram(gsl_histogram2d* &h2, particles2, int npart);
+        double combilumi = lumicalc(h1,h2,intensity1,intensity2);
+         //init record table
+        BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
+        CombiLumiTableData combilumi_table                   = NULL;
+        RecordIndex combilumi_table_index               = NULL;
+        combilumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+        if (combilumi_record){
+            combilumi_table       = BeamBeamBiGaussian3DRecordData_getp_combilumitable(combilumi_record);
+            combilumi_table_index =                      CombiLumiTableData_getp__index(combilumi_table);
 
-       // const int at_turn = LocalParticle_get_at_turn(part);
-       // /*gpuglmem*/ double* combilumi_address = CombiLumiTableData_getp1_combilumi(combilumi_table, at_turn);
-       // atomicAdd(combilumi_address, combilumi);
-       // }
-    //}
+        const int at_turn = LocalParticle_get_at_turn(part);
+        /*gpuglmem*/ double* combilumi_address = CombiLumiTableData_getp1_combilumi(combilumi_table, at_turn);
+        atomicAdd(combilumi_address, combilumi);
+        }
+    }
 
     // emit bhabha photons from single macropart
     #ifndef XFIELDS_BB3D_NO_BHABHA
