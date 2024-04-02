@@ -20,8 +20,9 @@ _xof = {
     'z_min': xo.Float64,
     'num_slices': xo.Int64,
     'dzeta': xo.Float64,
-    'i_bunch_0': xo.Int64,
     'num_bunches': xo.Int64,
+    'filled_slots': xo.Int64[:],
+    'bunch_numbers': xo.Int64[:],
     'bunch_spacing_zeta': xo.Float64,
     'zeta_slices': xo.Float64[:],
     'num_particles': xo.Float64[:],
@@ -73,7 +74,7 @@ class UniformBinSlicer(xt.BeamElement):
         }
 
     def __init__(self, zeta_range=None, num_slices=None, dzeta=None, zeta_slices=None,
-                 num_bunches=None, i_bunch_0=None, bunch_spacing_zeta=None,
+                 num_bunches=None,filling_scheme=None,bunch_numbers=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
         self._slice_kernel = self._slice_kernel_all
@@ -83,8 +84,16 @@ class UniformBinSlicer(xt.BeamElement):
             return
 
         _zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, num_slices)
-        num_bunches = num_bunches or 0
-        i_bunch_0 = i_bunch_0 or 0
+        if filling_scheme is None and bunch_numbers is None:
+            if num_bunches is None:
+                    num_bunches = 1
+            filled_slots = np.arange(num_bunches,dtype=int)
+            bunch_numbers = np.arange(num_bunches,dtype=int)
+        else:
+            assert num_bunches is None and filling_scheme is not None and bunch_numbers is not None
+            filled_slots = filling_scheme.nonzero()[0]
+            num_bunches = len(bunch_numbers)
+
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
         all_moments = COORDS + list(SECOND_MOMENTS.keys())
@@ -119,7 +128,7 @@ class UniformBinSlicer(xt.BeamElement):
         self.xoinitialize(_zeta_slices=_zeta_slices,
                           z_min=_zeta_slices[0], num_slices=len(_zeta_slices),
                           dzeta=_zeta_slices[1] - _zeta_slices[0],
-                          num_bunches=num_bunches, i_bunch_0=i_bunch_0,
+                          num_bunches=num_bunches,filled_slots=filled_slots, bunch_numbers=bunch_numbers,
                           bunch_spacing_zeta=bunch_spacing_zeta,
                           num_particles=(num_bunches or 1) * len(_zeta_slices),
                           **allocated_sizes, **kwargs)
@@ -161,12 +170,12 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Array with the grid points (bin centers).
         """
-        if self.num_bunches <= 0:
+        if self.num_bunches <= 1:
             return self._zeta_slices
         else:
             out = np.zeros((self.num_bunches, self.num_slices))
-            for ii in range(self.num_bunches):
-                out[ii, :] = (self._zeta_slices - (ii + self.i_bunch_0) * self.bunch_spacing_zeta)
+            for bunch_number in self.bunch_numbers:
+                out[bunch_number, :] = (self._zeta_slices - self._filled_slots[bunch_number] * self.bunch_spacing_zeta)
             return out
 
     @property
@@ -188,14 +197,21 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Number of bunches
         """
-        return self._num_bunches
+        return len(self._bunch_numbers)
 
     @property
-    def i_bunch_0(self):
+    def filled_slots(self):
         """
-        Index of the first bunch
+        Filled slots
         """
-        return self._i_bunch_0
+        return self._filled_slots
+        
+    @property
+    def bunch_numbers(self):
+        """
+        Number of bunches
+        """
+        return self._bunch_numbers
 
     @property
     def bunch_spacing_zeta(self):
@@ -297,8 +313,8 @@ class UniformBinSlicer(xt.BeamElement):
         assert isinstance(other, UniformBinSlicer)
         assert self.num_slices == other.num_slices
         assert self.dzeta == other.dzeta
-        assert self.num_bunches == other.num_bunches
-        assert self.i_bunch_0 == other.i_bunch_0
+        assert self.filled_slots == other.filled_slots
+        assert self.bunch_numbers == other.bunch_numbers
 
         for cc in COORDS:
             if len(getattr(self, '_sum_' + cc)) > 0:
