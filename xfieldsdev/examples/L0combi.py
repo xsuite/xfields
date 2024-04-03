@@ -11,9 +11,6 @@ import xtrack as xt
 import xfieldsdev as xf
 import xpart as xp
 
-###################
-#To run this code:
-#mpirun -np 2 python xsuite_dev/xtrack/examples/L0beambeam.py
 lumi_qss_b1 = []
 lumi_averages_b1 = []
 
@@ -22,11 +19,6 @@ lumi_averages_b1_nobeambeam = []
 
 
 context = xo.ContextCpu(omp_num_threads=0)
-
-
-#################################
-# Generate particles            #
-#################################
 
 p0c = 7e12
 n_macroparticles = int(1.2e4)
