@@ -57,23 +57,73 @@ class MultiWakefield:
             moments=all_slicer_moments
             )
             
-    #TODO Allow to specify a pipline manager for the multiwakefield, if so, make sure it is not specified
-    #     in all the Wakefield and handle the communication here
+        self.pipeline_manager = None
+        
+    def init_pipeline(self,pipeline_manager,element_name,partners_names):
+        self.pipeline_manager = pipeline_manager
+        for wf in self.wakefields:
+            assert wf.pipeline_manager == None
+        self.partners_names = partners_names
+        self.name = element_name
+        
+        self._send_buffer = self.slicer._to_npbuffer()
+        self._send_buffer_length = np.zeros(1,dtype=int)
+        self._send_buffer_length[0] = len(self._send_buffer)
+
+        self._recv_buffer = np.zeros_like(self._send_buffer)
+        self._recv_buffer_length_buffer = np.zeros(1,dtype=int)
+        
+    def _slicer_to_buffer(self,slicer):
+        self._send_buffer = slicer._to_npbuffer()
+        self._send_buffer_length[0] = len(slicer._to_npbuffer())
+        
+    def _ensure_recv_buffer_size(self):
+        if self._recv_buffer_length_buffer[0] != len(self._recv_buffer):
+            self._recv_buffer = np.zeros(self._recv_buffer_length_buffer[0]
+                                          ,dtype=self._recv_buffer.dtype)
+        
+    def _slice_set_from_buffer(self):
+        return xf.UniformBinSlicer._from_npbuffer(self._recv_buffer)
     
-
+    def _slice_and_store(self,particles):
+        self.i_slice_particles = particles.particle_id * 0 + -999
+        self.i_bunch_particles = particles.particle_id * 0 + -9999
+        self.slicer.slice(particles, i_slice_particles=self.i_slice_particles,
+                        i_bunch_particles=self.i_bunch_particles)
+                        
     def track(self, particles):
+        _slice_result = None
+        if self.pipeline_manager is None:
+            self._slice_and_store(particles)
+        else:
+            other_bunches_slicers = []
+            is_ready_to_send = True
+            for i_partner,partner_name in enumerate(self.partners_names):
+                if not self.pipeline_manager.is_ready_to_send(self.name,particles.name,partner_name,particles.at_turn[0],internal_tag=0):
+                    is_ready_to_send = False
+                    break
+            if is_ready_to_send:
+                self._slice_and_store(particles)
+                self._slicer_to_buffer(self.slicer)
+                for i_partner,partner_name in enumerate(self.partners_names):
+                    self.pipeline_manager.send_message(self._send_buffer_length,element_name=self.name,sender_name=particles.name,reciever_name=partner_name,turn=particles.at_turn[0],internal_tag=0)
+                    self.pipeline_manager.send_message(self._send_buffer,element_name=self.name,sender_name=particles.name,reciever_name=partner_name,turn=particles.at_turn[0],internal_tag=1)
+            for i_partner,partner_name in enumerate(self.partners_names):
+                if not self.pipeline_manager.is_ready_to_recieve(self.name,partner_name,particles.name,internal_tag=0):
+                    return xt.PipelineStatus(on_hold=True)
+        if self.pipeline_manager is not None:
+            for i_partner,partner_name in enumerate(self.partners_names):
+                self.pipeline_manager.recieve_message(self._recv_buffer_length_buffer,self.name,partner_name,particles.name,internal_tag=0)
+                self._ensure_recv_buffer_size()
+                self.pipeline_manager.recieve_message(self._recv_buffer,self.name,partner_name,particles.name,internal_tag=1)
+                other_bunches_slicers.append(self._slice_set_from_buffer())
 
-        i_slice_particles = particles.particle_id * 0 + -999
-        i_bunch_particles = particles.particle_id * 0 + -9999
-        self.slicer.slice(particles, i_slice_particles=i_slice_particles,
-                        i_bunch_particles=i_bunch_particles)
-
-        _slice_result = {'i_slice_particles': i_slice_particles,
-                        'i_bunch_particles': i_bunch_particles,
+        _slice_result = {'i_slice_particles': self.i_slice_particles,
+                        'i_bunch_particles': self.i_bunch_particles,
                         'slicer': self.slicer}
 
         for wf in self.wakefields:
-            wf.track(particles, _slice_result=_slice_result)
+            wf.track(particles, _slice_result=_slice_result,_other_bunches_slicers=other_bunches_slicers)
 
 
 class Wakefield:
@@ -139,7 +189,7 @@ class Wakefield:
 
         self._recv_buffer = np.zeros_like(self._send_buffer)
         self._recv_buffer_length_buffer = np.zeros(1,dtype=int)
-        
+                            
     def _slicer_to_buffer(self,slicer):
         self._send_buffer = slicer._to_npbuffer()
         self._send_buffer_length[0] = len(slicer._to_npbuffer())
@@ -281,7 +331,7 @@ class Wakefield:
         self._slice_and_store(particles,_slice_result)
         self._add_slicer_moments_to_moments_data(self.slicer)
         
-    def track(self, particles, _slice_result=None):
+    def track(self, particles, _slice_result=None,_other_bunches_slicers=None):
         if self.moments_data is None:
             raise ValueError('moments_data is None. '
                              'Please initialize it before tracking.')
@@ -308,8 +358,12 @@ class Wakefield:
                 self.pipeline_manager.recieve_message(self._recv_buffer_length_buffer,self.name,partner_name,particles.name,internal_tag=0)
                 self._ensure_recv_buffer_size()
                 self.pipeline_manager.recieve_message(self._recv_buffer,self.name,partner_name,particles.name,internal_tag=1)
-                other_beam_slicer = self._slice_set_from_buffer()
-                self._add_slicer_moments_to_moments_data(other_beam_slicer)
+                other_bunch_slicer = self._slice_set_from_buffer()
+                self._add_slicer_moments_to_moments_data(other_bunch_slicer)
+        
+        if _other_bunches_slicers is not None:
+            for other_bunch_slicer in _other_bunches_slicers:
+                self._add_slicer_moments_to_moments_data(other_bunch_slicer)
 
         # Compute convolution
         self._compute_convolution(moment_names=self.source_moments)
