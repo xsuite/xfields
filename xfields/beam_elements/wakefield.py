@@ -1,11 +1,11 @@
 import numpy as np
-from compressed_profile import CompressedProfile
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
 
 import xtrack as xt
 import xfields as xf
+from xfields.slicers.compressed_profile import CompressedProfile
 
 class MultiWakefield:
 
