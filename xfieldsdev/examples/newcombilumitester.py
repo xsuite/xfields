@@ -133,6 +133,7 @@ for i in range(len(xshift)):
                        # Particles object with which to collide
         slicer=slicer,
         update_every=10,
+        n_lumigrid_cells= 256*256
         #update_every=1 # Setup for strong-strong simulation
         )
     config_for_update_IP1_b2=xf.ConfigForUpdateBeamBeamBiGaussian3D(
@@ -143,6 +144,7 @@ for i in range(len(xshift)):
                        # Particles object with which to collide
         slicer=slicer,
         update_every=10,
+        n_lumigrid_cells = 256*256
         #update_every=1 # Setup for strong-strong simulation
         )
 

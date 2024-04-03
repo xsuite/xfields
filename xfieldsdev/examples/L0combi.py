@@ -1,3 +1,5 @@
+
+
 #L0 with combi formula
 
 import time
@@ -6,7 +8,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
+import xfieldsdev as xf
 import xpart as xp
 
 ###################
@@ -40,258 +42,126 @@ Qx = 63.31
 Qy = 60.32
 Qs = 2.1E-3
 frev = 11245.5 
+nTurn = 100
 
 
 colors = ['b', 'g', 'r', 'c', 'm', 'k', 'y']
 xshift = [0, 1, 2, 3, 4, 5, 6]
 yshift = [0, 1, 2, 3, 4, 5, 6]
 
-for i in range(len(xshift)):
+for shift in xshift:
     context = xo.ContextCpu(omp_num_threads=0)
 
-####################
-# Pipeline manager #
-####################
-
-# Retrieving MPI info
-
-
-# Building the pipeline manager based on a MPI communicator
     pipeline_manager = xt.PipelineManager()
-
-    # Add information about the Particles instance that require
-    # communication through the pipeline manager.
-    # Each Particles instance must be identifiable by a unique name
-    # The second argument is the MPI rank in which the Particles object
-    # lives.
-    pipeline_manager.add_particles('B1b1',0)
-    pipeline_manager.add_particles('B2b1',1)
-    # Add information about the elements that require communication
-    # through the pipeline manager.
-    # Each Element instance must be identifiable by a unique name
-    # All Elements are instanciated in all ranks
+    pipeline_manager.add_particles('b1',0)
+    pipeline_manager.add_particles('b2',0)
     pipeline_manager.add_element('IP1')
 
-    print('Initialising particles')
-    particles = xp.Particles(_context=context,
+    particles_b1 = xp.Particles(_context=context,
         p0c=p0c,
-        x=np.sqrt(physemit_x*beta_x_IP1)
-            *(np.random.randn(n_macroparticles)),
-        px=np.sqrt(physemit_x/beta_x_IP1)
-            *np.random.randn(n_macroparticles),
-        y=np.sqrt(physemit_y*beta_y_IP1)
-            *(np.random.randn(n_macroparticles)),
-        py=np.sqrt(physemit_y/beta_y_IP1)
-            *np.random.randn(n_macroparticles),
+        x=np.sqrt(physemit_x*beta_x_IP1)*(np.random.randn(n_macroparticles)),
+        px=np.sqrt(physemit_x/beta_x_IP1)*np.random.randn(n_macroparticles),
+        y=np.sqrt(physemit_y*beta_y_IP1)*(np.random.randn(n_macroparticles)),
+        py=np.sqrt(physemit_y/beta_y_IP1)*np.random.randn(n_macroparticles),
         zeta=sigma_z*np.random.randn(n_macroparticles),
         delta=sigma_delta*np.random.randn(n_macroparticles),
         weight=bunch_intensity/n_macroparticles
     )
-    # Initialise the Particles object with its unique name
-    # (must match the info provided to the pipeline manager)
-    particles.init_pipeline('B1b1')
-    # Keep in memory the name of the Particles object with which this
-    # rank will communicate
-    # (must match the info provided to the pipeline manager)
-    partner_particles_name = 'B2b1'
-
-#############
-# Beam-beam #
-#############
-
-    nb_slice = 1 #normally this is 11
-    slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=nb_slice, mode = "shatilov") #or shatilov
-    config_for_update_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
-        pipeline_manager=pipeline_manager,
-        element_name='IP1', # The element name must be unique and match the
-                       # one given to the pipeline manager
-        partner_particles_name = partner_particles_name, # the name of the
-                       # Particles object with which to collide
-        slicer=slicer,
-        update_every=10,
-        #update_every=1 # Setup for strong-strong simulation
-        )
-
-
-
-    print('build bb elements...')
-    bbeamIP1 = xf.BeamBeamBiGaussian3D(
-                _context=context,
-                other_beam_q0 = particles.q0,
-                phi = 0,alpha=0.0,
-                config_for_update = config_for_update_IP1,
-                ref_shift_x = xshift[i]*np.sqrt(physemit_x*beta_x_IP1),
-                ref_shift_y = yshift[i]*np.sqrt(physemit_y*beta_y_IP1),
-                flag_luminosity = 1)
-
-#################################################################
-# arcs (here they are all the same with half the phase advance) #
-#################################################################
-
-    arc12 = xt.LineSegmentMap(
-            betx = beta_x_IP1,bety = beta_y_IP1,
-            qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
-
-    arc21 = xt.LineSegmentMap(
-            betx = beta_x_IP1,bety = beta_y_IP1,
-            qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
-
-#################################################################
-# Tracker                                                       #
-#################################################################
-
-# In this example there is one Particles object per rank
-# We build its line and tracker as usual
-    elements = [arc12,bbeamIP1,arc21]
-    line = xt.Line(elements=elements)
-    line.build_tracker()
-# A pipeline branch is a line and Particles object that will
-# be tracked through it
-    branch = xt.PipelineBranch(line, particles)
-# The multitracker can deal with a set of branches (here only one)
-    multitracker = xt.PipelineMultiTracker(branches=[branch])
-    num_turns= 1000
-    record_qss_b1 = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
-                                                                capacity={
-                                                                    "beamstrahlungtable": int(0),
-                                                                    "bhabhatable": int(0),
-                                                                    "lumitable": num_turns
-                                                                })
-
-
-    multitracker.track(num_turns=num_turns)
-    line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
-
-    record_qss_b1.move(_context=xo.context_default)
-
- 
-    lumi_b1 = record_qss_b1.lumitable.luminosity
-    
-    lumi_qss_b1.append(lumi_b1)
-
-    lumi_averages_b1.append(np.mean(lumi_b1))
-    
-    
-    ########################
-    #NO beam beam
-    ########################
-    
-for i in range(len(xshift)):
-    context = xo.ContextCpu(omp_num_threads=0)
-
-####################
-# Pipeline manager #
-####################
-
-# Retrieving MPI info
-
-
-# Building the pipeline manager based on a MPI communicator
-    pipeline_manager = xt.PipelineManager()
-
-    # Add information about the Particles instance that require
-    # communication through the pipeline manager.
-    # Each Particles instance must be identifiable by a unique name
-    # The second argument is the MPI rank in which the Particles object
-    # lives.
-    pipeline_manager.add_particles('B1b1',0)
-    pipeline_manager.add_particles('B2b1',1)
-    # Add information about the elements that require communication
-    # through the pipeline manager.
-    # Each Element instance must be identifiable by a unique name
-    # All Elements are instanciated in all ranks
-    pipeline_manager.add_element('IP1')
-
-    print('Initialising particles')
-    particles = xp.Particles(_context=context,
+    particles_b1.init_pipeline('b1')
+    particles_b2 = xp.Particles(_context=context,
         p0c=p0c,
-        x=np.sqrt(physemit_x*beta_x_IP1)
-            *(np.random.randn(n_macroparticles)),
-        px=np.sqrt(physemit_x/beta_x_IP1)
-            *np.random.randn(n_macroparticles),
-        y=np.sqrt(physemit_y*beta_y_IP1)
-            *(np.random.randn(n_macroparticles)),
-        py=np.sqrt(physemit_y/beta_y_IP1)
-            *np.random.randn(n_macroparticles),
+        x=np.sqrt(physemit_x*beta_x_IP1)*(np.random.randn(n_macroparticles)),
+        px=np.sqrt(physemit_x/beta_x_IP1)*np.random.randn(n_macroparticles),
+        y=np.sqrt(physemit_y*beta_y_IP1)*(np.random.randn(n_macroparticles)),
+        py=np.sqrt(physemit_y/beta_y_IP1)*np.random.randn(n_macroparticles),
         zeta=sigma_z*np.random.randn(n_macroparticles),
         delta=sigma_delta*np.random.randn(n_macroparticles),
         weight=bunch_intensity/n_macroparticles
     )
-    # Initialise the Particles object with its unique name
-    # (must match the info provided to the pipeline manager)
-    particles.init_pipeline('B1b1')
-    # Keep in memory the name of the Particles object with which this
-    # rank will communicate
-    # (must match the info provided to the pipeline manager)
-    partner_particles_name = 'B2b1'
+    particles_b2.init_pipeline('b2')
 
-#############
-# Beam-beam #
-#############
-
-    nb_slice = 1 #normally this is 11
-    slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=nb_slice, mode = "shatilov") #or shatilov
-    config_for_update_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
-        pipeline_manager=pipeline_manager,
-        element_name='IP1', # The element name must be unique and match the
-                   # one given to the pipeline manager
-        partner_particles_name = partner_particles_name, # the name of the
-                   # Particles object with which to collide
-        slicer=slicer,
-        update_every=10,
-    #update_every=1 # Setup for strong-strong simulation
-        )
-
-
+    #############
+    # Beam-beam #
+    #############
+    slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=1, mode = 'shatilov')
+    config_for_update_b1_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
+    pipeline_manager=pipeline_manager,
+    element_name='IP1',
+    partner_particles_name = 'b2',
+    slicer=slicer,
+    update_every=1,
+    n_lumigrid_cells = 24*24
+    )
+    config_for_update_b2_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
+    pipeline_manager=pipeline_manager,
+    element_name='IP1',
+    partner_particles_name = 'b1',
+    slicer=slicer,
+    update_every=1,
+    n_lumigrid_cells=24*24
+    )
 
     print('build bb elements...')
-    bbeamIP1 = xf.BeamBeamBiGaussian3D(
+    bbeamIP1_b1 = xf.BeamBeamBiGaussian3D(
                 _context=context,
-                other_beam_q0 = 0,
-                phi = 0,alpha=0.0,
-                config_for_update = config_for_update_IP1,
-                other_beam_shift_x = xshift[i]*np.sqrt(physemit_x*beta_x_IP1)/2,
-                #other_beam_shift_y = yshift[i]*np.sqrt(physemit_y*beta_y_IP1)/2,
-                flag_luminosity = 1)
+                other_beam_q0 = particles_b2.q0,
+                phi = 0,alpha=0,
+                config_for_update = config_for_update_b1_IP1,
+                ref_shift_x = shift*np.sqrt(physemit_x*beta_x_IP1)/2,
+                flag_luminosity=1,
+                flag_combilumi=1,
+                beam_intensity=bunch_intensity,
+                other_beam_intensity=bunch_intensity)
+    bbeamIP1_b2 = xf.BeamBeamBiGaussian3D(
+                _context=context,
+                other_beam_q0 = particles_b1.q0,
+                phi = 0,alpha=0,
+                config_for_update = config_for_update_b2_IP1,
+                ref_shift_x = shift*np.sqrt(physemit_x*beta_x_IP1)/2)
 
 
-#################################################################
-# arcs (here they are all the same with half the phase advance) #
-#################################################################
 
-    arc12 = xt.LineSegmentMap(
+    #################################################################
+    # arcs (here they are all the same with half the phase advance) #
+    #################################################################
+
+    arc = xt.LineSegmentMap(
             betx = beta_x_IP1,bety = beta_y_IP1,
-            qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
+            qx = Qx, qy = Qy,bets = beta_s, qs=Qs)
 
-    arc21 = xt.LineSegmentMap(
-            betx = beta_x_IP1,bety = beta_y_IP1,
-            qx = Qx/2, qy = Qy/2,bets = beta_s, qs=Qs/2)
+    #################################################################
+    # Tracker                                                       #
+    #################################################################
 
-#################################################################
-# Tracker                                                       #
-#################################################################
+    elements_b1 = [bbeamIP1_b1,arc]
+    elements_b2 = [bbeamIP1_b2,arc]
+    line_b1 = xt.Line(elements=elements_b1)
+    line_b2 = xt.Line(elements=elements_b2)
+    line_b1.build_tracker()
+    line_b2.build_tracker()
+    branch_b1 = xt.PipelineBranch(line_b1,particles_b1)
+    branch_b2 = xt.PipelineBranch(line_b2,particles_b2)
+    multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2])
 
-# In this example there is one Particles object per rank
-# We build its line and tracker as usual
-    elements = [arc12, bbeamIP1, arc21]
-    line = xt.Line(elements=elements)
-    line.build_tracker()
-# A pipeline branch is a line and Particles object that will
-# be tracked through it
-    branch = xt.PipelineBranch(line, particles)
-# The multitracker can deal with a set of branches (here only one)
-    multitracker = xt.PipelineMultiTracker(branches=[branch])
-    num_turns= 1000
-    record_qss_b1 = line.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
+    #################################################################
+    # Tracking                                                      #
+    #################################################################
+
+    record_qss_b1 = line_b1.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                             capacity={
                                                                 "beamstrahlungtable": int(0),
                                                                 "bhabhatable": int(0),
-                                                                "lumitable": num_turns
+                                                                "lumitable": nTurn,
+                                                                "combilumitable": nTurn
                                                             })
 
 
-    multitracker.track(num_turns=num_turns)
-    line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+    print('Tracking...')
+    time0 = time.time()
+
+    multitracker.track(num_turns=nTurn,turn_by_turn_monitor=True)
+    print('Done with tracking.',(time.time()-time0)/16384,'[s/turn]')
+    line_b1.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
     record_qss_b1.move(_context=xo.context_default)
  
@@ -300,15 +170,7 @@ for i in range(len(xshift)):
     lumi_qss_b1_nobeambeam.append(lumi_b1_nobeambeam)
 
     lumi_averages_b1_nobeambeam.append(np.mean(lumi_b1_nobeambeam))
-#################################################################
-# Tracking  (Same as usual)                                     #
-#################################################################
 
-
-#################################################################
-# Post-processing: raw data and spectrum                        #
-#################################################################
-# Complete source: xfieldsdev/examples/002_beambeam/006_beambeam6d_strongstrong_pipeline_MPI2Procs.py
 
 lumis = []
 separation = [0, 1, 2, 3, 4, 5, 6]

@@ -1,5 +1,4 @@
 #include <stdio.h>
-//#include "const.h"
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_histogram2d.h>
 
