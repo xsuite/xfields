@@ -188,14 +188,14 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
    ]
     #make a new kernel like below for the computation of the grid, put input arguments of c funcgtion too
     _per_particle_kernels={
-        'compute_distribution_histogram': xo.Kernel(  # NEW
+        'fillHistogram': xo.Kernel(  # NEW
             c_name='BeamBeam3D_selective_fillHistogram',
             args=[
                 xo.Arg(xo.Float64, pointer=True, name='particles'),
                 xo.Arg(xo.Int64, pointer=False, name='npart'),
             ]),
-        'compute_lumi_integral': xo.Kernel(  # NEW
-            c_name='BeamBeam3D_selective_compute_lumi_integral',
+        'lumicalc': xo.Kernel(  # NEW
+            c_name='BeamBeam3D_selective_lumicalc',
             args=[
                 xo.Arg(xo.Int64, pointer=False, name='timestep'),
                 xo.Arg(xo.Float64, pointer=True, name='lumigrid_my_beam'),
