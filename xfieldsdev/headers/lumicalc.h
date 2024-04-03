@@ -2,7 +2,7 @@
 #include <gsl/gsl_errno.h>
 #include <gsl/gsl_histogram2d.h>
 
-int compute_distribution_histogram(gsl_histogram2d* h1, ParticlesData particles,int npart){
+int fillHistogram(gsl_histogram2d* h1, ParticlesData particles,int npart){
     int countOutsideOfDomain = 0;
     int histOut;
     for(int i = 0;i<npart;++i) {
