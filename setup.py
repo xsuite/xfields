@@ -16,7 +16,7 @@ extensions = []
 # Setup #
 #########
 
-version_file = Path(__file__).parent / '_version.py'
+version_file = Path(__file__).parent / 'xfieldsdev/_version.py'
 dd = {}
 with open(version_file.absolute(), 'r') as fp:
     exec(fp.read(), dd)
