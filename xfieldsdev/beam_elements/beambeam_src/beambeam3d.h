@@ -257,7 +257,7 @@ void synchrobeam_kick(
         //Computing histogram (B2 only)
         int countOutsideOfDomain = fillHistogram(myHistogram,particles2,npart);
         if(countOutsideOfDomain>0){
-            printf("WARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
+        //    printf("WARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
         }
          //Setting histogram'ranges assuming that both beams are initialised with the same rms and reset the histogram data
         gsl_histogram2d_set_ranges_uniform (partnerHistogram, -nsig*x_rms,nsig*y_rms,-nsig*x_rms,nsig*y_rms);
