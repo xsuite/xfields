@@ -5,10 +5,40 @@
 
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
-
+#include <stdio.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_histogram2d.h>
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
+
+//void BeamPositionMonitor_track_local_particle(BeamBeamBiGaussian3DRecordData el, LocalParticle* part0){
+//    const int64_t flag_centroids = BeamBeamBiGaussian3DData_get_flag_centroids(el);
+//    if (flag_centroids == 1){
+//        for (int i_part=0; i_part<n_part; i_part++){
+//            BeamBeamBiGaussian3DRecordData record = BeamBeamBiGaussian3DRecordData_getp_data(el);
+//            double x = LocalParticle_get_x(part);
+//            double y = LocalParticle_get_y(part);
+
+        /*gpuglmem*/ 
+//            double * count = BeamBeamBiGaussian3DRecordData_getp1_count(record);
+//            atomicAdd(count, 1.0);
+
+        /*gpuglmem*/ 
+//            double * x_sum = BeamBeamBiGaussian3DRecordData_getp1_x_sum(record);
+//            atomicAdd(x_sum, x);
+
+//        /*gpuglmem*/ double * y_sum = BeamBeamBiGaussian3DRecordData_getp1_y_sum(record);
+//            atomicAdd(y_sum, y);
+//            }
+//	end_per_particle_block
+//    x_centroid = x_sum/count;
+//    y_centroid = y_sum/count;
+//   }
+//}
+
+
+
 
 /*gpufun*/
 void synchrobeam_kick(
@@ -27,6 +57,11 @@ void synchrobeam_kick(
     const double q0_bb  = scale_strength*BeamBeamBiGaussian3DData_get_other_beam_q0(el);
     const double min_sigma_diff = BeamBeamBiGaussian3DData_get_min_sigma_diff(el);
     const double threshold_singular = BeamBeamBiGaussian3DData_get_threshold_singular(el);
+    const double intensity1 = BeamBeamBiGaussian3DData_get_beam_intensity(el);
+    const double intensity2 = BeamBeamBiGaussian3DData_get_other_beam_intensity(el);
+    const double npart = BeamBeamBiGaussian3DData_get_number_of_particles(el);
+    const double x_rms = BeamBeamBiGaussian3DData_get_x_rms(el);
+    const double y_rms = BeamBeamBiGaussian3DData_get_y_rms(el);
 
     double const Sig_11_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_11_star(el, i_slice);
     double const Sig_12_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_12_star(el, i_slice);
@@ -40,6 +75,8 @@ void synchrobeam_kick(
     double const Sig_44_0 = BeamBeamBiGaussian3DData_get_slices_other_beam_Sigma_44_star(el, i_slice);
 
     double const num_part_slice = BeamBeamBiGaussian3DData_get_slices_other_beam_num_particles(el, i_slice);
+
+
 
     // no kick if not sufficient macroparticles; should be taken care of when slicing
     if (num_part_slice == 0){
@@ -129,10 +166,14 @@ void synchrobeam_kick(
 
     double rho, wgt;
 
+    // Stuff for combi lumi
+    double combilumi;
+    
+
     // calculate luminosity
     const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
     if (flag_luminosity == 1){
-
+    
         // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
         get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
         wgt = LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
@@ -149,6 +190,95 @@ void synchrobeam_kick(
         const int at_turn = LocalParticle_get_at_turn(part);
         /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);
         atomicAdd(lumi_address, wgt);
+        }
+    }
+
+
+    /*what is going on
+    /* Allocate memory for luminosity calculations*/
+    //gsl_histogram2d* myHistogram;
+    //gsl_histogram2d* partnerHistogram;
+    //if(parserOutput.computeLuminosity){
+    //    myHistogram = gsl_histogram2d_alloc (parserOutput.lumiGridSizeX,parserOutput.lumiGridSizeY);
+    //    partnerHistogram = gsl_histogram2d_alloc (parserOutput.lumiGridSizeX,parserOutput.lumiGridSizeY);
+    //}
+   
+
+    // Resting histogram data
+    //gsl_histogram2d_set_ranges_uniform (myHistogram, -nsig*bunch->rms[0],nsig*bunch->rms[0],-nsig*bunch->rms[2],nsig*bunch->rms[2]);
+    //Computing histogram (B2 only)
+    //int countOutsideOfDomain = fillHistogram(myHistogram,bunch->particleCoordinates,npart);
+    //if(countOutsideOfDomain>0){
+    //    printf("WARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
+    //   }
+
+    // Resets the histogram data
+    //gsl_histogram2d_set_ranges_uniform (myHistogram, -nsig*bunch->rms[0],nsig*bunch->rms[0],-nsig*bunch->rms[2],nsig*bunch->rms[2]);
+    //Computing histogram (B1 only)
+    //int countOutsideOfDomain = fillHistogram(myHistogram,bunch->particleCoordinates,npart);
+    //if(countOutsideOfDomain>0){
+    //    printf("\nWARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain\n",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
+    //    }
+    // Setting histogram'ranges assuming that both beams are initialised with the same rms and reset the histogram data
+    //    gsl_histogram2d_set_ranges_uniform (partnerHistogram, -nsig*bunch->rms[0],nsig*bunch->rms[0],-nsig*bunch->rms[2],nsig*bunch->rms[2]);
+    // Receive histogram from B2
+    //    gsl_histogram2d_set_ranges_uniform (partnerHistogram, -nsig*bunch->rms[0],nsig*bunch->rms[0],-nsig*bunch->rms[2],nsig*bunch->rms[2]);
+
+
+
+    //if(parserOutput.computeLuminosity){
+    //   gsl_histogram2d_free(myHistogram);
+    //   gsl_histogram2d_free(partnerHistogram);
+    //}
+
+    //}else if(strcmp(id,"luminosity computation")==0) {
+    //    parserOutput->computeLuminosity = true;
+    //    parserOutput->lumiFileFormat = (char*) malloc((strlen(allValues[0])+1)*sizeof(char));
+    //    strcpy(parserOutput->lumiFileFormat,allValues[0]);
+    //    parserOutput->lumiNSigma = atof(allValues[1]);
+    //    parserOutput->lumiGridSizeX = atoi(allValues[2]);
+    //    parserOutput->lumiGridSizeY= atoi(allValues[3]);
+
+    //what is going on
+
+
+    // calculate combi luminosity
+    const int64_t flag_combilumi = BeamBeamBiGaussian3DData_get_flag_combilumi(el);
+    if (flag_combilumi == 1){
+        gsl_histogram2d* myHistogram;
+        gsl_histogram2d* partnerHistogram;
+        double lumiGridSizeX = 256;
+        double lumiGridSizeY = 256;
+        double nsig = 12;
+        myHistogram = gsl_histogram2d_alloc (lumiGridSizeX,lumiGridSizeY);
+        partnerHistogram = gsl_histogram2d_alloc (lumiGridSizeX,lumiGridSizeY);
+        //Resting histogram data
+        gsl_histogram2d_set_ranges_uniform (myHistogram, -nsig*x_rms,nsig*x_rms,-nsig*y_rms,nsig*y_rms);
+        //Computing histogram (B2 only)
+        int countOutsideOfDomain = fillHistogram(myHistogram,particles2,npart);
+        if(countOutsideOfDomain>0){
+        //    printf("WARNING B%ib%i IP%i turn %i, %i particles are outside of the luminosity computation domain",bunch->ibeam,bunch->ibunch,act->pos,bunch->turn,countOutsideOfDomain);
+        }
+         //Setting histogram'ranges assuming that both beams are initialised with the same rms and reset the histogram data
+        gsl_histogram2d_set_ranges_uniform (partnerHistogram, -nsig*x_rms,nsig*y_rms,-nsig*x_rms,nsig*y_rms);
+        gsl_histogram2d_free(myHistogram);
+        gsl_histogram2d_free(partnerHistogram);
+        //gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+        fillHistogram(gsl_histogram2d* h1, particles1, npart);
+        fillHistogram(gsl_histogram2d* h2, particles2, npart);
+        double combilumi = lumicalc(h1,h2,intensity1,intensity2);
+         //init record table
+        BeamBeamBiGaussian3DRecordData combilumi_record = NULL;
+        CombiLumiTableData combilumi_table                   = NULL;
+        RecordIndex combilumi_table_index               = NULL;
+        combilumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+        if (combilumi_record){
+            combilumi_table       = BeamBeamBiGaussian3DRecordData_getp_combilumitable(combilumi_record);
+            combilumi_table_index =                      CombiLumiTableData_getp__index(combilumi_table);
+
+        const int at_turn = LocalParticle_get_at_turn(part);
+        /*gpuglmem*/ double* combilumi_address = CombiLumiTableData_getp1_combilumi(combilumi_table, at_turn);
+        atomicAdd(combilumi_address, combilumi);
         }
     }
 
@@ -260,6 +390,10 @@ void synchrobeam_kick(
     #endif
 
     // Apply the kicks (Hirata's synchro-beam)
+    scanf("%lf", & *x_star);
+    scanf("%lf", & *y_star);
+    scanf("%lf", & *px_star);
+    scanf("%lf.", & *py_star);
     *pzeta_star = *pzeta_star + Fz_star + 0.5*(
                 Fx_star*(*px_star+0.5*Fx_star + px_slice_star)+
                 Fy_star*(*py_star+0.5*Fy_star + py_slice_star));
@@ -267,6 +401,11 @@ void synchrobeam_kick(
     *px_star = *px_star + Fx_star;
     *y_star = *y_star - S*Fy_star;
     *py_star = *py_star + Fy_star;
+    scanf("%lf", &*x_star);
+    scanf("%lf", &*y_star);
+    scanf("%lf", &*px_star);
+    scanf("%lf.", &*py_star);
+
 }
 
 /*gpufun*/

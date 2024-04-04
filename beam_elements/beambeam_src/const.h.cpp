@@ -1,0 +1,34 @@
+#ifndef __CONSTHEADER__
+#define __CONSTHEADER__
+
+#define NPARAM 18
+#define NCOORD 7
+#define NSLOTMAX 3564
+#define NPOSMAX 2*NSLOTMAX
+#define PI 3.14159265358979323846
+const double SPEEDOFLIGHT =  299792458;
+
+#define NCOORDSLICE_1 8
+#define NCOORDSLICE_2 11
+
+#define PROGRESSMETER 1
+#define VERSION "2.0"
+#define pVERSION "1.0"
+
+#define RNDSEED 1
+
+#define ABORTACTION 84543
+
+#define DEBUG 0
+#define WALLTIMING 1
+#define BOOL_WRITE true
+#define NTURN_SENDPASSAGERECORD 2
+#define ABORT_DELAY 3
+#define SAVE_NWNOISE 0
+
+/* HFMM solver - CANNOT BE HERE BECAUSE SAME VARIABLE NAMES ARE USED IN HFMMCALC.F...
+#define NXG 100
+#define NYG 100
+#define NGRID ((2*NXG+1)*(2*NYG+1))
+*/
+#endif

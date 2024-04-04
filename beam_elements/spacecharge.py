@@ -5,8 +5,8 @@
 
 import numpy as np
 
-from xfields import BiGaussianFieldMap, mean_and_std
-from xfields import TriLinearInterpolatedFieldMap
+from xfieldsdev import BiGaussianFieldMap, mean_and_std
+from xfieldsdev import TriLinearInterpolatedFieldMap
 from ..longitudinal_profiles import LongitudinalProfileQGaussian
 from ..fieldmaps import BiGaussianFieldMap
 from ..general import _pkg_root
