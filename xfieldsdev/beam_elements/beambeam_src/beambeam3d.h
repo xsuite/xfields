@@ -6,6 +6,8 @@
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
 #include <stdio.h>
+#include <gsl/gsl_errno.h>
+#include <gsl/gsl_histogram2d.h>
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
