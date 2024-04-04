@@ -9,6 +9,8 @@ from matplotlib import pyplot as plt
 import xobjects as xo
 import xtrack as xt
 import xfieldsdev as xf
+print(xf.__path__)
+print(dir(xf))
 import xpart as xp
 
 lumi_qss_b1 = []
