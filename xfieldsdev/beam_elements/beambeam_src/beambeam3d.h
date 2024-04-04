@@ -264,8 +264,8 @@ void synchrobeam_kick(
         gsl_histogram2d_free(myHistogram);
         gsl_histogram2d_free(partnerHistogram);
         //gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        fillHistogram(gsl_histogram2d* &h1, particles1, int npart);
-        fillHistogram(gsl_histogram2d* &h2, particles2, int npart);
+        fillHistogram(gsl_histogram2d* h1, particles1, npart);
+        fillHistogram(gsl_histogram2d* h2, particles2, npart);
         double combilumi = lumicalc(h1,h2,intensity1,intensity2);
          //init record table
         BeamBeamBiGaussian3DRecordData combilumi_record = NULL;

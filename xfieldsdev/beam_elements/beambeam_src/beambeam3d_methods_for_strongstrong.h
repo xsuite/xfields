@@ -196,7 +196,7 @@ void BeamBeam3D_selective_compute_lumi_integral(BeamBeamBiGaussian3DData el,
       int64_t lumigrid_other_beam_slice_start_idx = n_lumigrid_cells*n_lumigrid_cells * i_slice_other_beam;
       int64_t lumigrid_other_beam_slice_end_idx   = n_lumigrid_cells*n_lumigrid_cells * (i_slice_other_beam+1);
 
-      fprintf(fp, "timestep: %d - ", timestep);
+      fprintf(fp, "timestep: %lld - ", timestep);
       for (int j=lumigrid_my_beam_slice_start_idx; j<lumigrid_my_beam_slice_end_idx; j++){
         fprintf(fp, "%g ", lumigrid_my_beam[j]);
       }
