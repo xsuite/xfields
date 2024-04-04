@@ -1,1 +1,0 @@
-pytest -s --cov=xfieldsdev --cov-report html:cov_html tests
