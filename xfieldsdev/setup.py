@@ -9,8 +9,14 @@ from pathlib import Path
 #######################################
 # Prepare list of compiled extensions #
 #######################################
+gsl= Extension('gsl',
+                    include_dirs=['/opt/homebrew/Cellar/gsl/2.7.1/include'],
+                    libraries=['gsl', 'gslcblas'],
+                    library_dirs=['/opt/homebrew/Cellar/gsl/2.7.1/lib']
+                    )
 
-extensions = []
+
+extensions = [gsl]
 
 #########
 # Setup #
