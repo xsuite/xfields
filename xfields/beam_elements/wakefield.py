@@ -2,10 +2,13 @@ import numpy as np
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
+from scipy.interpolate import interp1d
 
 import xtrack as xt
 import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
+
+from matplotlib import pyplot as plt
 
 class MultiWakefield:
 
@@ -58,6 +61,81 @@ class MultiWakefield:
             )
             
         self.pipeline_manager = None
+    
+    @classmethod
+    def from_table(cls, wake_file, wake_file_columns,
+                use_components=None, beta0 = 1.0, **kwargs):
+        """ Load data from the wake_file and store them in a dictionary
+        self.wake_table. Keys are the names specified by the user in
+        wake_file_columns and describe the names of the wake field
+        components (e.g. dipole_x or dipole_yx). The dict values are
+        given by the corresponding data read from the table. The
+        nomenclature of the wake components must be strictly obeyed.
+        Valid names for wake components are:
+
+        'constant_x', 'constant_y', 'dipole_x', 'dipole_y', 'dipole_xy',
+        'dipole_yx', 'quadrupole_x', 'quadrupole_y', 'quadrupole_xy',
+        'quadrupole_yx', 'longitudinal'.
+
+        The order of wake_file_columns is relevant and must correspond
+        to the one in the wake_file. There is no way to check this here
+        and it is in the responsibility of the user to ensure it is
+        correct. Two checks made here are whether the length of
+        wake_file_columns corresponds to the number of columns in the
+        wake_file and whether a column 'time' is specified.
+
+        The units and signs of the wake table data are assumed to follow
+        the HEADTAIL conventions, i.e.
+          time: [ns]
+          transverse wake components: [V/pC/mm]
+          longitudinal wake component: [V/pC].
+        """
+
+        valid_wake_components = ['constant_x', 'constant_y', 'dipole_x', 'dipole_y', 'dipole_xy',
+            'dipole_yx', 'quadrupole_x', 'quadrupole_y', 'quadrupole_xy',
+            'quadrupole_yx', 'longitudinal']
+        
+        wake_data = np.loadtxt(wake_file)
+        if len(wake_file_columns) != wake_data.shape[1]:
+            raise ValueError("Length of wake_file_columns list does not" +
+                             " correspond to the number of columns in the" +
+                             " specified wake_file. \n")
+        if 'time' not in wake_file_columns:
+            raise ValueError("No wake_file_column with name 'time' has" +
+                             " been specified. \n")
+        itime = wake_file_columns.index('time')
+        wake_distance = -1E-9 * wake_data[:,itime] * beta0 * clight
+        wakefields = []
+        for iwake_component,wake_component in enumerate(wake_file_columns):
+            if iwake_component != itime and (use_components is None or wake_component in use_components):
+                assert wake_component in valid_wake_components
+                scale_kick = None
+                source_moments = ['num_particles']
+                if wake_component == 'longitudinal':
+                    source_moments.append('zeta')
+                    kick = 'delta'
+                else:
+                    tokens = wake_component.split('_')
+                    coord_target = tokens[1][0]
+                    if len(tokens[1]) == 2:
+                        coord_source = tokens[1][0]
+                    else:
+                        coord_source = coord_target
+                    kick = 'p'+coord_target
+                    if tokens[0] == 'dipole':
+                        source_moments.append(coord_source)
+                    elif tokens[0] == 'quadrupole':
+                        scale_kick = coord_source
+                    
+                wake_strength = -1E15 * wake_data[:,iwake_component]
+                wakefield = xf.Wakefield(
+                    source_moments=source_moments,
+                    kick=kick,
+                    scale_kick=scale_kick,
+                    function=interp1d(wake_distance, wake_strength,bounds_error=False,fill_value=0.0)
+                )
+                wakefields.append(wakefield)
+        return MultiWakefield(wakefields,**kwargs)
         
     def init_pipeline(self,pipeline_manager,element_name,partners_names):
         self.pipeline_manager = pipeline_manager
