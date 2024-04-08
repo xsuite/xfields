@@ -1,8 +1,7 @@
 import numpy as np
 import xobjects as xo
 import xtrack as xt
-
-from pathlib import Path
+import xfields as xf
 
 class CompressedProfile(xt.BeamElement):
 
@@ -11,7 +10,7 @@ class CompressedProfile(xt.BeamElement):
         '_N_S': xo.Int64,
     }
 
-    _extra_c_sources = [Path('./compressed_profile.h')]
+    _extra_c_sources = [xf.general._pkg_root.joinpath('headers/compressed_profile.h')]
 
     _per_particle_kernels = {
         '_interp_result': xo.Kernel(

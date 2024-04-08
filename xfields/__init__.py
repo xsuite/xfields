@@ -22,6 +22,8 @@ from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
+from .beam_elements.wakefield import Wakefield
+from .beam_elements.wakefield import MultiWakefield
 
 from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
