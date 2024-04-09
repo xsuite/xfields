@@ -9,8 +9,10 @@ class TransverseDamper:
     A simple bunch-by-bunch transverse Damper implementation.
 
     Args:
-        gain_x (float): the horizontal damper gain in turns
-        gain_y (float): the vertical damper gain in turns
+        gain_x (float): the horizontal damper gain in 1/turns (corresponding to
+        a damping rate of gain_x/2)
+        gain_y (float): the vertical damper gain in 1/turns (corresponding to
+        a damping rate of gain_x/2)
         num_bunches (float): the number of bunches in the beam
         filling_scheme (np.ndarray): an array of zeros and ones representing
             the filling scheme
