@@ -1064,7 +1064,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
     .. note::
         In ``MAD-X`` it is ensure that the Twiss table is centered. One might observe some
-        discrepancies against ``MAD-X`` growth rates if not slicing the xtrack.Line before
+        discrepancies against ``MAD-X`` growth rates if not slicing the `xtrack.Line` before
         calling this method.
 
     Attributes:
@@ -1715,3 +1715,197 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
         return common_constant_term, const_x, const_y, const_z
+
+    # TODO: adapt citations and admonitions to the xsuite way
+    def growth_rates(
+        self,
+        epsx: float,
+        epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        bunched: bool = True,
+        normalized_emittances: bool = False,
+        integration_intervals: int = 17,
+    ) -> IBSGrowthRates:
+        r"""
+        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
+        code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
+        terms of Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
+        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
+        this method when it is called.
+
+        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this code
+        base, according to the Bjorken & Mtingwa formalism. These correspond to the (averaged)
+        :math:`1 / \tau` terms of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`. The
+        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
+        this method when it is called.
+
+        .. warning::
+            In ``MAD-X`` it is ensure that the Twiss table is centered. One might observe some
+            discrepancies against ``MAD-X`` growth rates if not slicing the `xtrack.Line` before
+            calling this method.
+
+        .. hint::
+            The calculation is done according to the following steps, which are related to different
+            equations in :cite:`CERN:Antoniou:Revision_IBS_MADX`:
+
+                - Adjusts the :math:`D_x, D_y, D^{\prime}_{x}, D^{\prime}_{y}` terms (multiply by :math:`\beta_{rel}`) to be in the :math:`pt` frame.
+                - Computes the various terms from Table 1 of the MAD-X note.
+                - Computes the Coulomb logarithm and the common constant term (first fraction) of Eq (8).
+                - Defines the integrands of integrals in Eq (8) of the MAD-X note.
+                - Defines sub-intervals and integrates the above over all of them, getting growth rates at each element in the lattice.
+                - Averages the results over the full circumference of the machine.
+
+        .. admonition:: Geometric or Normalized Emittances
+
+            Both geometric or normalized emittances can be given as input to this function, and it is assumed
+            the user provides geomettric emittances. If normalized ones are given the `normalized_emittances`
+            parameter should be set to `True` (it defaults to `False`). Internally, a conversion is done to
+            geometric emittances, which are used in the computations. For more information please see the
+            following :ref:`section of the FAQ <xibs-faq-geom-norm-emittances>`.
+
+        Parameters
+        ----------
+        epsx : float
+            Horizontal (geometric or normalized) emittance in [m].
+        epsy : float
+            Vertical (geometric or normalized) emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        bunched : bool
+            Whether the beam is bunched or not (coasting). Defaults to `True`.
+        normalized_emittances : bool
+            Whether the provided emittances are normalized or not. Defaults to
+            `False` (assumes geometric emittances).
+        integration_intervals : int
+            The number of sub-intervals to use when integrating the integrands of Eq (8) of
+            the MAD-X note. DO NOT change this parameter unless you know exactly what you are
+            doing, as you might affect convergence. Defaults to 17.
+
+        Returns
+        -------
+        IBSGrowthRates
+            An ``IBSGrowthRates`` object with the computed growth rates.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Make sure we are working with geometric emittances
+        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
+        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        # ----------------------------------------------------------------------------------------------
+        # We inform the user in case the TWISS was not centered - but keep going
+        LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
+        if self.optics._is_centered is False:
+            LOGGER.debug("Twiss was not calculated at center of elements, might see discrepancies to MAD-X")
+        # fmt: off
+        # All of the following (when type annotated as ArrayLike), hold one value per element in the lattice
+        # ----------------------------------------------------------------------------------------------
+        # Getting the arrays from Table 1 of the MAD-X note
+        LOGGER.debug("Computing terms from Table 1 of the MAD-X note")
+        a: ArrayLike = self._a(geom_epsx, geom_epsy, sigma_delta)    # This is 'a' in MAD-X fortran code
+        b: ArrayLike = self._b(geom_epsx, geom_epsy, sigma_delta)    # This is 'b' in MAD-X fortran code
+        c: ArrayLike = self._c(geom_epsx, geom_epsy, sigma_delta)    # This is 'cprime' in MAD-X fortran code
+        ax: ArrayLike = self._ax(geom_epsx, geom_epsy, sigma_delta)  # This is 'tx1 * cprime / bracket_x' in MAD-X fortran code
+        bx: ArrayLike = self._bx(geom_epsx, geom_epsy, sigma_delta)  # This is 'tx2 * cprime / bracket_x' in MAD-X fortran code
+        ay: ArrayLike = self._ay(geom_epsx, geom_epsy, sigma_delta)  # This is 'ty1 * cprime' in MAD-X fortran code
+        by: ArrayLike = self._by(geom_epsx, geom_epsy, sigma_delta)  # This is 'ty2 * cprime' in MAD-X fortran code
+        az: ArrayLike = self._az(geom_epsx, geom_epsy, sigma_delta)  # This is 'tl1 * cprime' in MAD-X fortran code
+        bz: ArrayLike = self._bz(geom_epsx, geom_epsy, sigma_delta)  # This is 'tl2 * cprime' in MAD-X fortran code                                   
+        # ----------------------------------------------------------------------------------------------
+        # Getting the constant term and the bracket terms from Eq (8) of the MAD-X note
+        LOGGER.debug("Computing common constant term and bracket terms from Eq (8) of the MAD-X note")
+        common_constant_term, bracket_x, bracket_y, bracket_z = self._constants(
+            geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched
+        )
+        # ----------------------------------------------------------------------------------------------
+        # Defining the integrands from Eq (8) of the MAD-X note, for each plane (remember these functions
+        # are vectorised since a, b, c, ax, bx, ay, by are all arrays). The bracket terms are included.
+        LOGGER.debug("Defining integrands of Eq (8) of the MAD-X note")
+        def Ix_integrand_vectorized(_lambda: float) -> ArrayLike:
+            """Vectorized function for the integrand of horizontal term of Eq (8) in MAD-X note"""
+            numerator: ArrayLike = bracket_x * np.sqrt(_lambda) * (ax * _lambda + bx)
+            denominator: ArrayLike = (_lambda**3 + a * _lambda**2 + b * _lambda + c) ** (3 / 2)
+            return numerator / denominator
+
+        def Iy_integrand_vectorized(_lambda: float) -> ArrayLike:
+            """Vectorized function for the integrand of vertical term of Eq (8) in MAD-X note"""
+            numerator: ArrayLike = bracket_y * np.sqrt(_lambda) * (ay * _lambda + by)
+            denominator: ArrayLike = (_lambda**3 + a * _lambda**2 + b * _lambda + c) ** (3 / 2)
+            return numerator / denominator
+
+        def Iz_integrand_vectorized(_lambda: float) -> ArrayLike:
+            """Vectorized function for the integrand of longitudinal term of Eq (8) in MAD-X note"""
+            numerator: ArrayLike = bracket_z * np.sqrt(_lambda) * (az * _lambda + bz)
+            denominator: ArrayLike = (_lambda**3 + a * _lambda**2 + b * _lambda + c) ** (3 / 2)
+            return numerator / denominator
+        # ----------------------------------------------------------------------------------------------
+        # Defining a function to perform the integration, which is done sub-interval by sub-interval
+        def calculate_integral_vectorized(func: Callable) -> ArrayLike:
+            """
+            Computes integral of Eq (8) of the MAD-X note, when provided with the integrand.
+            The integrand being a vectorized function, this returns an array with the result
+            of the integral at each element.
+
+            This computation defines several intervals on which to perform the integration on,
+            and performs the integration of the provided function on each one. At each step,
+            we add the intermediate values to the final result, which is returned.
+
+            Parameters
+            ----------
+            func: Callable
+                Vectorized function defining the integrand.
+
+            Returns
+            -------
+            ArrayLike
+                An array with the result of the integration at each element in the lattice.
+            """
+            nb_elements: int = ax.size
+            result: ArrayLike = np.zeros(nb_elements)
+
+            # The following two hold the values for starts and ends of sub-intervals on which to integrate
+            interval_starts = np.array([10**i for i in np.arange(0, int(integration_intervals) - 1)])
+            interval_ends = np.array([10**i for i in np.arange(1, int(integration_intervals))])
+
+            # Now we loop over the intervals and integrate the function on each one, using scipy
+            # We add the intermediate integration result of each interval to our final result
+            for start, end in zip(interval_starts, interval_ends):
+                integrals, _ = quad_vec(func, start, end)  # integrals is an array
+                result += integrals
+            return result
+        # ----------------------------------------------------------------------------------------------
+        # fmt: on
+        # Now we loop over the lattice and compute the integrals at each element
+        LOGGER.debug("Computing integrals of Eq (8) of the MAD-X note - at each element in the lattice")
+        Tx_array: ArrayLike = calculate_integral_vectorized(Ix_integrand_vectorized)
+        Ty_array: ArrayLike = calculate_integral_vectorized(Iy_integrand_vectorized)
+        Tz_array: ArrayLike = calculate_integral_vectorized(Iz_integrand_vectorized)
+        # ----------------------------------------------------------------------------------------------
+        # Don't forget to multiply by the common constant term here
+        LOGGER.debug("Including common constant term of Eq (8) of the MAD-X note")
+        Tx_array *= common_constant_term
+        Ty_array *= common_constant_term
+        Tz_array *= common_constant_term
+        # ----------------------------------------------------------------------------------------------
+        # For a better average, interpolate these intermediate growth rates through the lattice
+        LOGGER.debug("Interpolating intermediate growth rates through the lattice")
+        _tx = interp1d(self.optics.s, Tx_array)
+        _ty = interp1d(self.optics.s, Ty_array)
+        _tz = interp1d(self.optics.s, Tz_array)
+        # ----------------------------------------------------------------------------------------------
+        # And now cmpute the final growth rates for each plane as an average of these interpolated
+        # functions over the whole lattice - also ensure conversion to float afterwards!
+        LOGGER.debug("Getting average growth rates over the lattice")
+        with warnings.catch_warnings():  # Catch and ignore the scipy.integrate.IntegrationWarning
+            warnings.simplefilter("ignore", category=UserWarning)
+            Tx: float = float(quad(_tx, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference)
+            Ty: float = float(quad(_ty, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference)
+            Tz: float = float(quad(_tz, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference)
+        result = IBSGrowthRates(Tx, Ty, Tz)
+        # ----------------------------------------------------------------------------------------------
+        # Self-update the instance's attributes, some private flags and then return the results
+        self.ibs_growth_rates = result
+        self._refs = _ReferenceValues(geom_epsx, geom_epsy, sigma_delta, bunch_length)
+        self._number_of_growth_rates_computations += 1
+        return result

@@ -149,11 +149,11 @@ class OpticsParameters(xo.HybridClass):
             `method` argument is ``4d`` but can be overriden.
         """
         method = kwargs.pop("method", "4d")  # 4D twiss by default, can be overriden
-        twiss = line.twiss(method=method, **kwargs)
+        twiss: xt.TwissTable = line.twiss(method=method, **kwargs)
 
-        if not np.isclose(twiss.c_minus, 0, atol=5e-4):  # there is some betatron coupling
+        if not np.isclose(twiss.c_minus, 0, atol=5e-4):  # there is "some" betatron coupling
             LOGGER.warning(
-                f"There is betatron coupling in the machine (|Cminus| = {twiss.c_minus:.3e}),"
+                f"There is betatron coupling in the machine (|Cminus| = {twiss.c_minus:.3e}), "
                 "which is not taken into account in analytical calculations."
             )
 
