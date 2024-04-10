@@ -172,6 +172,7 @@ class MultiWakefield:
     def track(self, particles):
         _slice_result = None
         if self.pipeline_manager is None:
+            other_bunches_slicers = None
             self._slice_and_store(particles)
         else:
             other_bunches_slicers = []
