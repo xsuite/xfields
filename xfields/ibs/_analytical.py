@@ -1079,3 +1079,56 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
     def __init__(self, beam_params: BeamParameters, optics: OpticsParameters) -> None:
         super().__init__(beam_params, optics)
+
+    def _Gamma(
+        self,
+        geom_epsx: float,
+        geom_epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        bunched: bool = True,
+    ) -> float:
+        r"""
+        Computes :math:`\Gamma`, the 6-dimensional invariant phase space
+        volume of a bunched beam.
+
+        Parameters
+        ----------
+        geom_epsx : float
+            Horizontal geometric emittance in [m].
+        geom_epsy : float
+            Vertical geometric emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        bunched : bool
+            Whether the beam is bunched or not (coasting). Defaults to `True`.
+
+        Returns
+        -------
+        float
+            The computed :math:`\Gamma` value.
+        """
+        # fmt: off
+        if bunched is True:
+            return (
+                (2 * np.pi)**3
+                * (self.beam_parameters.beta_rel * self.beam_parameters.gamma_rel)**3
+                * (self.beam_parameters.particle_mass_eV * 1e-3)**3  # mass in MeV like in .growth_rates() (the m^3 terms cancel out)
+                * geom_epsx
+                * geom_epsy
+                * sigma_delta
+                * bunch_length
+            )
+        else:  # we have coasting beam
+            return (
+                4 * np.pi**(5/2)
+                * (self.beam_parameters.beta_rel * self.beam_parameters.gamma_rel)**3
+                * (self.beam_parameters.particle_mass_eV * 1e-3)**3  # mass in MeV like in .growth_rates() (the m^3 terms cancel out)
+                * geom_epsx
+                * geom_epsy
+                * sigma_delta
+                * self.optics.circumference
+            )
+        # fmt: on
