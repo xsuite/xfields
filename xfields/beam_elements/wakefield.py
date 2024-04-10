@@ -618,6 +618,21 @@ class TempResonatorFunction:
                 * np.sin(omega_bar * z / clight))# Wake definition
         return res
 
+
+class TempTableFunction:
+    def __init__(self, table, beta):
+        self.table = table
+        self.beta = beta
+
+    def __call__(self, z):
+        res = np.zeros_like(z)
+
+        res[z < 0] = np.interp(-z[z < 0]/(self.beta*clight),
+                               self.table[:, 0]*1e-9, self.table[:, 1]*(-1e15))
+
+        return res
+
+
 def _build_z_wake(z_a, z_b, num_turns, N_aux, M_aux, circumference, dz,
                  AA, BB, CC, DD, z_P):
     z_c = z_a # For wakefield, z_c = z_a
