@@ -3,6 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 from logging import getLogger
+from typing import Literal, Tuple, Union
 
 import xtrack as xt
 
@@ -18,7 +19,7 @@ LOGGER = getLogger(__name__)
 
 def get_intrabeam_scattering_growth_rates(
     line: xt.Line,
-    formalism: str,  # let's give an enum for the hint?
+    formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     npart: int = None,
     epsx: float = None,
     epsy: float = None,
@@ -29,7 +30,7 @@ def get_intrabeam_scattering_growth_rates(
     particles: xt.Particles = None,
     return_class: bool = False,
     **kwargs,
-) -> IBSGrowthRates:
+) -> Union[IBSGrowthRates, Tuple[IBSGrowthRates, AnalyticalIBS]]:
     """
     Computes IntraBeam Scattering growth rates from the provided `xtrack.Line`.
 
