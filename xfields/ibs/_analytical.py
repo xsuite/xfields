@@ -1629,3 +1629,89 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             - gamma**2 * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
         )
         return bz
+
+    # TODO: adapt citation to the xsuite way
+    def _constants(
+        self,
+        geom_epsx: float,
+        geom_epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        bunched: bool = True,
+    ) -> Tuple[float, ArrayLike, ArrayLike, float]:
+        r"""
+        Computes the constant terms of Eq (8) in the MAD-X note
+        :cite:`CERN:Antoniou:Revision_IBS_MADX`. Returned are four terms:
+        first the constant common to all planes, then the horizontal,
+        vertical and longitudinal terms (in brackets in Eq (8)).
+
+        The common constant and the longitudinal constant are floats. The
+        horizontal and vertical terms are arrays, with one value per element
+        in the lattice (as they depend on :math:`H_x` and :math:`\beta_y`,
+        respectively).
+
+        Parameters
+        ----------
+        geom_epsx : float
+            Horizontal geometric emittance in [m].
+        geom_epsx : float
+            Vertical geometric emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        bunched : bool
+            Whether the beam is bunched or not (coasting). Defaults to `True`.
+
+        Returns
+        -------
+        Tuple[float, ArrayLike, ArrayLike, float]
+            Four variables corresponding to the common, horizontal, vertical and
+            longitudinal 'constants' of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`.
+            The horizontal and vertical ones are arrays, with a value per element.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # fmt: off
+        # We define new shorter names for a lot of arrays, for clarity of the expressions below
+        betx: ArrayLike = self.optics.betx  # horizontal beta-functions
+        bety: ArrayLike = self.optics.bety  # vertical beta-functions
+        alfx: ArrayLike = self.optics.alfx  # horizontal alpha-functions
+        epsx: float = geom_epsx  # horizontal geometric emittance
+        epsy: float = geom_epsy  # vertical geometric emittance
+        # ----------------------------------------------------------------------------------------------
+        # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
+        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        gamma: float = self.beam_parameters.gamma_rel  # relativistic gamma
+        bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
+        # ----------------------------------------------------------------------------------------------
+        # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
+        # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
+        LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
+        Dx: ArrayLike = self.optics.dx * beta
+        Dpx: ArrayLike = self.optics.dpx * beta
+        # ----------------------------------------------------------------------------------------------
+        # Computing Phi_x amd H_x as defined in Eq (6) and Eq (7) of the note
+        LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
+        phix: ArrayLike = phi(betx, alfx, Dx, Dpx)
+        Hx: ArrayLike = (Dx**2 + betx**2 * phix**2) / betx
+        # ----------------------------------------------------------------------------------------------
+        # Compute the Coulomb logarithm and the common constant term in Eq (8) (the first fraction)
+        coulomb_logarithm: float = self.coulomb_log(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched)
+        common_constant_term: float = (
+            np.pi**2
+            * self.beam_parameters.particle_classical_radius_m**2
+            * c
+            * (self.beam_parameters.particle_mass_eV * 1e-3)** 3  # use mass in MeV like in ._Gamma method (the m^3 terms cancel out)
+            * self.beam_parameters.n_part
+            * coulomb_logarithm
+            / (self.beam_parameters.gamma_rel * self._Gamma(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched))
+        )
+        # ----------------------------------------------------------------------------------------------
+        # fmt: on
+        # Compute the plane-dependent constants (in brackets) for each plane of Eq (8) in the MAD-X note
+        const_x: ArrayLike = gamma**2 * Hx / epsx
+        const_y: ArrayLike = bety_over_epsy
+        const_z: float = gamma**2 / sigma_delta**2
+        # ----------------------------------------------------------------------------------------------
+        # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
+        return common_constant_term, const_x, const_y, const_z
