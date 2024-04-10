@@ -173,6 +173,7 @@ class MultiWakefield:
         _slice_result = None
         if self.pipeline_manager is None:
             self._slice_and_store(particles)
+            other_bunches_slicers = None
         else:
             other_bunches_slicers = []
             is_ready_to_send = True
@@ -506,6 +507,27 @@ class Wakefield:
 
         self.moments_data['result'] = res.real
 
+    def _compute_convolution_direct(self, moment_names):
+        if isinstance(moment_names, str):
+            moment_names = [moment_names]
+        ########################################
+        #rho = np.ones(shape=self.moments_data['result'].shape,
+        #                dtype=np.float64)
+        #res = np.zeros_like(rho)
+        #for nn in moment_names:
+        #    rho *= self.moments_data[nn]
+        #########################################
+        rho = np.ones(shape=self.moments_data['result'].shape,
+                        dtype=np.float64) #TODO is this the right shape?
+        res = np.zeros_like(rho)
+        for iturn in range(self.moments_data.num_turns):
+            rho = np.ones(shape=self.moments_data['result'].shape,
+                    dtype=np.float64)
+            for moment_name in moment_names:
+                z_out, moment_out = get_moment_profile(self, moment_name, i_turn)
+                rho*=moment_out
+            for i in range(len(res)):
+                res[i] += np.sum(rho*self.function(z_out[i]-z_out)) # TODO
 
     # Parameters from CompressedProfile
     @property
