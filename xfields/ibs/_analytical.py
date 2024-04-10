@@ -1231,3 +1231,41 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             + (betxbety / epsxepsy)
         )
         return b
+
+    def _c(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+        """
+        Computes the `c` term of Table 1 in the MAD-X note.
+
+        Parameters
+        ----------
+        geom_epsx : float
+            Horizontal geometric emittance in [m].
+        geom_epsy : float
+            Vertical geometric emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+
+        Returns
+        -------
+        ArrayLike
+            An array with the `c` term, at each element in the lattice.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
+        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        gamma: float = self.beam_parameters.gamma_rel  # relativistic gamma
+        betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
+        epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
+        # ----------------------------------------------------------------------------------------------
+        # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
+        # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
+        LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
+        Dx: ArrayLike = self.optics.dx * beta
+        Dy: ArrayLike = self.optics.dy * beta
+        # ----------------------------------------------------------------------------------------------
+        c: ArrayLike = (betxbety / (epsxepsy)) * (
+            (gamma**2 * Dx**2) / (geom_epsx * self.optics.betx)
+            + (gamma**2 * Dy**2) / (geom_epsy * self.optics.bety)
+            + gamma**2 / sigma_delta**2
+        )
+        return c
