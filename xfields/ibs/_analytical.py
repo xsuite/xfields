@@ -873,7 +873,7 @@ class NagaitsevIBS(AnalyticalIBS):
         EllipticIntegrals
             An ``EllipticIntegrals`` object with the computed integrals.
         """
-        LOGGER.info("Computing Nagaitsev integrals for defined beam and optics parameters")
+        LOGGER.debug("Computing elliptic integrals for defined beam and optics parameters")
         # fmt: off
         # All of the following (when type annotated as ArrayLike), hold one value per element in the lattice
         # ----------------------------------------------------------------------------------------------
@@ -928,4 +928,126 @@ class NagaitsevIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes and then return the results
         self.elliptic_integrals = result
+        return result
+
+    # TODO: adapt citations and admonitions to the xsuite way
+    def growth_rates(
+        self,
+        epsx: float,
+        epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        bunched: bool = True,
+        normalized_emittances: bool = False,
+        compute_integrals: bool = True,
+    ) -> IBSGrowthRates:
+        r"""
+        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
+        code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
+        terms of Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
+        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
+        this method when it is called.
+
+        .. warning::
+            Currently this calculation does not take into account vertical dispersion. Should you have
+            any in your lattice, please use the BjorkenMtingwaIBS class instead, which supports it fully.
+            Supporting vertical dispersion in NagaitsevIBS might be implemented in a future version.
+
+        .. hint::
+            The calculation is done according to the following steps, which are related to different
+            equations in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`:
+
+                - Get the Nagaitsev integrals from the instance attributes (integrals of Eq (30-32)).
+                - Computes the Coulomb logarithm for the defined beam and optics parameters.
+                - Compute the rest of the constant term of Eq (30-32).
+                - Compute for each plane the full result of Eq (30-32), respectively.
+                - Plug these into Eq (28) and divide by either :math:`\varepsilon_x, \varepsilon_y` or :math:`\sigma_{\delta}^{2}` (as relevant) to get :math:`1 / \tau`.
+
+            **Note:** As one can see above, this calculation is done by building on the Nagaitsev integrals.
+            If these have not been computed yet, this method will first log a message and compute them, then
+            compute the growth rates.
+
+        .. admonition:: Geometric or Normalized Emittances
+
+            Both geometric or normalized emittances can be given as input to this function, and it is assumed
+            the user provides geomettric emittances. If normalized ones are given the `normalized_emittances`
+            parameter should be set to `True` (it defaults to `False`). Internally, a conversion is done to
+            geometric emittances, which are used in the computations. For more information please see the
+            following :ref:`section of the FAQ <xibs-faq-geom-norm-emittances>`.
+
+        .. admonition:: Coasting Beams
+
+            It is possible in this formalism to get an approximation in the case of coasting beams by providing
+            `bunched=False`. This will as a bunch length :math:`C / 2 \pi` with C the circumference (or length)
+            of the machine, and a warning will be logged for the user. Additionally the appropriate adjustement
+            will be made in the Coulomb logarithm calculation, and the resulting growth rates will be divided by
+            a factor 2 before being returned (see :cite:`ICHEA:Piwinski:IntraBeamScattering`). For fully accurate
+            results in the case of coasting beams, please use the `BjorkenMtingwaIBS` class instead.
+
+        Parameters
+        ----------
+        epsx : float
+            Horizontal (geometric or normalized) emittance in [m].
+        epsy : float
+            Vertical (geometric or normalized) emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        bunched : bool
+            Whether the beam is bunched or not (coasting). Defaults to `True`.
+        normalized_emittances : bool
+            Whether the provided emittances are normalized or not. Defaults to
+            `False` (assumes geometric emittances).
+        compute_integrals : bool
+            If `True`, the elliptic integrals will be (re-)computed before the growth
+            rates. Defaults to `True`.
+
+        Returns
+        -------
+        IBSGrowthRates
+            An ``IBSGrowthRates`` object with the computed growth rates.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Adapt bunch length if the user specifies coasting beams
+        if bunched is False:
+            LOGGER.warning(
+                "Using 'bunched=False' in this formalism makes the approximation of bunch length = C/(2*pi). "
+                "Please use the BjorkenMtingwaIBS class for fully accurate results."
+            )
+            bunch_length: float = self.optics.circumference / (2 * np.pi)
+        # ----------------------------------------------------------------------------------------------
+        # Make sure we are working with geometric emittances
+        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
+        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        # ----------------------------------------------------------------------------------------------
+        # Ensure the elliptic integrals have been computed beforehand
+        if self.elliptic_integrals is None or compute_integrals is True:
+            _ = self.integrals(geom_epsx, geom_epsy, sigma_delta)
+        LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
+        # ----------------------------------------------------------------------------------------------
+        # Get the Coulomb logarithm and the rest of the constant term in Eq (30-32)
+        coulomb_logarithm = self.coulomb_log(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched)
+        # Then the rest of the constant term in the equation
+        # fmt: off
+        rest_of_constant_term = (
+            self.beam_parameters.n_part * self.beam_parameters.particle_classical_radius_m**2 * c 
+            / (12 * np.pi * self.beam_parameters.beta_rel**3 * self.beam_parameters.gamma_rel**5 * bunch_length)
+        )
+        # fmt: on
+        full_constant_term = rest_of_constant_term * coulomb_logarithm
+        # ----------------------------------------------------------------------------------------------
+        # Compute the full result of Eq (30-32) for each plane | make sure to convert back to float
+        Ix, Iy, Iz = self.elliptic_integrals.as_tuple()
+        # If coasting beams, since we use bunch_length=C/(2*pi) we have to divide rates by 2 (see Piwinski)
+        factor = 1.0 if bunched is True else 2.0
+        Tx = float(Ix * full_constant_term / geom_epsx) / factor
+        Ty = float(Iy * full_constant_term / geom_epsy) / factor
+        Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
+        result = IBSGrowthRates(Tx, Ty, Tz)
+        # ----------------------------------------------------------------------------------------------
+        # Self-update the instance's attributes and then return the results
+        self.ibs_growth_rates = result
+        self._refs = _ReferenceValues(geom_epsx, geom_epsy, sigma_delta, bunch_length)
+        self._number_of_growth_rates_computations += 1
         return result
