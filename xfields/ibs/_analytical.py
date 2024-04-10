@@ -569,3 +569,37 @@ class AnalyticalIBS(ABC):
         new_epsy = new_epsy if normalized_emittances is False else self._normalized_emittance(new_epsy)
         # ----------------------------------------------------------------------------------------------
         return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
+
+    def _normalized_emittance(self, geometric_emittance: float) -> float:
+        r"""
+        Computes normalized emittance from the geometric one, using relativistic
+        beta and gamma from the the instance's beam parameters attribute.
+
+        Parameters
+        ----------
+        geometric_emittance : float
+            The geometric emittance in [m].
+
+        Returns
+        -------
+        float
+            The corresponding normalized emittance in [m].
+        """
+        return geometric_emittance * self.beam_parameters.beta_rel * self.beam_parameters.gamma_rel
+
+    def _geometric_emittance(self, normalized_emittance: float) -> float:
+        r"""
+        Computes geometric emittance from the normalized one, using relativistic
+        beta and gamma from the the instance's beam parameters attribute.
+
+        Parameters
+        ----------
+        normalized_emittance : float
+            The normalized emittance in [m].
+
+        Returns
+        -------
+        float
+            The corresponding geometric emittance in [m].
+        """
+        return normalized_emittance / (self.beam_parameters.beta_rel * self.beam_parameters.gamma_rel)
