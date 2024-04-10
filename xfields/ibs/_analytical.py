@@ -198,7 +198,7 @@ class AnalyticalIBS(ABC):
         The necessary optics parameters to use for calculations.
     ibs_growth_rates : IBSGrowthRates
         The computed IBS growth rates. This self-updates when
-        they are computed with the ``.growth_rates`` method.
+        they are computed with the `.growth_rates` method.
     """
 
     def __init__(self, beam_parameters: BeamParameters, optics_parameters: OpticsParameters) -> None:
@@ -363,6 +363,7 @@ class AnalyticalIBS(ABC):
             "This method should be implemented in all child classes, but it hasn't been for this one."
         )
 
+    # TODO: adapt admonitions
     def emittance_evolution(
         self,
         epsx: float,
@@ -794,3 +795,137 @@ class AnalyticalIBS(ABC):
 
 # ----- Analytical Classes for Specific Formalism ----- #
 
+
+# TODO: adapt citation to the xsuite way
+class NagaitsevIBS(AnalyticalIBS):
+    r"""
+    Analytical implementation to compute IBS growth rates according to Nagaitsev's
+    formalism :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`.
+
+    Please keep in mind that this formalism will be inaccurate in the presence of
+    vertical dispersion in the machine. In such a case, prefer the Bjorken-Mtingwa
+    formalism instead. See the `BjorkenMtingwaIBS` class.
+
+    Attributes:
+    -----------
+    beam_parameters : BeamParameters
+        The necessary beam parameters to use for calculations.
+    optics_parameters : OpticsParameters
+        The necessary optics parameters to use for calculations.
+    elliptic_integrals : EllipticIntegrals
+        The computed symmetric elliptic integrals of the third kind. This
+        self-updates when they are computed with the `.integrals` method.
+    ibs_growth_rates : IBSGrowthRates
+        The computed IBS growth rates. This self-updates when
+        they are computed with the `.growth_rates` method.
+    """
+
+    def __init__(self, beam_params: BeamParameters, optics: OpticsParameters) -> None:
+        super().__init__(beam_params, optics)
+        # This self-updates when computed, but can be overwritten by the user
+        self.elliptic_integrals: EllipticIntegrals = None
+
+    # TODO: adapt citations and admonitions to the xsuite way
+    def integrals(
+        self, epsx: float, epsy: float, sigma_delta: float, normalized_emittances: bool = False
+    ) -> EllipticIntegrals:
+        r"""
+        Computes the symmetric elliptic integrals of the third kind for the lattice, named
+        :math:`I_x, I_y` and :math:`I_z` in this code base.
+
+        These correspond to the integrals inside of Eq (32), (31) and (30) in
+        :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`, respectively.
+        The instance attribute `self.elliptic_integrals` is automatically updated
+        with the results of this method. They are used to calculate the growth rates.
+
+        .. hint::
+            The calculation is done according to the following steps, which are related to different
+            equations in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`:
+
+                - Computes various intermediate terms and then :math:`a_x, a_y, a_s, a_1` and :math:`a_2` constants from Eq (18-21).
+                - Computes the eigenvalues :math:`\lambda_1, \lambda_2` of the :math:`\bf{A}` matrix (:math:`\bf{L}` matrix in B&M) from Eq (22-24).
+                - Computes the :math:`R_1, R_2` and :math:`R_3` terms from Eq (25-27) with the forms of Eq (5-6).
+                - Computes the :math:`S_p, S_x` and :math:`S_{xp}` terms from Eq (33-35).
+                - Computes and returns the integrals terms in Eq (30-32).
+
+        .. note::
+            Both geometric or normalized emittances can be given as input to this function, and it is assumed
+            the user provides geomettric emittances. If normalized ones are given the `normalized_emittances`
+            parameter should be set to `True` (it defaults to `False`). Internally, a conversion is done to
+            geometric emittances, which are used in the computations.
+
+        Parameters
+        ----------
+        epsx : float
+            Horizontal (geometric or normalized) emittance in [m].
+        epsy : float
+            Vertical (geometric or normalized) emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        normalized_emittances : bool
+            Whether the provided emittances are normalized or not. Defaults to
+            `False` (assumes geometric emittances).
+
+        Returns
+        -------
+        EllipticIntegrals
+            An ``EllipticIntegrals`` object with the computed integrals.
+        """
+        LOGGER.info("Computing Nagaitsev integrals for defined beam and optics parameters")
+        # fmt: off
+        # All of the following (when type annotated as ArrayLike), hold one value per element in the lattice
+        # ----------------------------------------------------------------------------------------------
+        # Make sure we are working with geometric emittances
+        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
+        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        # ----------------------------------------------------------------------------------------------
+        # Computing necessary intermediate terms for the following lines
+        sigx: ArrayLike = np.sqrt(self.optics.betx * geom_epsx + (self.optics.dx * sigma_delta)**2)
+        sigy: ArrayLike = np.sqrt(self.optics.bety * geom_epsy + (self.optics.dy * sigma_delta)**2)
+        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, self.optics.dx, self.optics.dpx)
+        # Computing the constants from Eq (18-21) in Nagaitsev paper
+        ax: ArrayLike = self.optics.betx / geom_epsx
+        ay: ArrayLike = self.optics.bety / geom_epsy
+        a_s: ArrayLike = ax * (self.optics.dx**2 / self.optics.betx**2 + phix**2) + 1 / sigma_delta**2
+        a1: ArrayLike = (ax + self.beam_parameters.gamma_rel**2 * a_s) / 2.0
+        a2: ArrayLike = (ax - self.beam_parameters.gamma_rel**2 * a_s) / 2.0
+        sqrt_term = np.sqrt(a2**2 + self.beam_parameters.gamma_rel**2 * ax**2 * phix**2)  # square root term in Eq (22-23) and Eq (33-35)
+        # ----------------------------------------------------------------------------------------------
+        # These are from Eq (22-24) in Nagaitsev paper, eigen values of A matrix (L matrix in B&M)
+        lambda_1: ArrayLike = ay
+        lambda_2: ArrayLike = a1 + sqrt_term
+        lambda_3: ArrayLike = a1 - sqrt_term
+        # ----------------------------------------------------------------------------------------------
+        # These are the R_D terms to compute, from Eq (25-27) in Nagaitsev paper (at each element of the lattice)
+        LOGGER.debug("Computing elliptic integrals R1, R2 and R3")
+        R1: ArrayLike = elliprd(1 / lambda_2, 1 / lambda_3, 1 / lambda_1) / lambda_1
+        R2: ArrayLike = elliprd(1 / lambda_3, 1 / lambda_1, 1 / lambda_2) / lambda_2
+        R3: ArrayLike = 3 * np.sqrt(lambda_1 * lambda_2 / lambda_3) - lambda_1 * R1 / lambda_3 - lambda_2 * R2 / lambda_3
+        # ----------------------------------------------------------------------------------------------
+        # This are the terms from Eq (33-35) in Nagaitsev paper
+        Sp: ArrayLike = (2 * R1 - R2 * (1 - 3 * a2 / sqrt_term) - R3 * (1 + 3 * a2 / sqrt_term)) * 0.5 * self.beam_parameters.gamma_rel**2
+        Sx: ArrayLike = (2 * R1 - R2 * (1 + 3 * a2 / sqrt_term) - R3 * (1 - 3 * a2 / sqrt_term)) * 0.5
+        Sxp: ArrayLike = 3 * self.beam_parameters.gamma_rel**2 * phix**2 * ax * (R3 - R2) / sqrt_term
+        # ----------------------------------------------------------------------------------------------
+        # These are the integrands of the integrals in Eq (30-32) in Nagaitsev paper
+        Ix_integrand = (
+            self.optics.betx
+            / (self.optics.circumference * sigx * sigy)
+            * (Sx + Sp * (self.optics.dx**2 / self.optics.betx**2 + phix**2) + Sxp)
+        )
+        Iy_integrand = self.optics.bety / (self.optics.circumference * sigx * sigy) * (R2 + R3 - 2 * R1)
+        Iz_integrand = Sp / (self.optics.circumference * sigx * sigy)
+        # ----------------------------------------------------------------------------------------------
+        # Integrating the integrands above accross the ring to get the desired results
+        # This is identical to np.trapz(Ixyz_integrand, self.optics.s) but faster and somehow closer to MAD-X values
+        Ix = float(np.sum(Ix_integrand[:-1] * np.diff(self.optics.s)))
+        Iy = float(np.sum(Iy_integrand[:-1] * np.diff(self.optics.s)))
+        Iz = float(np.sum(Iz_integrand[:-1] * np.diff(self.optics.s)))
+        result = EllipticIntegrals(Ix, Iy, Iz)
+        # fmt: on
+        # ----------------------------------------------------------------------------------------------
+        # Self-update the instance's attributes and then return the results
+        self.elliptic_integrals = result
+        return result
