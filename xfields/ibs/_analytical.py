@@ -431,7 +431,7 @@ class AnalyticalIBS(ABC):
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
-        dt : float, optional:
+        dt : float, optional
             The time interval to use, in [s]. Defaults to the revolution period of the
             machine, :math:`1 / f_{rev}`, for the evolution in a single turn.
         normalized_emittances : bool
@@ -643,3 +643,35 @@ class AnalyticalIBS(ABC):
             tau_y=lowercase_kwargs["sr_tau_y"],
             tau_z=lowercase_kwargs["sr_tau_z"],
         )
+
+    def _evolution_without_sr(
+        self, geom_epsx: float, geom_epsy: float, sigma_delta: float, bunch_length: float, dt: float
+    ) -> Tuple[float, float, float, float]:
+        """
+        Emittance evolution calculation, without SR or QE, to be called by
+        the main method when relevant.
+
+        Parameters
+        ----------
+        geom_epsx : float
+            Horizontal geometric emittance in [m].
+        geom_epsy : float
+            Vertical geometric emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        dt : float
+            The time interval to use, in [s].
+
+        Returns
+        -------
+        Tuple[float, float, float, float]
+            A tuple with the new horizontal & vertical geometric emittances, the new
+            momentum spread and the new bunch length, after the time step has ellapsed.
+        """
+        new_epsx: float = geom_epsx * np.exp(dt * self.ibs_growth_rates.Tx)
+        new_epsy: float = geom_epsy * np.exp(dt * self.ibs_growth_rates.Ty)
+        new_sigma_delta: float = sigma_delta * np.exp(dt * 0.5 * self.ibs_growth_rates.Tz)
+        new_bunch_length: float = bunch_length * np.exp(dt * 0.5 * self.ibs_growth_rates.Tz)
+        return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
