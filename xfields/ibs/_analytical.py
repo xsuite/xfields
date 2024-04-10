@@ -474,8 +474,8 @@ class AnalyticalIBS(ABC):
         Returns
         -------
         Tuple[float, float, float, float]
-            A tuple with the new horizontal & vertical geometric emittances, the new
-            momentum spread and the new bunch length, after the time step has ellapsed.
+            A tuple with the new horizontal & vertical emittances (same type as input), the
+            new momentum spread and the new bunch length, after the time step has ellapsed.
         """
         # ----------------------------------------------------------------------------------------------
         # Check that the IBS growth rates have been computed beforehand - compute if not
@@ -674,4 +674,87 @@ class AnalyticalIBS(ABC):
         new_epsy: float = geom_epsy * np.exp(dt * self.ibs_growth_rates.Ty)
         new_sigma_delta: float = sigma_delta * np.exp(dt * 0.5 * self.ibs_growth_rates.Tz)
         new_bunch_length: float = bunch_length * np.exp(dt * 0.5 * self.ibs_growth_rates.Tz)
+        return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
+
+    def _evolution_with_sr(
+        self,
+        geom_epsx: float,
+        geom_epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        dt: float,
+        sr_eq_geom_epsx: float,
+        sr_eq_geom_epsy: float,
+        sr_eq_sigma_delta: float,
+        sr_taux: float,
+        sr_tauy: float,
+        sr_tauz: float,
+    ) -> Tuple[float, float, float, float]:
+        """
+        Emittance evolution calculation, including SR and QE, to be called by
+        the main method when relevant.
+
+        Parameters
+        ----------
+        geom_epsx : float
+            Horizontal geometric emittance in [m].
+        geom_epsy : float
+            Vertical geometric emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        dt : float
+            The time interval to use, in [s].
+        sr_eq_geom_epsx : float
+            The horizontal geometric equilibrium emittance from synchrotron
+            radiation and quantum excitation, in [m].
+        sr_eq_geom_epsy : float
+            The vertical geometric equilibrium emittance from synchrotron
+            radiation and quantum excitation, in [m].
+        sr_eq_sigma_delta : float
+            The equilibrium momentum spread from synchrotron radiation and
+            quantum excitation.
+        sr_tau_x : float
+            The horizontal damping time from synchrotron radiation, in [s]
+            (should be the same unit as `dt`).
+        sr_tau_y : float
+            The vertical damping time from synchrotron radiation, in [s]
+            (should be the same unit as `dt`).
+        sr_tau_z : float
+            The longitudinal damping time from synchrotron radiation, in [s]
+            (should be the same unit as `dt`).
+
+        Returns
+        -------
+        Tuple[float, float, float, float]
+            A tuple with the new horizontal & vertical geometric emittances, the new
+            momentum spread and the new bunch length, after the time step has ellapsed.
+        """
+        # fmt: off
+        new_epsx: float = (
+            - sr_eq_geom_epsx
+            + (sr_eq_geom_epsx + geom_epsx * (self.ibs_growth_rates.Tx / 2 * sr_taux - 1.0))
+                * np.exp(2 * dt * (self.ibs_growth_rates.Tx / 2 - 1 / sr_taux))
+        ) / (self.ibs_growth_rates.Tx / 2 * sr_taux - 1)
+        new_epsy: float = (
+            - sr_eq_geom_epsy
+            + (sr_eq_geom_epsy + geom_epsy * (self.ibs_growth_rates.Ty / 2 * sr_tauy - 1))
+                * np.exp(2 * dt * (self.ibs_growth_rates.Ty / 2 - 1 / sr_tauy))
+        ) / (self.ibs_growth_rates.Ty / 2 * sr_tauy - 1)
+        # For longitudinal properties, compute the square to avoid too messy code
+        new_sigma_delta_square: float = (
+            - (sr_eq_sigma_delta**2)
+            + (sr_eq_sigma_delta**2 + sigma_delta**2 * (self.ibs_growth_rates.Tz / 2 * sr_tauz - 1))
+                * np.exp(2 * dt * (self.ibs_growth_rates.Tz / 2 - 1 / sr_tauz))
+        ) / (self.ibs_growth_rates.Tz / 2 * sr_tauz - 1)
+        new_bunch_length_square: float = (
+            - (sr_eq_sigma_delta**2)
+            + (sr_eq_sigma_delta**2 + bunch_length**2 * (self.ibs_growth_rates.Tz / 2 * sr_tauz - 1))
+                * np.exp(2 * dt * (self.ibs_growth_rates.Tz / 2 - 1 / sr_tauz))
+        ) / (self.ibs_growth_rates.Tz / 2 * sr_tauz - 1)
+        # And then simply get the square root of that for the final results
+        new_sigma_delta: float = np.sqrt(new_sigma_delta_square)
+        new_bunch_length: float = np.sqrt(new_bunch_length_square)
+        # fmt: on
         return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
