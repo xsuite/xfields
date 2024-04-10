@@ -758,3 +758,39 @@ class AnalyticalIBS(ABC):
         new_bunch_length: float = np.sqrt(new_bunch_length_square)
         # fmt: on
         return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
+
+    def _bypassed_threshold(
+        self,
+        new_epsx: float,
+        new_epsy: float,
+        new_sigma_delta: float,
+        new_bunch_length: float,
+        threshold: float,
+    ) -> bool:
+        """
+        Checks if the new values exceed a 'threshold'% relative change to the
+        reference ones stored last time growth rates were computed.
+
+        Parameters
+        ----------
+        new_epsx : float
+            Horizontal emittance after time step evolution, in [m].
+        new_epsy : float
+            Vertical emittance after time step evolution, in [m].
+        new_sigma_delta : float
+            The momentum spread after time step evolution.
+        new_bunch_length : float
+            The bunch length after time step evolution, in [m].
+        """
+        if (  # REMEMBER: threshold is a percentage so we need to divide it by 100
+            abs(_percent_change(self._refs.epsx, new_epsx)) > threshold / 100
+            or abs(_percent_change(self._refs.epsy, new_epsy)) > threshold / 100
+            or abs(_percent_change(self._refs.sigma_delta, new_sigma_delta)) > threshold / 100
+            or abs(_percent_change(self._refs.bunch_length, new_bunch_length)) > threshold / 100
+        ):
+            return True
+        return False
+
+
+# ----- Analytical Classes for Specific Formalism ----- #
+
