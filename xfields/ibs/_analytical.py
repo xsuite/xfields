@@ -603,3 +603,43 @@ class AnalyticalIBS(ABC):
             The corresponding geometric emittance in [m].
         """
         return normalized_emittance / (self.beam_parameters.beta_rel * self.beam_parameters.gamma_rel)
+
+    def _get_synchrotron_radiation_kwargs(self, **kwargs) -> _SynchrotronRadiationInputs:
+        r"""
+        Called in `.emittance_evolution`. Gets the expected synchrotron radiation kwargs,
+        and returns them as an `_SynchrotronRadiationInputs` object. Will first convert to
+        lowercase so the user does not have to worry about this.
+
+        Returns
+        -------
+        _SynchrotronRadiationInputs
+            The parsed keyword arguments as a `_SynchrotronRadiationInputs` object.
+
+        Raises
+        ------
+        KeyError
+            If any of the expected kwargs is not provided.
+        """
+        lowercase_kwargs = {key.lower(): value for key, value in kwargs.items()}
+        expected_keys = [
+            "sr_equilibrium_epsx",
+            "sr_equilibrium_epsy",
+            "sr_equilibrium_sigma_delta",
+            "sr_tau_x",
+            "sr_tau_y",
+            "sr_tau_z",
+        ]
+        if any(key not in lowercase_kwargs.keys() for key in expected_keys):
+            LOGGER.error("Missing expected synchrotron radiation kwargs, see raised error message.")
+            raise KeyError(
+                "Not all expected synchrotron radiationkwargs were provided.\n"
+                f"Expected: {expected_keys}, provided: {lowercase_kwargs.keys()}"
+            )
+        return _SynchrotronRadiationInputs(
+            equilibrium_epsx=lowercase_kwargs["sr_equilibrium_epsx"],
+            equilibrium_epsy=lowercase_kwargs["sr_equilibrium_epsy"],
+            equilibrium_sigma_delta=lowercase_kwargs["sr_equilibrium_sigma_delta"],
+            tau_x=lowercase_kwargs["sr_tau_x"],
+            tau_y=lowercase_kwargs["sr_tau_y"],
+            tau_z=lowercase_kwargs["sr_tau_z"],
+        )
