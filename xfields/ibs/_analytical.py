@@ -241,7 +241,7 @@ class AnalyticalIBS(ABC):
 
         Parameters
         ----------
-        epsx : float)
+        epsx : float
             Horizontal (geometric or normalized) emittance in [m].
         epsy : float
             Vertical (geometric or normalized) emittance in [m].
@@ -323,3 +323,42 @@ class AnalyticalIBS(ABC):
         bmin = max(rmincl, rminqm)
         bmax = min(sigma_x_cm, debye_length)
         return np.log(bmax / bmin)
+
+    @abstractmethod
+    def growth_rates(
+        self,
+        epsx: float,
+        epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        bunched: bool = True,
+        normalized_emittances: bool = False,
+    ) -> IBSGrowthRates:
+        r"""
+        Method to compute the IBS growth rates. This is an abstract method
+        that should be implemented in child classes based on their formalism.
+
+        Parameters
+        ----------
+        epsx : float
+            Horizontal (geometric or normalized) emittance in [m].
+        epsy : float
+            Vertical (geometric or normalized) emittance in [m].
+        sigma_delta : float
+            Momentum spread.
+        bunch_length : float
+            Bunch length in [m].
+        bunched : bool
+            Whether the beam is bunched or not (coasting). Defaults to `True`.
+        normalized_emittances : bool
+            Whether the provided emittances are normalized or not. Defaults to
+            `False` (assumes geometric emittances).
+
+        Returns
+        -------
+            growth_rates : IBSGrowthRates
+                An ``IBSGrowthRates`` object with the computed growth rates.
+        """
+        raise NotImplementedError(
+            "This method should be implemented in all child classes, but it hasn't been for this one."
+        )
