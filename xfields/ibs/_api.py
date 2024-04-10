@@ -91,7 +91,7 @@ def get_intrabeam_scattering_growth_rates(
         assert sigma_delta is None
         assert bunch_length is None
         _using_particles: bool = True
-        npart: int = particles._num_active_particles
+        npart: int = particles._num_active_particles * particles.weight[0]  # its total_intensity_particles
         epsx: float = _geom_epsx(particles)
         epsy: float = _geom_epsy(particles)
         sigma_delta: float = _sigma_delta(particles)
