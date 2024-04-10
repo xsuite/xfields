@@ -1462,3 +1462,67 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             + (6 * bety_over_epsy * gamma**2 * phiy**2)
         )
         return ay
+
+    def _by(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+        """
+        Computes the `by` term of Table 1 in the MAD-X note.
+
+        If comparing to the MAD-X Fortran code, this corresponds to (and
+        was benchmarked against) the `ty2 * cprime` terms there.
+
+        Parameters
+        ----------
+        geom_epsx : float
+            Horizontal geometric emittance in [m].
+        geom_epsy : float
+            Vertical geometric emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+
+        Returns
+        -------
+        ArrayLike
+            An array with the `by` term, at each element in the lattice.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
+        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        gamma: float = self.beam_parameters.gamma_rel  # relativistic gamma
+        betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
+        epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
+        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        # ----------------------------------------------------------------------------------------------
+        # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
+        # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
+        LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
+        Dx: ArrayLike = self.optics.dx * beta
+        Dy: ArrayLike = self.optics.dy * beta
+        Dpx: ArrayLike = self.optics.dpx * beta
+        Dpy: ArrayLike = self.optics.dpy * beta
+        # ----------------------------------------------------------------------------------------------
+        # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
+        LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
+        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
+        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        # ----------------------------------------------------------------------------------------------
+        by: ArrayLike = (
+            gamma**2 * (bety_over_epsy - 2 * betx_over_epsx) * (Hx / geom_epsx + 1 / sigma_delta**2)
+            + gamma**2 * Hy / geom_epsy * (bety_over_epsy - 4 * betx_over_epsx)
+            + (betxbety / epsxepsy)
+            + gamma**2 * (2 * betx_over_epsx**2 * phix**2 - bety_over_epsy**2 * phiy**2)
+            + gamma**4
+            * Hy
+            / self.optics.bety
+            * (betx_over_epsx + bety_over_epsy)
+            * (Hy / geom_epsy + 1 / sigma_delta**2)
+            + gamma**4 * Hx * Hy / (self.optics.bety * geom_epsx) * (betx_over_epsx + bety_over_epsy)
+            - gamma**4
+            * Hy
+            / self.optics.bety
+            * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
+            + 6 * gamma**2 * phiy**2 * betx_over_epsx * bety_over_epsy
+        )
+        return by
