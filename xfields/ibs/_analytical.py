@@ -1090,7 +1090,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
     ) -> float:
         r"""
         Computes :math:`\Gamma`, the 6-dimensional invariant phase space
-        volume of a bunched beam.
+        volume of a beam.
 
         Parameters
         ----------
