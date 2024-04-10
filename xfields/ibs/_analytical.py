@@ -1051,3 +1051,31 @@ class NagaitsevIBS(AnalyticalIBS):
         self._refs = _ReferenceValues(geom_epsx, geom_epsy, sigma_delta, bunch_length)
         self._number_of_growth_rates_computations += 1
         return result
+
+
+class BjorkenMtingwaIBS(AnalyticalIBS):
+    r"""
+    Analytical implementation to compute IBS growth rates according to `Bjorken & Mtingwa`
+    formalism. The method follows the ``MAD-X`` implementation, which has corrected B&M in
+    order to take in consideration vertical dispersion (see the relevant note about the changes
+    at :cite:`CERN:Antoniou:Revision_IBS_MADX`). It initiates from a `BeamParameters` and an
+    `OpticsParameters` objects.
+
+    .. note::
+        In ``MAD-X`` it is ensure that the Twiss table is centered. One might observe some
+        discrepancies against ``MAD-X`` growth rates if not slicing the xtrack.Line before
+        calling this method.
+
+    Attributes:
+    -----------
+    beam_parameters : BeamParameters
+        The necessary beam parameters to use for calculations.
+    optics_parameters : OpticsParameters
+        The necessary optics parameters to use for calculations.
+    ibs_growth_rates : IBSGrowthRates
+        The computed IBS growth rates. This self-updates when
+        they are computed with the `.growth_rates` method.
+    """
+
+    def __init__(self, beam_params: BeamParameters, optics: OpticsParameters) -> None:
+        super().__init__(beam_params, optics)
