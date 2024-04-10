@@ -246,9 +246,9 @@ class AnalyticalIBS(ABC):
         epsy : float
             Vertical (geometric or normalized) emittance in [m].
         sigma_delta : float
-            Momentum spread.
+            The momentum spread.
         bunch_length : float
-            Bunch length in [m].
+            The bunch length in [m].
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
         normalized_emittances : bool
@@ -257,7 +257,7 @@ class AnalyticalIBS(ABC):
 
         Returns
         -------
-        clog: float
+        float
             The dimensionless Coulomb logarithm :math:`\ln \left( \Lambda \right)`.
         """
         LOGGER.debug("Computing Coulomb logarithm for defined beam and optics parameters")
@@ -345,9 +345,9 @@ class AnalyticalIBS(ABC):
         epsy : float
             Vertical (geometric or normalized) emittance in [m].
         sigma_delta : float
-            Momentum spread.
+            The momentum spread.
         bunch_length : float
-            Bunch length in [m].
+            The bunch length in [m].
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
         normalized_emittances : bool
@@ -356,9 +356,216 @@ class AnalyticalIBS(ABC):
 
         Returns
         -------
-            growth_rates : IBSGrowthRates
-                An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSGrowthRates
+            An ``IBSGrowthRates`` object with the computed growth rates.
         """
         raise NotImplementedError(
             "This method should be implemented in all child classes, but it hasn't been for this one."
         )
+
+    def emittance_evolution(
+        self,
+        epsx: float,
+        epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        dt: float = None,
+        normalized_emittances: bool = False,
+        auto_recompute_rates_percent: float = None,
+        **kwargs,
+    ) -> Tuple[float, float, float, float]:
+        r"""
+        Analytically computes the new emittances after a given time step `dt` has
+        ellapsed, from provided values, based on the ``IBS`` growth rates.
+
+        .. hint::
+            The calculation is an exponential growth based on the rates :math:`T_{x,y,z}`. It goes
+            according to the following, where :math:`N` represents the time step:
+
+            .. math::
+
+                T_{x,y,z} &= 1 / \tau_{x,y,z}
+
+                \varepsilon_{x,y}^{N+1} &= \varepsilon_{x,y}^{N} * e^{t / \tau_{x,y}}
+
+                \sigma_{\delta, z}^{N+1} &= \sigma_{\delta, z}^{N} * e^{t / 2 \tau_{z}}
+
+        .. note::
+            Both geometric or normalized emittances can be given as input to this function, and it is assumed
+            the user provides geomettric emittances. If normalized ones are given the `normalized_emittances`
+            parameter should be set to `True` (it defaults to `False`). Internally, a conversion is done to
+            geometric emittances, which are used in the computations. The returned emittances correspond to
+            the type of those provided: if given normalized emittances this function will return values that
+            correspond to the new normalized emittances.
+
+
+        .. admonition:: Synchrotron Radiation
+
+            Synchrotron Radiation can play a significant role in the evolution of the emittances
+            in certain scenarios, particularly for leptons. One can include the contribution of
+            SR to this calculation by providing several keyword arguments corresponding to the
+            equilibrium emittances and damping times from SR and quantum excitation. See the list
+            of expected kwargs below. A :ref:`dedicated section in the FAQ <xibs-faq-sr-inputs>`
+            provides information on how to obtain these values from ``Xsuite`` or ``MAD-X``.
+
+            In case this contribution is included, then the calculation is modified from the one
+            shown above, and goes according to :cite:`BOOK:Wolski:Beam_dynamics` (Eq (13.64)) or
+            :cite:`CAS:Martini:IBS_Anatomy_Theory` (Eq (135)):
+
+            .. math::
+
+                T_{x,y,z} &= 1 / \tau_{x,y,z}^{\mathrm{IBS}}
+
+                \varepsilon_{x,y}^{N+1} &= \left[ - \varepsilon_{x,y}^{\mathrm{SR}eq} + \left( \varepsilon_{x,y}^{\mathrm{SR}eq} + \frac{\varepsilon_{x,y}^{N}}{2 \tau_{x,y}^{\mathrm{IBS}}} \tau_{x,y}^{\mathrm{SR}} - 1 \right) * e^{2 t \left( \frac{1}{2 \tau_{x,y}^{\mathrm{IBS}}} - \frac{1}{\tau_{x,y}^{\mathrm{SR}}} \right)} \right] / \left( \frac{\tau_{x,y}^{\mathrm{SR}}}{2 \tau_{x,y}^{\mathrm{IBS}}} - 1 \right)
+
+                {\sigma_{\delta, z}^{N+1}}^2 &= \left[ - {\sigma_{\delta, z}^{\mathrm{SR}eq}}^2 + \left( {\sigma_{\delta, z}^{\mathrm{SR}eq}}^2 + \frac{{\sigma_{\delta, z}^{N}}^2}{2 \tau_{z}^{\mathrm{IBS}}} \tau_{z}^{\mathrm{SR}} - 1 \right) * e^{2 t \left( \frac{1}{2 \tau_{z}^{\mathrm{IBS}}} - \frac{1}{\tau_{z}^{\mathrm{SR}}} \right)} \right] / \left( \frac{\tau_{z}^{\mathrm{SR}}}{2 \tau_{z}^{\mathrm{IBS}}} - 1 \right)
+
+
+        Parameters
+        ----------
+        epsx : float
+            Horizontal (geometric or normalized) emittance in [m].
+        epsy : float
+            Vertical (geometric or normalized) emittance in [m].
+        sigma_delta : float
+            The momentum spread.
+        bunch_length : float
+            The bunch length in [m].
+        dt : float, optional:
+            The time interval to use, in [s]. Defaults to the revolution period of the
+            machine, :math:`1 / f_{rev}`, for the evolution in a single turn.
+        normalized_emittances : bool
+            Whether the provided emittances are normalized or not. Defaults to
+            `False` (assumes geometric emittances).
+        auto_recompute_rates_percent : float, optional
+            If given, a check is performed to determine if an update of the growth rates is
+            necessary, in which case it will be done before computing the emittance evolutions.
+            **Please provide a value as a percentage of the emittance change since the last
+            update of the growth rates**. For instance, if one provides `12`, a check is made to
+            see if any quantity would have changed by more than 12% compared to reference values
+            stored at the last growth rates update, and if so the growth rates are automatically
+            recomputed to be as up-to-date as possible before returning the new values. Defaults
+            to `None` (no checks done, no auto-recomputing).
+        **kwargs:
+            If keyword arguments are provided, they are considered inputs for the inclusion
+            of synchrotron radiation in the calculation, and the following are expected,
+            case-insensitively:
+                sr_equilibrium_epsx : float
+                    The horizontal equilibrium emittance from synchrotron radiation
+                    and quantum excitation, in [m]. Should be the same type (geometric
+                    or normalized) as `epsx` and `epsy`.
+                sr_equilibrium_epsy : float
+                    The vertical equilibrium emittance from synchrotron radiation and
+                    quantum excitation, in [m]. Should be the same type (geometric or
+                    normalized) as `epsx` and `epsy`.
+                sr_equilibrium_sigma_delta : float
+                    The equilibrium momentum spread from synchrotron radiation and
+                    quantum excitation.
+                sr_tau_x : float
+                    The horizontal damping time from synchrotron radiation, in [s]
+                    (should be the same unit as `dt`).
+                sr_tau_y : float
+                    The vertical damping time from synchrotron radiation, in [s]
+                    (should be the same unit as `dt`).
+                sr_tau_z : float
+                    The longitudinal damping time from synchrotron radiation, in [s]
+                    (should be the same unit as `dt`).
+
+        Returns
+        -------
+        Tuple[float, float, float, float]
+            A tuple with the new horizontal & vertical geometric emittances, the new
+            momentum spread and the new bunch length, after the time step has ellapsed.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Check that the IBS growth rates have been computed beforehand - compute if not
+        if self.ibs_growth_rates is None:
+            LOGGER.debug("Attempted to compute emittance evolution without growth rates, computing them.")
+            bunched = kwargs.get("bunched", True)  # get the bunched value if provided
+            self.growth_rates(epsx, epsy, sigma_delta, bunch_length, bunched, normalized_emittances)
+        LOGGER.info("Computing new emittances from IBS growth rates for defined beam and optics parameters")
+        # ----------------------------------------------------------------------------------------------
+        # Check the kwargs and potentially get the arguments to include synchrotron radiation
+        include_synchrotron_radiation = False
+        if len(kwargs.keys()) >= 1:  # lets' not check with 'is not None' since default {} kwargs is not None
+            LOGGER.debug("Kwargs present, assuming synchrotron radiation is to be included")
+            include_synchrotron_radiation = True
+            sr_inputs: _SynchrotronRadiationInputs = self._get_synchrotron_radiation_kwargs(**kwargs)
+        # ----------------------------------------------------------------------------------------------
+        # Make sure we are working with geometric emittances (also for SR inputs if given)
+        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
+        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        if include_synchrotron_radiation is True:
+            sr_eq_geom_epsx = (
+                sr_inputs.equilibrium_epsx
+                if normalized_emittances is False
+                else self._geometric_emittance(sr_inputs.equilibrium_epsx)
+            )
+            sr_eq_geom_epsy = (
+                sr_inputs.equilibrium_epsy
+                if normalized_emittances is False
+                else self._geometric_emittance(sr_inputs.equilibrium_epsy)
+            )
+            sr_eq_sigma_delta = sr_inputs.equilibrium_sigma_delta
+        # ----------------------------------------------------------------------------------------------
+        # Set the time step to 1 / frev if not provided
+        if dt is None:
+            LOGGER.debug("No time step provided, defaulting to 1 / frev")
+            dt = 1 / self.optics.revolution_frequency
+        # ----------------------------------------------------------------------------------------------
+        # Compute new emittances and return them. Here we multiply because T = 1 / tau
+        if include_synchrotron_radiation is False:  # the basic calculation
+            new_epsx, new_epsy, new_sigma_delta, new_bunch_length = self._evolution_without_sr(
+                geom_epsx, geom_epsy, sigma_delta, bunch_length, dt
+            )
+        else:  # the modified calculation with Synchrotron Radiation contribution
+            new_epsx, new_epsy, new_sigma_delta, new_bunch_length = self._evolution_with_sr(
+                geom_epsx,
+                geom_epsy,
+                sigma_delta,
+                bunch_length,
+                dt,
+                sr_eq_geom_epsx,
+                sr_eq_geom_epsy,
+                sr_eq_sigma_delta,
+                sr_inputs.tau_x,
+                sr_inputs.tau_y,
+                sr_inputs.tau_z,
+            )
+        # ----------------------------------------------------------------------------------------------
+        # If auto-recompute is on and the given threshold is exceeded, recompute the growth rates
+        if isinstance(auto_recompute_rates_percent, (int, float)):
+            if self._bypassed_threshold(
+                new_epsx, new_epsy, new_sigma_delta, new_bunch_length, auto_recompute_rates_percent
+            ):
+                LOGGER.debug(
+                    f"One value would change by more than {auto_recompute_rates_percent}% compared to last "
+                    "update of the growth rates, updating growth rates before re-computing evolutions."
+                )
+                bunched = kwargs.get("bunched", True)  # get the bunched value if provided
+                self.growth_rates(epsx, epsy, sigma_delta, bunch_length, bunched, normalized_emittances)
+                # And now we need to recompute the evolutions since the growth rates have been updated
+                if include_synchrotron_radiation is False:  # the basic calculation
+                    new_epsx, new_epsy, new_sigma_delta, new_bunch_length = self._evolution_without_sr(
+                        geom_epsx, geom_epsy, sigma_delta, bunch_length, dt
+                    )
+                else:  # the modified calculation with Synchrotron Radiation contribution
+                    new_epsx, new_epsy, new_sigma_delta, new_bunch_length = self._evolution_with_sr(
+                        geom_epsx,
+                        geom_epsy,
+                        sigma_delta,
+                        bunch_length,
+                        dt,
+                        sr_eq_geom_epsx,
+                        sr_eq_geom_epsy,
+                        sr_eq_sigma_delta,
+                        sr_inputs.tau_x,
+                        sr_inputs.tau_y,
+                        sr_inputs.tau_z,
+                    )
+        # ----------------------------------------------------------------------------------------------
+        # Make sure we return the same type of emittances as the user provided
+        new_epsx = new_epsx if normalized_emittances is False else self._normalized_emittance(new_epsx)
+        new_epsy = new_epsy if normalized_emittances is False else self._normalized_emittance(new_epsy)
+        # ----------------------------------------------------------------------------------------------
+        return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
