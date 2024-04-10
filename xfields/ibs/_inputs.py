@@ -189,3 +189,42 @@ class OpticsParameters(xo.HybridClass):
     def from_line(cls, line: xt.Line, **kwargs) -> Self:  # noqa: F821
         """Only here so that OpticsParameters.from_line() is also possible."""
         return cls(line, **kwargs)
+
+
+# ----- Helper functions ----- #
+
+# TODO: determine with Gianni if we want this
+# def _is_twiss_centered(twiss: xt.TwissTable) -> bool:
+#     r"""
+#     Determines if the Twiss was performed at the center of elements.
+
+#     .. hint::
+#         This check is taken from the Fortran source code of the ``IBS`` module in ``MAD-X``.
+#         We skip all rows in the table until we get to the first element with non-zero length,
+#         take note of its `s` position, then the `s` and `l` of the next element. We compare the
+#         :math:`\Delta s` to the length and conclude. If the two match, then the :math:`\Delta s`
+#         is exactly the length of the second element which means the `s` values are given at the
+#         end of elements, and therefore we are not centered. Otherwise, we are.
+
+#     Parameters
+#     ----------
+#     twiss : xt.TwissTable
+#         The result of a Twiss call on the `xt.Line`.
+
+#     Returns
+#     -------
+#     bool
+#         Returns `True` if the Twiss is centered, `False` otherwise.
+#     """
+#     df = twiss.to_pandas()
+#     # Get to the first row with an actual element of non-zero length
+#     tw = df[df.l != 0]
+#     # Get the "first" value of s and l
+#     s0 = tw.s.to_numpy()[0]
+#     # Get the s variable at the next element
+#     l1 = tw.l.to_numpy()[1]
+#     s1 = tw.s.to_numpy()[1]
+#     # Compare s1 - s0 with the length of the second element, if it matches then the delta_s corresponds
+#     # to the length of the element which means we are getting values at the exit of the elements,
+#     # aka the twiss is not centered
+#     return not np.isclose(s1 - s0, l1)

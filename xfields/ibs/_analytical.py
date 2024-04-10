@@ -1796,8 +1796,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # We inform the user in case the TWISS was not centered - but keep going
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
-        if self.optics._is_centered is False:
-            LOGGER.debug("Twiss was not calculated at center of elements, might see discrepancies to MAD-X")
+        # TODO: two lines below commented out as centering determination not implemented, maybe remove after discussing with Gianni
+        # if self.optics._is_centered is False:
+        #     LOGGER.debug("Twiss was not calculated at center of elements, might see discrepancies to MAD-X")
         # fmt: off
         # All of the following (when type annotated as ArrayLike), hold one value per element in the lattice
         # ----------------------------------------------------------------------------------------------
