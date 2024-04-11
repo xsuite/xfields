@@ -193,7 +193,7 @@ class OpticsParameters(xo.HybridClass):
 
 # ----- Helper functions ----- #
 
-# TODO: determine with Gianni if we want this
+# TODO (Gianni): determine if we want this - wait for refactor of TwissTable behaviour?
 # def _is_twiss_centered(twiss: xt.TwissTable) -> bool:
 #     r"""
 #     Determines if the Twiss was performed at the center of elements.

@@ -21,7 +21,3 @@ __all__ = [
     "IBSKineticKick",
     "IBSSimpleKick",
 ]
-
-# TODO: see with / ask Gianni:
-# - can the element be made aware of the line it's in and the turn number in tracking? -> SEE the at_turn from particles
-# - how to maximize the use of xobjects? Currently rewrote some things as xo.HybridClass objects, is this the right way?

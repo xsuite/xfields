@@ -210,7 +210,7 @@ class AnalyticalIBS(ABC):
         self._refs: _ReferenceValues = None  # updates when growth rates are computed
         self._number_of_growth_rates_computations: int = 0  # increments when growth rates are computed
 
-    # TODO: adapt citations and admonitions etc
+    # TODO (Gianni): adapt citations and admonitions etc
     def coulomb_log(
         self,
         epsx: float,
@@ -363,7 +363,7 @@ class AnalyticalIBS(ABC):
             "This method should be implemented in all child classes, but it hasn't been for this one."
         )
 
-    # TODO: adapt admonitions
+    # TODO (Gianni): adapt admonitions
     def emittance_evolution(
         self,
         epsx: float,
@@ -796,7 +796,7 @@ class AnalyticalIBS(ABC):
 # ----- Analytical Classes for Specific Formalism ----- #
 
 
-# TODO: adapt citation to the xsuite way
+# TODO (Gianni): adapt citation to the xsuite way
 class NagaitsevIBS(AnalyticalIBS):
     r"""
     Analytical implementation to compute IBS growth rates according to Nagaitsev's
@@ -825,7 +825,7 @@ class NagaitsevIBS(AnalyticalIBS):
         # This self-updates when computed, but can be overwritten by the user
         self.elliptic_integrals: EllipticIntegrals = None
 
-    # TODO: adapt citations and admonitions to the xsuite way
+    # TODO (Gianni): adapt citations and admonitions to the xsuite way
     def integrals(
         self, epsx: float, epsy: float, sigma_delta: float, normalized_emittances: bool = False
     ) -> EllipticIntegrals:
@@ -930,7 +930,7 @@ class NagaitsevIBS(AnalyticalIBS):
         self.elliptic_integrals = result
         return result
 
-    # TODO: adapt citations and admonitions to the xsuite way
+    # TODO (Gianni): adapt citations and admonitions to the xsuite way
     def growth_rates(
         self,
         epsx: float,
@@ -1053,7 +1053,7 @@ class NagaitsevIBS(AnalyticalIBS):
         return result
 
 
-# TODO: adapt citation to the xsuite way
+# TODO (Gianni): adapt citation to the xsuite way
 class BjorkenMtingwaIBS(AnalyticalIBS):
     r"""
     Analytical implementation to compute IBS growth rates according to `Bjorken & Mtingwa`
@@ -1630,7 +1630,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         )
         return bz
 
-    # TODO: adapt citation to the xsuite way
+    # TODO (Gianni): adapt citation to the xsuite way
     def _constants(
         self,
         geom_epsx: float,
@@ -1716,7 +1716,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
         return common_constant_term, const_x, const_y, const_z
 
-    # TODO: adapt citations and admonitions to the xsuite way
+    # TODO (Gianni): adapt citations and admonitions to the xsuite way
     def growth_rates(
         self,
         epsx: float,
@@ -1796,7 +1796,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # We inform the user in case the TWISS was not centered - but keep going
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
-        # TODO: two lines below commented out as centering determination not implemented, maybe remove after discussing with Gianni
+        # TODO (Gianni): two lines below commented out as centering determination not implemented, maybe remove after discussing with Gianni
         # if self.optics._is_centered is False:
         #     LOGGER.debug("Twiss was not calculated at center of elements, might see discrepancies to MAD-X")
         # fmt: off

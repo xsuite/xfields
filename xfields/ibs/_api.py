@@ -115,6 +115,7 @@ def get_intrabeam_scattering_growth_rates(
     # Ensure valid formalism parameter was given and determine the corresponding class
     assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
     if formalism.lower() == "nagaitsev":
+        # TODO (Gianni): a check here for vertical dispersion, maybe log a warning or something?
         IBS = NagaitsevIBS(beam_params, optics_params)
     else:
         IBS = BjorkenMtingwaIBS(beam_params, optics_params)

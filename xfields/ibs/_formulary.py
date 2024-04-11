@@ -13,7 +13,7 @@ from numpy.typing import ArrayLike
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO: see how to adapt citation here
+# TODO (Gianni): see how to adapt citation here
 def phi(beta: ArrayLike, alpha: ArrayLike, dx: ArrayLike, dpx: ArrayLike) -> ArrayLike:
     """
     Computes the ``Phi`` parameter of Eq (15) in

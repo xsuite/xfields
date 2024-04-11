@@ -139,6 +139,7 @@ def line_density(particles: xt.Particles, n_slices: int) -> ArrayLike:
 
 
 # TODO: make the element aware of the tracking turn number so it can decide whether to recompute the growth rates or not
+# Use the particle's .at_turn for this
 
 
 class IBSSimpleKick(xt.BeamElement):
