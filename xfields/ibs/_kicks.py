@@ -5,6 +5,7 @@
 
 from __future__ import annotations  # important for sphinx to alias ArrayLike
 
+from abc import ABC, abstractmethod
 from logging import getLogger
 from typing import Tuple
 
@@ -30,7 +31,7 @@ from xfields.ibs._inputs import BeamParameters, OpticsParameters
 
 LOGGER = getLogger(__name__)
 
-# ----- Dataclasses-like as xo.HybridClass objects ----- #
+# ----- Some classes to store results (as xo.HybridClass) ----- #
 
 
 class DiffusionCoefficients(xo.HybridClass):
@@ -178,15 +179,197 @@ def line_density(particles: xt.Particles, n_slices: int) -> ArrayLike:
     return nplike.interp(zeta, bin_centers, counts_normed)
 
 
-# ----- Dataclasses-like as xo.HybridClass objects ----- #
-
+# ----- Abstract Base Class to Inherit from ----- #
 
 # TODO: make the element aware of the tracking turn number so it can decide whether to recompute the growth rates or not
 # Use the particle's .at_turn for this
 
 
-class IBSSimpleKick(xt.BeamElement):
-    """"""
+class IBSKick(xt.BeamElement, ABC):
+    """
+    Abstract base class for IBS kick elements, from which all
+    formalism implementations should inherit.
+
+    Attributes
+    ----------
+    beam_parameters : BeamParameters
+        The necessary beam parameters to use for calculations.
+    optics_parameters : OpticsParameters
+        The necessary optics parameters to use for calculations.
+    kick_coefficients : IBSKickCoefficients
+        The computed kick coefficients. This self-updates when they
+        are computed with the `.compute_kick_coefficients` method.
+    auto_recompute_coefficients_percent : float, optional.
+        If given, a check is performed after kicking the particles to
+        determine if recomputing the kick coefficients is necessary, in
+        which case it will be done before the next kick. **Please provide
+        a value as a percentage of the emittance change**. For instance,
+        if one provides `12` after kicking a check is done to see if the
+        emittance changed by more than 12% in any plane, and if so the
+        coefficients will be automatically recomputed before the next
+        kick. Defaults to `None` (no checks done, no auto-recomputing).
+    """
+
+    iscollective = True  # based on alive particles, need them all here
+    needs_rng = True  # TODO: random numbers involved in kicks, not sure how to use this rng yet
+
+    def __init__(
+        self,
+        beam_parameters: BeamParameters,
+        optics_parameters: OpticsParameters,
+        auto_recompute_coefficients_percent: float = None,
+        *args,
+        **kwargs,
+    ) -> None:
+        self.beam_parameters: BeamParameters = beam_parameters
+        self.optics: OpticsParameters = optics_parameters
+        self.auto_recompute_coefficients_percent: float = auto_recompute_coefficients_percent
+        # This one self-updates when computed, but can be overwritten by the user
+        self.kick_coefficients: IBSKickCoefficients = None
+        # Private flag to indicate if the coefficients need to be recomputed before the next kick
+        self._need_to_recompute_coefficients: bool = False
+        # Private attribute tracking the number of coefficients computations
+        self._number_of_coefficients_computations: int = 0
+        # And passing the rest to initialization of the xtrack.BeamElement
+        super().__init__(*args, **kwargs)
+
+    @abstractmethod
+    def compute_kick_coefficients(self, particles: xt.Particles, **kwargs) -> IBSKickCoefficients:
+        r"""
+        Method to compute the kick coefficients. This is an abstract method
+        that should be implemented in child classes based on their formalism.
+
+        Parameters
+        ----------
+        particles :xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+
+        Returns
+        -------
+        IBSKickCoefficients
+            An ``IBSKickCoefficients`` object with the computed kick coefficients.
+        """
+        raise NotImplementedError(
+            "This method should be implemented in all child classes, but it hasn't been for this one."
+        )
+
+    @abstractmethod
+    def _check_coefficients_presence(self) -> None:
+        """
+        Private method to check the relevant instance attributes
+        and determine if the kick coefficients have been computed.
+        This is called before applying momenta kicks.
+        """
+        raise NotImplementedError(
+            "This method should be implemented in all child classes, but it hasn't been for this one."
+        )
+
+    @abstractmethod
+    def _apply_formalism_ibs_kick(self, particles: xt.Particles, n_slices: int = 40) -> None:
+        """
+        Method to determine and apply IBS momenta kicks. This is an abstract
+        method that should be implemented in child classes based on their
+        formalism. It is the heavy-lifting part that is called in the `.track`
+        method.
+
+        Parameters
+        ----------
+        particles :xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+        """
+
+    def track(self, particles: xt.Particles, n_slices: int = 40) -> None:
+        """
+        Method to track the particles through the IBS kick element.
+        This method is called when the element is part of a `xtrack.Line`.
+
+        Parameters
+        ----------
+        particles : xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+        n_slices : int
+            The number of slices to use for the computation of the bunch
+            longitudinal line density. Defaults to ``40``.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Check that the kick coefficients have been computed beforehand
+        self._check_coefficients_presence()
+        # ----------------------------------------------------------------------------------------------
+        # Check the auto-recompute flag and recompute coefficients if necessary
+        if self._need_to_recompute_coefficients is True:
+            LOGGER.info("Recomputing IBS kick coefficients before applying kicks")
+            self.compute_kick_coefficients(particles)
+            self._need_to_recompute_coefficients = False
+        # ----------------------------------------------------------------------------------------------
+        # Get and store pre-kick emittances if self.auto_recompute_coefficients_percent is set
+        if isinstance(self.auto_recompute_coefficients_percent, (int, float)):
+            # TODO (Gianni): all this assumes we are the last / first (same) element in the line
+            # TODO (Gianni): if not, how can I check to get my position and compute the optics I
+            # TODO (Gianni): need at this location, to get these parameters?
+            _previous_bunch_length = _bunch_length(particles)
+            _previous_sigma_delta = _sigma_delta(particles)
+            # below we give index 0 as start / end of machine is kick location
+            _previous_geom_epsx = _geom_epsx(particles, self.optics.betx[0], self.optics.dx[0])
+            _previous_geom_epsy = _geom_epsy(particles, self.optics.bety[0], self.optics.dy[0])
+        # ----------------------------------------------------------------------------------------------
+        # Apply the kicks to the particles - the function implementation here is formalism-specific
+        self._apply_formalism_ibs_kick(particles, n_slices)
+        # ----------------------------------------------------------------------------------------------
+        # Get post-kick emittances, check growth and set recompute flag if necessary
+        # (only done if self.auto_recompute_coefficients_percent is set to a valid value)
+        # fmt: off
+        if isinstance(self.auto_recompute_coefficients_percent, (int, float)):
+            _new_bunch_length = _bunch_length(particles)
+            _new_sigma_delta = _sigma_delta(particles)
+            _new_geom_epsx = _geom_epsx(particles, self.optics.betx[0], self.optics.dx[0])
+            _new_geom_epsy = _geom_epsy(particles, self.optics.bety[0], self.optics.dy[0])
+            # If there is an increase / decrease > than self.auto_recompute_coefficients_percent %
+            # in any plane, this check function will set the recompute flag
+            self._check_threshold_bypass(
+                _previous_geom_epsx, _previous_geom_epsy, _previous_sigma_delta, _previous_bunch_length,
+                _new_geom_epsx, _new_geom_epsy, _new_sigma_delta, _new_bunch_length,
+                self.auto_recompute_coefficients_percent
+            )
+        # fmt: on
+
+    def _check_threshold_bypass(
+        self,
+        epsx: float,
+        epsy: float,
+        sigma_delta: float,
+        bunch_length: float,
+        new_epsx: float,
+        new_epsy: float,
+        new_sigma_delta: float,
+        new_bunch_length: float,
+        threshold_percent: float,
+    ) -> None:
+        """
+        Checks if the new values exceed a 'threshold_percent'%
+        relative change to the initial ones provided. If so, sets
+        the `self._need_to_recompute_coefficients` flag to `True`.
+        """
+        if (  # REMEMBER: threshold is a percentage so we need to divide it by 100
+            abs(_percent_change(epsx, new_epsx)) > threshold_percent / 100
+            or abs(_percent_change(epsy, new_epsy)) > threshold_percent / 100
+            or abs(_percent_change(sigma_delta, new_sigma_delta)) > threshold_percent / 100
+            or abs(_percent_change(bunch_length, new_bunch_length)) > threshold_percent / 100
+        ):
+            LOGGER.debug(
+                f"One plane's emittance changed by more than {threshold_percent}%, "
+                "setting flag to recompute coefficients before next kick."
+            )
+            self._need_to_recompute_coefficients = True
+
+
+# ----- Kick Classes for Specific Formalism ----- #
+
+# TODO (Gianni): Will need help to untangle the big mess of xobjects stuff,
+# where should what be implemented, etc.
+
+
+class IBSSimpleKick(IBSKick):
+    """TODO: WRITE"""
 
     _xofields = {
         "beam_parameters": BeamParameters,
@@ -213,18 +396,18 @@ class IBSSimpleKick(xt.BeamElement):
             self._analytical_ibs: AnalyticalIBS = NagaitsevIBS(beam_params, optics_params)
         LOGGER.debug("Override this manually by setting the self.analytical_ibs attribute")
 
-    def to_dict(self):
+    def to_dict(self) -> None:
         """Raises an error as the line should be saved without the IBS kick element."""
         raise NotImplementedError("IBS kick elements should not be saved as part of the line")
 
     @property
     def analytical_ibs(self) -> AnalyticalIBS:
-        """The analytical IBS implementation used for growth rates calculation."""
+        """Analytical IBS implementation class for growth rates calculation."""
         return self._analytical_ibs
 
     @analytical_ibs.setter
     def analytical_ibs(self, value: AnalyticalIBS) -> None:
-        """The analytical_ibs has a setter so that .beam_params and .optics are updated when it is set."""
+        """Setter so that `.beam_params` and `.optics` are updated when set."""
         # fmt: off
         LOGGER.debug("Overwriting analytical ibs implementation used for growth rates calculation")
         self._analytical_ibs: AnalyticalIBS = value
@@ -233,38 +416,45 @@ class IBSSimpleKick(xt.BeamElement):
         self.optics = self.analytical_ibs.optics
         # fmt: on
 
-    def compute_kick_coefficients(
-        self, particles: "xpart.Particles", **kwargs  # noqa: F821
-    ) -> IBSKickCoefficients:
-        """"""
-        pass
+    def compute_kick_coefficients(self, particles: xt.Particles, **kwargs) -> IBSKickCoefficients:
+        ...
 
-    def track(self, particles: xt.Particles) -> None:
-        """"""
-        pass
+    def _check_coefficients_presence(self) -> None:
+        ...
+
+    def _apply_formalism_ibs_kick(self, particles: xt.Particles, n_slices: int = 40) -> None:
+        ...
 
 
-class IBSKineticKick(xt.BeamElement):
-    """"""
+class IBSKineticKick(IBSKick):
+    """TODO: WRITE"""
 
     _xofields = {
         "beam_parameters": BeamParameters,
         "optics": OpticsParameters,
+        "diffusion_coefficients": DiffusionCoefficients,
+        "friction_coefficients": FrictionCoefficients,
         "kick_coefficients": IBSKickCoefficients,
     }
 
     def __init__(self, beam_params: BeamParameters, optics_params: OpticsParameters) -> None:
-        self.xoinitialize(beam_parameters=beam_params, optics=optics_params, kick_coefficients=None)
+        self.xoinitialize(
+            beam_parameters=beam_params,
+            optics=optics_params,
+            diffusion_coefficients=None,
+            friction_coefficients=None,
+            kick_coefficients=None,
+        )
 
-    def to_dict(self):
+    def to_dict(self) -> None:
         """Raises an error as the line should be saved without the IBS kick element."""
         raise NotImplementedError("IBS kick elements should not be saved as part of the line")
 
-    def compute_kick_coefficients(
-        self, particles: "xpart.Particles", **kwargs  # noqa: F821
-    ) -> IBSKickCoefficients:
-        """"""
-        pass
+    def compute_kick_coefficients(self, particles: xt.Particles, **kwargs) -> IBSKickCoefficients:
+        ...
 
-    def track(self, particles: xt.Particles) -> None:
-        pass
+    def _check_coefficients_presence(self) -> None:
+        ...
+
+    def _apply_formalism_ibs_kick(self, particles: xt.Particles, n_slices: int = 40) -> None:
+        ...
