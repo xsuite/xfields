@@ -12,8 +12,20 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 from numpy.typing import ArrayLike
+from scipy.constants import c
+from scipy.special import elliprd
 
 from xfields.ibs._analytical import AnalyticalIBS, BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
+from xfields.ibs._formulary import (
+    _bunch_length,
+    _geom_epsx,
+    _geom_epsy,
+    _percent_change,
+    _sigma_delta,
+    _sigma_x,
+    _sigma_y,
+    phi,
+)
 from xfields.ibs._inputs import BeamParameters, OpticsParameters
 
 LOGGER = getLogger(__name__)
@@ -119,42 +131,51 @@ class IBSKickCoefficients(xo.HybridClass):
 
 # TODO: someday replace this with what Gianni has in xfields.longitudinal_profiles.qgaussian
 def line_density(particles: xt.Particles, n_slices: int) -> ArrayLike:
-    r"""
-    Returns the longitudinal "line density" of the `Particles` object. It is used as a
-    weighting factor for the application of IBS kicks: particles in the denser parts of
-    the bunch will receive a larger kick, and vice versa.
+    """
+    Returns the longitudinal "line density" of the provided `xtrack.Particles`.
+    It is used as a weighing factor for the application of IBS kicks, so that
+    particles in the denser parts of the bunch will receive a larger kick, and
+    vice versa.
 
     Parameters
     ----------
     particles : xtrack.Particles
-        The xtrack.Particles object to compute the line density for.
+        The `xtrack.Particles` object to compute the line density for.
     n_slices : int
         The number of slices to use for the computation of the bins.
 
-    Returns:
-        An array with the density values for each slice / bin of the xtrack.Particles object.
+    Returns
+    -------
+    ArrayLike
+        An array with the weight value for each particle, to be used
+        as a weight in the kicks application.
     """
+    # ----------------------------------------------------------------------------------------------
+    # Start with getting the nplike_lib from the particles' context, to compute on the context device
+    nplike = particles._context.nplike_lib
     # ----------------------------------------------------------------------------------------------
     # Determine properties from longitudinal particles distribution: cuts, slice width, bunch length
     LOGGER.debug("Determining longitudinal particles distribution properties")
-    zeta: np.ndarray = particles.zeta[particles.state > 0]  # careful to only consider active particles
-    z_cut_head: float = np.max(zeta)  # z cut at front of bunch
-    z_cut_tail: float = np.min(zeta)  # z cut at back of bunch
+    zeta: ArrayLike = particles.zeta[
+        particles.state > 0
+    ]  # careful to only consider active particles    z_cut_head: float = np.max(zeta)  # z cut at front of bunch
+    z_cut_head: float = nplike.max(zeta)  # z cut at front of bunch
+    z_cut_tail: float = nplike.min(zeta)  # z cut at back of bunch
     slice_width: float = (z_cut_head - z_cut_tail) / n_slices  # slice width
     # ----------------------------------------------------------------------------------------------
     # Determine bin edges and bin centers for the distribution
     LOGGER.debug("Determining bin edges and bin centers for the distribution")
-    bin_edges = np.linspace(
+    bin_edges: ArrayLike = nplike.linspace(
         z_cut_tail - 1e-7 * slice_width,
         z_cut_head + 1e-7 * slice_width,
         num=n_slices + 1,
         dtype=np.float64,
     )
-    bin_centers = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+    bin_centers: ArrayLike = (bin_edges[:-1] + bin_edges[1:]) / 2.0
     # ----------------------------------------------------------------------------------------------
     # Compute histogram on longitudinal distribution then compute and return line density
-    counts_normed, bin_edges = np.histogram(zeta, bin_edges, density=True)  # density=True to normalize
-    return np.interp(zeta, bin_centers, counts_normed)
+    counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)  # density to normalize
+    return nplike.interp(zeta, bin_centers, counts_normed)
 
 
 # ----- Dataclasses-like as xo.HybridClass objects ----- #

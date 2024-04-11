@@ -190,8 +190,8 @@ class AnalyticalIBS(ABC):
     Abstract base class for analytical IBS calculations, from which
     all formalism implementations should inherit.
 
-    Attributes:
-    -----------
+    Attributes
+    ----------
     beam_parameters : BeamParameters
         The necessary beam parameters to use for calculations.
     optics_parameters : OpticsParameters
