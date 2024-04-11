@@ -64,9 +64,9 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
     bunched=True,
 )
 
-###################################
-# Get growth rates with Nagaitsev #
-###################################
+#########################################
+# Get growth rates with Bjorken-Mtingwa #
+#########################################
 
 bm_growth_rates = get_intrabeam_scattering_growth_rates(
     line=line,

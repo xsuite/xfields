@@ -41,9 +41,9 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
     normalized_emittances=True,
 )
 
-###################################
-# Get growth rates with Nagaitsev #
-###################################
+#########################################
+# Get growth rates with Bjorken-Mtingwa #
+#########################################
 
 bm_growth_rates = get_intrabeam_scattering_growth_rates(
     line=line,
@@ -91,9 +91,9 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
     normalized_emittances=False,  # default value
 )
 
-###################################
-# Get growth rates with Nagaitsev #
-###################################
+#########################################
+# Get growth rates with Bjorken-Mtingwa #
+#########################################
 
 bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
     line=line,
