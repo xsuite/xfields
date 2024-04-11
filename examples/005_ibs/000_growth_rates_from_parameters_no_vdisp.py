@@ -20,8 +20,8 @@ line = xt.Line.from_json(fname_line_particles)
 
 # Line is for SPS ions at injection
 bunch_intensity: int = int(3.5e8)
-nemit_x: float = 1.2612e-6
-nemit_y: float = 0.9081e-6
+nemitt_x: float = 1.2612e-6
+nemitt_y: float = 0.9081e-6
 sigma_delta: float = 3.59e-4
 bunch_length: float = 19.51e-2
 
@@ -33,8 +33,8 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="nagaitsev",
     npart=bunch_intensity,
-    epsx=nemit_x,
-    epsy=nemit_y,
+    epsx=nemitt_x,
+    epsy=nemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
@@ -49,17 +49,17 @@ bm_growth_rates = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     npart=bunch_intensity,
-    epsx=nemit_x,
-    epsy=nemit_y,
+    epsx=nemitt_x,
+    epsy=nemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
     normalized_emittances=True,
 )
 
-##########################################################
-# Compare: we expect Nagaitsev to be wrong in horizontal #
-##########################################################
+###################
+# Compare results #
+###################
 
 print()
 print("Computed from normalized emittances:")
@@ -72,8 +72,8 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 #####################
 
 # Should roughly be equivalent
-geom_epsx: float = 1.742e-7
-geom_epsy: float = 1.254e-7
+gemitt_x: float = 1.742e-7
+gemitt_y: float = 1.254e-7
 
 ###################################
 # Get growth rates with Nagaitsev #
@@ -83,8 +83,8 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="nagaitsev",
     npart=bunch_intensity,
-    epsx=geom_epsx,
-    epsy=geom_epsy,
+    epsx=gemitt_x,
+    epsy=gemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
@@ -99,17 +99,17 @@ bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     npart=bunch_intensity,
-    epsx=geom_epsx,
-    epsy=geom_epsy,
+    epsx=gemitt_x,
+    epsy=gemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
     normalized_emittances=False,  # default value
 )
 
-##########################################################
-# Compare: we expect Nagaitsev to be wrong in horizontal #
-##########################################################
+###################
+# Compare results #
+###################
 
 print()
 print("Computed from geometric emittances (rough equivalent):")

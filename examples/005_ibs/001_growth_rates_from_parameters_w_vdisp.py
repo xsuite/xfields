@@ -34,8 +34,8 @@ if np.count_nonzero(twiss.dy) > 0:
 
 # Line is for LHC protons at top energy
 bunch_intensity: int = int(1.8e11)
-nemit_x: float = 1.8e-6
-nemit_y: float = 1.8e-6
+nemitt_x: float = 1.8e-6
+nemitt_y: float = 1.8e-6
 sigma_delta: float = 4.71e-5
 bunch_length: float = 3.75e-2
 
@@ -47,8 +47,8 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="nagaitsev",
     npart=bunch_intensity,
-    epsx=nemit_x,
-    epsy=nemit_y,
+    epsx=nemitt_x,
+    epsy=nemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
@@ -63,8 +63,8 @@ bm_growth_rates = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     npart=bunch_intensity,
-    epsx=nemit_x,
-    epsy=nemit_y,
+    epsx=nemitt_x,
+    epsy=nemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
@@ -86,8 +86,8 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 # Define parameters #
 #####################
 
-geom_epsx: float = 2.598e-10
-geom_epsy: float = 2.598e-10
+gemitt_x: float = 2.598e-10
+gemitt_y: float = 2.598e-10
 
 ###################################
 # Get growth rates with Nagaitsev #
@@ -97,8 +97,8 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="nagaitsev",
     npart=bunch_intensity,
-    epsx=geom_epsx,
-    epsy=geom_epsy,
+    epsx=gemitt_x,
+    epsy=gemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
@@ -113,8 +113,8 @@ bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
     line=line,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     npart=bunch_intensity,
-    epsx=geom_epsx,
-    epsy=geom_epsy,
+    epsx=gemitt_x,
+    epsy=gemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
