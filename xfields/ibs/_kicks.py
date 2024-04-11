@@ -6,6 +6,7 @@
 from __future__ import annotations  # important for sphinx to alias ArrayLike
 
 from logging import getLogger
+from typing import Tuple
 
 import numpy as np
 import xobjects as xo
@@ -21,7 +22,10 @@ LOGGER = getLogger(__name__)
 
 
 class DiffusionCoefficients(xo.HybridClass):
-    """Container dataclass for kinetic IBS diffusion coefficients.
+    """
+    Holds the diffusion coefficients, named ``Dx``,
+    ``Dy``, and ``Dz``, which are computed in the
+    kinetic kick formalism.
 
     Attributes:
     -----------
@@ -43,9 +47,16 @@ class DiffusionCoefficients(xo.HybridClass):
         """Init by providing the diffusion coefficients."""
         self.xoinitialize(Dx=Dx, Dy=Dy, Dz=Dz)
 
+    def as_tuple(self) -> Tuple[float, float, float]:
+        """Return the growth rates as a tuple."""
+        return (self.Dx, self.Dy, self.Dz)
+
 
 class FrictionCoefficients(xo.HybridClass):
-    """Container dataclass for kinetic IBS friction coefficients.
+    """
+    Holds the friction coefficients, named ``Fx``,
+    ``Fy``, and ``Fz``, which are computed in the
+    kinetic kick formalism.
 
     Attributes:
     -----------
@@ -67,9 +78,16 @@ class FrictionCoefficients(xo.HybridClass):
         """Init by providing the friction coefficients."""
         self.xoinitialize(Fx=Fx, Fy=Fy, Fz=Fz)
 
+    def as_tuple(self) -> Tuple[float, float, float]:
+        """Return the growth rates as a tuple."""
+        return (self.Fx, self.Fy, self.Fz)
+
 
 class IBSKickCoefficients(xo.HybridClass):
-    """Container dataclass for IBS kick coefficients.
+    """
+    Holds the kick coefficients, named ``Kx``,
+    ``Ky``, and ``Kz``, which are used in order
+    to determine the applied momenta kicks.
 
     Attributes:
     -----------
@@ -90,6 +108,10 @@ class IBSKickCoefficients(xo.HybridClass):
     def __init__(self, Kx: float, Ky: float, Kz: float) -> None:
         """Init by providing the kick coefficients."""
         self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
+
+    def as_tuple(self) -> Tuple[float, float, float]:
+        """Return the growth rates as a tuple."""
+        return (self.Kx, self.Ky, self.Kz)
 
 
 # ----- Useful Functions ----- #
