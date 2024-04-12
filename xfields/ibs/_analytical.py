@@ -1031,7 +1031,7 @@ class NagaitsevIBS(AnalyticalIBS):
         # Then the rest of the constant term in the equation
         # fmt: off
         rest_of_constant_term = (
-            self.beam_parameters.num_particles * self.beam_parameters.particle_classical_radius_m**2 * c 
+            self.beam_parameters.num_particles * self.beam_parameters.classical_particle_radius0**2 * c 
             / (12 * np.pi * self.beam_parameters.beta0**3 * self.beam_parameters.gamma0**5 * bunch_length)
         )
         # fmt: on
@@ -1699,7 +1699,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         coulomb_logarithm: float = self.coulomb_log(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched)
         common_constant_term: float = (
             np.pi**2
-            * self.beam_parameters.particle_classical_radius_m**2
+            * self.beam_parameters.classical_particle_radius0**2
             * c
             * (self.beam_parameters.mass0 * 1e-3)** 3  # use mass in MeV like in ._Gamma method (the m^3 terms cancel out)
             * self.beam_parameters.num_particles

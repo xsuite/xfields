@@ -32,7 +32,7 @@ class BeamParameters(xo.HybridClass):
         Relativistic gamma of the simulated particles.
     beta0 : float
         Relativistic gamma of the simulated particles.
-    particle_classical_radius_m : float
+    classical_particle_radius0 : float
         The particles' classical radius in [m].
     """
 
@@ -43,7 +43,7 @@ class BeamParameters(xo.HybridClass):
         "total_energy_eV": xo.Float64,  # total energy in [eV] (energy in xt.Particles?)
         "gamma0": xo.Float64,
         "beta0": xo.Float64,
-        "particle_classical_radius_m": xo.Float64,  # classical_particle_radius0
+        "classical_particle_radius0": xo.Float64,  # classical_particle_radius0
     }
 
     def __init__(self, particles: xt.Particles) -> None:
@@ -54,7 +54,7 @@ class BeamParameters(xo.HybridClass):
         total_energy_eV = np.sqrt(particles.p0c[0] ** 2 + particles.mass0**2)
         gamma0 = particles.gamma0[0]
         beta0 = particles.beta0[0]
-        particle_classical_radius_m = particles.get_classical_particle_radius0()
+        classical_particle_radius0 = particles.get_classical_particle_radius0()
 
         self.xoinitialize(
             num_particles=num_particles,
@@ -63,7 +63,7 @@ class BeamParameters(xo.HybridClass):
             total_energy_eV=total_energy_eV,
             gamma0=gamma0,
             beta0=beta0,
-            particle_classical_radius_m=particle_classical_radius_m,
+            classical_particle_radius0=classical_particle_radius0,
         )
 
     @classmethod
@@ -213,7 +213,7 @@ class OpticsParameters(xo.HybridClass):
 #         Relativistic gamma of the simulated particles.
 #     beta0 : float
 #         Relativistic gamma of the simulated particles.
-#     particle_classical_radius_m : float
+#     classical_particle_radius0 : float
 #         The particles' classical radius in [m].
 #     s : ArrayLike
 #         Longitudinal positions of the machine elements in [m].
