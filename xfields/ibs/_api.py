@@ -9,21 +9,21 @@ import xtrack as xt
 
 from xfields.ibs._analytical import AnalyticalIBS, BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
 from xfields.ibs._formulary import _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta
-from xfields.ibs._inputs import BeamParameters, OpticsParameters
 
 LOGGER = getLogger(__name__)
 
 
 # ----- API for Analytical IBS -----#
 
+
 # TODO: allow gemitt / nemitt
 # TODO: return a table and we can always change the inside of container? RABBIT HOLE
 def get_intrabeam_scattering_growth_rates(
-    line: xt.Line,  # REPLACE THIS WITH A TWISSTABLE
+    twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
-    npart: int = None,
-    epsx: float = None,  # use gemitt_x and gemitt_y?
-    epsy: float = None,  # also nemitt_x and nemitt_y?
+    num_particles: int = None,
+    epsx: float = None,  # use gemitt_x and gemitt_y
+    epsy: float = None,  # also nemitt_x and nemitt_y
     sigma_delta: float = None,
     bunch_length: float = None,
     bunched: bool = True,
@@ -42,7 +42,7 @@ def get_intrabeam_scattering_growth_rates(
     formalism : str
         Which formalism to use for the computation. Can be ``Nagaitsev``
         or ``Bjorken-Mtingwa`` (also accepts ``B&M``), case-insensitively.
-    npart : int, optional
+    num_particles : int, optional
         The number of particles in the beam. Required if `particles` is
         not provided.
     epsx : float, optional
@@ -87,13 +87,13 @@ def get_intrabeam_scattering_growth_rates(
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
     if isinstance(particles, xt.Particles):  # also asserts it is not None
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
-        assert npart is None
+        assert num_particles is None
         assert epsx is None
         assert epsy is None
         assert sigma_delta is None
         assert bunch_length is None
         _using_particles: bool = True
-        npart: int = particles._num_active_particles * particles.weight[0]  # its total_intensity_particles
+        num_particles: int = particles._num_active_particles * particles.weight[0]  # its total_intensity_particles
         epsx: float = _geom_epsx(particles)
         epsy: float = _geom_epsy(particles)
         sigma_delta: float = _sigma_delta(particles)
@@ -101,7 +101,7 @@ def get_intrabeam_scattering_growth_rates(
         normalized_emittances: bool = False  # we computed geometric
     else:  # we expect all emittances, etc. to be provided
         LOGGER.info("Using explicitely provided parameters for emittances, etc.")
-        assert npart is not None
+        assert num_particles is not None
         assert epsx is not None
         assert epsy is not None
         assert sigma_delta is not None
@@ -109,20 +109,16 @@ def get_intrabeam_scattering_growth_rates(
         assert normalized_emittances is not None
         _using_particles: bool = False
     # ----------------------------------------------------------------------------------------------
-    # Get necessary beam and optics parameters from Line and/or particles
-    beam_params = BeamParameters(particles) if _using_particles else BeamParameters.from_line(line, npart)
-    optics_params = OpticsParameters.from_line(line)
-    # ----------------------------------------------------------------------------------------------
     # Ensure valid formalism parameter was given and determine the corresponding class
     assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
     if formalism.lower() == "nagaitsev":
         # TODO (Gianni): a check here for vertical dispersion, maybe log a warning or something?
-        IBS = NagaitsevIBS(beam_params, optics_params)
+        ibs = NagaitsevIBS(twiss, num_particles)
     else:
-        IBS = BjorkenMtingwaIBS(beam_params, optics_params)
+        ibs = BjorkenMtingwaIBS(twiss, num_particles)
     # ----------------------------------------------------------------------------------------------
     # Now computing the growth rates using the IBS class
-    growth_rates: IBSGrowthRates = IBS.growth_rates(
+    growth_rates: IBSGrowthRates = ibs.growth_rates(
         epsx=epsx,
         epsy=epsy,
         sigma_delta=sigma_delta,
@@ -133,13 +129,7 @@ def get_intrabeam_scattering_growth_rates(
     )
     # ----------------------------------------------------------------------------------------------
     # Return the growth rates, and potentially the IBS class instance too
-    if return_class is True:
-        return growth_rates, IBS
-    else:
-        return growth_rates
-
-
-
+    return (growth_rates, ibs) if return_class is True else growth_rates
 
 
 # ----- API for Kick-Based IBS -----#
@@ -169,7 +159,7 @@ def install_intrabeam_scattering_kick(
 def configure_intrabeam_scattering(
     line: xt.Line,
     particles: xt.Particles,
-    recompute_rates_every_nturns: int,  # will need a way to know which tracking turn we're at
+    recompute_rates_every_nturns: int,
 ):
     """Configuration step for IBS parameters (like for beambeam for instance)
     where we do the twiss etc"""
