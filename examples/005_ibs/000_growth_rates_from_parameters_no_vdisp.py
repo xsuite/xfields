@@ -10,9 +10,9 @@ from xfields.ibs import get_intrabeam_scattering_growth_rates
 # Load xt.Line from file #
 ##########################
 
-# TODO: have lines or something in this repo?
 fname_line_particles = "../../../xtrack/test_data/sps_ions/line_and_particle.json"
 line = xt.Line.from_json(fname_line_particles)
+tw = line.twiss(method="4d")
 
 #####################
 # Define parameters #
@@ -30,7 +30,7 @@ bunch_length: float = 19.51e-2
 ###################################
 
 nag_growth_rates = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="nagaitsev",
     num_particles=bunch_intensity,
     epsx=nemitt_x,
@@ -46,7 +46,7 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
 #########################################
 
 bm_growth_rates = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     num_particles=bunch_intensity,
     epsx=nemitt_x,
@@ -80,7 +80,7 @@ gemitt_y: float = 1.254e-7
 ###################################
 
 nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="nagaitsev",
     num_particles=bunch_intensity,
     epsx=gemitt_x,
@@ -96,7 +96,7 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
 #########################################
 
 bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     num_particles=bunch_intensity,
     epsx=gemitt_x,

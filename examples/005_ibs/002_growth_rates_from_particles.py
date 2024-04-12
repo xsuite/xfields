@@ -11,10 +11,9 @@ from xfields.ibs import get_intrabeam_scattering_growth_rates
 # Load xt.Line from file #
 ##########################
 
-# TODO: have lines or something in this repo?
 fname_line_particles = "../../../xtrack/test_data/sps_ions/line_and_particle.json"
 line = xt.Line.from_json(fname_line_particles)
-twiss = line.twiss(method="4d")
+tw = line.twiss(method="4d")
 
 #####################
 # Define parameters #
@@ -36,7 +35,7 @@ harmonic_number = 4653
 cavity = "actcse.31632"
 line[cavity].lag = 180  # 180 above transition
 line[cavity].voltage = rf_voltage
-line[cavity].frequency = harmonic_number / twiss.T_rev0  # H * revolution frequency
+line[cavity].frequency = harmonic_number / tw.T_rev0  # H * revolution frequency
 
 line.build_tracker()
 
@@ -58,7 +57,7 @@ particles = xp.generate_matched_gaussian_bunch(
 ###################################
 
 nag_growth_rates = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="nagaitsev",
     particles=particles,
     bunched=True,
@@ -69,7 +68,7 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
 #########################################
 
 bm_growth_rates = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     particles=particles,
     bunched=True,

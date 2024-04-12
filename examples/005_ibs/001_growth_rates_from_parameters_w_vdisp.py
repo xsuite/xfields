@@ -13,18 +13,16 @@ from xfields.ibs import get_intrabeam_scattering_growth_rates
 # Load xt.Line from file #
 ##########################
 
-# TODO: have lines or something in this repo?
 fname_line_particles = "../../../xtrack/test_data/lhc_no_bb/line_and_particle.json"
 
 with open(fname_line_particles, "r") as fid:
     input_data = json.load(fid)
 
-# line = xt.Line.from_dict(input_data["line"])
 line = xt.Line.from_json(fname_line_particles)
 line.particle_ref = xt.Particles.from_dict(input_data["particle"])
+tw = line.twiss(method="4d")
 
-twiss = line.twiss(method="4d")
-if np.count_nonzero(twiss.dy) > 0:
+if np.count_nonzero(tw.dy) > 0:
     print()
     print("There is vertical dispersion, Nagaitsev will be wrong in vertical")
 
@@ -44,7 +42,7 @@ bunch_length: float = 3.75e-2
 ###################################
 
 nag_growth_rates = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="nagaitsev",
     num_particles=bunch_intensity,
     epsx=nemitt_x,
@@ -60,7 +58,7 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
 #########################################
 
 bm_growth_rates = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     num_particles=bunch_intensity,
     epsx=nemitt_x,
@@ -94,7 +92,7 @@ gemitt_y: float = 2.598e-10
 ###################################
 
 nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="nagaitsev",
     num_particles=bunch_intensity,
     epsx=gemitt_x,
@@ -110,7 +108,7 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
 #########################################
 
 bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
-    line=line,
+    twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     num_particles=bunch_intensity,
     epsx=gemitt_x,
