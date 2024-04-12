@@ -297,10 +297,10 @@ class AnalyticalIBS(ABC):
         # ----------------------------------------------------------------------------------------------
         # Compute sigmas in each dimension (start from sigma_delta to get sige needed in the formula)
         sigma_x_cm = 100 * np.sqrt(
-            geom_epsx * _bx_bar + (_dx_bar * sigma_delta * self.beam_parameters.beta_rel**2) ** 2
+            geom_epsx * _bx_bar + (_dx_bar * sigma_delta * self.beam_parameters.beta0**2) ** 2
         )
         sigma_y_cm = 100 * np.sqrt(
-            geom_epsy * _by_bar + (_dy_bar * sigma_delta * self.beam_parameters.beta_rel**2) ** 2
+            geom_epsy * _by_bar + (_dy_bar * sigma_delta * self.beam_parameters.beta0**2) ** 2
         )
         sigma_t_cm = 100 * bunch_length
         # ----------------------------------------------------------------------------------------------
@@ -586,7 +586,7 @@ class AnalyticalIBS(ABC):
         float
             The corresponding normalized emittance in [m].
         """
-        return geometric_emittance * self.beam_parameters.beta_rel * self.beam_parameters.gamma0
+        return geometric_emittance * self.beam_parameters.beta0 * self.beam_parameters.gamma0
 
     def _geometric_emittance(self, normalized_emittance: float) -> float:
         r"""
@@ -603,7 +603,7 @@ class AnalyticalIBS(ABC):
         float
             The corresponding geometric emittance in [m].
         """
-        return normalized_emittance / (self.beam_parameters.beta_rel * self.beam_parameters.gamma0)
+        return normalized_emittance / (self.beam_parameters.beta0 * self.beam_parameters.gamma0)
 
     def _get_synchrotron_radiation_kwargs(self, **kwargs) -> _SynchrotronRadiationInputs:
         r"""
@@ -1032,7 +1032,7 @@ class NagaitsevIBS(AnalyticalIBS):
         # fmt: off
         rest_of_constant_term = (
             self.beam_parameters.num_particles * self.beam_parameters.particle_classical_radius_m**2 * c 
-            / (12 * np.pi * self.beam_parameters.beta_rel**3 * self.beam_parameters.gamma0**5 * bunch_length)
+            / (12 * np.pi * self.beam_parameters.beta0**3 * self.beam_parameters.gamma0**5 * bunch_length)
         )
         # fmt: on
         full_constant_term = rest_of_constant_term * coulomb_logarithm
@@ -1115,7 +1115,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         if bunched is True:
             return (
                 (2 * np.pi)**3
-                * (self.beam_parameters.beta_rel * self.beam_parameters.gamma0)**3
+                * (self.beam_parameters.beta0 * self.beam_parameters.gamma0)**3
                 * (self.beam_parameters.mass0 * 1e-3)**3  # mass in MeV like in .growth_rates() (the m^3 terms cancel out)
                 * geom_epsx
                 * geom_epsy
@@ -1125,7 +1125,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         else:  # we have coasting beam
             return (
                 4 * np.pi**(5/2)
-                * (self.beam_parameters.beta_rel * self.beam_parameters.gamma0)**3
+                * (self.beam_parameters.beta0 * self.beam_parameters.gamma0)**3
                 * (self.beam_parameters.mass0 * 1e-3)**3  # mass in MeV like in .growth_rates() (the m^3 terms cancel out)
                 * geom_epsx
                 * geom_epsy
@@ -1157,7 +1157,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
         bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
@@ -1207,7 +1207,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
         epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
@@ -1262,7 +1262,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
         epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
@@ -1310,7 +1310,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         sigd: float = sigma_delta  # momentum spread
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betx_over_epsx: ArrayLike = betx / epsx  # beta_x / eps_x term
         bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
@@ -1370,7 +1370,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         sigd: float = sigma_delta  # momentum spread
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betx_over_epsx: ArrayLike = betx / epsx  # beta_x / eps_x term
         bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
@@ -1429,7 +1429,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
         bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
@@ -1487,7 +1487,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
         epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
@@ -1551,7 +1551,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
         bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
@@ -1601,7 +1601,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
         bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
@@ -1680,7 +1680,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         epsy: float = geom_epsy  # vertical geometric emittance
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta_rel  # relativistic beta
+        beta: float = self.beam_parameters.beta0  # relativistic beta
         gamma: float = self.beam_parameters.gamma0  # relativistic gamma
         bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------

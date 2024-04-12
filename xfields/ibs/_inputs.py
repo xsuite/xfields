@@ -30,7 +30,7 @@ class BeamParameters(xo.HybridClass):
         Total energy of the simulated particles in [eV].
     gamma0 : float
         Relativistic gamma of the simulated particles.
-    beta_rel : float
+    beta0 : float
         Relativistic gamma of the simulated particles.
     particle_classical_radius_m : float
         The particles' classical radius in [m].
@@ -38,11 +38,11 @@ class BeamParameters(xo.HybridClass):
 
     _xofields = {
         "num_particles": xo.Int64,
-        "q0": xo.Int64,  # particle charge
-        "mass0": xo.Float64,  # reference mass [eV]
+        "q0": xo.Int64,
+        "mass0": xo.Float64,
         "total_energy_eV": xo.Float64,  # total energy in [eV] (energy in xt.Particles?)
-        "gamma0": xo.Float64,  # gamma0
-        "beta_rel": xo.Float64,  # beta0
+        "gamma0": xo.Float64,
+        "beta0": xo.Float64,
         "particle_classical_radius_m": xo.Float64,  # classical_particle_radius0
     }
 
@@ -53,7 +53,7 @@ class BeamParameters(xo.HybridClass):
         mass0 = particles.mass0
         total_energy_eV = np.sqrt(particles.p0c[0] ** 2 + particles.mass0**2)
         gamma0 = particles.gamma0[0]
-        beta_rel = particles.beta0[0]
+        beta0 = particles.beta0[0]
         particle_classical_radius_m = particles.get_classical_particle_radius0()
 
         self.xoinitialize(
@@ -62,7 +62,7 @@ class BeamParameters(xo.HybridClass):
             mass0=mass0,
             total_energy_eV=total_energy_eV,
             gamma0=gamma0,
-            beta_rel=beta_rel,
+            beta0=beta0,
             particle_classical_radius_m=particle_classical_radius_m,
         )
 
@@ -211,7 +211,7 @@ class OpticsParameters(xo.HybridClass):
 #         Total energy of the simulated particles in [eV].
 #     gamma0 : float
 #         Relativistic gamma of the simulated particles.
-#     beta_rel : float
+#     beta0 : float
 #         Relativistic gamma of the simulated particles.
 #     particle_classical_radius_m : float
 #         The particles' classical radius in [m].
