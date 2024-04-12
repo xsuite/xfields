@@ -310,11 +310,11 @@ class AnalyticalIBS(ABC):
         else:  # coasting beam
             volume = 4.0 * np.pi * sigma_x_cm * sigma_y_cm * 100 * self.optics.circumference
         density = self.beam_parameters.num_particles / volume
-        debye_length = 743.4 * np.sqrt(TempeV / density) / abs(self.beam_parameters.particle_charge)
+        debye_length = 743.4 * np.sqrt(TempeV / density) / abs(self.beam_parameters.q0)
         # ----------------------------------------------------------------------------------------------
         # Calculate 'rmin' as larger of classical distance of closest approach or quantum mechanical
         # diffraction limit from nuclear radius
-        rmincl = 1.44e-7 * self.beam_parameters.particle_charge**2 / TempeV
+        rmincl = 1.44e-7 * self.beam_parameters.q0**2 / TempeV
         rminqm = (
             hbar * c * 1e5 / (2.0 * np.sqrt(2e-3 * Etrans * self.beam_parameters.particle_mass_eV * 1e-9))
         )  # particle mass needed in GeV

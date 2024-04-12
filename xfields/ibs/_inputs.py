@@ -22,7 +22,7 @@ class BeamParameters(xo.HybridClass):
     ----------
     num_particles : int
         Number of simulated particles.
-    particle_charge : int
+    q0 : int
         Elementary particle charge, in # of Coulomb charges.
     particle_mass_eV : float
         Particle mass in [eV].
@@ -37,8 +37,8 @@ class BeamParameters(xo.HybridClass):
     """
 
     _xofields = {
-        "num_particles": xo.Int64,  # num_particles
-        "particle_charge": xo.Int64,  # q0
+        "num_particles": xo.Int64,
+        "q0": xo.Int64,  # q0
         "particle_mass_eV": xo.Float64,  # mass0
         "total_energy_eV": xo.Float64,  # energy
         "gamma_rel": xo.Float64,  # gamma0
@@ -49,7 +49,7 @@ class BeamParameters(xo.HybridClass):
     def __init__(self, particles: xt.Particles) -> None:
         """Init by providing the xt.Particles object."""
         num_particles = particles.weight[0] * particles.gamma0.shape[0]
-        particle_charge = particles.q0
+        q0 = particles.q0
         particle_mass_eV = particles.mass0
         total_energy_eV = np.sqrt(particles.p0c[0] ** 2 + particles.mass0**2)
         gamma_rel = particles.gamma0[0]
@@ -58,7 +58,7 @@ class BeamParameters(xo.HybridClass):
 
         self.xoinitialize(
             num_particles=num_particles,
-            particle_charge=particle_charge,
+            q0=q0,
             particle_mass_eV=particle_mass_eV,
             total_energy_eV=total_energy_eV,
             gamma_rel=gamma_rel,
@@ -203,7 +203,7 @@ class OpticsParameters(xo.HybridClass):
 #     ----------
 #     num_particles : int
 #         Number of simulated particles.
-#     particle_charge : int
+#     q0 : int
 #         Elementary particle charge, in # of Coulomb charges.
 #     particle_mass_eV : float
 #         Particle mass in [eV].
