@@ -55,7 +55,7 @@ class EllipticIntegrals(xo.HybridClass):
 
     def as_tuple(self) -> Tuple[float, float, float]:
         """Return the integrals as a tuple."""
-        return (self.Ix, self.Iy, self.Iz)
+        return float(self.Ix), float(self.Iy), float(self.Iz)
 
 
 class IBSGrowthRates(xo.HybridClass):
@@ -86,7 +86,7 @@ class IBSGrowthRates(xo.HybridClass):
 
     def as_tuple(self) -> Tuple[float, float, float]:
         """Return the growth rates as a tuple."""
-        return (self.Tx, self.Ty, self.Tz)
+        return float(self.Tx), float(self.Ty), float(self.Tz)
 
     def inversed(self):
         """
