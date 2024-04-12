@@ -8,6 +8,7 @@ import xtrack as xt
 import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
 
+from scipy.signal import convolve
 from matplotlib import pyplot as plt
 
 class MultiWakefield:
@@ -505,6 +506,13 @@ class Wakefield:
             self._res_flatten = res_flatten # for debugging
             self._rho_flatten = rho_aux_flatten # for debugging
 
+        #################################################################
+        conv_fft = convolve(rho_aux,self.G_aux,mode='same',method='fft')
+        plt.figure(1000)
+        plt.plot(np.arange(len(res.real[0])),res.real[0],'xb')
+        plt.plot(np.arange(len(res.real[0]))+1,res.real[0],'xr')
+        plt.plot(np.arange(len(conv_fft[0])),conv_fft[0],'.g')
+        ####################################################################
         self.moments_data['result'] = res.real
 
     def _compute_convolution_direct(self, moment_names):
@@ -518,7 +526,7 @@ class Wakefield:
         #    rho *= self.moments_data[nn]
         #########################################
         rho = np.ones(shape=self.moments_data['result'].shape,
-                        dtype=np.float64) #TODO is this the right shape?
+                        dtype=np.float64)
         res = np.zeros_like(rho)
         for iturn in range(self.moments_data.num_turns):
             rho = np.ones(shape=self.moments_data['result'].shape,
