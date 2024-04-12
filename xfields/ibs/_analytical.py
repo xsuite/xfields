@@ -309,7 +309,7 @@ class AnalyticalIBS(ABC):
             volume = 8.0 * np.sqrt(np.pi**3) * sigma_x_cm * sigma_y_cm * sigma_t_cm
         else:  # coasting beam
             volume = 4.0 * np.pi * sigma_x_cm * sigma_y_cm * 100 * self.optics.circumference
-        density = self.beam_parameters.n_part / volume
+        density = self.beam_parameters.num_particles / volume
         debye_length = 743.4 * np.sqrt(TempeV / density) / abs(self.beam_parameters.particle_charge)
         # ----------------------------------------------------------------------------------------------
         # Calculate 'rmin' as larger of classical distance of closest approach or quantum mechanical
@@ -1031,7 +1031,7 @@ class NagaitsevIBS(AnalyticalIBS):
         # Then the rest of the constant term in the equation
         # fmt: off
         rest_of_constant_term = (
-            self.beam_parameters.n_part * self.beam_parameters.particle_classical_radius_m**2 * c 
+            self.beam_parameters.num_particles * self.beam_parameters.particle_classical_radius_m**2 * c 
             / (12 * np.pi * self.beam_parameters.beta_rel**3 * self.beam_parameters.gamma_rel**5 * bunch_length)
         )
         # fmt: on
@@ -1702,7 +1702,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             * self.beam_parameters.particle_classical_radius_m**2
             * c
             * (self.beam_parameters.particle_mass_eV * 1e-3)** 3  # use mass in MeV like in ._Gamma method (the m^3 terms cancel out)
-            * self.beam_parameters.n_part
+            * self.beam_parameters.num_particles
             * coulomb_logarithm
             / (self.beam_parameters.gamma_rel * self._Gamma(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched))
         )

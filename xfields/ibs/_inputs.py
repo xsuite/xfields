@@ -20,7 +20,7 @@ class BeamParameters(xo.HybridClass):
 
     Attributes
     ----------
-    n_part : int
+    num_particles : int
         Number of simulated particles.
     particle_charge : int
         Elementary particle charge, in # of Coulomb charges.
@@ -37,7 +37,7 @@ class BeamParameters(xo.HybridClass):
     """
 
     _xofields = {
-        "n_part": xo.Int64,  # num_particles
+        "num_particles": xo.Int64,  # num_particles
         "particle_charge": xo.Int64,  # q0
         "particle_mass_eV": xo.Float64,  # mass0
         "total_energy_eV": xo.Float64,  # energy
@@ -48,7 +48,7 @@ class BeamParameters(xo.HybridClass):
 
     def __init__(self, particles: xt.Particles) -> None:
         """Init by providing the xt.Particles object."""
-        n_part = particles.weight[0] * particles.gamma0.shape[0]
+        num_particles = particles.weight[0] * particles.gamma0.shape[0]
         particle_charge = particles.q0
         particle_mass_eV = particles.mass0
         total_energy_eV = np.sqrt(particles.p0c[0] ** 2 + particles.mass0**2)
@@ -57,7 +57,7 @@ class BeamParameters(xo.HybridClass):
         particle_classical_radius_m = particles.get_classical_particle_radius0()
 
         self.xoinitialize(
-            n_part=n_part,
+            num_particles=num_particles,
             particle_charge=particle_charge,
             particle_mass_eV=particle_mass_eV,
             total_energy_eV=total_energy_eV,
@@ -67,7 +67,7 @@ class BeamParameters(xo.HybridClass):
         )
 
     @classmethod
-    def from_line(cls, line: xt.Line, n_part: int) -> Self:  # noqa: F821
+    def from_line(cls, line: xt.Line, num_particles: int) -> Self:  # noqa: F821
         """
         Convenience constructor to return a `BeamParameters` object from an
         `xtrack.Line`.
@@ -76,7 +76,7 @@ class BeamParameters(xo.HybridClass):
         ----------
         line : xtrack.Line
             Line to get parameters from.
-        n_part: int
+        num_particles: int
             Number of particles to in the bunch. Mandatory argument
             as it is not possible to infer it from `line.particle_ref`.
 
@@ -84,7 +84,7 @@ class BeamParameters(xo.HybridClass):
             An instantiated `BeamParameters` object.
         """
         result = cls(line.particle_ref)
-        result.n_part = n_part  # do not forget to adjust
+        result.num_particles = num_particles  # do not forget to adjust
         return result
 
 
@@ -201,7 +201,7 @@ class OpticsParameters(xo.HybridClass):
 
 #     Attributes
 #     ----------
-#     n_part : int
+#     num_particles : int
 #         Number of simulated particles.
 #     particle_charge : int
 #         Elementary particle charge, in # of Coulomb charges.
