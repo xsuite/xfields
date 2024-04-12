@@ -24,11 +24,11 @@ class BeamParameters(xo.HybridClass):
         Number of simulated particles.
     q0 : int
         Elementary particle charge, in # of Coulomb charges.
-    particle_mass_eV : float
-        Particle mass in [eV].
+    mass0 : float
+        Particle reference rest mass in [eV].
     total_energy_eV : float
         Total energy of the simulated particles in [eV].
-    gamma_rel : float
+    gamma0 : float
         Relativistic gamma of the simulated particles.
     beta_rel : float
         Relativistic gamma of the simulated particles.
@@ -38,10 +38,10 @@ class BeamParameters(xo.HybridClass):
 
     _xofields = {
         "num_particles": xo.Int64,
-        "q0": xo.Int64,  # q0
-        "particle_mass_eV": xo.Float64,  # mass0
-        "total_energy_eV": xo.Float64,  # energy
-        "gamma_rel": xo.Float64,  # gamma0
+        "q0": xo.Int64,  # particle charge
+        "mass0": xo.Float64,  # reference mass [eV]
+        "total_energy_eV": xo.Float64,  # total energy in [eV] (energy in xt.Particles?)
+        "gamma0": xo.Float64,  # gamma0
         "beta_rel": xo.Float64,  # beta0
         "particle_classical_radius_m": xo.Float64,  # classical_particle_radius0
     }
@@ -50,18 +50,18 @@ class BeamParameters(xo.HybridClass):
         """Init by providing the xt.Particles object."""
         num_particles = particles.weight[0] * particles.gamma0.shape[0]
         q0 = particles.q0
-        particle_mass_eV = particles.mass0
+        mass0 = particles.mass0
         total_energy_eV = np.sqrt(particles.p0c[0] ** 2 + particles.mass0**2)
-        gamma_rel = particles.gamma0[0]
+        gamma0 = particles.gamma0[0]
         beta_rel = particles.beta0[0]
         particle_classical_radius_m = particles.get_classical_particle_radius0()
 
         self.xoinitialize(
             num_particles=num_particles,
             q0=q0,
-            particle_mass_eV=particle_mass_eV,
+            mass0=mass0,
             total_energy_eV=total_energy_eV,
-            gamma_rel=gamma_rel,
+            gamma0=gamma0,
             beta_rel=beta_rel,
             particle_classical_radius_m=particle_classical_radius_m,
         )
@@ -205,11 +205,11 @@ class OpticsParameters(xo.HybridClass):
 #         Number of simulated particles.
 #     q0 : int
 #         Elementary particle charge, in # of Coulomb charges.
-#     particle_mass_eV : float
+#     mass0 : float
 #         Particle mass in [eV].
 #     total_energy_eV : float
 #         Total energy of the simulated particles in [eV].
-#     gamma_rel : float
+#     gamma0 : float
 #         Relativistic gamma of the simulated particles.
 #     beta_rel : float
 #         Relativistic gamma of the simulated particles.
