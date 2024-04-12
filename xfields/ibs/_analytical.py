@@ -12,6 +12,7 @@ from typing import Callable, Tuple
 
 import numpy as np
 import xobjects as xo
+import xtrack as xt
 from numpy.typing import ArrayLike
 from scipy.constants import c, hbar
 from scipy.integrate import quad, quad_vec
@@ -19,19 +20,19 @@ from scipy.interpolate import interp1d
 from scipy.special import elliprd
 
 from xfields.ibs._formulary import _percent_change, phi
-from xfields.ibs._inputs import BeamParameters, OpticsParameters
 
 LOGGER = getLogger(__name__)
 
 # ----- Some classes to store results (as xo.HybridClass) ----- #
 
 
-# Renamed this from NagaitsevIntegrals to EllipticIntegrals
-class EllipticIntegrals(xo.HybridClass):
+class NagaitsevIntegrals(xo.HybridClass):
     """
-    Holds the result of the symmetric elliptic integrals
-    of the second kind for each plane, which we compute
-    in Nagaitsev formalism.
+    Holds the result of the Nagaitsev integrals for each plane,
+    which we compute in Nagaitsev formalism. They correspond to
+    the integrals inside of Eq (32), (31) and (30) in
+    :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`,
+    respectively.
 
     Attributes:
     -----------
@@ -62,7 +63,7 @@ class IBSGrowthRates(xo.HybridClass):
     """
     Holds IBS growth rates in each plane, named ``Tx``,
     ``Ty``, and ``Tz``. By growth rate we mean the 1/tau
-    values, expressed in [1/s].
+    values, expressed in [s^-1].
 
     Attributes:
     -----------
@@ -88,12 +89,12 @@ class IBSGrowthRates(xo.HybridClass):
         """Return the growth rates as a tuple."""
         return float(self.Tx), float(self.Ty), float(self.Tz)
 
-    def inversed(self):
+    def as_tau(self) -> Tuple[float, float, float]:
         """
         Returns a tuple with the inverse of the
-        growth rates, the tau values in [s].
+        growth rates: the tau values in [s].
         """
-        return (1 / self.Tx, 1 / self.Ty, 1 / self.Tz)
+        return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
 
 
 # ----- Some private classes (as xo.HybridClass) ----- #
@@ -192,25 +193,31 @@ class AnalyticalIBS(ABC):
 
     Attributes
     ----------
-    beam_parameters : BeamParameters
-        The necessary beam parameters to use for calculations.
-    optics_parameters : OpticsParameters
-        The necessary optics parameters to use for calculations.
     ibs_growth_rates : IBSGrowthRates
         The computed IBS growth rates. This self-updates when
         they are computed with the `.growth_rates` method.
     """
 
-    def __init__(self, beam_parameters: BeamParameters, optics_parameters: OpticsParameters) -> None:
-        self.beam_parameters: BeamParameters = beam_parameters
-        self.optics: OpticsParameters = optics_parameters
+    def __init__(self, twiss: xt.TwissTable, num_particles: int) -> None:
+        """Initialize the class.
+
+        Parameters
+        ----------
+        twiss : xtrack.TwissTable
+            Twiss results of the `xtrack.Line` configuration.
+        num_particles : int
+            Number of simulated particles to consider.
+        """
+        self._twiss = twiss
+        self._particle = twiss.particle_on_co
+        self._num_particles = num_particles
         # This one self-updates when computed, but can be overwritten by the user
         self.ibs_growth_rates: IBSGrowthRates = None
         # The following are private attributes for growth rates auto-recomputing
         self._refs: _ReferenceValues = None  # updates when growth rates are computed
         self._number_of_growth_rates_computations: int = 0  # increments when growth rates are computed
 
-    # TODO (Gianni): adapt citations and admonitions etc
+    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def coulomb_log(
         self,
         epsx: float,
@@ -268,62 +275,54 @@ class AnalyticalIBS(ABC):
         # ----------------------------------------------------------------------------------------------
         # Interpolated beta and dispersion functions for the average calculation below
         LOGGER.debug("Interpolating beta and dispersion functions")
-        _bxb = interp1d(self.optics.s, self.optics.betx)
-        _byb = interp1d(self.optics.s, self.optics.bety)
-        _dxb = interp1d(self.optics.s, self.optics.dx)
-        _dyb = interp1d(self.optics.s, self.optics.dy)
+        _bxb = interp1d(self._twiss.s, self._twiss.betx)
+        _byb = interp1d(self._twiss.s, self._twiss.bety)
+        _dxb = interp1d(self._twiss.s, self._twiss.dx)
+        _dyb = interp1d(self._twiss.s, self._twiss.dy)
         # ----------------------------------------------------------------------------------------------
         # Computing "average" of these functions - better here than a simple np.mean
         # calculation because the latter doesn't take in consideration element lengths
         # and can be skewed by some very high peaks in the optics
         with warnings.catch_warnings():  # Catch and ignore the scipy.integrate.IntegrationWarning
             warnings.simplefilter("ignore", category=UserWarning)
-            _bx_bar = quad(_bxb, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference
-            _by_bar = quad(_byb, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference
-            _dx_bar = quad(_dxb, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference
-            _dy_bar = quad(_dyb, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference
+            _bx_bar = quad(_bxb, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference
+            _by_bar = quad(_byb, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference
+            _dx_bar = quad(_dxb, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference
+            _dy_bar = quad(_dyb, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference
         # ----------------------------------------------------------------------------------------------
         # Calculate transverse temperature as 2*P*X, i.e. assume the transverse energy is temperature/2
-        # fmt: off
+        # We need the total energy and the particle mass in GeV hence the 1e-9 below
         Etrans = (
-            5e8 * (self.beam_parameters.gamma0
-                   * self.beam_parameters.total_energy_eV * 1e-9  # total energy needed in GeV
-                   - self.beam_parameters.mass0 * 1e-9  # particle mass needed in GeV
-                )
+            5e8
+            * (self._twiss.gamma0 * self._particle.energy[0] * 1e-9 - self._particle.mass0 * 1e-9)
             * (geom_epsx / _bx_bar)
         )
-        # fmt: on
         TempeV = 2.0 * Etrans
         # ----------------------------------------------------------------------------------------------
         # Compute sigmas in each dimension (start from sigma_delta to get sige needed in the formula)
-        sigma_x_cm = 100 * np.sqrt(
-            geom_epsx * _bx_bar + (_dx_bar * sigma_delta * self.beam_parameters.beta0**2) ** 2
-        )
-        sigma_y_cm = 100 * np.sqrt(
-            geom_epsy * _by_bar + (_dy_bar * sigma_delta * self.beam_parameters.beta0**2) ** 2
-        )
+        sigma_x_cm = 100 * np.sqrt(geom_epsx * _bx_bar + (_dx_bar * sigma_delta * self._twiss.beta0**2) ** 2)
+        sigma_y_cm = 100 * np.sqrt(geom_epsy * _by_bar + (_dy_bar * sigma_delta * self._twiss.beta0**2) ** 2)
         sigma_t_cm = 100 * bunch_length
         # ----------------------------------------------------------------------------------------------
         # Calculate beam volume to get density (in cm^{-3}), then Debye length
         if bunched is True:  # bunched beam
             volume = 8.0 * np.sqrt(np.pi**3) * sigma_x_cm * sigma_y_cm * sigma_t_cm
         else:  # coasting beam
-            volume = 4.0 * np.pi * sigma_x_cm * sigma_y_cm * 100 * self.optics.circumference
-        density = self.beam_parameters.num_particles / volume
-        debye_length = 743.4 * np.sqrt(TempeV / density) / abs(self.beam_parameters.q0)
+            volume = 4.0 * np.pi * sigma_x_cm * sigma_y_cm * 100 * self._twiss.circumference
+        density = self._num_particles / volume
+        debye_length = 743.4 * np.sqrt(TempeV / density) / abs(self._particle.q0)
         # ----------------------------------------------------------------------------------------------
         # Calculate 'rmin' as larger of classical distance of closest approach or quantum mechanical
-        # diffraction limit from nuclear radius
-        rmincl = 1.44e-7 * self.beam_parameters.q0**2 / TempeV
-        rminqm = (
-            hbar * c * 1e5 / (2.0 * np.sqrt(2e-3 * Etrans * self.beam_parameters.mass0 * 1e-9))
-        )  # particle mass needed in GeV
+        # diffraction limit from nuclear radius. Particle mass needed in GeV hence the 1e-9 below
+        rmincl = 1.44e-7 * self._particle.q0**2 / TempeV
+        rminqm = hbar * c * 1e5 / (2.0 * np.sqrt(2e-3 * Etrans * self._particle.mass0 * 1e-9))
         # ----------------------------------------------------------------------------------------------
         # Now compute the impact parameters and finally Coulomb logarithm
         bmin = max(rmincl, rminqm)
         bmax = min(sigma_x_cm, debye_length)
         return np.log(bmax / bmin)
 
+    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     @abstractmethod
     def growth_rates(
         self,
@@ -363,7 +362,7 @@ class AnalyticalIBS(ABC):
             "This method should be implemented in all child classes, but it hasn't been for this one."
         )
 
-    # TODO (Gianni): adapt admonitions
+    # TODO: at some point we export all this evolution functionality to somewhere else
     def emittance_evolution(
         self,
         epsx: float,
@@ -511,8 +510,8 @@ class AnalyticalIBS(ABC):
         # ----------------------------------------------------------------------------------------------
         # Set the time step to 1 / frev if not provided
         if dt is None:
-            LOGGER.debug("No time step provided, defaulting to 1 / frev")
-            dt = 1 / self.optics.revolution_frequency
+            LOGGER.debug("No time step provided, defaulting to Trev = 1 / frev")
+            dt = self._twiss.T_rev0
         # ----------------------------------------------------------------------------------------------
         # Compute new emittances and return them. Here we multiply because T = 1 / tau
         if include_synchrotron_radiation is False:  # the basic calculation
@@ -586,7 +585,7 @@ class AnalyticalIBS(ABC):
         float
             The corresponding normalized emittance in [m].
         """
-        return geometric_emittance * self.beam_parameters.beta0 * self.beam_parameters.gamma0
+        return geometric_emittance * self._twiss.beta0 * self._twiss.gamma0
 
     def _geometric_emittance(self, normalized_emittance: float) -> float:
         r"""
@@ -603,7 +602,7 @@ class AnalyticalIBS(ABC):
         float
             The corresponding geometric emittance in [m].
         """
-        return normalized_emittance / (self.beam_parameters.beta0 * self.beam_parameters.gamma0)
+        return normalized_emittance / (self._twiss.beta0 * self._twiss.gamma0)
 
     def _get_synchrotron_radiation_kwargs(self, **kwargs) -> _SynchrotronRadiationInputs:
         r"""
@@ -796,47 +795,54 @@ class AnalyticalIBS(ABC):
 # ----- Analytical Classes for Specific Formalism ----- #
 
 
-# TODO (Gianni): adapt citation to the xsuite way
 class NagaitsevIBS(AnalyticalIBS):
     r"""
-    Analytical implementation to compute IBS growth rates according to Nagaitsev's
-    formalism :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`.
+    Analytical implementation to compute IBS growth
+    rates according to S. Nagaitsev's formalism (see
+    :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`).
 
-    Please keep in mind that this formalism will be inaccurate in the presence of
-    vertical dispersion in the machine. In such a case, prefer the Bjorken-Mtingwa
-    formalism instead. See the `BjorkenMtingwaIBS` class.
+    Please keep in mind that this formalism will give an inaccurate
+    vertical growth rate in the presence of vertical dispersion. In
+    such a case, prefer the Bjorken-Mtingwa formalism instead. See
+    the `BjorkenMtingwaIBS` class.
 
-    Attributes:
-    -----------
-    beam_parameters : BeamParameters
-        The necessary beam parameters to use for calculations.
-    optics_parameters : OpticsParameters
-        The necessary optics parameters to use for calculations.
-    elliptic_integrals : EllipticIntegrals
-        The computed symmetric elliptic integrals of the third kind. This
-        self-updates when they are computed with the `.integrals` method.
+    Attributes
+    ----------
     ibs_growth_rates : IBSGrowthRates
         The computed IBS growth rates. This self-updates when
         they are computed with the `.growth_rates` method.
+    nagaitsev_integrals : NagaitsevIntegrals
+        The computed Nagaitsev integrals. This self-updates when
+        they are computed with the `.integrals` method.
     """
 
-    def __init__(self, beam_params: BeamParameters, optics: OpticsParameters) -> None:
-        super().__init__(beam_params, optics)
-        # This self-updates when computed, but can be overwritten by the user
-        self.elliptic_integrals: EllipticIntegrals = None
+    def __init__(self, twiss: xt.TwissTable, num_particles: int) -> None:
+        """Initialize the class.
 
-    # TODO (Gianni): adapt citations and admonitions to the xsuite way
+        Parameters
+        ----------
+        twiss : xtrack.TwissTable
+            Twiss results of the `xtrack.Line` configuration.
+        num_particles : int
+            Number of simulated particles to consider.
+        """
+        super().__init__(twiss, num_particles)
+        # This self-updates when computed, but can be overwritten by the user
+        self.nagaitsev_integrals: NagaitsevIntegrals = None
+
+    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def integrals(
         self, epsx: float, epsy: float, sigma_delta: float, normalized_emittances: bool = False
-    ) -> EllipticIntegrals:
+    ) -> NagaitsevIntegrals:
         r"""
-        Computes the symmetric elliptic integrals of the third kind for the lattice, named
+        Computes the "Nagaitsev" integrals for the lattice, named
         :math:`I_x, I_y` and :math:`I_z` in this code base.
 
-        These correspond to the integrals inside of Eq (32), (31) and (30) in
-        :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`, respectively.
-        The instance attribute `self.elliptic_integrals` is automatically updated
-        with the results of this method. They are used to calculate the growth rates.
+        These correspond to the integrals inside of Eq (32), (31) and
+        (30) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`,
+        respectively. The instance attribute `self.elliptic_integrals` is
+        automatically updated with the results of this method. They are used to
+        calculate the growth rates.
 
         .. hint::
             The calculation is done according to the following steps, which are related to different
@@ -870,8 +876,8 @@ class NagaitsevIBS(AnalyticalIBS):
 
         Returns
         -------
-        EllipticIntegrals
-            An ``EllipticIntegrals`` object with the computed integrals.
+        NagaitsevIntegrals
+            An ``NagaitsevIntegrals`` object with the computed integrals.
         """
         LOGGER.debug("Computing elliptic integrals for defined beam and optics parameters")
         # fmt: off
@@ -882,16 +888,16 @@ class NagaitsevIBS(AnalyticalIBS):
         geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
         # ----------------------------------------------------------------------------------------------
         # Computing necessary intermediate terms for the following lines
-        sigx: ArrayLike = np.sqrt(self.optics.betx * geom_epsx + (self.optics.dx * sigma_delta)**2)
-        sigy: ArrayLike = np.sqrt(self.optics.bety * geom_epsy + (self.optics.dy * sigma_delta)**2)
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, self.optics.dx, self.optics.dpx)
+        sigx: ArrayLike = np.sqrt(self._twiss.betx * geom_epsx + (self._twiss.dx * sigma_delta)**2)
+        sigy: ArrayLike = np.sqrt(self._twiss.bety * geom_epsy + (self._twiss.dy * sigma_delta)**2)
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, self._twiss.dx, self._twiss.dpx)
         # Computing the constants from Eq (18-21) in Nagaitsev paper
-        ax: ArrayLike = self.optics.betx / geom_epsx
-        ay: ArrayLike = self.optics.bety / geom_epsy
-        a_s: ArrayLike = ax * (self.optics.dx**2 / self.optics.betx**2 + phix**2) + 1 / sigma_delta**2
-        a1: ArrayLike = (ax + self.beam_parameters.gamma0**2 * a_s) / 2.0
-        a2: ArrayLike = (ax - self.beam_parameters.gamma0**2 * a_s) / 2.0
-        sqrt_term = np.sqrt(a2**2 + self.beam_parameters.gamma0**2 * ax**2 * phix**2)  # square root term in Eq (22-23) and Eq (33-35)
+        ax: ArrayLike = self._twiss.betx / geom_epsx
+        ay: ArrayLike = self._twiss.bety / geom_epsy
+        a_s: ArrayLike = ax * (self._twiss.dx**2 / self._twiss.betx**2 + phix**2) + 1 / sigma_delta**2
+        a1: ArrayLike = (ax + self._twiss.gamma0**2 * a_s) / 2.0
+        a2: ArrayLike = (ax - self._twiss.gamma0**2 * a_s) / 2.0
+        sqrt_term = np.sqrt(a2**2 + self._twiss.gamma0**2 * ax**2 * phix**2)  # square root term in Eq (22-23) and Eq (33-35)
         # ----------------------------------------------------------------------------------------------
         # These are from Eq (22-24) in Nagaitsev paper, eigen values of A matrix (L matrix in B&M)
         lambda_1: ArrayLike = ay
@@ -899,38 +905,38 @@ class NagaitsevIBS(AnalyticalIBS):
         lambda_3: ArrayLike = a1 - sqrt_term
         # ----------------------------------------------------------------------------------------------
         # These are the R_D terms to compute, from Eq (25-27) in Nagaitsev paper (at each element of the lattice)
-        LOGGER.debug("Computing elliptic integrals R1, R2 and R3")
+        LOGGER.debug("Computing the symmetric elliptic integrals R1, R2 and R3")
         R1: ArrayLike = elliprd(1 / lambda_2, 1 / lambda_3, 1 / lambda_1) / lambda_1
         R2: ArrayLike = elliprd(1 / lambda_3, 1 / lambda_1, 1 / lambda_2) / lambda_2
         R3: ArrayLike = 3 * np.sqrt(lambda_1 * lambda_2 / lambda_3) - lambda_1 * R1 / lambda_3 - lambda_2 * R2 / lambda_3
         # ----------------------------------------------------------------------------------------------
         # This are the terms from Eq (33-35) in Nagaitsev paper
-        Sp: ArrayLike = (2 * R1 - R2 * (1 - 3 * a2 / sqrt_term) - R3 * (1 + 3 * a2 / sqrt_term)) * 0.5 * self.beam_parameters.gamma0**2
+        Sp: ArrayLike = (2 * R1 - R2 * (1 - 3 * a2 / sqrt_term) - R3 * (1 + 3 * a2 / sqrt_term)) * 0.5 * self._twiss.gamma0**2
         Sx: ArrayLike = (2 * R1 - R2 * (1 + 3 * a2 / sqrt_term) - R3 * (1 - 3 * a2 / sqrt_term)) * 0.5
-        Sxp: ArrayLike = 3 * self.beam_parameters.gamma0**2 * phix**2 * ax * (R3 - R2) / sqrt_term
+        Sxp: ArrayLike = 3 * self._twiss.gamma0**2 * phix**2 * ax * (R3 - R2) / sqrt_term
         # ----------------------------------------------------------------------------------------------
         # These are the integrands of the integrals in Eq (30-32) in Nagaitsev paper
         Ix_integrand = (
-            self.optics.betx
-            / (self.optics.circumference * sigx * sigy)
-            * (Sx + Sp * (self.optics.dx**2 / self.optics.betx**2 + phix**2) + Sxp)
+            self._twiss.betx
+            / (self._twiss.circumference * sigx * sigy)
+            * (Sx + Sp * (self._twiss.dx**2 / self._twiss.betx**2 + phix**2) + Sxp)
         )
-        Iy_integrand = self.optics.bety / (self.optics.circumference * sigx * sigy) * (R2 + R3 - 2 * R1)
-        Iz_integrand = Sp / (self.optics.circumference * sigx * sigy)
+        Iy_integrand = self._twiss.bety / (self._twiss.circumference * sigx * sigy) * (R2 + R3 - 2 * R1)
+        Iz_integrand = Sp / (self._twiss.circumference * sigx * sigy)
         # ----------------------------------------------------------------------------------------------
         # Integrating the integrands above accross the ring to get the desired results
         # This is identical to np.trapz(Ixyz_integrand, self.optics.s) but faster and somehow closer to MAD-X values
-        Ix = float(np.sum(Ix_integrand[:-1] * np.diff(self.optics.s)))
-        Iy = float(np.sum(Iy_integrand[:-1] * np.diff(self.optics.s)))
-        Iz = float(np.sum(Iz_integrand[:-1] * np.diff(self.optics.s)))
-        result = EllipticIntegrals(Ix, Iy, Iz)
+        Ix = float(np.sum(Ix_integrand[:-1] * np.diff(self._twiss.s)))
+        Iy = float(np.sum(Iy_integrand[:-1] * np.diff(self._twiss.s)))
+        Iz = float(np.sum(Iz_integrand[:-1] * np.diff(self._twiss.s)))
+        result = NagaitsevIntegrals(Ix, Iy, Iz)
         # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes and then return the results
-        self.elliptic_integrals = result
+        self.nagaitsev_integrals = result
         return result
 
-    # TODO (Gianni): adapt citations and admonitions to the xsuite way
+    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def growth_rates(
         self,
         epsx: float,
@@ -949,23 +955,24 @@ class NagaitsevIBS(AnalyticalIBS):
         this method when it is called.
 
         .. warning::
-            Currently this calculation does not take into account vertical dispersion. Should you have
-            any in your lattice, please use the BjorkenMtingwaIBS class instead, which supports it fully.
-            Supporting vertical dispersion in NagaitsevIBS might be implemented in a future version.
+            Currently this calculation does not take into account vertical dispersion. Should you
+            have any in your lattice, please use the BjorkenMtingwaIBS class instead, which supports
+            it fully. Supporting vertical dispersion in NagaitsevIBS might be implemented in a future
+            version.
 
         .. hint::
             The calculation is done according to the following steps, which are related to different
             equations in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`:
 
-                - Get the Nagaitsev integrals from the instance attributes (integrals of Eq (30-32)).
+                - Get the Nagaitsev integrals (integrals of Eq (30-32)).
                 - Computes the Coulomb logarithm for the defined beam and optics parameters.
                 - Compute the rest of the constant term of Eq (30-32).
                 - Compute for each plane the full result of Eq (30-32), respectively.
                 - Plug these into Eq (28) and divide by either :math:`\varepsilon_x, \varepsilon_y` or :math:`\sigma_{\delta}^{2}` (as relevant) to get :math:`1 / \tau`.
 
-            **Note:** As one can see above, this calculation is done by building on the Nagaitsev integrals.
-            If these have not been computed yet, this method will first log a message and compute them, then
-            compute the growth rates.
+            **Note:** As one can see above, this calculation is done by building on the
+            Nagaitsev integrals. If these have not been computed yet, this method will
+            first log a message and compute them, then compute the growth rates.
 
         .. admonition:: Geometric or Normalized Emittances
 
@@ -1015,30 +1022,30 @@ class NagaitsevIBS(AnalyticalIBS):
                 "Using 'bunched=False' in this formalism makes the approximation of bunch length = C/(2*pi). "
                 "Please use the BjorkenMtingwaIBS class for fully accurate results."
             )
-            bunch_length: float = self.optics.circumference / (2 * np.pi)
+            bunch_length: float = self._twiss.circumference / (2 * np.pi)
         # ----------------------------------------------------------------------------------------------
         # Make sure we are working with geometric emittances
         geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
         geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
         # ----------------------------------------------------------------------------------------------
         # Ensure the elliptic integrals have been computed beforehand
-        if self.elliptic_integrals is None or compute_integrals is True:
+        if self.nagaitsev_integrals is None or compute_integrals is True:
             _ = self.integrals(geom_epsx, geom_epsy, sigma_delta)
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
         # Get the Coulomb logarithm and the rest of the constant term in Eq (30-32)
         coulomb_logarithm = self.coulomb_log(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched)
         # Then the rest of the constant term in the equation
-        # fmt: off
         rest_of_constant_term = (
-            self.beam_parameters.num_particles * self.beam_parameters.classical_particle_radius0**2 * c 
-            / (12 * np.pi * self.beam_parameters.beta0**3 * self.beam_parameters.gamma0**5 * bunch_length)
+            self._num_particles
+            * self._particle.get_classical_particle_radius0() ** 2
+            * c
+            / (12 * np.pi * self._twiss.beta0**3 * self._twiss.gamma0**5 * bunch_length)
         )
-        # fmt: on
         full_constant_term = rest_of_constant_term * coulomb_logarithm
         # ----------------------------------------------------------------------------------------------
         # Compute the full result of Eq (30-32) for each plane | make sure to convert back to float
-        Ix, Iy, Iz = self.elliptic_integrals.as_tuple()
+        Ix, Iy, Iz = self.nagaitsev_integrals.as_tuple()
         # If coasting beams, since we use bunch_length=C/(2*pi) we have to divide rates by 2 (see Piwinski)
         factor = 1.0 if bunched is True else 2.0
         Tx = float(Ix * full_constant_term / geom_epsx) / factor
@@ -1053,38 +1060,43 @@ class NagaitsevIBS(AnalyticalIBS):
         return result
 
 
-# TODO (Gianni): adapt citation to the xsuite way
 class BjorkenMtingwaIBS(AnalyticalIBS):
     r"""
-    Analytical implementation to compute IBS growth rates according to `Bjorken & Mtingwa`
-    formalism. The method follows the ``MAD-X`` implementation, which has corrected B&M in
-    order to take in consideration vertical dispersion (see the relevant note about the changes
-    at :cite:`CERN:Antoniou:Revision_IBS_MADX`). It initiates from a `BeamParameters` and an
-    `OpticsParameters` objects.
+    Analytical implementation to compute IBS growth rates according
+    to the `Bjorken & Mtingwa` formalism. The method follows the
+    ``MAD-X`` implementation, which has corrected B&M in order to take
+    in consideration vertical dispersion (see the relevant note about
+    the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX`).
 
     .. note::
-        In ``MAD-X`` it is ensure that the Twiss table is centered. One might observe some
-        discrepancies against ``MAD-X`` growth rates if not slicing the `xtrack.Line` before
-        calling this method.
+        In ``MAD-X`` it is ensure that the Twiss table is centered.
+        One might observe some small discrepancies against ``MAD-X``
+        growth rates if not providing a centered Twiss table (by
+        slicing the lattice first, for instance.)
 
     Attributes:
     -----------
-    beam_parameters : BeamParameters
-        The necessary beam parameters to use for calculations.
-    optics_parameters : OpticsParameters
-        The necessary optics parameters to use for calculations.
     ibs_growth_rates : IBSGrowthRates
         The computed IBS growth rates. This self-updates when
         they are computed with the `.growth_rates` method.
     """
 
-    def __init__(self, beam_params: BeamParameters, optics: OpticsParameters) -> None:
-        super().__init__(beam_params, optics)
+    def __init__(self, twiss: xt.TwissTable, num_particles: int) -> None:
+        """Initialize the class.
+
+        Parameters
+        ----------
+        twiss : xtrack.TwissTable
+            Twiss results of the `xtrack.Line` configuration.
+        num_particles : int
+            Number of simulated particles to consider.
+        """
+        super().__init__(twiss, num_particles)
 
     def _Gamma(
         self,
-        geom_epsx: float,
-        geom_epsy: float,
+        gemitt_x: float,
+        gemitt_y: float,
         sigma_delta: float,
         bunch_length: float,
         bunched: bool = True,
@@ -1095,9 +1107,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1111,30 +1123,30 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         float
             The computed :math:`\Gamma` value.
         """
-        # fmt: off
+        # Below we give mass in MeV like in .growth_rates() (the m^3 terms cancel out)
         if bunched is True:
             return (
-                (2 * np.pi)**3
-                * (self.beam_parameters.beta0 * self.beam_parameters.gamma0)**3
-                * (self.beam_parameters.mass0 * 1e-3)**3  # mass in MeV like in .growth_rates() (the m^3 terms cancel out)
-                * geom_epsx
-                * geom_epsy
+                (2 * np.pi) ** 3
+                * (self._twiss.beta0 * self._twiss.gamma0) ** 3
+                * (self._particle.mass0 * 1e-3) ** 3
+                * gemitt_x
+                * gemitt_y
                 * sigma_delta
                 * bunch_length
             )
-        else:  # we have coasting beam
+        else:  # coasting beam
             return (
-                4 * np.pi**(5/2)
-                * (self.beam_parameters.beta0 * self.beam_parameters.gamma0)**3
-                * (self.beam_parameters.mass0 * 1e-3)**3  # mass in MeV like in .growth_rates() (the m^3 terms cancel out)
-                * geom_epsx
-                * geom_epsy
+                4
+                * np.pi ** (5 / 2)
+                * (self._twiss.beta0 * self._twiss.gamma0) ** 3
+                * (self._particle.mass0 * 1e-3) ** 3
+                * gemitt_x
+                * gemitt_y
                 * sigma_delta
-                * self.optics.circumference
+                * self._twiss.circumference
             )
-        # fmt: on
 
-    def _a(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _a(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `a` term of Table 1 in the MAD-X note.
 
@@ -1143,9 +1155,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1157,34 +1169,34 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betx_over_epsx: ArrayLike = self._twiss.betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self._twiss.bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         a: ArrayLike = (
-            gamma**2 * (Hx / geom_epsx + Hy / geom_epsy)
+            gamma**2 * (Hx / gemitt_x + Hy / gemitt_y)
             + gamma**2 / (sigma_delta**2)
             + (betx_over_epsx + bety_over_epsy)
         )
         return a
 
-    def _b(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _b(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `b` term of Table 1 in the MAD-X note.
 
@@ -1193,9 +1205,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1207,31 +1219,31 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
-        epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
-        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betxbety: ArrayLike = self._twiss.betx * self._twiss.bety  # beta_x * beta_y term
+        epsxepsy: ArrayLike = gemitt_x * gemitt_y  # eps_x * eps_y term
+        betx_over_epsx: ArrayLike = self._twiss.betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self._twiss.bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} as defined in Eq (6) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
         # ----------------------------------------------------------------------------------------------
         b: ArrayLike = (
             (betx_over_epsx + bety_over_epsy)
             * (
-                (gamma**2 * Dx**2) / (geom_epsx * self.optics.betx)
-                + (gamma**2 * Dy**2) / (geom_epsy * self.optics.bety)
+                (gamma**2 * Dx**2) / (gemitt_x * self._twiss.betx)
+                + (gamma**2 * Dy**2) / (gemitt_y * self._twiss.bety)
                 + gamma**2 / sigma_delta**2
             )
             + betxbety * gamma**2 * (phix**2 + phiy**2) / (epsxepsy)
@@ -1239,7 +1251,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         )
         return b
 
-    def _c(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _c(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `c` term of Table 1 in the MAD-X note.
 
@@ -1248,9 +1260,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1262,25 +1274,25 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
-        epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betxbety: ArrayLike = self._twiss.betx * self._twiss.bety  # beta_x * beta_y term
+        epsxepsy: ArrayLike = gemitt_x * gemitt_y  # eps_x * eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
         # ----------------------------------------------------------------------------------------------
         c: ArrayLike = (betxbety / (epsxepsy)) * (
-            (gamma**2 * Dx**2) / (geom_epsx * self.optics.betx)
-            + (gamma**2 * Dy**2) / (geom_epsy * self.optics.bety)
+            (gamma**2 * Dx**2) / (gemitt_x * self._twiss.betx)
+            + (gamma**2 * Dy**2) / (gemitt_y * self._twiss.bety)
             + gamma**2 / sigma_delta**2
         )
         return c
 
-    def _ax(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _ax(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `ax` term of Table 1 in the MAD-X note.
 
@@ -1303,36 +1315,34 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We define new shorter names for a lot of arrays, for clarity of the expressions below
-        betx: ArrayLike = self.optics.betx  # horizontal beta-functions
-        bety: ArrayLike = self.optics.bety  # vertical beta-functions
-        epsx: float = geom_epsx  # horizontal geometric emittance
-        epsy: float = geom_epsy  # vertical geometric emittance
+        betx: ArrayLike = self._twiss.betx  # horizontal beta-functions
+        bety: ArrayLike = self._twiss.bety  # vertical beta-functions
         sigd: float = sigma_delta  # momentum spread
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betx_over_epsx: ArrayLike = betx / epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betx_over_epsx: ArrayLike = betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         ax: ArrayLike = (
-            2 * gamma**2 * (Hx / epsx + Hy / epsy + 1 / sigd**2)
-            - (betx * Hy) / (Hx * epsy)
+            2 * gamma**2 * (Hx / gemitt_x + Hy / gemitt_y + 1 / sigd**2)
+            - (betx * Hy) / (Hx * gemitt_y)
             + (betx / (Hx * gamma**2)) * (2 * betx_over_epsx - bety_over_epsy - gamma**2 / sigd**2)
             - 2 * betx_over_epsx
             - bety_over_epsy
@@ -1340,7 +1350,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         )
         return ax
 
-    def _bx(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _bx(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `bx` term of Table 1 in the MAD-X note.
 
@@ -1349,9 +1359,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_x : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1363,36 +1373,34 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We define new shorter names for a lot of arrays, for clarity of the expressions below
-        betx: ArrayLike = self.optics.betx  # horizontal beta-functions
-        bety: ArrayLike = self.optics.bety  # vertical beta-functions
-        epsx: float = geom_epsx  # horizontal geometric emittance
-        epsy: float = geom_epsy  # vertical geometric emittance
+        betx: ArrayLike = self._twiss.betx  # horizontal beta-functions
+        bety: ArrayLike = self._twiss.bety  # vertical beta-functions
         sigd: float = sigma_delta  # momentum spread
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betx_over_epsx: ArrayLike = betx / epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betx_over_epsx: ArrayLike = betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         bx: ArrayLike = (
             (betx_over_epsx + bety_over_epsy)
-            * (gamma**2 * Hx / epsx + gamma**2 * Hy / epsy + gamma**2 / sigd**2)
+            * (gamma**2 * Hx / gemitt_x + gamma**2 * Hy / gemitt_y + gamma**2 / sigd**2)
             - gamma**2 * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
             + betx_over_epsx * (betx_over_epsx - 4 * bety_over_epsy)
             + (betx / (Hx * gamma**2))
@@ -1402,11 +1410,11 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
                 + 6 * betx_over_epsx * bety_over_epsy * gamma**2 * phix**2
                 + gamma**2 * (2 * bety_over_epsy**2 * phiy**2 - betx_over_epsx**2 * phix**2)
             )
-            + ((betx * Hy) / (epsy * Hx)) * (betx_over_epsx - 2 * bety_over_epsy)
+            + ((betx * Hy) / (gemitt_y * Hx)) * (betx_over_epsx - 2 * bety_over_epsy)
         )
         return bx
 
-    def _ay(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _ay(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `ay` term of Table 1 in the MAD-X note.
 
@@ -1415,9 +1423,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1429,42 +1437,42 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betx_over_epsx: ArrayLike = self._twiss.betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self._twiss.bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         ay: ArrayLike = (
             -(gamma**2)
             * (
-                Hx / geom_epsx
-                + 2 * Hy / geom_epsy
-                + (self.optics.betx * Hy) / (self.optics.bety * geom_epsx)
+                Hx / gemitt_x
+                + 2 * Hy / gemitt_y
+                + (self._twiss.betx * Hy) / (self._twiss.bety * gemitt_x)
                 + 1 / sigma_delta**2
             )
-            + 2 * gamma**4 * Hy / self.optics.bety * (Hy / geom_epsy + Hx / geom_epsx)
-            + 2 * gamma**4 * Hy / (self.optics.bety * sigma_delta**2)
+            + 2 * gamma**4 * Hy / self._twiss.bety * (Hy / gemitt_y + Hx / gemitt_x)
+            + 2 * gamma**4 * Hy / (self._twiss.bety * sigma_delta**2)
             - (betx_over_epsx - 2 * bety_over_epsy)
             + (6 * bety_over_epsy * gamma**2 * phiy**2)
         )
         return ay
 
-    def _by(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _by(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `by` term of Table 1 in the MAD-X note.
 
@@ -1473,9 +1481,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1487,48 +1495,48 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betxbety: ArrayLike = self.optics.betx * self.optics.bety  # beta_x * beta_y term
-        epsxepsy: ArrayLike = geom_epsx * geom_epsy  # eps_x * eps_y term
-        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betxbety: ArrayLike = self._twiss.betx * self._twiss.bety  # beta_x * beta_y term
+        epsxepsy: ArrayLike = gemitt_x * gemitt_y  # eps_x * eps_y term
+        betx_over_epsx: ArrayLike = self._twiss.betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self._twiss.bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         by: ArrayLike = (
-            gamma**2 * (bety_over_epsy - 2 * betx_over_epsx) * (Hx / geom_epsx + 1 / sigma_delta**2)
-            + gamma**2 * Hy / geom_epsy * (bety_over_epsy - 4 * betx_over_epsx)
+            gamma**2 * (bety_over_epsy - 2 * betx_over_epsx) * (Hx / gemitt_x + 1 / sigma_delta**2)
+            + gamma**2 * Hy / gemitt_y * (bety_over_epsy - 4 * betx_over_epsx)
             + (betxbety / epsxepsy)
             + gamma**2 * (2 * betx_over_epsx**2 * phix**2 - bety_over_epsy**2 * phiy**2)
             + gamma**4
             * Hy
-            / self.optics.bety
+            / self._twiss.bety
             * (betx_over_epsx + bety_over_epsy)
-            * (Hy / geom_epsy + 1 / sigma_delta**2)
-            + gamma**4 * Hx * Hy / (self.optics.bety * geom_epsx) * (betx_over_epsx + bety_over_epsy)
+            * (Hy / gemitt_y + 1 / sigma_delta**2)
+            + gamma**4 * Hx * Hy / (self._twiss.bety * gemitt_x) * (betx_over_epsx + bety_over_epsy)
             - gamma**4
             * Hy
-            / self.optics.bety
+            / self._twiss.bety
             * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
             + 6 * gamma**2 * phiy**2 * betx_over_epsx * bety_over_epsy
         )
         return by
 
-    def _az(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _az(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `az` term of Table 1 in the MAD-X note.
 
@@ -1537,9 +1545,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1551,34 +1559,34 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betx_over_epsx: ArrayLike = self._twiss.betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self._twiss.bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         az: ArrayLike = (
-            2 * gamma**2 * (Hx / geom_epsx + Hy / geom_epsy + 1 / sigma_delta**2)
+            2 * gamma**2 * (Hx / gemitt_x + Hy / gemitt_y + 1 / sigma_delta**2)
             - betx_over_epsx
             - bety_over_epsy
         )
         return az
 
-    def _bz(self, geom_epsx: float, geom_epsy: float, sigma_delta: float) -> ArrayLike:
+    def _bz(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
         """
         Computes the `bz` term of Table 1 in the MAD-X note.
 
@@ -1587,9 +1595,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1601,40 +1609,37 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        betx_over_epsx: ArrayLike = self.optics.betx / geom_epsx  # beta_x / eps_x term
-        bety_over_epsy: ArrayLike = self.optics.bety / geom_epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        betx_over_epsx: ArrayLike = self._twiss.betx / gemitt_x  # beta_x / eps_x term
+        bety_over_epsy: ArrayLike = self._twiss.bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dy: ArrayLike = self.optics.dy * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
-        Dpy: ArrayLike = self.optics.dpy * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dy: ArrayLike = self._twiss.dy * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
+        Dpy: ArrayLike = self._twiss.dpy * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_{x,y} amd H_{x,y} as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
-        phix: ArrayLike = phi(self.optics.betx, self.optics.alfx, Dx, Dpx)
-        phiy: ArrayLike = phi(self.optics.bety, self.optics.alfy, Dy, Dpy)
-        Hx: ArrayLike = (Dx**2 + self.optics.betx**2 * phix**2) / self.optics.betx
-        Hy: ArrayLike = (Dy**2 + self.optics.bety**2 * phiy**2) / self.optics.bety
+        phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, Dx, Dpx)
+        phiy: ArrayLike = phi(self._twiss.bety, self._twiss.alfy, Dy, Dpy)
+        Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
+        Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
         bz: ArrayLike = (
-            (betx_over_epsx + bety_over_epsy)
-            * gamma**2
-            * (Hx / geom_epsx + Hy / geom_epsy + 1 / sigma_delta**2)
+            (betx_over_epsx + bety_over_epsy) * gamma**2 * (Hx / gemitt_x + Hy / gemitt_y + 1 / sigma_delta**2)
             - 2 * betx_over_epsx * bety_over_epsy
             - gamma**2 * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
         )
         return bz
 
-    # TODO (Gianni): adapt citation to the xsuite way
     def _constants(
         self,
-        geom_epsx: float,
-        geom_epsy: float,
+        gemitt_x: float,
+        gemitt_y: float,
         sigma_delta: float,
         bunch_length: float,
         bunched: bool = True,
@@ -1652,9 +1657,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsx : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
@@ -1673,22 +1678,20 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # fmt: off
         # We define new shorter names for a lot of arrays, for clarity of the expressions below
-        betx: ArrayLike = self.optics.betx  # horizontal beta-functions
-        bety: ArrayLike = self.optics.bety  # vertical beta-functions
-        alfx: ArrayLike = self.optics.alfx  # horizontal alpha-functions
-        epsx: float = geom_epsx  # horizontal geometric emittance
-        epsy: float = geom_epsy  # vertical geometric emittance
+        betx: ArrayLike = self._twiss.betx  # horizontal beta-functions
+        bety: ArrayLike = self._twiss.bety  # vertical beta-functions
+        alfx: ArrayLike = self._twiss.alfx  # horizontal alpha-functions
         # ----------------------------------------------------------------------------------------------
         # We compute (once) some convenience terms used a lot in the equations, for efficiency & clarity
-        beta: float = self.beam_parameters.beta0  # relativistic beta
-        gamma: float = self.beam_parameters.gamma0  # relativistic gamma
-        bety_over_epsy: ArrayLike = bety / epsy  # beta_y / eps_y term
+        beta: float = self._twiss.beta0  # relativistic beta
+        gamma: float = self._twiss.gamma0  # relativistic gamma
+        bety_over_epsy: ArrayLike = bety / gemitt_y  # beta_y / eps_y term
         # ----------------------------------------------------------------------------------------------
         # Adjust dispersion and dispersion prime by multiplied by relativistic beta, in order to be in the
         # deltap and not the pt frame (default in MAD-X / xsuite). Necessary for non-relativistic beams
         LOGGER.debug("Adjusting Dx, Dy, Dpx, Dpy to be in the pt frame")
-        Dx: ArrayLike = self.optics.dx * beta
-        Dpx: ArrayLike = self.optics.dpx * beta
+        Dx: ArrayLike = self._twiss.dx * beta
+        Dpx: ArrayLike = self._twiss.dpx * beta
         # ----------------------------------------------------------------------------------------------
         # Computing Phi_x amd H_x as defined in Eq (6) and Eq (7) of the note
         LOGGER.debug("Computing Phi_x, Phi_y, H_x and H_y at all elements")
@@ -1696,27 +1699,28 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         Hx: ArrayLike = (Dx**2 + betx**2 * phix**2) / betx
         # ----------------------------------------------------------------------------------------------
         # Compute the Coulomb logarithm and the common constant term in Eq (8) (the first fraction)
-        coulomb_logarithm: float = self.coulomb_log(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched)
+        # Below we give mass in MeV like in .growth_rates() (the m^3 terms cancel out)
+        coulomb_logarithm: float = self.coulomb_log(gemitt_x, gemitt_y, sigma_delta, bunch_length, bunched)
         common_constant_term: float = (
             np.pi**2
-            * self.beam_parameters.classical_particle_radius0**2
+            * self._particle.get_classical_particle_radius0()**2
             * c
-            * (self.beam_parameters.mass0 * 1e-3)** 3  # use mass in MeV like in ._Gamma method (the m^3 terms cancel out)
-            * self.beam_parameters.num_particles
+            * (self._particle.mass0 * 1e-3)** 3
+            * self._num_particles
             * coulomb_logarithm
-            / (self.beam_parameters.gamma0 * self._Gamma(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched))
+            / (self._twiss.gamma0 * self._Gamma(gemitt_x, gemitt_y, sigma_delta, bunch_length, bunched))
         )
         # ----------------------------------------------------------------------------------------------
         # fmt: on
         # Compute the plane-dependent constants (in brackets) for each plane of Eq (8) in the MAD-X note
-        const_x: ArrayLike = gamma**2 * Hx / epsx
+        const_x: ArrayLike = gamma**2 * Hx / gemitt_x
         const_y: ArrayLike = bety_over_epsy
         const_z: float = gamma**2 / sigma_delta**2
         # ----------------------------------------------------------------------------------------------
         # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
         return common_constant_term, const_x, const_y, const_z
 
-    # TODO (Gianni): adapt citations and admonitions to the xsuite way
+    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def growth_rates(
         self,
         epsx: float,
@@ -1729,21 +1733,16 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
     ) -> IBSGrowthRates:
         r"""
         Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
-        code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
-        terms of Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
-        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
-        this method when it is called.
-
-        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this code
-        base, according to the Bjorken & Mtingwa formalism. These correspond to the (averaged)
-        :math:`1 / \tau` terms of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`. The
-        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
-        this method when it is called.
+        code base, according to the Bjorken & Mtingwa formalism. These correspond to the
+        (averaged) :math:`1 / \tau` terms of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`.
+        The instance attribute `self.ibs_growth_rates` is automatically updated with the result
+        of this method when it is called.
 
         .. warning::
-            In ``MAD-X`` it is ensure that the Twiss table is centered. One might observe some
-            discrepancies against ``MAD-X`` growth rates if not slicing the `xtrack.Line` before
-            calling this method.
+            In ``MAD-X`` it is ensure that the Twiss table is centered.
+            One might observe some small discrepancies against ``MAD-X``
+            growth rates if not providing a centered Twiss table (by
+            slicing the lattice first, for instance.)
 
         .. hint::
             The calculation is done according to the following steps, which are related to different
@@ -1793,16 +1792,10 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # Make sure we are working with geometric emittances
         geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
         geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
-        # ----------------------------------------------------------------------------------------------
-        # We inform the user in case the TWISS was not centered - but keep going
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
-        # TODO (Gianni): two lines below commented out as centering determination not implemented, maybe remove after discussing with Gianni
-        # if self.optics._is_centered is False:
-        #     LOGGER.debug("Twiss was not calculated at center of elements, might see discrepancies to MAD-X")
-        # fmt: off
-        # All of the following (when type annotated as ArrayLike), hold one value per element in the lattice
         # ----------------------------------------------------------------------------------------------
         # Getting the arrays from Table 1 of the MAD-X note
+        # fmt: off
         LOGGER.debug("Computing terms from Table 1 of the MAD-X note")
         a: ArrayLike = self._a(geom_epsx, geom_epsy, sigma_delta)    # This is 'a' in MAD-X fortran code
         b: ArrayLike = self._b(geom_epsx, geom_epsy, sigma_delta)    # This is 'b' in MAD-X fortran code
@@ -1813,6 +1806,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         by: ArrayLike = self._by(geom_epsx, geom_epsy, sigma_delta)  # This is 'ty2 * cprime' in MAD-X fortran code
         az: ArrayLike = self._az(geom_epsx, geom_epsy, sigma_delta)  # This is 'tl1 * cprime' in MAD-X fortran code
         bz: ArrayLike = self._bz(geom_epsx, geom_epsy, sigma_delta)  # This is 'tl2 * cprime' in MAD-X fortran code                                   
+        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Getting the constant term and the bracket terms from Eq (8) of the MAD-X note
         LOGGER.debug("Computing common constant term and bracket terms from Eq (8) of the MAD-X note")
@@ -1821,8 +1815,10 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         )
         # ----------------------------------------------------------------------------------------------
         # Defining the integrands from Eq (8) of the MAD-X note, for each plane (remember these functions
-        # are vectorised since a, b, c, ax, bx, ay, by are all arrays). The bracket terms are included.
+        # are vectorised since a, b, c, ax, bx, ay, by are all arrays).
+        # The bracket terms of Eq (8) are included!
         LOGGER.debug("Defining integrands of Eq (8) of the MAD-X note")
+
         def Ix_integrand_vectorized(_lambda: float) -> ArrayLike:
             """Vectorized function for the integrand of horizontal term of Eq (8) in MAD-X note"""
             numerator: ArrayLike = bracket_x * np.sqrt(_lambda) * (ax * _lambda + bx)
@@ -1840,6 +1836,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             numerator: ArrayLike = bracket_z * np.sqrt(_lambda) * (az * _lambda + bz)
             denominator: ArrayLike = (_lambda**3 + a * _lambda**2 + b * _lambda + c) ** (3 / 2)
             return numerator / denominator
+
         # ----------------------------------------------------------------------------------------------
         # Defining a function to perform the integration, which is done sub-interval by sub-interval
         def calculate_integral_vectorized(func: Callable) -> ArrayLike:
@@ -1875,8 +1872,8 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
                 integrals, _ = quad_vec(func, start, end)  # integrals is an array
                 result += integrals
             return result
+
         # ----------------------------------------------------------------------------------------------
-        # fmt: on
         # Now we loop over the lattice and compute the integrals at each element
         LOGGER.debug("Computing integrals of Eq (8) of the MAD-X note - at each element in the lattice")
         Tx_array: ArrayLike = calculate_integral_vectorized(Ix_integrand_vectorized)
@@ -1891,18 +1888,18 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # For a better average, interpolate these intermediate growth rates through the lattice
         LOGGER.debug("Interpolating intermediate growth rates through the lattice")
-        _tx = interp1d(self.optics.s, Tx_array)
-        _ty = interp1d(self.optics.s, Ty_array)
-        _tz = interp1d(self.optics.s, Tz_array)
+        _tx = interp1d(self._twiss.s, Tx_array)
+        _ty = interp1d(self._twiss.s, Ty_array)
+        _tz = interp1d(self._twiss.s, Tz_array)
         # ----------------------------------------------------------------------------------------------
         # And now cmpute the final growth rates for each plane as an average of these interpolated
         # functions over the whole lattice - also ensure conversion to float afterwards!
         LOGGER.debug("Getting average growth rates over the lattice")
         with warnings.catch_warnings():  # Catch and ignore the scipy.integrate.IntegrationWarning
             warnings.simplefilter("ignore", category=UserWarning)
-            Tx: float = float(quad(_tx, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference)
-            Ty: float = float(quad(_ty, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference)
-            Tz: float = float(quad(_tz, self.optics.s[0], self.optics.s[-1])[0] / self.optics.circumference)
+            Tx: float = float(quad(_tx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+            Ty: float = float(quad(_ty, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+            Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
         result = IBSGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes, some private flags and then return the results
