@@ -16,13 +16,14 @@ LOGGER = getLogger(__name__)
 
 # ----- API for Analytical IBS -----#
 
-
+# TODO: allow gemitt / nemitt
+# TODO: return a table and we can always change the inside of container? RABBIT HOLE
 def get_intrabeam_scattering_growth_rates(
-    line: xt.Line,
+    line: xt.Line,  # REPLACE THIS WITH A TWISSTABLE
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     npart: int = None,
-    epsx: float = None,
-    epsy: float = None,
+    epsx: float = None,  # use gemitt_x and gemitt_y?
+    epsy: float = None,  # also nemitt_x and nemitt_y?
     sigma_delta: float = None,
     bunch_length: float = None,
     bunched: bool = True,
@@ -136,6 +137,9 @@ def get_intrabeam_scattering_growth_rates(
         return growth_rates, IBS
     else:
         return growth_rates
+
+
+
 
 
 # ----- API for Kick-Based IBS -----#
