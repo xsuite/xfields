@@ -217,15 +217,15 @@ class AnalyticalIBS(ABC):
         self._refs: _ReferenceValues = None  # updates when growth rates are computed
         self._number_of_growth_rates_computations: int = 0  # increments when growth rates are computed
 
-    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def coulomb_log(
         self,
-        epsx: float,
-        epsy: float,
-        sigma_delta: float,
-        bunch_length: float,
+        gemitt_x: float = None,
+        nemitt_x: float = None,
+        gemitt_y: float = None,
+        nemitt_y: float = None,
+        sigma_delta: float = None,
+        bunch_length: float = None,
         bunched: bool = True,
-        normalized_emittances: bool = False,
     ) -> float:
         r"""
         Calculates the Coulomb logarithm based on the beam parameters and optics the class
@@ -248,19 +248,24 @@ class AnalyticalIBS(ABC):
 
         Parameters
         ----------
-        epsx : float
-            Horizontal (geometric or normalized) emittance in [m].
-        epsy : float
-            Vertical (geometric or normalized) emittance in [m].
+        gemitt_x : float, optional
+            Horizontal geometric emittance in [m]. Either this
+            parameter or `nemitt_x` is required.
+        nemitt_x : float, optional
+            Horizontal normalized emittance in [m]. Either this
+            parameter or `gemitt_x` is required.
+        gemitt_y : float, optional
+            Vertical geometric emittance in [m]. Either this
+            parameter or `nemitt_y` is required.
+        nemitt_y : float, optional
+            Vertical normalized emittance in [m]. Either this
+            parameter or `gemitt_y` is required.
         sigma_delta : float
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
-        normalized_emittances : bool
-            Whether the provided emittances are normalized or not. Defaults to
-            `False` (assumes geometric emittances).
 
         Returns
         -------
@@ -269,9 +274,21 @@ class AnalyticalIBS(ABC):
         """
         LOGGER.debug("Computing Coulomb logarithm for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
-        # Make sure we are working with geometric emittances
-        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
-        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        # Perform checks on exclusive parameters and make sure we have what we need
+        assert sigma_delta is not None, "Must provide 'sigma_delta'"
+        assert bunch_length is not None, "Must provide 'bunch_length'"
+        assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+        assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+        if gemitt_x is not None:
+            assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+        if gemitt_y is not None:
+            assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+        if nemitt_x is not None:
+            assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+            gemitt_x = self._gemitt(nemitt_x)
+        if nemitt_y is not None:
+            assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+            gemitt_y = self._gemitt(nemitt_y)
         # ----------------------------------------------------------------------------------------------
         # Interpolated beta and dispersion functions for the average calculation below
         LOGGER.debug("Interpolating beta and dispersion functions")
@@ -295,13 +312,13 @@ class AnalyticalIBS(ABC):
         Etrans = (
             5e8
             * (self._twiss.gamma0 * self._particle.energy[0] * 1e-9 - self._particle.mass0 * 1e-9)
-            * (geom_epsx / _bx_bar)
+            * (gemitt_x / _bx_bar)
         )
         TempeV = 2.0 * Etrans
         # ----------------------------------------------------------------------------------------------
         # Compute sigmas in each dimension (start from sigma_delta to get sige needed in the formula)
-        sigma_x_cm = 100 * np.sqrt(geom_epsx * _bx_bar + (_dx_bar * sigma_delta * self._twiss.beta0**2) ** 2)
-        sigma_y_cm = 100 * np.sqrt(geom_epsy * _by_bar + (_dy_bar * sigma_delta * self._twiss.beta0**2) ** 2)
+        sigma_x_cm = 100 * np.sqrt(gemitt_x * _bx_bar + (_dx_bar * sigma_delta * self._twiss.beta0**2) ** 2)
+        sigma_y_cm = 100 * np.sqrt(gemitt_y * _by_bar + (_dy_bar * sigma_delta * self._twiss.beta0**2) ** 2)
         sigma_t_cm = 100 * bunch_length
         # ----------------------------------------------------------------------------------------------
         # Calculate beam volume to get density (in cm^{-3}), then Debye length
@@ -322,16 +339,16 @@ class AnalyticalIBS(ABC):
         bmax = min(sigma_x_cm, debye_length)
         return np.log(bmax / bmin)
 
-    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     @abstractmethod
     def growth_rates(
         self,
-        epsx: float,
-        epsy: float,
-        sigma_delta: float,
-        bunch_length: float,
+        gemitt_x: float = None,
+        nemitt_x: float = None,
+        gemitt_y: float = None,
+        nemitt_y: float = None,
+        sigma_delta: float = None,
+        bunch_length: float = None,
         bunched: bool = True,
-        normalized_emittances: bool = False,
     ) -> IBSGrowthRates:
         r"""
         Method to compute the IBS growth rates. This is an abstract method
@@ -339,19 +356,24 @@ class AnalyticalIBS(ABC):
 
         Parameters
         ----------
-        epsx : float
-            Horizontal (geometric or normalized) emittance in [m].
-        epsy : float
-            Vertical (geometric or normalized) emittance in [m].
+        gemitt_x : float, optional
+            Horizontal geometric emittance in [m]. Either this
+            parameter or `nemitt_x` is required.
+        nemitt_x : float, optional
+            Horizontal normalized emittance in [m]. Either this
+            parameter or `gemitt_x` is required.
+        gemitt_y : float, optional
+            Vertical geometric emittance in [m]. Either this
+            parameter or `nemitt_y` is required.
+        nemitt_y : float, optional
+            Vertical normalized emittance in [m]. Either this
+            parameter or `gemitt_y` is required.
         sigma_delta : float
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
-        normalized_emittances : bool
-            Whether the provided emittances are normalized or not. Defaults to
-            `False` (assumes geometric emittances).
 
         Returns
         -------
@@ -493,18 +515,18 @@ class AnalyticalIBS(ABC):
             sr_inputs: _SynchrotronRadiationInputs = self._get_synchrotron_radiation_kwargs(**kwargs)
         # ----------------------------------------------------------------------------------------------
         # Make sure we are working with geometric emittances (also for SR inputs if given)
-        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
-        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        geom_epsx = epsx if normalized_emittances is False else self._gemitt(epsx)
+        geom_epsy = epsy if normalized_emittances is False else self._gemitt(epsy)
         if include_synchrotron_radiation is True:
             sr_eq_geom_epsx = (
                 sr_inputs.equilibrium_epsx
                 if normalized_emittances is False
-                else self._geometric_emittance(sr_inputs.equilibrium_epsx)
+                else self._gemitt(sr_inputs.equilibrium_epsx)
             )
             sr_eq_geom_epsy = (
                 sr_inputs.equilibrium_epsy
                 if normalized_emittances is False
-                else self._geometric_emittance(sr_inputs.equilibrium_epsy)
+                else self._gemitt(sr_inputs.equilibrium_epsy)
             )
             sr_eq_sigma_delta = sr_inputs.equilibrium_sigma_delta
         # ----------------------------------------------------------------------------------------------
@@ -565,12 +587,12 @@ class AnalyticalIBS(ABC):
                     )
         # ----------------------------------------------------------------------------------------------
         # Make sure we return the same type of emittances as the user provided
-        new_epsx = new_epsx if normalized_emittances is False else self._normalized_emittance(new_epsx)
-        new_epsy = new_epsy if normalized_emittances is False else self._normalized_emittance(new_epsy)
+        new_epsx = new_epsx if normalized_emittances is False else self._nemitt(new_epsx)
+        new_epsy = new_epsy if normalized_emittances is False else self._nemitt(new_epsy)
         # ----------------------------------------------------------------------------------------------
         return float(new_epsx), float(new_epsy), float(new_sigma_delta), float(new_bunch_length)
 
-    def _normalized_emittance(self, geometric_emittance: float) -> float:
+    def _nemitt(self, geometric_emittance: float) -> float:
         r"""
         Computes normalized emittance from the geometric one, using relativistic
         beta and gamma from the the instance's beam parameters attribute.
@@ -587,7 +609,7 @@ class AnalyticalIBS(ABC):
         """
         return geometric_emittance * self._twiss.beta0 * self._twiss.gamma0
 
-    def _geometric_emittance(self, normalized_emittance: float) -> float:
+    def _gemitt(self, normalized_emittance: float) -> float:
         r"""
         Computes geometric emittance from the normalized one, using relativistic
         beta and gamma from the the instance's beam parameters attribute.
@@ -830,9 +852,13 @@ class NagaitsevIBS(AnalyticalIBS):
         # This self-updates when computed, but can be overwritten by the user
         self.nagaitsev_integrals: NagaitsevIntegrals = None
 
-    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def integrals(
-        self, epsx: float, epsy: float, sigma_delta: float, normalized_emittances: bool = False
+        self,
+        gemitt_x: float = None,
+        nemitt_x: float = None,
+        gemitt_y: float = None,
+        nemitt_y: float = None,
+        sigma_delta: float = None,
     ) -> NagaitsevIntegrals:
         r"""
         Computes the "Nagaitsev" integrals for the lattice, named
@@ -854,46 +880,55 @@ class NagaitsevIBS(AnalyticalIBS):
                 - Computes the :math:`S_p, S_x` and :math:`S_{xp}` terms from Eq (33-35).
                 - Computes and returns the integrals terms in Eq (30-32).
 
-        .. note::
-            Both geometric or normalized emittances can be given as input to this function, and it is assumed
-            the user provides geomettric emittances. If normalized ones are given the `normalized_emittances`
-            parameter should be set to `True` (it defaults to `False`). Internally, a conversion is done to
-            geometric emittances, which are used in the computations.
-
         Parameters
         ----------
-        epsx : float
-            Horizontal (geometric or normalized) emittance in [m].
-        epsy : float
-            Vertical (geometric or normalized) emittance in [m].
+        gemitt_x : float, optional
+            Horizontal geometric emittance in [m]. Either this
+            parameter or `nemitt_x` is required.
+        nemitt_x : float, optional
+            Horizontal normalized emittance in [m]. Either this
+            parameter or `gemitt_x` is required.
+        gemitt_y : float, optional
+            Vertical geometric emittance in [m]. Either this
+            parameter or `nemitt_y` is required.
+        nemitt_y : float, optional
+            Vertical normalized emittance in [m]. Either this
+            parameter or `gemitt_y` is required.
         sigma_delta : float
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
-        normalized_emittances : bool
-            Whether the provided emittances are normalized or not. Defaults to
-            `False` (assumes geometric emittances).
 
         Returns
         -------
         NagaitsevIntegrals
             An ``NagaitsevIntegrals`` object with the computed integrals.
         """
-        LOGGER.debug("Computing elliptic integrals for defined beam and optics parameters")
-        # fmt: off
-        # All of the following (when type annotated as ArrayLike), hold one value per element in the lattice
+        LOGGER.debug("Computing integrals for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
-        # Make sure we are working with geometric emittances
-        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
-        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        # Perform checks on exclusive parameters and make sure we have what we need
+        assert sigma_delta is not None, "Must provide 'sigma_delta'"
+        assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+        assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+        if gemitt_x is not None:
+            assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+        if gemitt_y is not None:
+            assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+        if nemitt_x is not None:
+            assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+            gemitt_x = self._gemitt(nemitt_x)
+        if nemitt_y is not None:
+            assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+            gemitt_y = self._gemitt(nemitt_y)
+        # fmt: off
         # ----------------------------------------------------------------------------------------------
         # Computing necessary intermediate terms for the following lines
-        sigx: ArrayLike = np.sqrt(self._twiss.betx * geom_epsx + (self._twiss.dx * sigma_delta)**2)
-        sigy: ArrayLike = np.sqrt(self._twiss.bety * geom_epsy + (self._twiss.dy * sigma_delta)**2)
+        sigx: ArrayLike = np.sqrt(self._twiss.betx * gemitt_x + (self._twiss.dx * sigma_delta)**2)
+        sigy: ArrayLike = np.sqrt(self._twiss.bety * gemitt_y + (self._twiss.dy * sigma_delta)**2)
         phix: ArrayLike = phi(self._twiss.betx, self._twiss.alfx, self._twiss.dx, self._twiss.dpx)
         # Computing the constants from Eq (18-21) in Nagaitsev paper
-        ax: ArrayLike = self._twiss.betx / geom_epsx
-        ay: ArrayLike = self._twiss.bety / geom_epsy
+        ax: ArrayLike = self._twiss.betx / gemitt_x
+        ay: ArrayLike = self._twiss.bety / gemitt_y
         a_s: ArrayLike = ax * (self._twiss.dx**2 / self._twiss.betx**2 + phix**2) + 1 / sigma_delta**2
         a1: ArrayLike = (ax + self._twiss.gamma0**2 * a_s) / 2.0
         a2: ArrayLike = (ax - self._twiss.gamma0**2 * a_s) / 2.0
@@ -916,11 +951,7 @@ class NagaitsevIBS(AnalyticalIBS):
         Sxp: ArrayLike = 3 * self._twiss.gamma0**2 * phix**2 * ax * (R3 - R2) / sqrt_term
         # ----------------------------------------------------------------------------------------------
         # These are the integrands of the integrals in Eq (30-32) in Nagaitsev paper
-        Ix_integrand = (
-            self._twiss.betx
-            / (self._twiss.circumference * sigx * sigy)
-            * (Sx + Sp * (self._twiss.dx**2 / self._twiss.betx**2 + phix**2) + Sxp)
-        )
+        Ix_integrand = self._twiss.betx / (self._twiss.circumference * sigx * sigy) * (Sx + Sp * (self._twiss.dx**2 / self._twiss.betx**2 + phix**2) + Sxp)
         Iy_integrand = self._twiss.bety / (self._twiss.circumference * sigx * sigy) * (R2 + R3 - 2 * R1)
         Iz_integrand = Sp / (self._twiss.circumference * sigx * sigy)
         # ----------------------------------------------------------------------------------------------
@@ -936,16 +967,15 @@ class NagaitsevIBS(AnalyticalIBS):
         self.nagaitsev_integrals = result
         return result
 
-    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def growth_rates(
         self,
-        epsx: float,
-        epsy: float,
-        sigma_delta: float,
-        bunch_length: float,
+        gemitt_x: float = None,
+        nemitt_x: float = None,
+        gemitt_y: float = None,
+        nemitt_y: float = None,
+        sigma_delta: float = None,
+        bunch_length: float = None,
         bunched: bool = True,
-        normalized_emittances: bool = False,
-        compute_integrals: bool = True,
     ) -> IBSGrowthRates:
         r"""
         Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
@@ -974,14 +1004,6 @@ class NagaitsevIBS(AnalyticalIBS):
             Nagaitsev integrals. If these have not been computed yet, this method will
             first log a message and compute them, then compute the growth rates.
 
-        .. admonition:: Geometric or Normalized Emittances
-
-            Both geometric or normalized emittances can be given as input to this function, and it is assumed
-            the user provides geomettric emittances. If normalized ones are given the `normalized_emittances`
-            parameter should be set to `True` (it defaults to `False`). Internally, a conversion is done to
-            geometric emittances, which are used in the computations. For more information please see the
-            following :ref:`section of the FAQ <xibs-faq-geom-norm-emittances>`.
-
         .. admonition:: Coasting Beams
 
             It is possible in this formalism to get an approximation in the case of coasting beams by providing
@@ -993,10 +1015,18 @@ class NagaitsevIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        epsx : float
-            Horizontal (geometric or normalized) emittance in [m].
-        epsy : float
-            Vertical (geometric or normalized) emittance in [m].
+        gemitt_x : float, optional
+            Horizontal geometric emittance in [m]. Either this
+            parameter or `nemitt_x` is required.
+        nemitt_x : float, optional
+            Horizontal normalized emittance in [m]. Either this
+            parameter or `gemitt_x` is required.
+        gemitt_y : float, optional
+            Vertical geometric emittance in [m]. Either this
+            parameter or `nemitt_y` is required.
+        nemitt_y : float, optional
+            Vertical normalized emittance in [m]. Either this
+            parameter or `gemitt_y` is required.
         sigma_delta : float
             The momentum spread.
         bunch_length : float
@@ -1016,6 +1046,22 @@ class NagaitsevIBS(AnalyticalIBS):
             An ``IBSGrowthRates`` object with the computed growth rates.
         """
         # ----------------------------------------------------------------------------------------------
+        # Perform checks on exclusive parameters and make sure we have what we need
+        assert sigma_delta is not None, "Must provide 'sigma_delta'"
+        assert bunch_length is not None, "Must provide 'bunch_length'"
+        assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+        assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+        if gemitt_x is not None:
+            assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+        if gemitt_y is not None:
+            assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+        if nemitt_x is not None:
+            assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+            gemitt_x = self._gemitt(nemitt_x)
+        if nemitt_y is not None:
+            assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+            gemitt_y = self._gemitt(nemitt_y)
+        # ----------------------------------------------------------------------------------------------
         # Adapt bunch length if the user specifies coasting beams
         if bunched is False:
             LOGGER.warning(
@@ -1024,23 +1070,25 @@ class NagaitsevIBS(AnalyticalIBS):
             )
             bunch_length: float = self._twiss.circumference / (2 * np.pi)
         # ----------------------------------------------------------------------------------------------
-        # Make sure we are working with geometric emittances
-        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
-        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
-        # ----------------------------------------------------------------------------------------------
         # Ensure the elliptic integrals have been computed beforehand
-        if self.nagaitsev_integrals is None or compute_integrals is True:
-            _ = self.integrals(geom_epsx, geom_epsy, sigma_delta)
+        if self.nagaitsev_integrals is None:
+            _ = self.integrals(gemitt_x=gemitt_x, gemitt_y=gemitt_y, sigma_delta=sigma_delta)
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
         # Get the Coulomb logarithm and the rest of the constant term in Eq (30-32)
-        coulomb_logarithm = self.coulomb_log(geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched)
+        coulomb_logarithm = self.coulomb_log(
+            gemitt_x=gemitt_x,
+            gemitt_y=gemitt_y,
+            sigma_delta=sigma_delta,
+            bunch_length=bunch_length,
+            bunched=bunched,
+        )
         # Then the rest of the constant term in the equation
+        radius = self._particle.get_classical_particle_radius0()
+        beta0 = self._twiss.beta0
+        gamma0 = self._twiss.gamma0
         rest_of_constant_term = (
-            self._num_particles
-            * self._particle.get_classical_particle_radius0() ** 2
-            * c
-            / (12 * np.pi * self._twiss.beta0**3 * self._twiss.gamma0**5 * bunch_length)
+            self._num_particles * radius**2 * c / (12 * np.pi * beta0**3 * gamma0**5 * bunch_length)
         )
         full_constant_term = rest_of_constant_term * coulomb_logarithm
         # ----------------------------------------------------------------------------------------------
@@ -1048,15 +1096,13 @@ class NagaitsevIBS(AnalyticalIBS):
         Ix, Iy, Iz = self.nagaitsev_integrals.as_tuple()
         # If coasting beams, since we use bunch_length=C/(2*pi) we have to divide rates by 2 (see Piwinski)
         factor = 1.0 if bunched is True else 2.0
-        Tx = float(Ix * full_constant_term / geom_epsx) / factor
-        Ty = float(Iy * full_constant_term / geom_epsy) / factor
+        Tx = float(Ix * full_constant_term / gemitt_x) / factor
+        Ty = float(Iy * full_constant_term / gemitt_y) / factor
         Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
         result = IBSGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes and then return the results
         self.ibs_growth_rates = result
-        self._refs = _ReferenceValues(geom_epsx, geom_epsy, sigma_delta, bunch_length)
-        self._number_of_growth_rates_computations += 1
         return result
 
 
@@ -1790,8 +1836,8 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         """
         # ----------------------------------------------------------------------------------------------
         # Make sure we are working with geometric emittances
-        geom_epsx = epsx if normalized_emittances is False else self._geometric_emittance(epsx)
-        geom_epsy = epsy if normalized_emittances is False else self._geometric_emittance(epsy)
+        geom_epsx = epsx if normalized_emittances is False else self._gemitt(epsx)
+        geom_epsy = epsy if normalized_emittances is False else self._gemitt(epsy)
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
         # Getting the arrays from Table 1 of the MAD-X note
