@@ -92,8 +92,8 @@ def get_intrabeam_scattering_growth_rates(
     if isinstance(particles, xt.Particles):
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
         assert num_particles is None, "Cannot provide 'num_particles' with 'particles'"
-        gemitt_x = _geom_epsx(particles)
-        gemitt_y = _geom_epsy(particles)
+        gemitt_x = _geom_epsx(particles, twiss.betx[0], twiss.dx[0])
+        gemitt_y = _geom_epsy(particles, twiss.bety[0], twiss.dy[0])
         sigma_delta = _sigma_delta(particles)
         bunch_length = _bunch_length(particles)
         num_particles = particles._num_active_particles * particles.weight[0]  # total_intensity_particles
