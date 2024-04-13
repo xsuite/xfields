@@ -5,6 +5,7 @@
 from logging import getLogger
 from typing import Literal, Tuple, Union
 
+import numpy as np
 import xtrack as xt
 
 from xfields.ibs._analytical import AnalyticalIBS, BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
@@ -16,18 +17,18 @@ LOGGER = getLogger(__name__)
 # ----- API for Analytical IBS -----#
 
 
-# TODO: allow gemitt / nemitt
 # TODO: return a table and we can always change the inside of container? RABBIT HOLE
 def get_intrabeam_scattering_growth_rates(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     num_particles: int = None,
-    epsx: float = None,  # use gemitt_x and gemitt_y
-    epsy: float = None,  # also nemitt_x and nemitt_y
+    gemitt_x: float = None,
+    gemitt_y: float = None,
+    nemitt_x: float = None,
+    nemitt_y: float = None,
     sigma_delta: float = None,
     bunch_length: float = None,
     bunched: bool = True,
-    normalized_emittances: bool = False,
     particles: xt.Particles = None,
     return_class: bool = False,
     **kwargs,
@@ -45,12 +46,18 @@ def get_intrabeam_scattering_growth_rates(
     num_particles : int, optional
         The number of particles in the beam. Required if `particles` is
         not provided.
-    epsx : float, optional
-        Horizontal (geometric or normalized) emittance in [m]. Required
-        if `particles` is not provided.
-    epsy : float, optional
-        Vertical (geometric or normalized) emittance in [m]. Required
-        if `particles` is not provided.
+    gemitt_x : float, optional
+        Horizontal geometric emittance in [m]. If `particles` is not
+        provided, either this parameter or `nemitt_x` is required.
+    gemitt_y : float, optional
+        Vertical geometric emittance in [m]. If `particles` is not
+        provided, either this parameter or `nemitt_y` is required.
+    nemitt_x : float, optional
+        Horizontal normalized emittance in [m]. If `particles` is not
+        provided, either this parameter or `gemitt_x` is required.
+    nemitt_y : float, optional
+        Vertical normalized emittance in [m]. If `particles` is not
+        provided, either this parameter or `gemitt_y` is required.
     sigma_delta : float, optional
         The momentum spread. Required if `particles` is not provided.
     bunch_length : float, optional
@@ -58,10 +65,6 @@ def get_intrabeam_scattering_growth_rates(
     bunched : bool, optional
         Whether the beam is bunched or not (coasting). Defaults to `True`.
         Required if `particles` is not provided.
-    normalized_emittances : bool, optional
-        Whether the provided emittances are normalized or not. Defaults to
-        `False` (assumes geometric emittances).  Required if `particles`
-        is not provided.
     particles : xtrack.Particles
         The particles to circulate in the line. If provided the emittances,
         momentum spread and bunch length will be computed from the particles.
@@ -85,46 +88,64 @@ def get_intrabeam_scattering_growth_rates(
     """
     # ----------------------------------------------------------------------------------------------
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
-    if isinstance(particles, xt.Particles):  # also asserts it is not None
+    # If particles parameter is an xtrack.Particles object
+    if isinstance(particles, xt.Particles):
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
-        assert num_particles is None
-        assert epsx is None
-        assert epsy is None
-        assert sigma_delta is None
-        assert bunch_length is None
-        _using_particles: bool = True
-        num_particles: int = particles._num_active_particles * particles.weight[0]  # its total_intensity_particles
-        epsx: float = _geom_epsx(particles)
-        epsy: float = _geom_epsy(particles)
-        sigma_delta: float = _sigma_delta(particles)
-        bunch_length: float = _bunch_length(particles)
-        normalized_emittances: bool = False  # we computed geometric
-    else:  # we expect all emittances, etc. to be provided
+        assert num_particles is None, "Cannot provide 'num_particles' with 'particles'"
+        gemitt_x = _geom_epsx(particles)
+        gemitt_y = _geom_epsy(particles)
+        sigma_delta = _sigma_delta(particles)
+        bunch_length = _bunch_length(particles)
+        num_particles = particles._num_active_particles * particles.weight[0]  # total_intensity_particles
+    # If particles is None or nonsense, we expect emittances given
+    else:
         LOGGER.info("Using explicitely provided parameters for emittances, etc.")
-        assert num_particles is not None
-        assert epsx is not None
-        assert epsy is not None
-        assert sigma_delta is not None
-        assert bunch_length is not None
-        assert normalized_emittances is not None
-        _using_particles: bool = False
+        # The following are required
+        assert num_particles is not None, "Must provide 'num_particles'"
+        assert sigma_delta is not None, "Must provide 'sigma_delta'"
+        assert bunch_length is not None, "Must provide 'bunch_length'"
+
+        # At least one in these duos is required
+        if gemitt_x is None and nemitt_x is None:
+            raise ValueError("Must provide either 'gemitt_x' or 'nemitt_x'")
+        if gemitt_y is None and nemitt_y is None:
+            raise ValueError("Must provide either 'gemitt_y' or 'nemitt_y'")
+
+        # For transverse emittances, geometric and normalized are exclusive
+        if gemitt_x is not None:
+            assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+
+        if gemitt_y is not None:
+            assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+
+        beta0: float = twiss.particle_on_co.beta0
+        gamma0: float = twiss.particle_on_co.gamma0
+
+        if nemitt_x is not None:
+            assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+            gemitt_x = nemitt_x / (beta0 * gamma0)
+
+        if nemitt_y is not None:
+            assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+            gemitt_y = nemitt_y / (beta0 * gamma0)
     # ----------------------------------------------------------------------------------------------
     # Ensure valid formalism parameter was given and determine the corresponding class
     assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
     if formalism.lower() == "nagaitsev":
-        # TODO (Gianni): a check here for vertical dispersion, maybe log a warning or something?
+        if np.count_nonzero(twiss.dy) != 0:
+            LOGGER.warning("Vertical dispersion is present, this formalism does not account for it")
         ibs = NagaitsevIBS(twiss, num_particles)
     else:
         ibs = BjorkenMtingwaIBS(twiss, num_particles)
     # ----------------------------------------------------------------------------------------------
     # Now computing the growth rates using the IBS class
     growth_rates: IBSGrowthRates = ibs.growth_rates(
-        epsx=epsx,
-        epsy=epsy,
+        epsx=gemitt_x,
+        epsy=gemitt_y,
         sigma_delta=sigma_delta,
         bunch_length=bunch_length,
         bunched=bunched,
-        normalized_emittances=normalized_emittances,
+        normalized_emittances=False,
         **kwargs,
     )
     # ----------------------------------------------------------------------------------------------
