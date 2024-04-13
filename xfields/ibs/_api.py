@@ -88,7 +88,6 @@ def get_intrabeam_scattering_growth_rates(
     """
     # ----------------------------------------------------------------------------------------------
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
-    # If particles parameter is an xtrack.Particles object
     if isinstance(particles, xt.Particles):
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
         assert num_particles is None, "Cannot provide 'num_particles' with 'particles'"
@@ -97,37 +96,13 @@ def get_intrabeam_scattering_growth_rates(
         sigma_delta = _sigma_delta(particles)
         bunch_length = _bunch_length(particles)
         num_particles = particles._num_active_particles * particles.weight[0]  # total_intensity_particles
-    # If particles is None or nonsense, we expect emittances given
     else:
         LOGGER.info("Using explicitely provided parameters for emittances, etc.")
-        # The following are required
         assert num_particles is not None, "Must provide 'num_particles'"
         assert sigma_delta is not None, "Must provide 'sigma_delta'"
         assert bunch_length is not None, "Must provide 'bunch_length'"
-
-        # At least one in these duos is required
-        if gemitt_x is None and nemitt_x is None:
-            raise ValueError("Must provide either 'gemitt_x' or 'nemitt_x'")
-        if gemitt_y is None and nemitt_y is None:
-            raise ValueError("Must provide either 'gemitt_y' or 'nemitt_y'")
-
-        # For transverse emittances, geometric and normalized are exclusive
-        if gemitt_x is not None:
-            assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
-
-        if gemitt_y is not None:
-            assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
-
-        beta0: float = twiss.particle_on_co.beta0
-        gamma0: float = twiss.particle_on_co.gamma0
-
-        if nemitt_x is not None:
-            assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
-            gemitt_x = nemitt_x / (beta0 * gamma0)
-
-        if nemitt_y is not None:
-            assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
-            gemitt_y = nemitt_y / (beta0 * gamma0)
+        assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+        assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
     # ----------------------------------------------------------------------------------------------
     # Ensure valid formalism parameter was given and determine the corresponding class
     assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
@@ -140,12 +115,13 @@ def get_intrabeam_scattering_growth_rates(
     # ----------------------------------------------------------------------------------------------
     # Now computing the growth rates using the IBS class
     growth_rates: IBSGrowthRates = ibs.growth_rates(
-        epsx=gemitt_x,
-        epsy=gemitt_y,
+        gemitt_x=gemitt_x,
+        nemitt_x=nemitt_x,
+        gemitt_y=gemitt_y,
+        nemitt_y=nemitt_y,
         sigma_delta=sigma_delta,
         bunch_length=bunch_length,
         bunched=bunched,
-        normalized_emittances=False,
         **kwargs,
     )
     # ----------------------------------------------------------------------------------------------
