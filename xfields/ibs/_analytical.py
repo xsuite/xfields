@@ -1045,6 +1045,7 @@ class NagaitsevIBS(AnalyticalIBS):
         IBSGrowthRates
             An ``IBSGrowthRates`` object with the computed growth rates.
         """
+        LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
         # Perform checks on exclusive parameters and make sure we have what we need
         assert sigma_delta is not None, "Must provide 'sigma_delta'"
@@ -1073,7 +1074,6 @@ class NagaitsevIBS(AnalyticalIBS):
         # Ensure the elliptic integrals have been computed beforehand
         if self.nagaitsev_integrals is None:
             _ = self.integrals(gemitt_x=gemitt_x, gemitt_y=gemitt_y, sigma_delta=sigma_delta)
-        LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
         # Get the Coulomb logarithm and the rest of the constant term in Eq (30-32)
         coulomb_logarithm = self.coulomb_log(
@@ -1746,7 +1746,13 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # Compute the Coulomb logarithm and the common constant term in Eq (8) (the first fraction)
         # Below we give mass in MeV like in .growth_rates() (the m^3 terms cancel out)
-        coulomb_logarithm: float = self.coulomb_log(gemitt_x, gemitt_y, sigma_delta, bunch_length, bunched)
+        coulomb_logarithm = self.coulomb_log(
+            gemitt_x=gemitt_x,
+            gemitt_y=gemitt_y,
+            sigma_delta=sigma_delta,
+            bunch_length=bunch_length,
+            bunched=bunched,
+        )
         common_constant_term: float = (
             np.pi**2
             * self._particle.get_classical_particle_radius0()**2
@@ -1766,15 +1772,15 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
         return common_constant_term, const_x, const_y, const_z
 
-    # TODO: allow gemitt_[xy] and nemitt_[xy] as input
     def growth_rates(
         self,
-        epsx: float,
-        epsy: float,
-        sigma_delta: float,
-        bunch_length: float,
+        gemitt_x: float = None,
+        nemitt_x: float = None,
+        gemitt_y: float = None,
+        nemitt_y: float = None,
+        sigma_delta: float = None,
+        bunch_length: float = None,
         bunched: bool = True,
-        normalized_emittances: bool = False,
         integration_intervals: int = 17,
     ) -> IBSGrowthRates:
         r"""
@@ -1811,19 +1817,24 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        epsx : float
-            Horizontal (geometric or normalized) emittance in [m].
-        epsy : float
-            Vertical (geometric or normalized) emittance in [m].
+        gemitt_x : float, optional
+            Horizontal geometric emittance in [m]. Either this
+            parameter or `nemitt_x` is required.
+        nemitt_x : float, optional
+            Horizontal normalized emittance in [m]. Either this
+            parameter or `gemitt_x` is required.
+        gemitt_y : float, optional
+            Vertical geometric emittance in [m]. Either this
+            parameter or `nemitt_y` is required.
+        nemitt_y : float, optional
+            Vertical normalized emittance in [m]. Either this
+            parameter or `gemitt_y` is required.
         sigma_delta : float
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
-        normalized_emittances : bool
-            Whether the provided emittances are normalized or not. Defaults to
-            `False` (assumes geometric emittances).
         integration_intervals : int
             The number of sub-intervals to use when integrating the integrands of Eq (8) of
             the MAD-X note. DO NOT change this parameter unless you know exactly what you are
@@ -1834,30 +1845,42 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         IBSGrowthRates
             An ``IBSGrowthRates`` object with the computed growth rates.
         """
-        # ----------------------------------------------------------------------------------------------
-        # Make sure we are working with geometric emittances
-        geom_epsx = epsx if normalized_emittances is False else self._gemitt(epsx)
-        geom_epsy = epsy if normalized_emittances is False else self._gemitt(epsy)
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
-        # Getting the arrays from Table 1 of the MAD-X note
+        # Perform checks on exclusive parameters and make sure we have what we need
+        assert sigma_delta is not None, "Must provide 'sigma_delta'"
+        assert bunch_length is not None, "Must provide 'bunch_length'"
+        assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+        assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+        if gemitt_x is not None:
+            assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+        if gemitt_y is not None:
+            assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+        if nemitt_x is not None:
+            assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+            gemitt_x = self._gemitt(nemitt_x)
+        if nemitt_y is not None:
+            assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+            gemitt_y = self._gemitt(nemitt_y)
+        # ----------------------------------------------------------------------------------------------
+        # Getting the arrays from Table 1 of the MAD-X note (all implemented to ask for gemitt_[xy])
         # fmt: off
         LOGGER.debug("Computing terms from Table 1 of the MAD-X note")
-        a: ArrayLike = self._a(geom_epsx, geom_epsy, sigma_delta)    # This is 'a' in MAD-X fortran code
-        b: ArrayLike = self._b(geom_epsx, geom_epsy, sigma_delta)    # This is 'b' in MAD-X fortran code
-        c: ArrayLike = self._c(geom_epsx, geom_epsy, sigma_delta)    # This is 'cprime' in MAD-X fortran code
-        ax: ArrayLike = self._ax(geom_epsx, geom_epsy, sigma_delta)  # This is 'tx1 * cprime / bracket_x' in MAD-X fortran code
-        bx: ArrayLike = self._bx(geom_epsx, geom_epsy, sigma_delta)  # This is 'tx2 * cprime / bracket_x' in MAD-X fortran code
-        ay: ArrayLike = self._ay(geom_epsx, geom_epsy, sigma_delta)  # This is 'ty1 * cprime' in MAD-X fortran code
-        by: ArrayLike = self._by(geom_epsx, geom_epsy, sigma_delta)  # This is 'ty2 * cprime' in MAD-X fortran code
-        az: ArrayLike = self._az(geom_epsx, geom_epsy, sigma_delta)  # This is 'tl1 * cprime' in MAD-X fortran code
-        bz: ArrayLike = self._bz(geom_epsx, geom_epsy, sigma_delta)  # This is 'tl2 * cprime' in MAD-X fortran code                                   
+        a: ArrayLike = self._a(gemitt_x, gemitt_y, sigma_delta)    # This is 'a' in MAD-X fortran code
+        b: ArrayLike = self._b(gemitt_x, gemitt_y, sigma_delta)    # This is 'b' in MAD-X fortran code
+        c: ArrayLike = self._c(gemitt_x, gemitt_y, sigma_delta)    # This is 'cprime' in MAD-X fortran code
+        ax: ArrayLike = self._ax(gemitt_x, gemitt_y, sigma_delta)  # This is 'tx1 * cprime / bracket_x' in MAD-X fortran code
+        bx: ArrayLike = self._bx(gemitt_x, gemitt_y, sigma_delta)  # This is 'tx2 * cprime / bracket_x' in MAD-X fortran code
+        ay: ArrayLike = self._ay(gemitt_x, gemitt_y, sigma_delta)  # This is 'ty1 * cprime' in MAD-X fortran code
+        by: ArrayLike = self._by(gemitt_x, gemitt_y, sigma_delta)  # This is 'ty2 * cprime' in MAD-X fortran code
+        az: ArrayLike = self._az(gemitt_x, gemitt_y, sigma_delta)  # This is 'tl1 * cprime' in MAD-X fortran code
+        bz: ArrayLike = self._bz(gemitt_x, gemitt_y, sigma_delta)  # This is 'tl2 * cprime' in MAD-X fortran code                                   
         # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Getting the constant term and the bracket terms from Eq (8) of the MAD-X note
         LOGGER.debug("Computing common constant term and bracket terms from Eq (8) of the MAD-X note")
         common_constant_term, bracket_x, bracket_y, bracket_z = self._constants(
-            geom_epsx, geom_epsy, sigma_delta, bunch_length, bunched
+            gemitt_x, gemitt_y, sigma_delta, bunch_length, bunched
         )
         # ----------------------------------------------------------------------------------------------
         # Defining the integrands from Eq (8) of the MAD-X note, for each plane (remember these functions
@@ -1950,6 +1973,6 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes, some private flags and then return the results
         self.ibs_growth_rates = result
-        self._refs = _ReferenceValues(geom_epsx, geom_epsy, sigma_delta, bunch_length)
+        self._refs = _ReferenceValues(gemitt_x, gemitt_y, sigma_delta, bunch_length)
         self._number_of_growth_rates_computations += 1
         return result
