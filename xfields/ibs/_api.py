@@ -17,7 +17,7 @@ LOGGER = getLogger(__name__)
 # ----- API for Analytical IBS -----#
 
 
-# TODO: return a table and we can always change the inside of container? RABBIT HOLE
+# TODO: do we import the Table from xdeps and return a Table object?
 def get_intrabeam_scattering_growth_rates(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
@@ -68,8 +68,7 @@ def get_intrabeam_scattering_growth_rates(
     particles : xtrack.Particles
         The particles to circulate in the line. If provided the emittances,
         momentum spread and bunch length will be computed from the particles.
-        Otherwise the ``epsx``, ``epsy``, ``sigma_delta`` and ``bunch_length``
-        parameters must be provided.
+        Otherwise explicit values must be provided (see above parameters).
     return_class : bool
         Whether to return the IBS class instance or not. Defaults to `False`.
     **kwargs : dict
