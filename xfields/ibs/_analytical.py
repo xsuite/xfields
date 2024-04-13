@@ -303,11 +303,10 @@ class AnalyticalIBS(ABC):
         # ----------------------------------------------------------------------------------------------
         # Calculate transverse temperature as 2*P*X, i.e. assume the transverse energy is temperature/2
         # We need the total energy and the particle mass in GeV hence the 1e-9 below
-        Etrans = (
-            5e8
-            * (self._twiss.gamma0 * self._particle.energy[0] * 1e-9 - self._particle.mass0 * 1e-9)
-            * (gemitt_x / _bx_bar)
-        )
+        mass0_GeV = self._particle.mass0 * 1e-9
+        gamma0 = self._twiss.gamma0
+        energy_GeV = self._particle.energy[0] * 1e-9
+        Etrans = 5e8 * (gamma0 * energy_GeV - mass0_GeV) * (gemitt_x / _bx_bar)
         TempeV = 2.0 * Etrans
         # ----------------------------------------------------------------------------------------------
         # Compute sigmas in each dimension (start from sigma_delta to get sige needed in the formula)
@@ -979,6 +978,7 @@ class NagaitsevIBS(AnalyticalIBS):
         Ix_integrand = self._twiss.betx / (self._twiss.circumference * sigx * sigy) * (Sx + Sp * (self._twiss.dx**2 / self._twiss.betx**2 + phix**2) + Sxp)
         Iy_integrand = self._twiss.bety / (self._twiss.circumference * sigx * sigy) * (R2 + R3 - 2 * R1)
         Iz_integrand = Sp / (self._twiss.circumference * sigx * sigy)
+        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Integrating the integrands above accross the ring to get the desired results
         # This is identical to np.trapz(Ixyz_integrand, self.optics.s) but faster and somehow closer to MAD-X values
@@ -986,7 +986,6 @@ class NagaitsevIBS(AnalyticalIBS):
         Iy = float(np.sum(Iy_integrand[:-1] * np.diff(self._twiss.s)))
         Iz = float(np.sum(Iz_integrand[:-1] * np.diff(self._twiss.s)))
         result = NagaitsevIntegrals(Ix, Iy, Iz)
-        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes and then return the results
         self.nagaitsev_integrals = result
@@ -1098,9 +1097,8 @@ class NagaitsevIBS(AnalyticalIBS):
             )
             bunch_length: float = self._twiss.circumference / (2 * np.pi)
         # ----------------------------------------------------------------------------------------------
-        # Ensure the elliptic integrals have been computed beforehand
-        if self.nagaitsev_integrals is None:
-            _ = self.integrals(gemitt_x=gemitt_x, gemitt_y=gemitt_y, sigma_delta=sigma_delta)
+        # Ensure we update the integrals have been computed beforehand
+        _ = self.integrals(gemitt_x=gemitt_x, gemitt_y=gemitt_y, sigma_delta=sigma_delta)
         # ----------------------------------------------------------------------------------------------
         # Get the Coulomb logarithm and the rest of the constant term in Eq (30-32)
         coulomb_logarithm = self.coulomb_log(
@@ -1114,9 +1112,9 @@ class NagaitsevIBS(AnalyticalIBS):
         radius = self._particle.get_classical_particle_radius0()
         beta0 = self._twiss.beta0
         gamma0 = self._twiss.gamma0
-        rest_of_constant_term = (
-            self._num_particles * radius**2 * c / (12 * np.pi * beta0**3 * gamma0**5 * bunch_length)
-        )
+        numerator = self._num_particles * radius**2 * c
+        denominator = 12 * np.pi * beta0**3 * gamma0**5 * bunch_length
+        rest_of_constant_term = numerator / denominator
         full_constant_term = rest_of_constant_term * coulomb_logarithm
         # ----------------------------------------------------------------------------------------------
         # Compute the full result of Eq (30-32) for each plane | make sure to convert back to float
