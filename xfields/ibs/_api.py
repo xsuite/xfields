@@ -23,8 +23,8 @@ def get_intrabeam_scattering_growth_rates(
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     num_particles: int = None,
     gemitt_x: float = None,
-    gemitt_y: float = None,
     nemitt_x: float = None,
+    gemitt_y: float = None,
     nemitt_y: float = None,
     sigma_delta: float = None,
     bunch_length: float = None,
@@ -49,12 +49,12 @@ def get_intrabeam_scattering_growth_rates(
     gemitt_x : float, optional
         Horizontal geometric emittance in [m]. If `particles` is not
         provided, either this parameter or `nemitt_x` is required.
-    gemitt_y : float, optional
-        Vertical geometric emittance in [m]. If `particles` is not
-        provided, either this parameter or `nemitt_y` is required.
     nemitt_x : float, optional
         Horizontal normalized emittance in [m]. If `particles` is not
         provided, either this parameter or `gemitt_x` is required.
+    gemitt_y : float, optional
+        Vertical geometric emittance in [m]. If `particles` is not
+        provided, either this parameter or `nemitt_y` is required.
     nemitt_y : float, optional
         Vertical normalized emittance in [m]. If `particles` is not
         provided, either this parameter or `gemitt_y` is required.
