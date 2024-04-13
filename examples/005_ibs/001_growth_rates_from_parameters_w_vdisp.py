@@ -22,10 +22,6 @@ line = xt.Line.from_json(fname_line_particles)
 line.particle_ref = xt.Particles.from_dict(input_data["particle"])
 tw = line.twiss(method="4d")
 
-if np.count_nonzero(tw.dy) > 0:
-    print()
-    print("There is vertical dispersion, Nagaitsev will be wrong in vertical")
-
 #####################
 # Define parameters #
 #####################
@@ -45,12 +41,11 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
     twiss=tw,
     formalism="nagaitsev",
     num_particles=bunch_intensity,
-    epsx=nemitt_x,
-    epsy=nemitt_y,
+    nemitt_x=nemitt_x,
+    nemitt_y=nemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
-    normalized_emittances=True,
 )
 
 #########################################
@@ -61,12 +56,11 @@ bm_growth_rates = get_intrabeam_scattering_growth_rates(
     twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     num_particles=bunch_intensity,
-    epsx=nemitt_x,
-    epsy=nemitt_y,
+    nemitt_x=nemitt_x,
+    nemitt_y=nemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
-    normalized_emittances=True,
 )
 
 
@@ -95,12 +89,11 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
     twiss=tw,
     formalism="nagaitsev",
     num_particles=bunch_intensity,
-    epsx=gemitt_x,
-    epsy=gemitt_y,
+    gemitt_x=gemitt_x,
+    gemitt_y=gemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
-    normalized_emittances=False,  # default value
 )
 
 #########################################
@@ -111,12 +104,11 @@ bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
     twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     num_particles=bunch_intensity,
-    epsx=gemitt_x,
-    epsy=gemitt_y,
+    gemitt_x=gemitt_x,
+    gemitt_y=gemitt_y,
     sigma_delta=sigma_delta,
     bunch_length=bunch_length,
     bunched=True,
-    normalized_emittances=False,  # default value
 )
 
 ##########################################################
