@@ -133,7 +133,7 @@ def get_intrabeam_scattering_growth_rates(
     assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
     if formalism.lower() == "nagaitsev":
         if np.count_nonzero(twiss.dy) != 0:
-            LOGGER.warning("Vertical dispersion is present, this formalism does not account for it")
+            LOGGER.warning("Vertical dispersion is present, Nagaitsev formalism does not account for it")
         ibs = NagaitsevIBS(twiss, num_particles)
     else:
         ibs = BjorkenMtingwaIBS(twiss, num_particles)
