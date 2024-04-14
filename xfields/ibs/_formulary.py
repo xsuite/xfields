@@ -13,7 +13,6 @@ from numpy.typing import ArrayLike
 LOGGER = logging.getLogger(__name__)
 
 
-# TODO (Gianni): see how to adapt citation here
 def phi(beta: ArrayLike, alpha: ArrayLike, dx: ArrayLike, dpx: ArrayLike) -> ArrayLike:
     """
     Computes the ``Phi`` parameter of Eq (15) in
@@ -83,11 +82,3 @@ def _geom_epsy(particles: xt.Particles, bety: float, dy: float) -> float:
     sigma_y = _sigma_y(particles)
     sig_delta = _sigma_delta(particles)
     return (sigma_y**2 - (dy * sig_delta) ** 2) / bety
-
-
-# ----- Some helpers on simple calculations ----- #
-
-
-def _percent_change(initial_value: float, final_value: float) -> float:
-    """Calculate the percentage change between two values."""
-    return 100 * (final_value - initial_value) / initial_value
