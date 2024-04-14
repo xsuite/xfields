@@ -3,12 +3,12 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 from logging import getLogger
-from typing import Literal, Tuple, Union
+from typing import Literal
 
 import numpy as np
 import xtrack as xt
 
-from xfields.ibs._analytical import AnalyticalIBS, BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
+from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
 from xfields.ibs._formulary import _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta
 
 LOGGER = getLogger(__name__)
@@ -30,9 +30,8 @@ def get_intrabeam_scattering_growth_rates(
     bunch_length: float = None,
     bunched: bool = True,
     particles: xt.Particles = None,
-    return_class: bool = False,
     **kwargs,
-) -> Union[IBSGrowthRates, Tuple[IBSGrowthRates, AnalyticalIBS]]:
+) -> IBSGrowthRates:
     """
     Computes IntraBeam Scattering growth rates from the provided `xtrack.Line`.
 
@@ -69,8 +68,6 @@ def get_intrabeam_scattering_growth_rates(
         The particles to circulate in the line. If provided the emittances,
         momentum spread and bunch length will be computed from the particles.
         Otherwise explicit values must be provided (see above parameters).
-    return_class : bool
-        Whether to return the IBS class instance or not. Defaults to `False`.
     **kwargs : dict
         Keyword arguments are passed to the growth rates computation method of
         the chosen IBS formalism implementation. See the formalism classes in
@@ -80,10 +77,6 @@ def get_intrabeam_scattering_growth_rates(
     -------
     IBSGrowthRates
         An ``IBSGrowthRates`` object with the computed growth rates.
-    AnalyticalIBS, optional
-        If ``return_class`` is `True`, the IBS class instance is also returned.
-        It has knowledge of relevant beam and optics parameters, growth rates,
-        and can be used to compute analytical emittance evolutions
     """
     # ----------------------------------------------------------------------------------------------
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
@@ -112,8 +105,8 @@ def get_intrabeam_scattering_growth_rates(
     else:
         ibs = BjorkenMtingwaIBS(twiss, num_particles)
     # ----------------------------------------------------------------------------------------------
-    # Now computing the growth rates using the IBS class
-    growth_rates: IBSGrowthRates = ibs.growth_rates(
+    # Now computing the growth rates using the IBS class and returning them
+    return ibs.growth_rates(
         gemitt_x=gemitt_x,
         nemitt_x=nemitt_x,
         gemitt_y=gemitt_y,
@@ -123,9 +116,6 @@ def get_intrabeam_scattering_growth_rates(
         bunched=bunched,
         **kwargs,
     )
-    # ----------------------------------------------------------------------------------------------
-    # Return the growth rates, and potentially the IBS class instance too
-    return (growth_rates, ibs) if return_class is True else growth_rates
 
 
 # ----- API for Kick-Based IBS -----#

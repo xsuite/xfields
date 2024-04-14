@@ -9,15 +9,20 @@ from ._api import (
     get_intrabeam_scattering_growth_rates,
     install_intrabeam_scattering_kick,
 )
+<<<<<<< HEAD
 from ._kicks import IBSKineticKick, IBSSimpleKick
+=======
+>>>>>>> 84f6651 (format)
 
 __all__ = [
-    "BjorkenMtingwaIBS",
-    "NagaitsevIBS",
     "configure_intrabeam_scattering",
+    "BjorkenMtingwaIBS",
     "get_intrabeam_scattering_growth_rates",
     "install_intrabeam_scattering_kick",
     "IBSGrowthRates",
+<<<<<<< HEAD
     "IBSKineticKick",
     "IBSSimpleKick",
+=======
+>>>>>>> 84f6651 (format)
 ]
