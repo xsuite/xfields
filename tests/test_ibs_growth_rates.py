@@ -12,15 +12,33 @@ from cpymad.madx import Madx
 
 from xfields.ibs import get_intrabeam_scattering_growth_rates
 
+<<<<<<< HEAD
 # /!\ This assumes xtrack repo is sitting next to xfields repo
 XT_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
+=======
+# ------------------------------------------------------------------------
+# We compare our values to the ones of MAD-X, hence in the numpy function
+# ours should be the first argument.
+#
+# We also use an absolute tolerance of 1e-10 by definition, as growth rates
+# so small or smaller should just not be considered since the corresponding
+# damping / growth time is crazy big:
+#     if T = 1e-10 [1/s],
+#     then tau = 1/T > 300 years,
+#     and we are pretty safe from IBS.
+>>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
 
 
 def test_clic_dr_growth_rates():
     """Compare to MAD-X for the CLIC DR."""
     # -----------------------------------------------------
+<<<<<<< HEAD
     # Load ELENA sequence, beam and strengths in MAD-X
     clic_dr_dir = XT_TEST_DATA / "clic_dr"
+=======
+    # Have MAD-X load CLIC DR sequence, beam etc.
+    clic_dr_dir = XTRACK_TEST_DATA / "clic_dr"
+>>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
     madx = Madx(stdout=False)
     madx.call(str(clic_dr_dir / "sequence.madx"))
     madx.use(sequence="ring")
@@ -54,11 +72,18 @@ def test_clic_dr_growth_rates():
         bunch_length=bl,
     )
     # -----------------------------------------------------
+<<<<<<< HEAD
     # Compare the results - Nagaitsev
     assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-14, rtol=5e-2)
     assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-14, rtol=5e-2)
     assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-14, rtol=5e-2)
+=======
+    # Compare the results - Nagaitsev (atol since very small values)
+    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-10, rtol=5e-2)
+    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-10, rtol=5e-2)
+    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-10, rtol=5e-2)
+>>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-14, rtol=5e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-14, rtol=5e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-14, rtol=5e-2)
+    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-10, rtol=5e-2)
+    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-10, rtol=5e-2)
+    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-10, rtol=5e-2)
