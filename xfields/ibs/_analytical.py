@@ -99,7 +99,7 @@ class IBSGrowthRates(xo.HybridClass):
 
 # ----- Abstract Base Class to Inherit from ----- #
 
-
+# TODO: move the num_particles to be parameter of methods instead of __init__
 class AnalyticalIBS(ABC):
     """
     Abstract base class for analytical IBS calculations, from which

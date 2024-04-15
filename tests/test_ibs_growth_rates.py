@@ -1,6 +1,7 @@
 from pathlib import Path
 
 import numpy as np
+from numpy.testing import assert_allclose
 import xtrack as xt
 from conftest import (
     get_madx_ibs_growth_rates,
@@ -11,10 +12,11 @@ from cpymad.madx import Madx
 
 from xfields.ibs import get_intrabeam_scattering_growth_rates
 
+# /!\ This assumes xtrack repo is sitting next to xfields repo
 XT_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
 
 
-def test_clic_growth_rates():
+def test_clic_dr_growth_rates():
     """Compare to MAD-X for the CLIC DR."""
     # -----------------------------------------------------
     # Load ELENA sequence, beam and strengths in MAD-X
@@ -34,7 +36,7 @@ def test_clic_growth_rates():
     nag_rates = get_intrabeam_scattering_growth_rates(
         twiss=tw,
         formalism="nagaitsev",
-        num_particles=npart,
+        total_beam_intensity=npart,
         gemitt_x=gemitt_x,
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
@@ -45,7 +47,7 @@ def test_clic_growth_rates():
     bm_rates = get_intrabeam_scattering_growth_rates(
         twiss=tw,
         formalism="Bjorken-Mtingwa",
-        num_particles=npart,
+        total_beam_intensity=npart,
         gemitt_x=gemitt_x,
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
@@ -53,10 +55,10 @@ def test_clic_growth_rates():
     )
     # -----------------------------------------------------
     # Compare the results - Nagaitsev
-    assert np.isclose(nag_rates.Tx, mad_Tx, rtol=5e-2)
-    assert np.isclose(nag_rates.Ty, mad_Ty, rtol=5e-2)
-    assert np.isclose(nag_rates.Tz, mad_Tz, rtol=5e-2)
+    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-14, rtol=5e-2)
+    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-14, rtol=5e-2)
+    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-14, rtol=5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert np.isclose(bm_rates.Tx, mad_Tx, rtol=5e-2)
-    assert np.isclose(bm_rates.Ty, mad_Ty, rtol=5e-2)
-    assert np.isclose(bm_rates.Tz, mad_Tz, rtol=5e-2)
+    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-14, rtol=5e-2)
+    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-14, rtol=5e-2)
+    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-14, rtol=5e-2)

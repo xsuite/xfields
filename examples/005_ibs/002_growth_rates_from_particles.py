@@ -79,7 +79,7 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
     twiss=tw,
     formalism="nagaitsev",
-    num_particles=bunch_intensity,
+    total_beam_intensity=bunch_intensity,
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
     sigma_delta=sigma_delta,
@@ -94,7 +94,7 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
 bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
     twiss=tw,
     formalism="bjorken-mtingwa",  # also accepts "b&m"
-    num_particles=bunch_intensity,
+    total_beam_intensity=bunch_intensity,
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
     sigma_delta=sigma_delta,

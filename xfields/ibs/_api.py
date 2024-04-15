@@ -9,7 +9,7 @@ import numpy as np
 import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
-from xfields.ibs._formulary import _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta
+from xfields.ibs._formulary import _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta, _beam_intensity
 
 LOGGER = getLogger(__name__)
 
@@ -17,11 +17,10 @@ LOGGER = getLogger(__name__)
 # ----- API for Analytical IBS -----#
 
 
-# TODO: do we import the Table from xdeps and return a Table object?
 def get_intrabeam_scattering_growth_rates(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
-    num_particles: int = None,
+    total_beam_intensity: int = None,
     gemitt_x: float = None,
     nemitt_x: float = None,
     gemitt_y: float = None,
@@ -42,9 +41,8 @@ def get_intrabeam_scattering_growth_rates(
     formalism : str
         Which formalism to use for the computation. Can be ``Nagaitsev``
         or ``Bjorken-Mtingwa`` (also accepts ``B&M``), case-insensitively.
-    num_particles : int, optional
-        The number of particles in the beam. Required if `particles` is
-        not provided.
+    total_beam_intensity : int, optional
+        The beam intensity. Required if `particles` is not provided.
     gemitt_x : float, optional
         Horizontal geometric emittance in [m]. If `particles` is not
         provided, either this parameter or `nemitt_x` is required.
@@ -82,15 +80,14 @@ def get_intrabeam_scattering_growth_rates(
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
     if isinstance(particles, xt.Particles):
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
-        assert num_particles is None, "Cannot provide 'num_particles' with 'particles'"
         gemitt_x = _geom_epsx(particles, twiss.betx[0], twiss.dx[0])
         gemitt_y = _geom_epsy(particles, twiss.bety[0], twiss.dy[0])
         sigma_delta = _sigma_delta(particles)
         bunch_length = _bunch_length(particles)
-        num_particles = particles._num_active_particles * particles.weight[0]  # total_intensity_particles
+        total_beam_intensity = _beam_intensity(particles)
     else:
         LOGGER.info("Using explicitely provided parameters for emittances, etc.")
-        assert num_particles is not None, "Must provide 'num_particles'"
+        assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
         assert sigma_delta is not None, "Must provide 'sigma_delta'"
         assert bunch_length is not None, "Must provide 'bunch_length'"
         assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
@@ -101,9 +98,9 @@ def get_intrabeam_scattering_growth_rates(
     if formalism.lower() == "nagaitsev":
         if np.count_nonzero(twiss.dy) != 0:
             LOGGER.warning("Vertical dispersion is present, Nagaitsev formalism does not account for it")
-        ibs = NagaitsevIBS(twiss, num_particles)
+        ibs = NagaitsevIBS(twiss, total_beam_intensity)
     else:
-        ibs = BjorkenMtingwaIBS(twiss, num_particles)
+        ibs = BjorkenMtingwaIBS(twiss, total_beam_intensity)
     # ----------------------------------------------------------------------------------------------
     # Now computing the growth rates using the IBS class and returning them
     return ibs.growth_rates(
