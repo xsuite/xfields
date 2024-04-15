@@ -6,11 +6,8 @@ import xfields as xf
 
 from xobjects.test_helpers import for_all_test_contexts
 
-#@for_all_test_contexts
-#def test_multiwake_transverse_quadrupole_direct(test_context):
-if True:
-    import xobjects as xo
-    test_context = xo.ContextCpu()
+@for_all_test_contexts
+def test_multiwake_transverse_quadrupole_direct(test_context):
     # Filling scheme
     n_slots = 100
     filling_scheme = np.array(np.floor(np.random.rand(n_slots)+0.1),dtype=int)
