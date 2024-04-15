@@ -118,7 +118,6 @@ class MultiWakefield:
                 else:
                     tokens = wake_component.split('_')
                     coord_target = tokens[1][0]
-                    print(tokens,len(tokens[1]))
                     if len(tokens[1]) == 2:
                         coord_source = tokens[1][1]
                     else:
