@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import c, e, m_p
 
@@ -97,12 +96,14 @@ wake_component = 'dipole_x'
 iwake_component = wake_file_columns.index(wake_component)
 interpolated_wake_0 = particles_0.x[ioffset]*np.interp(particles_0.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
 interpolated_wake_1 = particles_0.x[ioffset]*np.interp(particles_1.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
-assert np.allclose(particles_0.px,interpolated_wake_0)
-assert np.allclose(particles_1.px,interpolated_wake_1)
+norm = np.max(np.abs(interpolated_wake_0))
+assert np.allclose(particles_0.px/norm,interpolated_wake_0/norm)
+assert np.allclose(particles_1.px/norm,interpolated_wake_1/norm)
 wake_component = 'dipole_y'
 iwake_component = wake_file_columns.index(wake_component)
 interpolated_wake_0 = particles_0.y[ioffset]*np.interp(particles_0.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
 interpolated_wake_1 = particles_0.y[ioffset]*np.interp(particles_1.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
-assert np.allclose(particles_0.py,interpolated_wake_0)
-assert np.allclose(particles_1.py,interpolated_wake_1)
+norm = np.max(np.abs(interpolated_wake_0))
+assert np.allclose(particles_0.py/norm,interpolated_wake_0/norm)
+assert np.allclose(particles_1.py/norm,interpolated_wake_1/norm)
 
