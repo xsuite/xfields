@@ -99,7 +99,7 @@ class IBSGrowthRates(xo.HybridClass):
 
 # ----- Abstract Base Class to Inherit from ----- #
 
-# TODO: move the num_particles to be parameter of methods instead of __init__
+
 class AnalyticalIBS(ABC):
     """
     Abstract base class for analytical IBS calculations, from which
@@ -112,19 +112,16 @@ class AnalyticalIBS(ABC):
         they are computed with the `.growth_rates` method.
     """
 
-    def __init__(self, twiss: xt.TwissTable, num_particles: int) -> None:
+    def __init__(self, twiss: xt.TwissTable) -> None:
         """Initialize the class.
 
         Parameters
         ----------
         twiss : xtrack.TwissTable
             Twiss results of the `xtrack.Line` configuration.
-        num_particles : int
-            Number of simulated particles to consider.
         """
         self._twiss = twiss
         self._particle = twiss.particle_on_co
-        self._num_particles = num_particles
         # This one self-updates when computed, but can be overwritten by the user
         self.ibs_growth_rates: IBSGrowthRates = None
 
@@ -136,6 +133,7 @@ class AnalyticalIBS(ABC):
         nemitt_y: float = None,
         sigma_delta: float = None,
         bunch_length: float = None,
+        total_beam_intensity: int = None,
         bunched: bool = True,
     ) -> float:
         r"""
@@ -169,6 +167,8 @@ class AnalyticalIBS(ABC):
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
+        total_beam_intensity : int
+            The beam intensity to assume.
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
 
@@ -182,6 +182,7 @@ class AnalyticalIBS(ABC):
         # Perform checks on exclusive parameters and make sure we have what we need
         assert sigma_delta is not None, "Must provide 'sigma_delta'"
         assert bunch_length is not None, "Must provide 'bunch_length'"
+        assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
         assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
         assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
         if gemitt_x is not None:
@@ -230,7 +231,7 @@ class AnalyticalIBS(ABC):
             volume = 8.0 * np.sqrt(np.pi**3) * sigma_x_cm * sigma_y_cm * sigma_t_cm
         else:  # coasting beam
             volume = 4.0 * np.pi * sigma_x_cm * sigma_y_cm * 100 * self._twiss.circumference
-        density = self._num_particles / volume
+        density = total_beam_intensity / volume
         debye_length = 743.4 * np.sqrt(TempeV / density) / abs(self._particle.q0)
         # ----------------------------------------------------------------------------------------------
         # Calculate 'rmin' as larger of classical distance of closest approach or quantum mechanical
@@ -252,6 +253,7 @@ class AnalyticalIBS(ABC):
         nemitt_y: float = None,
         sigma_delta: float = None,
         bunch_length: float = None,
+        total_beam_intensity: int = None,
         bunched: bool = True,
     ) -> IBSGrowthRates:
         r"""
@@ -276,6 +278,8 @@ class AnalyticalIBS(ABC):
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
+        total_beam_intensity : int
+            The beam intensity to assume.
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
 
@@ -347,17 +351,15 @@ class NagaitsevIBS(AnalyticalIBS):
         they are computed with the `.integrals` method.
     """
 
-    def __init__(self, twiss: xt.TwissTable, num_particles: int) -> None:
+    def __init__(self, twiss: xt.TwissTable) -> None:
         """Initialize the class.
 
         Parameters
         ----------
         twiss : xtrack.TwissTable
             Twiss results of the `xtrack.Line` configuration.
-        num_particles : int
-            Number of simulated particles to consider.
         """
-        super().__init__(twiss, num_particles)
+        super().__init__(twiss)
         # This self-updates when computed, but can be overwritten by the user
         self.nagaitsev_integrals: NagaitsevIntegrals = None
 
@@ -484,6 +486,7 @@ class NagaitsevIBS(AnalyticalIBS):
         nemitt_y: float = None,
         sigma_delta: float = None,
         bunch_length: float = None,
+        total_beam_intensity: int = None,
         bunched: bool = True,
     ) -> IBSGrowthRates:
         r"""
@@ -542,6 +545,8 @@ class NagaitsevIBS(AnalyticalIBS):
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
+        total_beam_intensity : int
+            The beam intensity to assume.
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
         normalized_emittances : bool
@@ -561,6 +566,7 @@ class NagaitsevIBS(AnalyticalIBS):
         # Perform checks on exclusive parameters and make sure we have what we need
         assert sigma_delta is not None, "Must provide 'sigma_delta'"
         assert bunch_length is not None, "Must provide 'bunch_length'"
+        assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
         assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
         assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
         if gemitt_x is not None:
@@ -591,13 +597,14 @@ class NagaitsevIBS(AnalyticalIBS):
             gemitt_y=gemitt_y,
             sigma_delta=sigma_delta,
             bunch_length=bunch_length,
+            total_beam_intensity=total_beam_intensity,
             bunched=bunched,
         )
         # Then the rest of the constant term in the equation
         radius = self._particle.get_classical_particle_radius0()
         beta0 = self._twiss.beta0
         gamma0 = self._twiss.gamma0
-        numerator = self._num_particles * radius**2 * c
+        numerator = total_beam_intensity * radius**2 * c
         denominator = 12 * np.pi * beta0**3 * gamma0**5 * bunch_length
         rest_of_constant_term = numerator / denominator
         full_constant_term = rest_of_constant_term * coulomb_logarithm
@@ -611,7 +618,7 @@ class NagaitsevIBS(AnalyticalIBS):
         Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
         result = IBSGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
-        # Self-update the instance's attributes and then return the results
+        # Self-update the instance's attribute before returning
         self.ibs_growth_rates = result
         return result
 
@@ -637,17 +644,15 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         they are computed with the `.growth_rates` method.
     """
 
-    def __init__(self, twiss: xt.TwissTable, num_particles: int) -> None:
+    def __init__(self, twiss: xt.TwissTable) -> None:
         """Initialize the class.
 
         Parameters
         ----------
         twiss : xtrack.TwissTable
             Twiss results of the `xtrack.Line` configuration.
-        num_particles : int
-            Number of simulated particles to consider.
         """
-        super().__init__(twiss, num_particles)
+        super().__init__(twiss)
 
     def _Gamma(
         self,
@@ -1198,6 +1203,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         gemitt_y: float,
         sigma_delta: float,
         bunch_length: float,
+        total_beam_intensity: int,
         bunched: bool = True,
     ) -> Tuple[float, ArrayLike, ArrayLike, float]:
         r"""
@@ -1221,6 +1227,8 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
+        total_beam_intensity : int
+            The beam intensity to assume.
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
 
@@ -1261,6 +1269,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             gemitt_y=gemitt_y,
             sigma_delta=sigma_delta,
             bunch_length=bunch_length,
+            total_beam_intensity=total_beam_intensity,
             bunched=bunched,
         )
         common_constant_term: float = (
@@ -1268,7 +1277,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             * self._particle.get_classical_particle_radius0()**2
             * c
             * (self._particle.mass0 * 1e-3)** 3
-            * self._num_particles
+            * total_beam_intensity
             * coulomb_logarithm
             / (self._twiss.gamma0 * self._Gamma(gemitt_x, gemitt_y, sigma_delta, bunch_length, bunched))
         )
@@ -1290,6 +1299,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         nemitt_y: float = None,
         sigma_delta: float = None,
         bunch_length: float = None,
+        total_beam_intensity: int = None,
         bunched: bool = True,
         integration_intervals: int = 17,
     ) -> IBSGrowthRates:
@@ -1335,6 +1345,8 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             The momentum spread.
         bunch_length : float
             The bunch length in [m].
+        total_beam_intensity : int
+            The beam intensity to assume.
         bunched : bool
             Whether the beam is bunched or not (coasting). Defaults to `True`.
         integration_intervals : int
@@ -1353,6 +1365,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # Perform checks on exclusive parameters and make sure we have what we need
         assert sigma_delta is not None, "Must provide 'sigma_delta'"
         assert bunch_length is not None, "Must provide 'bunch_length'"
+        assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
         assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
         assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
         if gemitt_x is not None:
@@ -1383,7 +1396,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # Getting the constant term and the bracket terms from Eq (8) of the MAD-X note
         LOGGER.debug("Computing common constant term and bracket terms from Eq (8) of the MAD-X note")
         common_constant_term, bracket_x, bracket_y, bracket_z = self._constants(
-            gemitt_x, gemitt_y, sigma_delta, bunch_length, bunched
+            gemitt_x, gemitt_y, sigma_delta, bunch_length, total_beam_intensity, bunched
         )
         # ----------------------------------------------------------------------------------------------
         # Defining the integrands from Eq (8) of the MAD-X note, for each plane (remember these functions
@@ -1482,6 +1495,6 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
         result = IBSGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
-        # Self-update the instance's attributes, some private flags and then return the results
+        # Self-update the instance's attribute before returning
         self.ibs_growth_rates = result
         return result

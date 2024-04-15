@@ -9,7 +9,7 @@ import numpy as np
 import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
-from xfields.ibs._formulary import _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta, _beam_intensity
+from xfields.ibs._formulary import _beam_intensity, _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta
 
 LOGGER = getLogger(__name__)
 
@@ -98,9 +98,9 @@ def get_intrabeam_scattering_growth_rates(
     if formalism.lower() == "nagaitsev":
         if np.count_nonzero(twiss.dy) != 0:
             LOGGER.warning("Vertical dispersion is present, Nagaitsev formalism does not account for it")
-        ibs = NagaitsevIBS(twiss, total_beam_intensity)
+        ibs = NagaitsevIBS(twiss)
     else:
-        ibs = BjorkenMtingwaIBS(twiss, total_beam_intensity)
+        ibs = BjorkenMtingwaIBS(twiss)
     # ----------------------------------------------------------------------------------------------
     # Now computing the growth rates using the IBS class and returning them
     return ibs.growth_rates(
@@ -110,6 +110,7 @@ def get_intrabeam_scattering_growth_rates(
         nemitt_y=nemitt_y,
         sigma_delta=sigma_delta,
         bunch_length=bunch_length,
+        total_beam_intensity=total_beam_intensity,
         bunched=bunched,
         **kwargs,
     )
