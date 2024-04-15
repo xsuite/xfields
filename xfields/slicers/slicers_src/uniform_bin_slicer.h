@@ -16,7 +16,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
                 /*gpuglmem*/ int64_t* i_slot_part){
 
     int64_t const num_slices = UniformBinSlicerData_get_num_slices(el);
-    double const z_min = UniformBinSlicerData_get_z_min(el);
+    double const z_min_edge = UniformBinSlicerData_get_z_min_edge(el);
     double const dzeta = UniformBinSlicerData_get_dzeta(el);
 
     int64_t const num_bunches = UniformBinSlicerData_get_num_bunches(el);
@@ -64,8 +64,6 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
     double* sum_zeta_zeta = (UniformBinSlicerData_len_sum_zeta_zeta(el)) ? UniformBinSlicerData_getp1_sum_zeta_zeta(el, 0) : NULL ;
     double* sum_zeta_delta = (UniformBinSlicerData_len_sum_zeta_delta(el)) ? UniformBinSlicerData_getp1_sum_zeta_delta(el, 0) : NULL ;
     double* sum_delta_delta = (UniformBinSlicerData_len_sum_delta_delta(el)) ? UniformBinSlicerData_getp1_sum_delta_delta(el, 0) : NULL ;
-
-    double const z_min_edge = z_min - 0.5 * dzeta;
 
     uint8_t needs_cov = sum_x_px || sum_x_y || sum_x_py || sum_x_zeta || sum_x_delta ||
                         sum_px_y || sum_px_py || sum_px_zeta || sum_px_delta ||
@@ -197,7 +195,7 @@ void UniformBinSlicer_slice_x_only(UniformBinSlicerData el,
                 /*gpuglmem*/ int64_t* i_slot_part){
 
     int64_t const num_slices = UniformBinSlicerData_get_num_slices(el);
-    double const z_min = UniformBinSlicerData_get_z_min(el);
+    double const z_min_edge = UniformBinSlicerData_get_z_min_edge(el);
     double const dzeta = UniformBinSlicerData_get_dzeta(el);
 
     int64_t const num_bunches = UniformBinSlicerData_get_num_bunches(el);
@@ -211,8 +209,6 @@ void UniformBinSlicer_slice_x_only(UniformBinSlicerData el,
     // double* sum_zeta = (UniformBinSlicerData_len_sum_zeta(el) > 0) ?  UniformBinSlicerData_getp1_sum_zeta(el, 0) : NULL ;
     // double* sum_delta = (UniformBinSlicerData_len_sum_delta(el) > 0) ?  UniformBinSlicerData_getp1_sum_delta(el, 0) : NULL ;
     double* sum_x_x = (UniformBinSlicerData_len_sum_x_x(el) > 0) ?  UniformBinSlicerData_getp1_sum_x_x(el, 0) : NULL ;
-
-    double const z_min_edge = z_min - 0.5 * dzeta;
 
     //start_per_particle_block (part0->part)
         double zeta = LocalParticle_get_zeta(part);

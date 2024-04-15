@@ -17,14 +17,13 @@ for cc1 in COORDS:
         SECOND_MOMENTS[cc1 + '_' + cc2] = (cc1, cc2)
 
 _xof = {
-    'z_min': xo.Float64,
+    'z_min_edge': xo.Float64,
     'num_slices': xo.Int64,
     'dzeta': xo.Float64,
     'num_bunches': xo.Int64,
     'filled_slots': xo.Int64[:],
     'bunch_numbers': xo.Int64[:],
     'bunch_spacing_zeta': xo.Float64,
-    'zeta_slices': xo.Float64[:],
     'num_particles': xo.Float64[:],
 }
 for cc in COORDS:
@@ -73,7 +72,7 @@ class UniformBinSlicer(xt.BeamElement):
                 ]),
         }
 
-    def __init__(self, zeta_range=None, num_slices=None, dzeta=None, zeta_slices=None,
+    def __init__(self, zeta_range=None, num_slices=None, dzeta=None, zeta_slice_edges=None,
                  num_bunches=None,filling_scheme=None,bunch_numbers=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
@@ -83,7 +82,12 @@ class UniformBinSlicer(xt.BeamElement):
             self.xoinitialize(_xobject=kwargs['_xobject'])
             return
 
-        _zeta_slices = _configure_grid('zeta', zeta_slices, dzeta, zeta_range, num_slices)
+        num_edges = None
+        if num_slices is not None:
+            num_edges = num_slices + 1
+        self._zeta_slice_edges = _configure_grid('zeta', zeta_slice_edges, dzeta, zeta_range, num_edges)
+        self._zeta_slice_centers = self._zeta_slice_edges[:-1] + (self._zeta_slice_edges[1]-self._zeta_slice_edges[0])/2
+        num_slices = len(self._zeta_slice_centers)
         if filling_scheme is None and bunch_numbers is None:
             if num_bunches is None:
                     num_bunches = 1
@@ -125,12 +129,11 @@ class UniformBinSlicer(xt.BeamElement):
             else:
                 allocated_sizes['sum_' + mm] = 0
 
-        self.xoinitialize(_zeta_slices=_zeta_slices,
-                          z_min=_zeta_slices[0], num_slices=len(_zeta_slices),
-                          dzeta=_zeta_slices[1] - _zeta_slices[0],
+        self.xoinitialize(z_min_edge=self._zeta_slice_edges[0], num_slices=num_slices,
+                          dzeta=self._zeta_slice_edges[1] - self._zeta_slice_edges[0],
                           num_bunches=num_bunches,filled_slots=filled_slots, bunch_numbers=bunch_numbers,
                           bunch_spacing_zeta=bunch_spacing_zeta,
-                          num_particles=(num_bunches or 1) * len(_zeta_slices),
+                          num_particles=(num_bunches or 1) * len(self._zeta_slice_centers),
                           **allocated_sizes, **kwargs)
 
 
@@ -171,11 +174,11 @@ class UniformBinSlicer(xt.BeamElement):
         Array with the grid points (bin centers).
         """
         if self.num_bunches <= 1:
-            return self._zeta_slices
+            return self._zeta_slice_centers
         else:
             out = np.zeros((self.num_bunches, self.num_slices))
             for bunch_number in self.bunch_numbers:
-                out[bunch_number, :] = (self._zeta_slices - self._filled_slots[bunch_number] * self.bunch_spacing_zeta)
+                out[bunch_number, :] = (self._zeta_slice_centers - self._filled_slots[bunch_number] * self.bunch_spacing_zeta)
             return out
 
     @property
@@ -183,14 +186,14 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Number of bins
         """
-        return len(self._zeta_slices)
+        return len(self._zeta_slice_centers)
 
     @property
     def dzeta(self):
         """
         Bin size in meters.
         """
-        return self._zeta_slices[1] - self._zeta_slices[0]
+        return self._zeta_slice_centers[1] - self._zeta_slice_centers[0]
 
     @property
     def num_bunches(self):

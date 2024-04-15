@@ -8,6 +8,7 @@ import xtrack as xt
 import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
 
+from scipy.signal import convolve
 from matplotlib import pyplot as plt
 
 class MultiWakefield:
@@ -174,6 +175,7 @@ class MultiWakefield:
         if self.pipeline_manager is None:
             other_bunches_slicers = None
             self._slice_and_store(particles)
+            other_bunches_slicers = None
         else:
             other_bunches_slicers = []
             is_ready_to_send = True
@@ -506,7 +508,6 @@ class Wakefield:
             self._rho_flatten = rho_aux_flatten # for debugging
 
         self.moments_data['result'] = res.real
-
 
     # Parameters from CompressedProfile
     @property
