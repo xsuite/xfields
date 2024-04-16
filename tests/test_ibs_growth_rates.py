@@ -1,7 +1,11 @@
+<<<<<<< HEAD
 from pathlib import Path
 
 import numpy as np
 from numpy.testing import assert_allclose
+=======
+import pytest
+>>>>>>> 93664ef (parametrize bunched, do not test nagaitsev in coasting as it makes big approximation)
 import xtrack as xt
 from conftest import (
     get_madx_ibs_growth_rates,
@@ -30,7 +34,8 @@ XT_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
 >>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
 
 
-def test_clic_dr_growth_rates():
+@pytest.mark.parametrize("bunched", [True, False])
+def test_clic_dr_growth_rates(bunched):
     """Compare to MAD-X for the CLIC DR."""
     # -----------------------------------------------------
 <<<<<<< HEAD
@@ -52,6 +57,7 @@ def test_clic_dr_growth_rates():
         nemitt_y=3.70e-9,
         sigma_delta=1.75e-3,
         bunch_length=1.58e-3,
+        bunched=bunched,
     )
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
@@ -70,6 +76,7 @@ def test_clic_dr_growth_rates():
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
         bunch_length=bl,
+        bunched=bunched,
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
@@ -81,6 +88,7 @@ def test_clic_dr_growth_rates():
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
         bunch_length=bl,
+        bunched=bunched,
     )
     # -----------------------------------------------------
 <<<<<<< HEAD
@@ -97,17 +105,25 @@ def test_clic_dr_growth_rates():
 >>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
 =======
     # Compare the results - Nagaitsev
+<<<<<<< HEAD
     assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
     assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
     assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
 >>>>>>> ad7675c (needed to set beam parameters as xtrack files leave default emittances etc)
+=======
+    if bunched is True:  # in Nagaitsev coasting makes big assumptions
+        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
+        assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
+        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
+>>>>>>> 93664ef (parametrize bunched, do not test nagaitsev in coasting as it makes big approximation)
     # Compare the results - Bjorken-Mtingwa
     assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
 
 
-def test_sps_injection_protons_growth_rates():
+@pytest.mark.parametrize("bunched", [True, False])
+def test_sps_injection_protons_growth_rates(bunched):
     """Compare to MAD-X for the SPS injection protons."""
     # -----------------------------------------------------
     # Have MAD-X load CLIC DR sequence, beam etc.
@@ -117,6 +133,7 @@ def test_sps_injection_protons_growth_rates():
     madx.use(sequence="sps")
     # -----------------------------------------------------
     # Beam is fully setup in file, get growth rates
+    madx.sequence.sps.beam.bunched = bunched
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
     # Get equivalent xtrack.Line and parameters
@@ -134,6 +151,7 @@ def test_sps_injection_protons_growth_rates():
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
         bunch_length=bl,
+        bunched=bunched,
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
@@ -145,19 +163,22 @@ def test_sps_injection_protons_growth_rates():
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
         bunch_length=bl,
+        bunched=bunched,
     )
     # -----------------------------------------------------
     # Compare the results - Nagaitsev
-    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=1e-2)
-    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=1e-2)
-    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=1e-2)
+    if bunched is True:  # in Nagaitsev coasting makes big assumptions
+        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+        assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=10e-2)
+        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=1e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=1e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=1e-2)
+    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
 
-def test_hllhc14_growth_rates():
+@pytest.mark.parametrize("bunched", [True, False])
+def test_hllhc14_growth_rates(bunched):
     """
     Compare to MAD-X for the HLLHC14 protons.
     The lattice has vertical dispersion so Nagaitsev
@@ -172,6 +193,7 @@ def test_hllhc14_growth_rates():
     madx.use(sequence="lhcb1")
     # -----------------------------------------------------
     # Beam is fully setup in file, get growth rates
+    madx.sequence.lhcb1.beam.bunched = bunched
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
     # Get equivalent xtrack.Line and parameters
@@ -189,6 +211,7 @@ def test_hllhc14_growth_rates():
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
         bunch_length=bl,
+        bunched=bunched,
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
@@ -200,12 +223,14 @@ def test_hllhc14_growth_rates():
         gemitt_y=gemitt_y,
         sigma_delta=sigd,
         bunch_length=bl,
+        bunched=bunched,
     )
     # -----------------------------------------------------
     # Compare the results - Nagaitsev (don't compare vertical
     # as lattice has Dy and formalism is wrong in this case)
-    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
-    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    if bunched is True:  # in Nagaitsev coasting makes big assumptions
+        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
+        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
     assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
