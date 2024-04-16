@@ -8,6 +8,75 @@ from cpymad.madx import Madx
 XTRACK_TEST_DATA = xt.general._pkg_root  # Need to find a way to access that??
 
 
+def set_madx_beam_parameters(
+    madx: Madx,
+    total_beam_intensity: int,
+    gemitt_x: float = None,
+    nemitt_x: float = None,
+    gemitt_y: float = None,
+    nemitt_y: float = None,
+    sigma_delta: float = None,
+    bunch_length: float = None,
+) -> None:
+    """
+    Set some beam parameters to proided values, taking care of conversions
+    where needed. This function assumes the desired sequence is in use, and
+    has a corresponding beam.
+
+    Parameters
+    ----------
+    madx : cpymad.madx.Madx
+        A `~cpymad.madx.Madx` instance with the desired lattice & beam.
+    total_beam_intensity : int
+        Number of particles in the beam.
+    gemitt_x : float, optional
+        Horizontal geometric emittance in [m]. Either this parameter or
+        `nemitt_x` is required.
+    nemitt_x : float, optional
+        Horizontal normalized emittance in [m]. Either this parameter or
+        `gemitt_x` is required.
+    gemitt_y : float, optional
+        Vertical geometric emittance in [m]. Either this parameter or
+        `nemitt_y` is required.
+    nemitt_y : float, optional
+        Vertical normalized emittance in [m]. Either this parameter or
+        `gemitt_y` is required.
+    sigma_delta : float
+        Momentum spread.
+    bunch_length : float
+        Bunch length in [m].
+    """
+    # ------------------------------------------------------------------------
+    # Get the MAD-X sequence in use and relativistic parameters
+    madx.command.twiss()
+    seq_name = madx.table.twiss.summary.sequence  # active sequence
+    beta0 = madx.sequence[seq_name].beam.beta
+    gamma0 = madx.sequence[seq_name].beam.gamma
+    # ------------------------------------------------------------------------
+    # Ensure we have the parameters we need, convert to geometric if normalized
+    assert sigma_delta is not None, "Must provide 'sigma_delta'"
+    assert bunch_length is not None, "Must provide 'bunch_length'"
+    assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+    assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+    if gemitt_x is not None:
+        assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+    if gemitt_y is not None:
+        assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+    if nemitt_x is not None:
+        assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+        gemitt_x = nemitt_x / (gamma0 * beta0)
+    if nemitt_y is not None:
+        assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+        gemitt_y = nemitt_y / (gamma0 * beta0)
+    # ------------------------------------------------------------------------
+    # Set the beam parameters
+    madx.sequence[seq_name].beam.npart = total_beam_intensity  # set the number of particles
+    madx.sequence[seq_name].beam.ex = gemitt_x  # set the geom emit x (in [m])
+    madx.sequence[seq_name].beam.ey = gemitt_y  # set the geom emit y (in [m])
+    madx.sequence[seq_name].beam.sige = sigma_delta * (beta0**2)  # set the relative energy spread
+    madx.sequence[seq_name].beam.sigt = bunch_length  # set the bunch length (in [m])
+
+
 def get_madx_ibs_growth_rates(madx: Madx) -> Tuple[float, float, float]:
     """
     Calls the IBS module then return horizontal, vertical and longitudinal
