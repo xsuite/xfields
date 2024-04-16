@@ -56,7 +56,7 @@ def test_multiwake_transverse_dipole_direct(test_context):
     n_turns_wake = 1
     circumference = n_slots * bunch_spacing
     wake_table_name = xf.general._pkg_root.joinpath('../test_data/HLLHC_wake.dat')
-    wake_file_columns = ['time', 'dipole_x', 'dipole_y', 'quadrupole_x', 'quadrupole_y','dipole_xy','dipole_yx']
+    wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y', 'quadrupole_x', 'quadrupole_y','dipole_xy','quadrupole_xy','dipole_yx','quadrupole_yx','constant_x','constant_y']
     components = ['dipole_x','dipole_y']
     wf_0 = xf.MultiWakefield.from_table(wake_table_name,wake_file_columns, use_components = components,
         zeta_range=zeta_range,
