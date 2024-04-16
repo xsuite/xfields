@@ -40,6 +40,7 @@ def phi(beta: ArrayLike, alpha: ArrayLike, dx: ArrayLike, dpx: ArrayLike) -> Arr
 
 # ----- Some helpers on xtrack.Particles objects ----- #
 
+
 def _beam_intensity(particles: xt.Particles) -> float:
     """Get the beam intensity from the particles."""
     _assert_accepted_context(particles._context)
@@ -108,14 +109,14 @@ def _geom_epsy(particles: xt.Particles, bety: float, dy: float) -> float:
 
 # ----- Private helperto check the validity of the context ----- #
 
+
 def _assert_accepted_context(ctx: xo.context.XContext):
     """
     Ensure the context is accepted for IBS computations. We do not
     support PyOpenCL because they have no booleans and lead to some
     wrong results when using boolean array masking, which we do to
-    get the alive particles. 
+    get the alive particles.
     """
     assert not isinstance(ctx, xo.ContextPyopencl), (
-        "PyOpenCL context is not supported for IBS. "
-        "Please use either the CPU or CuPy context."
+        "PyOpenCL context is not supported for IBS. " "Please use either the CPU or CuPy context."
     )
