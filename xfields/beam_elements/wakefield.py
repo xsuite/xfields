@@ -119,7 +119,6 @@ class MultiWakefield:
                 scale_kick = None
                 source_moments = ['num_particles']
                 if wake_component == 'longitudinal':
-                    source_moments.append('zeta')
                     kick = 'delta'
                 else:
                     tokens = wake_component.split('_')
