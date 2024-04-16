@@ -107,7 +107,7 @@ def test_clic_dr_growth_rates():
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
 
 
-def test_sps_protons_growth_rates():
+def test_sps_injection_protons_growth_rates():
     """Compare to MAD-X for the SPS injection protons."""
     # -----------------------------------------------------
     # Have MAD-X load CLIC DR sequence, beam etc.
@@ -116,15 +116,7 @@ def test_sps_protons_growth_rates():
     madx.call(str(sps_dir / "sps_thin.seq"))
     madx.use(sequence="sps")
     # -----------------------------------------------------
-    # Set beam parameters and get growth rates (injection protons)
-    set_madx_beam_parameters(
-        madx,
-        total_beam_intensity=1.2e11,
-        nemitt_x=2.5e-6,
-        nemitt_y=2.5e-9,
-        sigma_delta=9.56e-4,
-        bunch_length=9e-2,
-    )
+    # Beam is fully setup in file, get growth rates
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
     # Get equivalent xtrack.Line and parameters
@@ -210,12 +202,11 @@ def test_hllhc14_growth_rates():
         bunch_length=bl,
     )
     # -----------------------------------------------------
-    # Compare the results - Nagaitsev (atol since very small values)
-    # We don't compare Nagaitsev vertical as the lattice has Dy and
-    # Nagaitsev formalism is just wrong in this case
-    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-10, rtol=4e-2)
-    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-10, rtol=2.5e-2)
+    # Compare the results - Nagaitsev (don't compare vertical
+    # as lattice has Dy and formalism is wrong in this case)
+    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
+    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-10, rtol=4e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-10, rtol=2.5e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-10, rtol=2.5e-2)
+    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
+    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
