@@ -163,3 +163,59 @@ def test_sps_protons_growth_rates():
     assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=1e-2)
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=1e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=1e-2)
+
+
+def test_hllhc14_growth_rates():
+    """
+    Compare to MAD-X for the HLLHC14 protons.
+    The lattice has vertical dispersion so Nagaitsev
+    vertical growth rate will be blatantly wrong.
+    """
+    # -----------------------------------------------------
+    # Have MAD-X load SPS sequence, beam etc. as done in
+    # the script next to it that creates the xtrack.Line
+    hllhc14_dir = XTRACK_TEST_DATA / "hllhc14_input_mad"
+    madx = Madx(stdout=False)
+    madx.call(str(hllhc14_dir / "final_seq.madx"))
+    madx.use(sequence="lhcb1")
+    # -----------------------------------------------------
+    # Beam is fully setup in file, get growth rates
+    mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
+    # -----------------------------------------------------
+    # Get equivalent xtrack.Line and parameters
+    line = xt.Line.from_madx_sequence(madx.sequence.lhcb1)
+    line.particle_ref = get_ref_particle_from_madx_beam(madx)
+    tw = line.twiss(method="4d")
+    npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
+    # -----------------------------------------------------
+    # Get growth rates with Nagaitsev formalism
+    nag_rates = get_intrabeam_scattering_growth_rates(
+        twiss=tw,
+        formalism="nagaitsev",
+        total_beam_intensity=npart,
+        gemitt_x=gemitt_x,
+        gemitt_y=gemitt_y,
+        sigma_delta=sigd,
+        bunch_length=bl,
+    )
+    # -----------------------------------------------------
+    # Get growth rates with Bjorken-Mtingwa formalism
+    bm_rates = get_intrabeam_scattering_growth_rates(
+        twiss=tw,
+        formalism="Bjorken-Mtingwa",
+        total_beam_intensity=npart,
+        gemitt_x=gemitt_x,
+        gemitt_y=gemitt_y,
+        sigma_delta=sigd,
+        bunch_length=bl,
+    )
+    # -----------------------------------------------------
+    # Compare the results - Nagaitsev (atol since very small values)
+    # We don't compare Nagaitsev vertical as the lattice has Dy and
+    # Nagaitsev formalism is just wrong in this case
+    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-10, rtol=4e-2)
+    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-10, rtol=2.5e-2)
+    # Compare the results - Bjorken-Mtingwa
+    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-10, rtol=4e-2)
+    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-10, rtol=2.5e-2)
+    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-10, rtol=2.5e-2)
