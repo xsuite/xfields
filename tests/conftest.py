@@ -17,6 +17,7 @@ def set_madx_beam_parameters(
     nemitt_y: float = None,
     sigma_delta: float = None,
     bunch_length: float = None,
+    bunched: bool = True,
 ) -> None:
     """
     Set some beam parameters to proided values, taking care of conversions
@@ -45,6 +46,8 @@ def set_madx_beam_parameters(
         Momentum spread.
     bunch_length : float
         Bunch length in [m].
+    bunched : bool
+        Whether to tell MAD-X if the beam is bunched.
     """
     # ------------------------------------------------------------------------
     # Get the MAD-X sequence in use and relativistic parameters
@@ -75,6 +78,7 @@ def set_madx_beam_parameters(
     madx.sequence[seq_name].beam.ey = gemitt_y  # set the geom emit y (in [m])
     madx.sequence[seq_name].beam.sige = sigma_delta * (beta0**2)  # set the relative energy spread
     madx.sequence[seq_name].beam.sigt = bunch_length  # set the bunch length (in [m])
+    madx.sequence[seq_name].beam.bunched = bunched  # set if the beam is bunched
 
 
 def get_madx_ibs_growth_rates(madx: Madx) -> Tuple[float, float, float]:
