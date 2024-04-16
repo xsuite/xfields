@@ -106,3 +106,60 @@ def test_clic_dr_growth_rates():
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
 
+
+def test_sps_protons_growth_rates():
+    """Compare to MAD-X for the SPS injection protons."""
+    # -----------------------------------------------------
+    # Have MAD-X load CLIC DR sequence, beam etc.
+    sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
+    madx = Madx(stdout=False)
+    madx.call(str(sps_dir / "sps_thin.seq"))
+    madx.use(sequence="sps")
+    # -----------------------------------------------------
+    # Set beam parameters and get growth rates (injection protons)
+    set_madx_beam_parameters(
+        madx,
+        total_beam_intensity=1.2e11,
+        nemitt_x=2.5e-6,
+        nemitt_y=2.5e-9,
+        sigma_delta=9.56e-4,
+        bunch_length=9e-2,
+    )
+    mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
+    # -----------------------------------------------------
+    # Get equivalent xtrack.Line and parameters
+    line = xt.Line.from_madx_sequence(madx.sequence.sps)
+    line.particle_ref = get_ref_particle_from_madx_beam(madx)
+    tw = line.twiss(method="4d")
+    npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
+    # -----------------------------------------------------
+    # Get growth rates with Nagaitsev formalism
+    nag_rates = get_intrabeam_scattering_growth_rates(
+        twiss=tw,
+        formalism="nagaitsev",
+        total_beam_intensity=npart,
+        gemitt_x=gemitt_x,
+        gemitt_y=gemitt_y,
+        sigma_delta=sigd,
+        bunch_length=bl,
+    )
+    # -----------------------------------------------------
+    # Get growth rates with Bjorken-Mtingwa formalism
+    bm_rates = get_intrabeam_scattering_growth_rates(
+        twiss=tw,
+        formalism="Bjorken-Mtingwa",
+        total_beam_intensity=npart,
+        gemitt_x=gemitt_x,
+        gemitt_y=gemitt_y,
+        sigma_delta=sigd,
+        bunch_length=bl,
+    )
+    # -----------------------------------------------------
+    # Compare the results - Nagaitsev
+    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=1e-2)
+    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=1e-2)
+    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=1e-2)
+    # Compare the results - Bjorken-Mtingwa
+    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=1e-2)
+    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=1e-2)
+    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=1e-2)
