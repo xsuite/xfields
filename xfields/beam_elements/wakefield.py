@@ -104,6 +104,12 @@ class MultiWakefield:
         if 'time' not in wake_file_columns:
             raise ValueError("No wake_file_column with name 'time' has" +
                              " been specified. \n")
+                             
+        if use_components is not None:
+            for wake_component in use_components:
+                assert wake_component in valid_wake_components
+                assert wake_component in wake_file_columns
+                             
         itime = wake_file_columns.index('time')
         wake_distance = -1E-9 * wake_data[:,itime] * beta0 * clight
         wakefields = []
