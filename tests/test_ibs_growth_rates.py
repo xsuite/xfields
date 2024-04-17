@@ -7,7 +7,12 @@ from numpy.testing import assert_allclose
 import pytest
 >>>>>>> 93664ef (parametrize bunched, do not test nagaitsev in coasting as it makes big approximation)
 import xtrack as xt
+<<<<<<< HEAD
 from conftest import (
+=======
+from ibs_conftest import (
+    XTRACK_TEST_DATA,
+>>>>>>> 897a3be (PR comments)
     get_madx_ibs_growth_rates,
     get_parameters_from_madx_beam,
     get_ref_particle_from_madx_beam,
@@ -168,6 +173,7 @@ def test_sps_injection_protons_growth_rates(bunched):
     # -----------------------------------------------------
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
+        # Computed with different formalism than MAD-X so 10% isn't crazy
         assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
         assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=10e-2)
         assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
