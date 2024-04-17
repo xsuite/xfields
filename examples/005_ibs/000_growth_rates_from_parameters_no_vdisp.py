@@ -29,8 +29,7 @@ bunch_length: float = 19.51e-2
 # Get growth rates with Nagaitsev #
 ###################################
 
-nag_growth_rates = get_intrabeam_scattering_growth_rates(
-    twiss=tw,
+nag_growth_rates = tw.get_ibs_growth_rates(
     formalism="nagaitsev",
     total_beam_intensity=bunch_intensity,
     nemitt_x=nemitt_x,
@@ -44,8 +43,7 @@ nag_growth_rates = get_intrabeam_scattering_growth_rates(
 # Get growth rates with Bjorken-Mtingwa #
 #########################################
 
-bm_growth_rates = get_intrabeam_scattering_growth_rates(
-    twiss=tw,
+bm_growth_rates = tw.get_ibs_growth_rates(
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     total_beam_intensity=bunch_intensity,
     nemitt_x=nemitt_x,
@@ -77,8 +75,7 @@ gemitt_y: float = 1.254e-7
 # Get growth rates with Nagaitsev #
 ###################################
 
-nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
-    twiss=tw,
+nag_growth_rates2 = tw.get_ibs_growth_rates(
     formalism="nagaitsev",
     total_beam_intensity=bunch_intensity,
     gemitt_x=gemitt_x,
@@ -92,8 +89,7 @@ nag_growth_rates2 = get_intrabeam_scattering_growth_rates(
 # Get growth rates with Bjorken-Mtingwa #
 #########################################
 
-bm_growth_rates2 = get_intrabeam_scattering_growth_rates(
-    twiss=tw,
+bm_growth_rates2 = tw.get_ibs_growth_rates(
     formalism="bjorken-mtingwa",  # also accepts "b&m"
     total_beam_intensity=bunch_intensity,
     gemitt_x=gemitt_x,
