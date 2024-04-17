@@ -120,7 +120,9 @@ class MultiWakefield:
                 source_moments = ['num_particles']
                 if wake_component == 'longitudinal':
                     kick = 'delta'
+                    conversion_factor = -1E12
                 else:
+                    conversion_factor = -1E15
                     tokens = wake_component.split('_')
                     coord_target = tokens[1][0]
                     if len(tokens[1]) == 2:
@@ -132,7 +134,7 @@ class MultiWakefield:
                         source_moments.append(coord_source)
                     elif tokens[0] == 'quadrupole':
                         scale_kick = coord_source
-                wake_strength = -1E15 * wake_data[:,iwake_component]
+                wake_strength = conversion_factor * wake_data[:,iwake_component]
                 wakefield = xf.Wakefield(
                     source_moments=source_moments,
                     kick=kick,

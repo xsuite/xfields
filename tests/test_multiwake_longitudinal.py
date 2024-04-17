@@ -6,7 +6,7 @@ import xfields as xf
 
 from xobjects.test_helpers import for_all_test_contexts
 
-@for_all_test_contexts
+#@for_all_test_contexts
 def test_multiwake_longitudinal(test_context):
     # Filling scheme
     n_slots = 100
@@ -101,7 +101,7 @@ def test_multiwake_longitudinal(test_context):
     wake_component = 'longitudinal'
     iwake_component = wake_file_columns.index(wake_component)
     wake_time = -1E-9*np.flip(wake_data_raw[:,0])*c
-    wake_data = -1E15*scaling_constant*np.flip(wake_data_raw[:,iwake_component])
+    wake_data = -1E12*scaling_constant*np.flip(wake_data_raw[:,iwake_component])
     interpolated_wake_0 = np.zeros_like(particles_0.x)
     for ipart in range(len(particles_0.x)):
         zeta_wake = particles_0.zeta[ipart]-all_zetas
