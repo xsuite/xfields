@@ -403,7 +403,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self._init_luminosity(flag_luminosity)
 
         if other_beam_q0 is None:
-            other_beam_q0 = 1.
+            other_beam_q0 = 0
 
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
@@ -454,7 +454,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
             slices_other_beam_sqrtSigma_11_beamstrahlung=n_slices,
             slices_other_beam_sqrtSigma_33_beamstrahlung=n_slices,
-            slices_other_beam_sqrtSigma_55_beamstrahlung=n_slices, 
+            slices_other_beam_sqrtSigma_55_beamstrahlung=n_slices,
             **kwargs
             )
 
