@@ -339,13 +339,13 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.partner_moments = self._buffer.context.nplike_lib.zeros(
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
 
-        if phi is None:
-            assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
-                'phi must be specified if _sin_phi, _cos_phi, _tan_phi are not')
+        if phi is None and _sin_phi is not None:
             self._sin_phi = _sin_phi
             self._cos_phi = _cos_phi
             self._tan_phi = _tan_phi
         else:
+            if phi is None:
+                phi = 0
             self._sin_phi = np.sin(phi)
             self._cos_phi = np.cos(phi)
             self._tan_phi = np.tan(phi)
