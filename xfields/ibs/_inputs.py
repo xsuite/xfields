@@ -15,6 +15,7 @@ LOGGER = getLogger(__name__)
 # Re-implemented BeamParameters and OpticsParameters as xo.HybridClass objects,
 # and got rid of the parts initializing from MAD-X.
 
+
 class BeamParameters(xo.HybridClass):
     """Holds relevant beam parameters for IBS calculations.
 
@@ -188,7 +189,6 @@ class OpticsParameters(xo.HybridClass):
     def from_line(cls, line: xt.Line, **kwargs) -> Self:  # noqa: F821
         """Only here so that OpticsParameters.from_line() is also possible."""
         return cls(line, **kwargs)
-
 
 
 # TODO: Just one class for inputs

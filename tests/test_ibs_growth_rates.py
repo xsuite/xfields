@@ -1,11 +1,9 @@
-from pathlib import Path
-
-import numpy as np
 from numpy.testing import assert_allclose
 
 import pytest
 import xtrack as xt
 from ibs_conftest import (
+    XTRACK_TEST_DATA,
     get_madx_ibs_growth_rates,
     get_parameters_from_madx_beam,
     get_ref_particle_from_madx_beam,
@@ -14,9 +12,6 @@ from ibs_conftest import (
 from cpymad.madx import Madx
 
 from xfields.ibs import get_intrabeam_scattering_growth_rates
-
-# /!\ This assumes xtrack repo is sitting next to xfields repo
-XTRACK_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
 
 # ------------------------------------------------------------------------
 # We compare our values to the ones of MAD-X, hence in the numpy function

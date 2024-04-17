@@ -1,8 +1,11 @@
+from pathlib import Path
 from typing import Tuple
 
 import xtrack as xt
 from cpymad.madx import Madx
 
+# /!\ This assumes xtrack repo is sitting next to xfields repo
+XTRACK_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
 
 def set_madx_beam_parameters(
     madx: Madx,
