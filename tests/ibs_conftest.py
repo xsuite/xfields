@@ -1,11 +1,7 @@
-import pathlib
 from typing import Tuple
 
-import pytest
 import xtrack as xt
 from cpymad.madx import Madx
-
-XTRACK_TEST_DATA = xt.general._pkg_root  # Need to find a way to access that??
 
 
 def set_madx_beam_parameters(

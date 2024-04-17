@@ -1,18 +1,11 @@
-<<<<<<< HEAD
 from pathlib import Path
 
 import numpy as np
 from numpy.testing import assert_allclose
-=======
+
 import pytest
->>>>>>> 93664ef (parametrize bunched, do not test nagaitsev in coasting as it makes big approximation)
 import xtrack as xt
-<<<<<<< HEAD
-from conftest import (
-=======
 from ibs_conftest import (
-    XTRACK_TEST_DATA,
->>>>>>> 897a3be (PR comments)
     get_madx_ibs_growth_rates,
     get_parameters_from_madx_beam,
     get_ref_particle_from_madx_beam,
@@ -22,10 +15,9 @@ from cpymad.madx import Madx
 
 from xfields.ibs import get_intrabeam_scattering_growth_rates
 
-<<<<<<< HEAD
 # /!\ This assumes xtrack repo is sitting next to xfields repo
-XT_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
-=======
+XTRACK_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
+
 # ------------------------------------------------------------------------
 # We compare our values to the ones of MAD-X, hence in the numpy function
 # ours should be the first argument.
@@ -36,20 +28,14 @@ XT_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
 #     if T = 1e-8 [1/s],
 #     then tau = 1/T > 3 years,
 #     and we are pretty safe from IBS.
->>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
 
 
 @pytest.mark.parametrize("bunched", [True, False])
 def test_clic_dr_growth_rates(bunched):
     """Compare to MAD-X for the CLIC DR."""
     # -----------------------------------------------------
-<<<<<<< HEAD
-    # Load ELENA sequence, beam and strengths in MAD-X
-    clic_dr_dir = XT_TEST_DATA / "clic_dr"
-=======
     # Have MAD-X load CLIC DR sequence, beam etc.
     clic_dr_dir = XTRACK_TEST_DATA / "clic_dr"
->>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
     madx = Madx(stdout=False)
     madx.call(str(clic_dr_dir / "sequence.madx"))
     madx.use(sequence="ring")
@@ -96,31 +82,12 @@ def test_clic_dr_growth_rates(bunched):
         bunched=bunched,
     )
     # -----------------------------------------------------
-<<<<<<< HEAD
-<<<<<<< HEAD
     # Compare the results - Nagaitsev
-    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-14, rtol=5e-2)
-    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-14, rtol=5e-2)
-    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-14, rtol=5e-2)
-=======
-    # Compare the results - Nagaitsev (atol since very small values)
-    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-10, rtol=5e-2)
-    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-10, rtol=5e-2)
-    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-10, rtol=5e-2)
->>>>>>> d5d364f (add comment explanation of parameters order, and absolute tolerance value used)
-=======
-    # Compare the results - Nagaitsev
-<<<<<<< HEAD
-    assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
-    assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
-    assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
->>>>>>> ad7675c (needed to set beam parameters as xtrack files leave default emittances etc)
-=======
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
+        # Computed with different formalism than MAD-X so 11% isn't crazy
         assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
         assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
         assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
->>>>>>> 93664ef (parametrize bunched, do not test nagaitsev in coasting as it makes big approximation)
     # Compare the results - Bjorken-Mtingwa
     assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
