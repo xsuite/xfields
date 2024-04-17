@@ -350,12 +350,12 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self._cos_phi = np.cos(phi)
             self._tan_phi = np.tan(phi)
 
-        if alpha is None:
-            assert _sin_alpha is not None and _cos_alpha is not None, (
-                'alpha must be specified if _sin_alpha, _cos_alpha are not')
+        if alpha is None and _sin_alpha is not None:
             self._sin_alpha = _sin_alpha
             self._cos_alpha = _cos_alpha
         else:
+            if alpha is None:
+                alpha = 0
             self._sin_alpha = np.sin(alpha)
             self._cos_alpha = np.cos(alpha)
 
@@ -402,7 +402,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self._init_luminosity(flag_luminosity)
 
-        assert other_beam_q0 is not None
+        if other_beam_q0 is None:
+            other_beam_q0 = 1.
+
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
 
