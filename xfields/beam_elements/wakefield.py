@@ -47,6 +47,7 @@ class MultiWakefield:
                     bunch_numbers=bunch_numbers,
                     circumference=circumference,
                     log_moments=log_moments,
+                    num_turns=num_turns,
                     _flatten=_flatten)
             all_slicer_moments += wf.slicer.moments
 
