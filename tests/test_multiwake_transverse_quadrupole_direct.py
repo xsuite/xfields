@@ -3,10 +3,11 @@ from scipy.constants import c, e, m_p
 
 import xtrack as xt
 import xfields as xf
+
 from xobjects.test_helpers import for_all_test_contexts
 
 @for_all_test_contexts
-def test_multiwake_transverse_dipole_coupling(test_context):
+def test_multiwake_transverse_quadrupole_direct(test_context):
     # Filling scheme
     n_slots = 100
     filling_scheme = np.array(np.floor(np.random.rand(n_slots)+0.1),dtype=int)
@@ -39,16 +40,18 @@ def test_multiwake_transverse_dipole_coupling(test_context):
 
     ioffset = np.argmin(np.abs(zeta_0))
     print('Initialising particles')
-    particles_0 = xt.Particles(_context=test_context,p0c=7E12,zeta=zeta_0)
+    particles_0 = xt.Particles(p0c=7E12,zeta=zeta_0,
+                        x = np.random.randn(len(zeta_0)),
+                        y = np.random.randn(len(zeta_0)))
     particles_0.init_pipeline('b0')
-    particles_0.x[ioffset] += 2.0
-    particles_0.y[ioffset] += 0.5
 
     zeta_1 = []
     for bunch_number in bunch_numbers_1:
         zeta_1.append(zeta_centers-filled_slots[bunch_number]*bunch_spacing)
     zeta_1 = np.hstack(zeta_1)
-    particles_1 = xt.Particles(_context=test_context,p0c=7E12,zeta=zeta_1)
+    particles_1 = xt.Particles(p0c=7E12,zeta=zeta_1,
+                        x = np.random.randn(len(zeta_1)),
+                        y = np.random.randn(len(zeta_1)))
     particles_1.init_pipeline('b1')
 
     print('Initialising wake')
@@ -56,7 +59,7 @@ def test_multiwake_transverse_dipole_coupling(test_context):
     circumference = n_slots * bunch_spacing
     wake_table_name = xf.general._pkg_root.joinpath('../test_data/HLLHC_wake.dat')
     wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y', 'quadrupole_x', 'quadrupole_y','dipole_xy','quadrupole_xy','dipole_yx','quadrupole_yx','constant_x','constant_y']
-    components = ['dipole_xy','dipole_yx']
+    components = ['quadrupole_x','quadrupole_y']
     wf_0 = xf.MultiWakefield.from_table(wake_table_name,wake_file_columns, use_components = components,
         zeta_range=zeta_range,
         num_slices=num_slices,  # per bunch
@@ -93,21 +96,53 @@ def test_multiwake_transverse_dipole_coupling(test_context):
     multitracker.track(num_turns=1)
     print('loading test data')
     scaling_constant = -particles_0.q0**2 * e**2 / (particles_0.p0c[0] * e)
-    wake_data = np.loadtxt(wake_table_name)
-    print('Testing XY')
-    wake_component = 'dipole_xy'
+    wake_data_raw = np.loadtxt(wake_table_name)
+    print('Computing quad wake for comparison')
+    all_zetas = np.hstack([particles_0.zeta,particles_1.zeta])
+    wake_component = 'quadrupole_x'
     iwake_component = wake_file_columns.index(wake_component)
-    interpolated_wake_0 = particles_0.y[ioffset]*np.interp(particles_0.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
-    interpolated_wake_1 = particles_0.y[ioffset]*np.interp(particles_1.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
-    norm = np.max(np.abs(interpolated_wake_0))
-    assert np.allclose(particles_0.px/norm,interpolated_wake_0/norm)
-    assert np.allclose(particles_1.px/norm,interpolated_wake_1/norm)
-    print('Testing YX')
-    wake_component = 'dipole_yx'
+    wake_time = -1E-9*np.flip(wake_data_raw[:,0])*c
+    wake_data = -1E15*scaling_constant*np.flip(wake_data_raw[:,iwake_component])
+    interpolated_wake_0 = np.zeros_like(particles_0.x)
+    for ipart in range(len(particles_0.x)):
+        zeta_wake = particles_0.zeta[ipart]-all_zetas
+        zeta_wake = zeta_wake[zeta_wake < 0]
+        interpolated_wake = np.interp(zeta_wake,wake_time,wake_data)
+        interpolated_wake_0[ipart] = np.sum(interpolated_wake)
+    interpolated_wake_1 = np.zeros_like(particles_1.x)
+    for ipart in range(len(particles_1.x)):
+        zeta_wake = particles_1.zeta[ipart]-all_zetas
+        zeta_wake = zeta_wake[zeta_wake < 0]
+        interpolated_wake = np.interp(zeta_wake,wake_time,wake_data)
+        interpolated_wake_1[ipart] = np.sum(interpolated_wake)
+    print('Testing quad x')
+    kicks_0 = particles_0.x*interpolated_wake_0
+    norm = np.max(np.abs(kicks_0))
+    kicks_0 /= norm
+    kicks_1 = particles_1.x*interpolated_wake_1 / norm
+    assert np.allclose(particles_0.px/norm,kicks_0)
+    assert np.allclose(particles_1.px/norm,kicks_1)
+    wake_component = 'quadrupole_y'
     iwake_component = wake_file_columns.index(wake_component)
-    interpolated_wake_0 = particles_0.x[ioffset]*np.interp(particles_0.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
-    interpolated_wake_1 = particles_0.x[ioffset]*np.interp(particles_1.zeta,-1E-9*np.flip(wake_data[:,0])*c,-1E15*scaling_constant*np.flip(wake_data[:,iwake_component]))
-    norm = np.max(np.abs(interpolated_wake_0))
-    assert np.allclose(particles_0.py/norm,interpolated_wake_0/norm)
-    assert np.allclose(particles_1.py/norm,interpolated_wake_1/norm)
+    wake_time = -1E-9*np.flip(wake_data_raw[:,0])*c
+    wake_data = -1E15*scaling_constant*np.flip(wake_data_raw[:,iwake_component])
+    interpolated_wake_0 = np.zeros_like(particles_0.x)
+    for ipart in range(len(particles_0.x)):
+        zeta_wake = particles_0.zeta[ipart]-all_zetas
+        zeta_wake = zeta_wake[zeta_wake < 0]
+        interpolated_wake = np.interp(zeta_wake,wake_time,wake_data)
+        interpolated_wake_0[ipart] = np.sum(interpolated_wake)
+    interpolated_wake_1 = np.zeros_like(particles_1.x)
+    for ipart in range(len(particles_1.x)):
+        zeta_wake = particles_1.zeta[ipart]-all_zetas
+        zeta_wake = zeta_wake[zeta_wake < 0]
+        interpolated_wake = np.interp(zeta_wake,wake_time,wake_data)
+        interpolated_wake_1[ipart] = np.sum(interpolated_wake)
+    print('Testing quad y')
+    kicks_0 = particles_0.y*interpolated_wake_0
+    norm = np.max(np.abs(kicks_0))
+    kicks_0 /= norm
+    kicks_1 = particles_1.y*interpolated_wake_1 / norm
+    assert np.allclose(particles_0.py/norm,kicks_0)
+    assert np.allclose(particles_1.py/norm,kicks_1)
 

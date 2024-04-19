@@ -104,6 +104,12 @@ class MultiWakefield:
         if 'time' not in wake_file_columns:
             raise ValueError("No wake_file_column with name 'time' has" +
                              " been specified. \n")
+                             
+        if use_components is not None:
+            for wake_component in use_components:
+                assert wake_component in valid_wake_components
+                assert wake_component in wake_file_columns
+                             
         itime = wake_file_columns.index('time')
         wake_distance = -1E-9 * wake_data[:,itime] * beta0 * clight
         wakefields = []
@@ -113,13 +119,14 @@ class MultiWakefield:
                 scale_kick = None
                 source_moments = ['num_particles']
                 if wake_component == 'longitudinal':
-                    source_moments.append('zeta')
                     kick = 'delta'
+                    conversion_factor = -1E12
                 else:
+                    conversion_factor = -1E15
                     tokens = wake_component.split('_')
                     coord_target = tokens[1][0]
                     if len(tokens[1]) == 2:
-                        coord_source = tokens[1][0]
+                        coord_source = tokens[1][1]
                     else:
                         coord_source = coord_target
                     kick = 'p'+coord_target
@@ -127,8 +134,7 @@ class MultiWakefield:
                         source_moments.append(coord_source)
                     elif tokens[0] == 'quadrupole':
                         scale_kick = coord_source
-                    
-                wake_strength = -1E15 * wake_data[:,iwake_component]
+                wake_strength = conversion_factor * wake_data[:,iwake_component]
                 wakefield = xf.Wakefield(
                     source_moments=source_moments,
                     kick=kick,
