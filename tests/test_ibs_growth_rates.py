@@ -216,7 +216,6 @@ def test_sps_ions_growth_rates(bunched):
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
-
 # ----- Test with vertical dispersion ----- #
 
 @pytest.mark.parametrize("bunched", [True, False])
