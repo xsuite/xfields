@@ -45,14 +45,14 @@ def _beam_intensity(particles: xt.Particles) -> float:
     """Get the beam intensity from the particles."""
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return nplike.sum(particles.weight[particles.state > 0])
+    return float(nplike.sum(particles.weight[particles.state > 0]))
 
 
 def _bunch_length(particles: xt.Particles) -> float:
     """Get the bunch length from the particles."""
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return nplike.std(particles.zeta[particles.state > 0])
+    return float(nplike.std(particles.zeta[particles.state > 0]))
 
 
 def _sigma_delta(particles: xt.Particles) -> float:
@@ -62,7 +62,7 @@ def _sigma_delta(particles: xt.Particles) -> float:
     """
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return nplike.std(particles.delta[particles.state > 0])
+    return float(nplike.std(particles.delta[particles.state > 0]))
 
 
 def _sigma_x(particles: xt.Particles) -> float:
@@ -72,7 +72,7 @@ def _sigma_x(particles: xt.Particles) -> float:
     """
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return nplike.std(particles.x[particles.state > 0])
+    return float(nplike.std(particles.x[particles.state > 0]))
 
 
 def _sigma_y(particles: xt.Particles) -> float:
@@ -82,7 +82,7 @@ def _sigma_y(particles: xt.Particles) -> float:
     """
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return nplike.std(particles.y[particles.state > 0])
+    return float(nplike.std(particles.y[particles.state > 0]))
 
 
 def _geom_epsx(particles: xt.Particles, betx: float, dx: float) -> float:
@@ -93,7 +93,7 @@ def _geom_epsx(particles: xt.Particles, betx: float, dx: float) -> float:
     # Context check is performed in the called functions
     sigma_x = _sigma_x(particles)
     sig_delta = _sigma_delta(particles)
-    return (sigma_x**2 - (dx * sig_delta) ** 2) / betx
+    return float((sigma_x**2 - (dx * sig_delta) ** 2) / betx)
 
 
 def _geom_epsy(particles: xt.Particles, bety: float, dy: float) -> float:
@@ -104,7 +104,7 @@ def _geom_epsy(particles: xt.Particles, bety: float, dy: float) -> float:
     # Context check is performed in the called functions
     sigma_y = _sigma_y(particles)
     sig_delta = _sigma_delta(particles)
-    return (sigma_y**2 - (dy * sig_delta) ** 2) / bety
+    return float((sigma_y**2 - (dy * sig_delta) ** 2) / bety)
 
 
 # ----- Private helperto check the validity of the context ----- #
