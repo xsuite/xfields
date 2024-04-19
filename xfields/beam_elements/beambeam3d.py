@@ -339,23 +339,23 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.partner_moments = self._buffer.context.nplike_lib.zeros(
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
 
-        if phi is None:
-            assert _sin_phi is not None and _cos_phi is not None and _tan_phi is not None, (
-                'phi must be specified if _sin_phi, _cos_phi, _tan_phi are not')
+        if phi is None and _sin_phi is not None:
             self._sin_phi = _sin_phi
             self._cos_phi = _cos_phi
             self._tan_phi = _tan_phi
         else:
+            if phi is None:
+                phi = 0
             self._sin_phi = np.sin(phi)
             self._cos_phi = np.cos(phi)
             self._tan_phi = np.tan(phi)
 
-        if alpha is None:
-            assert _sin_alpha is not None and _cos_alpha is not None, (
-                'alpha must be specified if _sin_alpha, _cos_alpha are not')
+        if alpha is None and _sin_alpha is not None:
             self._sin_alpha = _sin_alpha
             self._cos_alpha = _cos_alpha
         else:
+            if alpha is None:
+                alpha = 0
             self._sin_alpha = np.sin(alpha)
             self._cos_alpha = np.cos(alpha)
 
@@ -402,7 +402,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         self._init_luminosity(flag_luminosity)
 
-        assert other_beam_q0 is not None
+        if other_beam_q0 is None:
+            other_beam_q0 = 0
+
         self.other_beam_q0 = other_beam_q0
         self.scale_strength = scale_strength
 
@@ -452,7 +454,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
             slices_other_beam_sqrtSigma_11_beamstrahlung=n_slices,
             slices_other_beam_sqrtSigma_33_beamstrahlung=n_slices,
-            slices_other_beam_sqrtSigma_55_beamstrahlung=n_slices, 
+            slices_other_beam_sqrtSigma_55_beamstrahlung=n_slices,
             **kwargs
             )
 
