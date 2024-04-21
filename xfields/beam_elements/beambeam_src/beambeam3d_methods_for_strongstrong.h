@@ -31,6 +31,7 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
     const double shift_pzeta = BeamBeamBiGaussian3DData_get_ref_shift_pzeta(el)
                             + BeamBeamBiGaussian3DData_get_other_beam_shift_pzeta(el);
 
+
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
@@ -38,6 +39,18 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         double py = LocalParticle_get_py(part);
         double zeta = LocalParticle_get_zeta(part);
         double pzeta = LocalParticle_get_pzeta(part);
+
+
+        // crabwaist
+        double acw;
+        const int flag_crabwaist = BeamBeamBiGaussian3DData_get_flag_crabwaist(el);
+        if (flag_crabwaist){
+          double const k2_factor = BeamBeamBiGaussian3DData_get_k2_factor(el);
+          double tan_2phi = 2.0*tan_phi / (1.0 - tan_phi*tan_phi);  // trig id
+          acw = -k2_factor/tan_2phi;
+          px += 0.5 * acw * py*py;
+          y  -= acw * x*py;
+        }
 
         // Change reference frame
         change_ref_frame_coordinates(
@@ -54,7 +67,6 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         LocalParticle_update_pzeta(part, pzeta);
 
     //end_per_particle_block
-
 }
 
 /*gpufun*/
@@ -106,6 +118,17 @@ void BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_parti
             post_subtract_zeta, post_subtract_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
 
+        // de-crabwaist here 
+        double acw;
+        const int flag_crabwaist = BeamBeamBiGaussian3DData_get_flag_crabwaist(el);
+        if (flag_crabwaist){
+          double const k2_factor = BeamBeamBiGaussian3DData_get_k2_factor(el);
+          double tan_2phi = 2.0*tan_phi / (1.0 - tan_phi*tan_phi);  // trig id
+          acw = -k2_factor/tan_2phi;
+          px -= 0.5 * acw * py*py;
+          y  += acw * x*py;
+        }
+
         // Store
         LocalParticle_set_x(part, x);
         LocalParticle_set_px(part, px);
@@ -124,6 +147,9 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 LocalParticle* part0,
                 /*gpuglmem*/ int64_t* i_slice_for_particles){
 
+
+
+
     //start_per_particle_block (part0->part)
 
         const int64_t i_slice = i_slice_for_particles[part->ipart];
@@ -140,6 +166,10 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
 
             const double q0 = LocalParticle_get_q0(part);
             const double p0c = LocalParticle_get_p0c(part); // eV
+
+
+
+
             synchrobeam_kick(
                 el, part,
                 i_slice, q0, p0c,
@@ -160,6 +190,7 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
         }
 
     //end_per_particle_block
+
 
 }
 
