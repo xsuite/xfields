@@ -9,7 +9,7 @@ import numpy as np
 import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
-from xfields.ibs._formulary import _beam_intensity, _bunch_length, _geom_epsx, _geom_epsy, _sigma_delta
+from xfields.ibs._formulary import _beam_intensity, _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
 
 LOGGER = getLogger(__name__)
 
@@ -80,8 +80,8 @@ def get_intrabeam_scattering_growth_rates(
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
     if isinstance(particles, xt.Particles):
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
-        gemitt_x = _geom_epsx(particles, twiss.betx[0], twiss.dx[0])
-        gemitt_y = _geom_epsy(particles, twiss.bety[0], twiss.dy[0])
+        gemitt_x = _gemitt_x(particles, twiss.betx[0], twiss.dx[0])
+        gemitt_y = _gemitt_y(particles, twiss.bety[0], twiss.dy[0])
         sigma_delta = _sigma_delta(particles)
         bunch_length = _bunch_length(particles)
         total_beam_intensity = _beam_intensity(particles)
@@ -118,7 +118,7 @@ def get_intrabeam_scattering_growth_rates(
 
 # ----- API for Kick-Based IBS -----#
 
-
+# TODO: Favor the user creating basic kick element and inserting (see _best.py)
 def install_intrabeam_scattering_kick(
     line: xt.Line,
     formalism: str,  # let's give an enum for the hint or something?
@@ -139,11 +139,12 @@ def install_intrabeam_scattering_kick(
     # get to the element only? Would need to change the element logic
     raise NotImplementedError("Not yet implemented")
 
-
+# TODO: see _best.py for things to do in here
 def configure_intrabeam_scattering(
     line: xt.Line,
-    particles: xt.Particles,
+    element_name: str,
     recompute_rates_every_nturns: int,
+    formalism: str = None,
 ):
     """Configuration step for IBS parameters (like for beambeam for instance)
     where we do the twiss etc"""

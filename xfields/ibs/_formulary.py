@@ -85,7 +85,7 @@ def _sigma_y(particles: xt.Particles) -> float:
     return float(nplike.std(particles.y[particles.state > 0]))
 
 
-def _geom_epsx(particles: xt.Particles, betx: float, dx: float) -> float:
+def _gemitt_x(particles: xt.Particles, betx: float, dx: float) -> float:
     """
     Horizontal geometric emittance at a location in the machine,
     for the beta and dispersion functions at this location.
@@ -96,7 +96,7 @@ def _geom_epsx(particles: xt.Particles, betx: float, dx: float) -> float:
     return float((sigma_x**2 - (dx * sig_delta) ** 2) / betx)
 
 
-def _geom_epsy(particles: xt.Particles, bety: float, dy: float) -> float:
+def _gemitt_y(particles: xt.Particles, bety: float, dy: float) -> float:
     """
     Vertical geometric emittance at a location in the machine,
     for the beta and dispersion functions at this location.

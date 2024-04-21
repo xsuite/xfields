@@ -862,9 +862,9 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Parameters
         ----------
-        geom_epsx : float
+        gemitt_x : float
             Horizontal geometric emittance in [m].
-        geom_epsy : float
+        gemitt_y : float
             Vertical geometric emittance in [m].
         sigma_delta : float
             The momentum spread.
