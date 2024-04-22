@@ -66,6 +66,7 @@ def get_intrabeam_scattering_growth_rates(
         The particles to circulate in the line. If provided the emittances,
         momentum spread and bunch length will be computed from the particles.
         Otherwise explicit values must be provided (see above parameters).
+        Currently pending a new xtrack release, will come in the future.
     **kwargs : dict
         Keyword arguments are passed to the growth rates computation method of
         the chosen IBS formalism implementation. See the formalism classes in
