@@ -56,8 +56,7 @@ def test_clic_dr_growth_rates(bunched):
     npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
     # -----------------------------------------------------
     # Get growth rates with Nagaitsev formalism
-    nag_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    nag_rates = tw.get_ibs_growth_rates(
         formalism="nagaitsev",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -68,8 +67,7 @@ def test_clic_dr_growth_rates(bunched):
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
-    bm_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    bm_rates = tw.get_ibs_growth_rates(
         formalism="Bjorken-Mtingwa",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -113,8 +111,7 @@ def test_sps_injection_protons_growth_rates(bunched):
     npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
     # -----------------------------------------------------
     # Get growth rates with Nagaitsev formalism
-    nag_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    nag_rates = tw.get_ibs_growth_rates(
         formalism="nagaitsev",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -125,8 +122,7 @@ def test_sps_injection_protons_growth_rates(bunched):
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
-    bm_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    bm_rates = tw.get_ibs_growth_rates(
         formalism="Bjorken-Mtingwa",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -182,8 +178,7 @@ def test_sps_ions_growth_rates(bunched):
     npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
     # -----------------------------------------------------
     # Get growth rates with Nagaitsev formalism
-    nag_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    nag_rates = tw.get_ibs_growth_rates(
         formalism="nagaitsev",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -194,8 +189,7 @@ def test_sps_ions_growth_rates(bunched):
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
-    bm_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    bm_rates = tw.get_ibs_growth_rates(
         formalism="Bjorken-Mtingwa",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -244,8 +238,7 @@ def test_hllhc14_growth_rates(bunched):
     npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
     # -----------------------------------------------------
     # Get growth rates with Nagaitsev formalism
-    nag_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    nag_rates = tw.get_ibs_growth_rates(
         formalism="nagaitsev",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
@@ -256,8 +249,7 @@ def test_hllhc14_growth_rates(bunched):
     )
     # -----------------------------------------------------
     # Get growth rates with Bjorken-Mtingwa formalism
-    bm_rates = get_intrabeam_scattering_growth_rates(
-        twiss=tw,
+    bm_rates = tw.get_ibs_growth_rates(
         formalism="Bjorken-Mtingwa",
         total_beam_intensity=npart,
         gemitt_x=gemitt_x,
