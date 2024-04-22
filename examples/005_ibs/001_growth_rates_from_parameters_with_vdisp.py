@@ -13,7 +13,8 @@ from xfields.ibs import get_intrabeam_scattering_growth_rates
 # Load xt.Line from file #
 ##########################
 
-fname_line_particles = "../../../xtrack/test_data/lhc_no_bb/line_and_particle.json"
+fname_line_particles = "../../../xtrack/test_data/lhc_no_bb/" \
+                       "line_and_particle.json"
 
 with open(fname_line_particles, "r") as fid:
     input_data = json.load(fid)

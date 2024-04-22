@@ -12,7 +12,8 @@ from xfields.ibs import get_intrabeam_scattering_growth_rates
 ##########################
 
 # This is SPS line with proton as particle ref
-fname_line_particles = "../../../xtrack/test_data/sps_w_spacecharge/line_no_spacecharge_and_particle.json"
+fname_line_particles = "../../../xtrack/test_data/sps_w_spacecharge/"\
+                       "line_no_spacecharge_and_particle.json"
 line = xt.Line.from_json(fname_line_particles)
 tw = line.twiss(method="4d")
 
