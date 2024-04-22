@@ -79,6 +79,8 @@ def get_intrabeam_scattering_growth_rates(
     # ----------------------------------------------------------------------------------------------
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
     if isinstance(particles, xt.Particles):
+        # TODO: wait for production-ready functionality from xtrack to handle this
+        raise NotImplementedError("Not yet implemented")
         LOGGER.info("Particles provided, will determine emittances, etc. from them")
         gemitt_x = _gemitt_x(particles, twiss.betx[0], twiss.dx[0])
         gemitt_y = _gemitt_y(particles, twiss.bety[0], twiss.dy[0])
