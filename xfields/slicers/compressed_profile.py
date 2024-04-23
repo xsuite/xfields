@@ -8,6 +8,7 @@ class CompressedProfile(xt.BeamElement):
     _xofields = {
         '_N_aux': xo.Int64,
         '_N_S': xo.Int64,
+        'num_turns': xo.Int64,
     }
 
     _extra_c_sources = [xf.general._pkg_root.joinpath('headers/compressed_profile.h')]

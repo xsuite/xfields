@@ -19,6 +19,7 @@ void CompressedProfile_interp_result(
 
     int64_t const _N_S = CompressedProfileData_get__N_S(el);
     int64_t const _N_aux = CompressedProfileData_get__N_aux(el);
+    int64_t const num_turns = CompressedProfileData_get_num_turns(el);
 
     //start_per_particle_block (part0->part)
 
@@ -28,11 +29,12 @@ void CompressedProfile_interp_result(
 
         const int64_t i_start_in_moments_data = (_N_S - i_bunch - 1) * _N_aux;
 
-        const double rr = data[
-            data_shape_2 * data_shape_1 * (data_shape_0 - 1) +
-            // data.shape[0] * (i_turn) # i_turn is zero for the result
-            i_start_in_moments_data + i_slice];
-
+        double rr = 0;
+        for(int i_turn=0; i_turn<num_turns; i_turn++){
+            rr = rr + data[
+                i_start_in_moments_data + i_slice +
+                data_shape_2 * (i_turn + data_shape_1*(data_shape_0-1))];
+        }
         out[ipart] = rr;
 
     //end_per_particle_block

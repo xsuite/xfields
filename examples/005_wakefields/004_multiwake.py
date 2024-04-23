@@ -93,7 +93,7 @@ L = 100000.
 sigma = 1. / 7.88e-10
 
 # wakes = CircularResistiveWall(b, L, sigma, b/c, beta_beam=machine.beta)
-wakes = PyHTCircularResonator(R_shunt=135e6, frequency=1.97e9*0.6, Q=31000/100, n_turns_wake=n_turns_wake)
+wakes = PyHTCircularResonator(R_shunt=135e6, frequency=1.97e9*0.6, Q=31000, n_turns_wake=n_turns_wake)
 
 R_s = wakes.R_shunt
 Q = wakes.Q
@@ -160,13 +160,20 @@ print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f}
 
 n_bunches_wake = 120 # Can be longer than filling scheme
 
-from wakefield import Wakefield, TempResonatorFunction, MultiWakefield
+from xfields import Wakefield, TempResonatorFunction, MultiWakefield
+
+num_slots = n_bunches
+filling_scheme = np.ones(num_slots, dtype=np.int64)
+bunch_numbers = np.arange(num_slots, dtype=np.int64)
+
 
 wfx = Wakefield(
     source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
+    filling_scheme=filling_scheme,
+    bunch_numbers=bunch_numbers,
 )
 
 wfy = Wakefield(
@@ -174,6 +181,8 @@ wfy = Wakefield(
     kick='py',
     scale_kick=None,
     function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
+    filling_scheme=filling_scheme,
+    bunch_numbers=bunch_numbers,
 )
 
 wf = MultiWakefield(
@@ -181,8 +190,9 @@ wf = MultiWakefield(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
     num_slices=n_slices, # Per bunch, this is N_1 in the paper
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
-    num_bunches=n_bunches_wake, # This is N_S
     num_turns=n_turns_wake,
+    filling_scheme=filling_scheme,
+    bunch_numbers=bunch_numbers,
     circumference=circumference,
     log_moments=['px'],
     _flatten=flatten
@@ -191,7 +201,8 @@ wf = MultiWakefield(
 slicer_after_wf = xf.UniformBinSlicer(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,
-    i_bunch_0=0, num_bunches=n_bunches_wake,
+    filling_scheme=filling_scheme,
+    bunch_numbers=bunch_numbers,
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
     moments=['x', 'px'])
 

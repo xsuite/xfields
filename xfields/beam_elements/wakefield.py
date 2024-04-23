@@ -47,6 +47,7 @@ class MultiWakefield:
                     bunch_numbers=bunch_numbers,
                     circumference=circumference,
                     log_moments=log_moments,
+                    num_turns=num_turns,
                     _flatten=_flatten)
             all_slicer_moments += wf.slicer.moments
 
@@ -179,6 +180,7 @@ class MultiWakefield:
     def track(self, particles):
         _slice_result = None
         if self.pipeline_manager is None:
+            other_bunches_slicers = None
             self._slice_and_store(particles)
             other_bunches_slicers = None
         else:
@@ -623,6 +625,7 @@ class TempResonatorFunction:
                * np.exp(alpha_t * z / clight)
                 * np.sin(omega_bar * z / clight))# Wake definition
         return res
+
 
 def _build_z_wake(z_a, z_b, num_turns, N_aux, M_aux, circumference, dz,
                  AA, BB, CC, DD, z_P):
