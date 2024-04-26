@@ -40,18 +40,6 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         double zeta = LocalParticle_get_zeta(part);
         double pzeta = LocalParticle_get_pzeta(part);
 
-
-        // crabwaist
-        double acw;
-        const int flag_crabwaist = BeamBeamBiGaussian3DData_get_flag_crabwaist(el);
-        if (flag_crabwaist){
-          double const k2_factor = BeamBeamBiGaussian3DData_get_k2_factor(el);
-          double tan_2phi = 2.0*tan_phi / (1.0 - tan_phi*tan_phi);  // trig id
-          acw = -k2_factor/tan_2phi;
-          px += 0.5 * acw * py*py;
-          y  -= acw * x*py;
-        }
-
         // Change reference frame
         change_ref_frame_coordinates(
             &x, &px, &y, &py, &zeta, &pzeta,
@@ -117,17 +105,6 @@ void BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_parti
             post_subtract_y, post_subtract_py,
             post_subtract_zeta, post_subtract_pzeta,
             sin_phi, cos_phi, tan_phi, sin_alpha, cos_alpha);
-
-        // de-crabwaist here 
-        double acw;
-        const int flag_crabwaist = BeamBeamBiGaussian3DData_get_flag_crabwaist(el);
-        if (flag_crabwaist){
-          double const k2_factor = BeamBeamBiGaussian3DData_get_k2_factor(el);
-          double tan_2phi = 2.0*tan_phi / (1.0 - tan_phi*tan_phi);  // trig id
-          acw = -k2_factor/tan_2phi;
-          px -= 0.5 * acw * py*py;
-          y  += acw * x*py;
-        }
 
         // Store
         LocalParticle_set_x(part, x);
