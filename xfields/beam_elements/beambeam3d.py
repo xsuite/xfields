@@ -138,6 +138,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
          #lumi
          'flag_luminosity': xo.Int64,
+
     }
 
     _internal_record_class = BeamBeamBiGaussian3DRecord
