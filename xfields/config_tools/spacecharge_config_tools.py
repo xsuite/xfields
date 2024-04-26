@@ -20,7 +20,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
                                nemitt_x=None, nemitt_y=None, sigma_z=None,
                                num_spacecharge_interactions=None,
                                tol_spacecharge_position=None,
-                               s_spacecharge=None):
+                               s_spacecharge=None,
+                               delta_rms=None):
 
     '''
     Install spacecharge elements (frozen modeling) in a xtrack.Line object.
@@ -45,6 +46,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
         Tolerance for the spacecharge position.
     s_spacecharge : np.ndarray (optional)
         Position of the spacecharge elements.
+    delta_rms : float
+        Matched momentum spread. If None, it is computed from a matched gaussian bunch.
 
     Returns
     -------
@@ -69,12 +72,13 @@ def install_spacecharge_frozen(line=None, _buffer=None,
     line_no_sc = line.copy(_context=xo.ContextCpu())
     line_no_sc.build_tracker()
 
-    # Make a matched bunch just to get the matched momentum spread
-    bunch = xp.generate_matched_gaussian_bunch(
-             num_particles=int(2e6), total_intensity_particles=1.,
-             nemitt_x=nemitt_x, nemitt_y=nemitt_y, sigma_z=sigma_z,
-             particle_ref=particle_ref, line=line_no_sc)
-    delta_rms = np.std(bunch.delta)
+    if delta_rms is None:
+        # Make a matched bunch just to get the matched momentum spread
+        bunch = xp.generate_matched_gaussian_bunch(
+                num_particles=int(2e6), total_intensity_particles=1.,
+                nemitt_x=nemitt_x, nemitt_y=nemitt_y, sigma_z=sigma_z,
+                particle_ref=particle_ref, line=line_no_sc)
+        delta_rms = np.std(bunch.delta)
 
     # Generate spacecharge positions
     if s_spacecharge is None:
@@ -115,8 +119,9 @@ def install_spacecharge_frozen(line=None, _buffer=None,
     # Twiss at spacecharge
     line_sc_off = line.copy(_context=xo.ContextCpu()).filter_elements(
                                            exclude_types_starting_with='SpaceCh')
+
     line_sc_off.build_tracker()
-    tw_at_sc = line_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names)
+    tw_at_sc = line_sc_off.twiss(particle_ref=particle_ref, at_elements=sc_names, method='4d')
 
     # Configure lenses
     for ii, sc in enumerate(sc_elements):
@@ -198,6 +203,7 @@ class PICCollection:
                  n_lims_y,
                  solver='FFTSolver2p5D',
                  apply_z_kick=False,
+                 gamma0 = None,
                  _context=None,
                  _buffer=None,
                      ):
@@ -212,6 +218,7 @@ class PICCollection:
         self.z_range = z_range
         self.solver = solver
         self.apply_z_kick = apply_z_kick
+        self.gamma0 = gamma0
 
         self.x_lims = np.linspace(x_lim_min, x_lim_max, n_lims_x)
         self.y_lims = np.linspace(y_lim_min, y_lim_max, n_lims_y)
@@ -244,6 +251,7 @@ class PICCollection:
                 z_range=self.z_range,
                 nx=self.nx_grid, ny=self.ny_grid, nz=self.nz_grid,
                 solver=self.solver,
+                gamma0=self.gamma0,
                 fftplan=self._fftplan)
             new_pic._buffer.grow(10*1024**2) # Add 10 MB for sc copies
             if self._fftplan is None:
@@ -326,7 +334,8 @@ def replace_spacecharge_with_PIC(
         x_lim_min=x_lim_min, x_lim_max=x_lim_max, n_lims_x=n_lims_x,
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,
         z_range=z_range,
-        solver=solver)
+        solver=solver,
+        gamma0=line.particle_ref.gamma0[0])
 
     all_pics = []
     for nn, ee in zip(name_sc_elems, all_sc_elems):
