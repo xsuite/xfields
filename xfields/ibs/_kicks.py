@@ -128,3 +128,54 @@ class IBSKickCoefficients(xo.HybridClass):
     def as_tuple(self) -> Tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Kx), float(self.Ky), float(self.Kz)
+
+
+# ----- Useful Functions ----- #
+
+
+# TODO: someday replace this with what Gianni is working on in xfields.longitudinal_profiles
+def line_density(particles: xt.Particles, num_slices: int) -> ArrayLike:
+    """
+    Returns the longitudinal "line density" of the provided `xtrack.Particles`.
+    It is used as a weighing factor for the application of IBS kicks, so that
+    particles in the denser parts of the bunch will receive a larger kick, and
+    vice versa.
+
+    Parameters
+    ----------
+    particles : xtrack.Particles
+        The `xtrack.Particles` object to compute the line density for.
+    num_slices : int
+        The number of slices to use for the computation of the bins.
+
+    Returns
+    -------
+    ArrayLike
+        An array with the weight value for each particle, to be used
+        as a weight in the kicks application. This array is on the
+        context device of the particles.
+    """
+    # ----------------------------------------------------------------------------------------------
+    # Get the nplike_lib from the particles' context, to compute on the context device
+    nplike = particles._context.nplike_lib
+    # ----------------------------------------------------------------------------------------------
+    # Determine properties from longitudinal particles distribution: cuts, slice width, bunch length
+    LOGGER.debug("Determining longitudinal particles distribution properties")
+    zeta: ArrayLike = particles.zeta[particles.state > 0]  # careful to only consider active particles
+    z_cut_head: float = nplike.max(zeta)  # z cut at front of bunch
+    z_cut_tail: float = nplike.min(zeta)  # z cut at back of bunch
+    slice_width: float = (z_cut_head - z_cut_tail) / num_slices  # slice width
+    # ----------------------------------------------------------------------------------------------
+    # Determine bin edges and bin centers for the distribution
+    LOGGER.debug("Determining bin edges and bin centers for the distribution")
+    bin_edges: ArrayLike = nplike.linspace(
+        z_cut_tail - 1e-7 * slice_width,
+        z_cut_head + 1e-7 * slice_width,
+        num=num_slices + 1,
+        dtype=np.float64,
+    )
+    bin_centers: ArrayLike = (bin_edges[:-1] + bin_edges[1:]) / 2.0
+    # ----------------------------------------------------------------------------------------------
+    # Compute histogram on longitudinal distribution then compute and return line density
+    counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)  # density to normalize
+    return nplike.interp(zeta, bin_centers, counts_normed)
