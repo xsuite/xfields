@@ -234,4 +234,30 @@ class IBSSimpleKick(IBSKick):
         The computed kick coefficients. This self-updates when they
         are computed with the `.compute_kick_coefficients` method.
     """
-    pass
+
+    def __init__(self, formalism: str, num_slices: int) -> None:
+        """
+        Initialize the Simple IBS kick element. It is off
+        by default and will have to be configured (see the
+        line.configure_intrabeam_scattering method).
+
+        Parameters
+        ----------
+        formalism : str
+            Which formalism to use for the computation of the growth
+            rates. Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also
+            accepts ``B&M``), case-insensitively.
+        num_slices : int
+            The number of slices used for the computation of
+            the bunch's longitudinal line density.
+        """
+        assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
+        self.num_slices = num_slices
+        self.formalism = formalism
+        self.kick_coefficients: IBSKickCoefficients = None
+        # The following are needed but start unset. They are set
+        # when calling line.configure_intrabeam_scattering()
+        self.update_every: int = None
+        self._name: str = None
+        self._twiss: xt.TwissTable = None
+        self._scale_strength: float = 0  # by default element does not "track"
