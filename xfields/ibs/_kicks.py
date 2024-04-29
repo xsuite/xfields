@@ -457,4 +457,25 @@ class IBSKineticKick(IBSKick):
         This attribute self-updates when they are computed with the
         `.compute_kinetic_coefficients` method.
     """
-    pass
+
+    def __init__(self, num_slices: int) -> None:
+        """
+        Initialize the Simple IBS kick element. It is off
+        by default and will have to be configured (see the
+        line.configure_intrabeam_scattering method).
+
+        Parameters
+        ----------
+        num_slices : int
+            The number of slices used for the computation of
+            the bunch's longitudinal line density.
+        """
+        self.num_slices = num_slices
+        self.diffusion_coefficients: DiffusionCoefficients = None
+        self.friction_coefficients: FrictionCoefficients = None
+        # The following are needed but start unset. They are set
+        # when calling line.configure_intrabeam_scattering()
+        self.update_every: int = None
+        self._name: str = None
+        self._twiss: xt.TwissTable = None
+        self._scale_strength: float = 0  # by default element does not "track"
