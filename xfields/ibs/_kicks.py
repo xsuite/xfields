@@ -261,3 +261,26 @@ class IBSSimpleKick(IBSKick):
         self._name: str = None
         self._twiss: xt.TwissTable = None
         self._scale_strength: float = 0  # by default element does not "track"
+
+    def _coefficients_need_recompute(self, particles: xt.Particles) -> bool:
+        """
+        Called to determine if the kick coefficients need to be recomputed before
+        applying kicks. This sets an internal flag. Coefficients need recomputing
+        if they are `None` or if the current turn is a multiple of the frequency
+        at which to recompute them.
+
+        Parameters
+        ----------
+        particles : xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+
+        Returns
+        -------
+        bool
+            Whether the coefficients need to be recomputed.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Check coefficients existence and if current turn is a multiple of the frequency to recompute
+        if self.kick_coefficients is None or _current_turn(particles) % self.update_every == 0:
+            return True
+        return False
