@@ -16,7 +16,7 @@ class TransverseDamper:
         num_bunches (float): the number of bunches in the beam
         filling_scheme (np.ndarray): an array of zeros and ones representing
             the filling scheme
-        filling_slots (np.ndarray): an array indicating which slot each bunch
+        filled_slots (np.ndarray): an array indicating which slot each bunch
             occupies
         zeta_range (tuple): the range of zetas covered by the underlying slicer
         num_slices (int): the number of slices used by the underlying slicer,
@@ -99,4 +99,3 @@ class TransverseDamper:
 
             getattr(particles, moment)[:] -= (self.gains[moment] *
                                               interpolated_result)
-

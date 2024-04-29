@@ -9,15 +9,15 @@ import xtrack as xt
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
 COORDS = ['x', 'px', 'y', 'py', 'zeta', 'delta']
-SECOND_MOMENTS={}
-for cc1 in COORDS:
-    for cc2 in COORDS:
-        if cc1 + '_' + cc2 in SECOND_MOMENTS or cc2 + '_' + cc1 in SECOND_MOMENTS:
+SECOND_MOMENTS = {}
+for c1 in COORDS:
+    for c2 in COORDS:
+        if c1 + '_' + c2 in SECOND_MOMENTS or c2 + '_' + c1 in SECOND_MOMENTS:
             continue
-        SECOND_MOMENTS[cc1 + '_' + cc2] = (cc1, cc2)
+        SECOND_MOMENTS[c1 + '_' + c2] = (c1, c2)
 
 _xof = {
-     'zeta_slice_centers': xo.Float64[:],
+    'zeta_slice_centers': xo.Float64[:],
     'z_min_edge': xo.Float64,
     'num_slices': xo.Int64,
     'dzeta': xo.Float64,
@@ -27,14 +27,14 @@ _xof = {
     'bunch_spacing_zeta': xo.Float64,
     'num_particles': xo.Float64[:],
 }
-for cc in COORDS:
-    _xof['sum_'+cc] = xo.Float64[:]
-for ss in SECOND_MOMENTS:
-    _xof['sum_'+ss] = xo.Float64[:]
+for coordinate in COORDS:
+    _xof['sum_' + coordinate] = xo.Float64[:]
+for second_moment in SECOND_MOMENTS:
+    _xof['sum_' + second_moment] = xo.Float64[:]
 
-short_second_mom_names={}
-for ss in SECOND_MOMENTS:
-    short_second_mom_names[ss.replace('_','')] = ss
+short_second_mom_names = {}
+for second_moment in SECOND_MOMENTS:
+    short_second_mom_names[second_moment.replace('_', '')] = second_moment
 # Gives {'xx': 'x_x', 'xpx': 'x_px', ...}
 
 _rnm = {}
@@ -42,7 +42,37 @@ _rnm = {}
 for kk in _xof.keys():
     _rnm[kk] = '_' + kk
 
+
 class UniformBinSlicer(xt.BeamElement):
+    """
+    A slicer each with uniform bins.
+
+    Parameters
+    ----------.
+    zeta_range : Tuple
+        Zeta range for each bunch.
+    num_slices : int
+        Number of slices per bunch.
+    dzeta: float
+        Width of each bin in meters
+    zeta_slice_edges: np.ndarray
+        z position of the slice edges
+    num_bunches:
+        Number of bunches
+    filling_scheme: np.ndarray
+        List of zeros and ones representing the filling scheme. The length
+        of the array is equal to the number of slots in the machine and each
+        element of the array holds a one if the slot is filled or a zero
+        otherwise.
+    bunch_numbers: np.ndarray
+        List of the bunches indicating which slots from the filling scheme are
+        used (not all the bunches are used when using multi-processing)
+    bunch_spacing_zeta : float
+        Bunch spacing in meters.
+    moments: str or List
+        Moments considered in the slicing (if 'all' is specified all moments
+        are considered)
+    """
 
     _xofields = _xof
     _rename = _rnm
@@ -73,8 +103,9 @@ class UniformBinSlicer(xt.BeamElement):
                 ]),
         }
 
-    def __init__(self, zeta_range=None, num_slices=None, dzeta=None, zeta_slice_edges=None,
-                 num_bunches=None,filling_scheme=None,bunch_numbers=None, bunch_spacing_zeta=None,
+    def __init__(self, zeta_range=None, num_slices=None, dzeta=None,
+                 zeta_slice_edges=None, num_bunches=None, filling_scheme=None,
+                 bunch_numbers=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
         self._slice_kernel = self._slice_kernel_all
@@ -86,16 +117,19 @@ class UniformBinSlicer(xt.BeamElement):
         num_edges = None
         if num_slices is not None:
             num_edges = num_slices + 1
-        _zeta_slice_edges = _configure_grid('zeta', zeta_slice_edges, dzeta, zeta_range, num_edges)
-        _zeta_slice_centers = _zeta_slice_edges[:-1] + (_zeta_slice_edges[1]-_zeta_slice_edges[0])/2
+        _zeta_slice_edges = _configure_grid('zeta', zeta_slice_edges, dzeta,
+                                            zeta_range, num_edges)
+        _zeta_slice_centers = _zeta_slice_edges[:-1] + (_zeta_slice_edges[1] -
+                                                        _zeta_slice_edges[0])/2
 
         if filling_scheme is None and bunch_numbers is None:
             if num_bunches is None:
-                    num_bunches = 1
-            filled_slots = np.arange(num_bunches,dtype=int)
-            bunch_numbers = np.arange(num_bunches,dtype=int)
+                num_bunches = 1
+            filled_slots = np.arange(num_bunches, dtype=int)
+            bunch_numbers = np.arange(num_bunches, dtype=int)
         else:
-            assert num_bunches is None and filling_scheme is not None and bunch_numbers is not None
+            assert (num_bunches is None and filling_scheme is not None and
+                    bunch_numbers is not None)
             filled_slots = filling_scheme.nonzero()[0]
             num_bunches = len(bunch_numbers)
 
@@ -105,7 +139,7 @@ class UniformBinSlicer(xt.BeamElement):
         if moments == 'all':
             selected_moments = all_moments
         else:
-            assert isinstance (moments, (list, tuple))
+            assert isinstance(moments, (list, tuple))
             selected_moments = []
             for mm in moments:
                 if mm in COORDS:
@@ -126,18 +160,23 @@ class UniformBinSlicer(xt.BeamElement):
         allocated_sizes = {}
         for mm in all_moments:
             if mm in selected_moments:
-                allocated_sizes['sum_' + mm] = (num_bunches or 1) * len(_zeta_slice_centers)
+
+                allocated_sizes['sum_' + mm] = ((num_bunches or 1) *
+                                                len(_zeta_slice_centers))
             else:
                 allocated_sizes['sum_' + mm] = 0
 
-        self.xoinitialize(zeta_slice_centers=_zeta_slice_centers,
-                          z_min_edge=_zeta_slice_edges[0], num_slices=len(_zeta_slice_centers),
-                          dzeta=_zeta_slice_edges[1] - _zeta_slice_edges[0],
-                          num_bunches=num_bunches,filled_slots=filled_slots, bunch_numbers=bunch_numbers,
-                          bunch_spacing_zeta=bunch_spacing_zeta,
-                          num_particles=(num_bunches or 1) * len(_zeta_slice_centers),
-                          **allocated_sizes, **kwargs)
-
+        self.xoinitialize(
+            zeta_slice_centers=_zeta_slice_centers,
+            z_min_edge=_zeta_slice_edges[0],
+            num_slices=len(_zeta_slice_centers),
+            dzeta=_zeta_slice_edges[1] - _zeta_slice_edges[0],
+            num_bunches=num_bunches, filled_slots=filled_slots,
+            bunch_numbers=bunch_numbers,
+            bunch_spacing_zeta=bunch_spacing_zeta,
+            num_particles=(num_bunches or 1) * len(_zeta_slice_centers),
+            **allocated_sizes, **kwargs
+        )
 
     def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
 
@@ -147,27 +186,29 @@ class UniformBinSlicer(xt.BeamElement):
             use_bunch_index_array = 1
         else:
             use_bunch_index_array = 0
-            i_bunch_particles = particles.particle_id[:1] # Dummy
+            i_bunch_particles = particles.particle_id[:1]  # Dummy
         if i_slice_particles is not None:
             use_slice_index_array = 1
         else:
             use_slice_index_array = 0
-            i_slice_particles = particles.particle_id[:1] # Dummy
+            i_slice_particles = particles.particle_id[:1]  # Dummy
 
-        self._slice_kernel(particles=particles,
-                    use_bunch_index_array=use_bunch_index_array,
-                    use_slice_index_array=use_slice_index_array,
-                    i_slice_particles=i_slice_particles,
-                    i_bunch_particles=i_bunch_particles)
+        self._slice_kernel(
+            particles=particles,
+            use_bunch_index_array=use_bunch_index_array,
+            use_slice_index_array=use_slice_index_array,
+            i_slice_particles=i_slice_particles,
+            i_bunch_particles=i_bunch_particles
+        )
 
     def track(self, particles):
         self.slice(particles)
 
     def clear(self):
-        for cc in COORDS:
-            getattr(self, '_sum_' + cc)[:] = 0
-        for ss in SECOND_MOMENTS:
-            getattr(self, '_sum_' + ss)[:] = 0
+        for coord in COORDS:
+            getattr(self, '_sum_' + coord)[:] = 0
+        for sec_mom in SECOND_MOMENTS:
+            getattr(self, '_sum_' + sec_mom)[:] = 0
         self.num_particles[:] = 0
 
     @property
@@ -179,8 +220,9 @@ class UniformBinSlicer(xt.BeamElement):
             return self._zeta_slice_centers
         else:
             out = np.zeros((self.num_bunches, self.num_slices))
-            for bunch_number in self.bunch_numbers:
-                out[bunch_number, :] = (self._zeta_slice_centers - self._filled_slots[bunch_number] * self.bunch_spacing_zeta)
+            for bunch_num in self.bunch_numbers:
+                z_offs = self._filled_slots[bunch_num] * self.bunch_spacing_zeta
+                out[bunch_num, :] = (self._zeta_slice_centers - z_offs)
             return out
 
     @property
@@ -231,12 +273,12 @@ class UniformBinSlicer(xt.BeamElement):
         List of moments that are being recorded
         """
         out = []
-        for cc in COORDS:
-            if len(getattr(self._xobject, 'sum_' + cc)) > 0:
-                out.append(cc)
-        for ss in SECOND_MOMENTS:
-            if len(getattr(self._xobject, 'sum_' + ss)) > 0:
-                out.append(ss)
+        for mom_name in COORDS:
+            if len(getattr(self._xobject, 'sum_' + mom_name)) > 0:
+                out.append(mom_name)
+        for sec_mom in SECOND_MOMENTS:
+            if len(getattr(self._xobject, 'sum_' + sec_mom)) > 0:
+                out.append(sec_mom)
 
         return out
 
@@ -247,49 +289,50 @@ class UniformBinSlicer(xt.BeamElement):
         """
         return self._reshape_for_multibunch(self._num_particles)
 
-    def sum(self, cc, cc2=None):
+    def sum(self, mom_name, mom_name_2=None):
         """
-        Sum of the quantity cc per slice
+        Sum of the quantity mom_name per slice
         """
-        if cc in short_second_mom_names:
-            cc = short_second_mom_names[cc]
-        if cc2 is not None:
-            cc = cc + '_' + cc2
-        if len(getattr(self._xobject, 'sum_' + cc)) == 0:
-            raise ValueError(f'Moment `{cc}` not recorded')
-        return self._reshape_for_multibunch(getattr(self, '_sum_' + cc))
+        if mom_name in short_second_mom_names:
+            mom_name = short_second_mom_names[mom_name]
+        if mom_name_2 is not None:
+            mom_name = mom_name + '_' + mom_name_2
+        if len(getattr(self._xobject, 'sum_' + mom_name)) == 0:
+            raise ValueError(f'Moment `{mom_name}` not recorded')
+        return self._reshape_for_multibunch(getattr(self, '_sum_' + mom_name))
 
-    def mean(self, cc, cc2=None):
+    def mean(self, mom_name, mom_name_2=None):
         """
-        Mean of the quantity cc per slice
+        Mean of the quantity mom_name per slice
         """
         out = 0 * self.num_particles
         mask_nonzero = self.num_particles > 0
-        out[mask_nonzero] = (self.sum(cc, cc2)[mask_nonzero]
+        out[mask_nonzero] = (self.sum(mom_name, mom_name_2)[mask_nonzero]
                              / self.num_particles[mask_nonzero])
         return out
 
-    def cov(self, cc1, cc2=None):
+    def cov(self, mom_name, mom_name_2=None):
         """
         Covariance between cc1 and cc2 per slice
         """
-        if cc2 is None:
-            if cc1 in short_second_mom_names:
-                cc1 = short_second_mom_names[cc1]
-            cc1, cc2 = cc1.split('_')
-        return self.mean(cc1, cc2) - self.mean(cc1) * self.mean(cc2)
+        if mom_name_2 is None:
+            if mom_name in short_second_mom_names:
+                mom_name = short_second_mom_names[mom_name]
+            mom_name, mom_name_2 = mom_name.split('_')
+        return (self.mean(mom_name, mom_name_2) -
+                self.mean(mom_name) * self.mean(mom_name_2))
 
-    def var(self, cc):
+    def var(self, mom_name):
         """
         Variance of the quantity cc per slice
         """
-        return self.cov(cc, cc)
+        return self.cov(mom_name, mom_name)
 
-    def std(self, cc):
+    def std(self, mom_name):
         """
         Standard deviation of the quantity cc per slice
         """
-        return np.sqrt(self.var(cc))
+        return np.sqrt(self.var(mom_name))
 
     def _reshape_for_multibunch(self, data):
         if self.num_bunches <= 0:
@@ -300,7 +343,8 @@ class UniformBinSlicer(xt.BeamElement):
     def _to_npbuffer(self):
         assert isinstance(self._context, xo.ContextCpu)
         assert self._buffer.buffer.dtype == np.int8
-        return self._buffer.buffer[self._offset:self._offset + self._xobject._size]
+        return self._buffer.buffer[self._offset:
+                                   self._offset + self._xobject._size]
 
     @classmethod
     def _from_npbuffer(cls, buffer):
@@ -311,7 +355,8 @@ class UniformBinSlicer(xt.BeamElement):
         xobuffer.buffer = buffer
         offset = xobuffer.allocate(size=len(buffer))
         assert offset == 0
-        return cls(_xobject=xf.UniformBinSlicer._XoStruct._from_buffer(xobuffer))
+        xo_struct = xf.UniformBinSlicer._XoStruct
+        return cls(_xobject=xo_struct._from_buffer(xobuffer))
 
     def __iadd__(self, other):
 

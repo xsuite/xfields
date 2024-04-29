@@ -3,7 +3,34 @@ import xobjects as xo
 import xtrack as xt
 import xfields as xf
 
+
 class CompressedProfile(xt.BeamElement):
+    """
+    An object holding a compressed version of the beam data.
+
+    Parameters
+    ----------.
+    moments: List
+        Stored momemts
+    zeta_range : Tuple
+        Zeta range for each bunch.
+    num_slices : int
+        Number of slices per bunch.
+    bunch_spacing_zeta : float
+        Bunch spacing in meters.
+    num_periods: int
+        Number of periods in the compressed profile. Concretely, this is the
+        number of bunches in the beam.
+    num_turns: int
+        Number of turns for which the moments are recorded.
+    num_targets: int
+        Number of target bunches. If it is not specified it is just the same
+        as `num_bunches`.
+    num_slices_target: int
+        Number of slices per target bunch.
+    circumference: float
+        Machine length in meters.
+    """
 
     _xofields = {
         '_N_aux': xo.Int64,
@@ -11,7 +38,8 @@ class CompressedProfile(xt.BeamElement):
         'num_turns': xo.Int64,
     }
 
-    _extra_c_sources = [xf.general._pkg_root.joinpath('headers/compressed_profile.h')]
+    pkg_root = xf.general._pkg_root
+    _extra_c_sources = [pkg_root.joinpath('headers/compressed_profile.h')]
 
     _per_particle_kernels = {
         '_interp_result': xo.Kernel(
@@ -28,16 +56,16 @@ class CompressedProfile(xt.BeamElement):
         }
 
     def __init__(self,
-                moments,
-                zeta_range=None, # These are [a, b] in the paper
-                num_slices=None, # Per bunch, this is N_1 in the paper
-                bunch_spacing_zeta=None, # This is P in the paper
-                num_periods=None,
-                num_turns=1,
-                num_targets=None,
-                num_slices_target=None,
-                circumference=None
-                ):
+                 moments,
+                 zeta_range=None,  # These are [a, b] in the paper
+                 num_slices=None,  # Per bunch, this is N_1 in the paper
+                 bunch_spacing_zeta=None,  # This is P in the paper
+                 num_periods=None,
+                 num_turns=1,
+                 num_targets=None,
+                 num_slices_target=None,
+                 circumference=None
+                 ):
 
         self.xoinitialize()
 
@@ -47,13 +75,13 @@ class CompressedProfile(xt.BeamElement):
 
         self.circumference = circumference
 
-        self.dz = (zeta_range[1] - zeta_range[0]) / num_slices # h in the paper
+        self.dz = (zeta_range[1] - zeta_range[0]) / num_slices  # h in the paper
         self._z_a = zeta_range[0]
         self._z_b = zeta_range[1]
 
-        self._N_1 = num_slices # N_1 in the
-        self._z_P = bunch_spacing_zeta # P in the paper
-        self._N_S = num_periods # N_S in the paper
+        self._N_1 = num_slices  # N_1 in the
+        self._z_P = bunch_spacing_zeta  # P in the paper
+        self._N_S = num_periods  # N_S in the paper
 
         if num_slices_target is not None:
             self._N_2 = num_slices_target
@@ -67,22 +95,23 @@ class CompressedProfile(xt.BeamElement):
 
         self.num_turns = num_turns
 
-        self._BB = 1 # B in the paper
-                     # (for now we assume that B=0 is the first bunch in time
-                     # and the last one in zeta)
+        self._BB = 1  # B in the paper
+        # (for now we assume that B=0 is the first bunch in time
+        # and the last one in zeta)
         self._AA = self._BB - self._N_S
 
-        self._N_aux = self._N_1 + self._N_2 # N_aux in the paper
+        self._N_aux = self._N_1 + self._N_2  # n_aux in the paper
 
-        # Compute M_aux
-        self._M_aux = (self._N_S + self._N_T - 1) * self._N_aux # M_aux in the paper
+        # Compute m_aux
+        self._M_aux = (self._N_S +
+                       self._N_T - 1) * self._N_aux  # m_aux in the paper
 
         self.moments_names = moments
         self.data = np.zeros(
             (len(moments), self.num_turns, self._M_aux), dtype=np.float64)
 
     def __getitem__(self, key):
-        assert isinstance(key, str), ('other modes not supported yet')
+        assert isinstance(key, str), 'other modes not supported yet'
         assert key in self.moments_names, (
             f'Moment {key} not in defined moments_names')
         i_moment = self.moments_names.index(key)
@@ -104,7 +133,6 @@ class CompressedProfile(xt.BeamElement):
         return self._z_P
 
     def set_moments(self, i_source, i_turn, moments):
-
         """
         Set the moments for a given source and turn.
 
@@ -138,12 +166,10 @@ class CompressedProfile(xt.BeamElement):
             i_end_in_moments_data = i_start_in_moments_data + self._N_1
 
             self.data[i_moment, i_turn,
-                              i_start_in_moments_data:i_end_in_moments_data,
-                             ] = vv
+                      i_start_in_moments_data:i_end_in_moments_data] = vv
 
     def get_moment_profile(self, moment_name, i_turn):
-
-        '''
+        """
         Get the moment profile for a given turn.
 
         Parameters
@@ -159,7 +185,7 @@ class CompressedProfile(xt.BeamElement):
             The z positions within the moment profile
         moment_out : np.ndarray
             The moment profile
-        '''
+        """
 
         z_out = np.zeros(self._N_S * self._N_1)
         moment_out = np.zeros(self._N_S * self._N_1)
@@ -175,8 +201,6 @@ class CompressedProfile(xt.BeamElement):
             i_end_in_moments_data = i_start_in_moments_data + self._N_1
             moment_out[i_start_out:i_end_out] = (
                 self.data[i_moment, i_turn,
-                                  i_start_in_moments_data:i_end_in_moments_data,
-                                  ])
+                          i_start_in_moments_data:i_end_in_moments_data])
 
         return z_out, moment_out
-

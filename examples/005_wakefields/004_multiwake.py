@@ -2,25 +2,23 @@ import matplotlib.pyplot as plt
 import numpy as np
 import time
 from scipy.constants import c, e, m_p
-from scipy.constants import e as qe
-from numpy.fft import fft, ifft
 
-from PyHEADTAIL.particles.slicing import UniformBinSlicer as PyHTUniformBinSlicer
-from PyHEADTAIL.particles.particles import Particles as PyHTParticles
-from PyHEADTAIL.impedances.wakes import CircularResonator as PyHTCircularResonator
+from PyHEADTAIL.particles.slicing import UniformBinSlicer as PyHTUnifBinSlicer
+from PyHEADTAIL.impedances.wakes import CircularResonator as PyHTCircResonator
 
 from PyHEADTAIL.impedances.wakes import WakeField as PyHTWakeField
 from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 import xfields as xf
 import xtrack as xt
+from xfields import Wakefield, TempResonatorFunction, MultiWakefield
 
 # Machine settings
 
 n_turns_wake = 3
 flatten = False
 
-n_macroparticles = 100000 # per bunch
+n_macroparticles = 100000  # per bunch
 intensity = 2.3e11
 
 alpha = 53.86**-2
@@ -47,7 +45,8 @@ sigma_z = 0.09
 
 machine = PyHTSynchrotron(
         optics_mode='smooth', n_segments=1, circumference=circumference,
-        accQ_x=accQ_x, accQ_y=accQ_y, beta_x=beta_x, beta_y=beta_y, D_x=0, D_y=0,
+        accQ_x=accQ_x, accQ_y=accQ_y,
+        beta_x=beta_x, beta_y=beta_y, D_x=0, D_y=0,
         alpha_mom_compaction=alpha, longitudinal_mode='linear',
         h_RF=np.atleast_1d(h_RF), p0=p0,
         charge=e, mass=m_p, wrap_z=False, Q_s=Q_s)
@@ -58,9 +57,9 @@ filling_scheme = [i*bunch_spacing_buckets for i in range(n_bunches)]
 
 # Initialise beam
 bunches = machine.generate_6D_Gaussian_bunch(n_macroparticles, intensity,
-                                                epsn_x, epsn_y, sigma_z=sigma_z,
-                                                filling_scheme=filling_scheme,
-                                                matched=False)
+                                             epsn_x, epsn_y, sigma_z=sigma_z,
+                                             filling_scheme=filling_scheme,
+                                             matched=False)
 
 bucket_id_set = list(set(bunches.bucket_id))
 bucket_id_set.sort()
@@ -82,8 +81,10 @@ for b_id in bucket_id_set:
 
 
 # Initialise wakes
-slicer = PyHTUniformBinSlicer(n_slices, z_cuts=(-0.5*bucket_length, 0.5*bucket_length),
-                          circumference=machine.circumference, h_bunch=h_bunch)
+slicer = PyHTUnifBinSlicer(n_slices,
+                           z_cuts=(-0.5*bucket_length, 0.5*bucket_length),
+                           circumference=machine.circumference,
+                           h_bunch=h_bunch)
 
 # pipe radius [m]
 b = 13.2e-3
@@ -93,7 +94,8 @@ L = 100000.
 sigma = 1. / 7.88e-10
 
 # wakes = CircularResistiveWall(b, L, sigma, b/c, beta_beam=machine.beta)
-wakes = PyHTCircularResonator(R_shunt=135e6, frequency=1.97e9*0.6, Q=31000, n_turns_wake=n_turns_wake)
+wakes = PyHTCircResonator(R_shunt=135e6, frequency=1.97e9 * 0.6, Q=31000,
+                          n_turns_wake=n_turns_wake)
 
 R_s = wakes.R_shunt
 Q = wakes.Q
@@ -134,7 +136,7 @@ particles = xt.Particles(
     py=bunches.yp,
     zeta=z_all,
     delta=bunches.dp,
-    weight = bunches.particlenumber_per_mp,
+    weight=bunches.particlenumber_per_mp,
 )
 
 
@@ -152,26 +154,27 @@ for i_turn in range(n_turns):
 
     transverse_map.track(bunches)
 
-z_source_matrix_multiturn = z_source_matrix_multiturn[:, :, ::-1] # last turn on top
-dipole_moment_matrix_multiturn = dipole_moment_matrix_multiturn[:, :, ::-1] # last turn on top
+# last turn on top
+z_source_matrix_multiturn = z_source_matrix_multiturn[:, :, ::-1]
+dipole_moment_matrix_multiturn = dipole_moment_matrix_multiturn[:, :, ::-1]
 
-print(f'Circumference occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f} %')
+print(f'Circumference '
+      f'occupancy {n_bunches * bunch_spacing_buckets/h_RF*100:.2f} %')
 
-
-n_bunches_wake = 120 # Can be longer than filling scheme
-
-from xfields import Wakefield, TempResonatorFunction, MultiWakefield
+n_bunches_wake = 120  # Can be longer than filling scheme
 
 num_slots = n_bunches
 filling_scheme = np.ones(num_slots, dtype=np.int64)
 bunch_numbers = np.arange(num_slots, dtype=np.int64)
 
-
+# The kick is scaled by position of the particle for quadrupolar,
+# it would be None for dipolar
 wfx = Wakefield(
     source_moments=['num_particles', 'x'],
     kick='px',
-    scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
-    function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
+    scale_kick=None,
+    function=TempResonatorFunction(r_shunt=wakes.R_shunt,
+                                   frequency=wakes.frequency, q_factor=wakes.Q),
     filling_scheme=filling_scheme,
     bunch_numbers=bunch_numbers,
 )
@@ -180,16 +183,17 @@ wfy = Wakefield(
     source_moments=['num_particles', 'y'],
     kick='py',
     scale_kick=None,
-    function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
+    function=TempResonatorFunction(r_shunt=wakes.R_shunt,
+                                   frequency=wakes.frequency, q_factor=wakes.Q),
     filling_scheme=filling_scheme,
     bunch_numbers=bunch_numbers,
 )
 
 wf = MultiWakefield(
     wakefields=[wfx, wfy],
-    zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
-    num_slices=n_slices, # Per bunch, this is N_1 in the paper
-    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length, # This is P in the paper
+    zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
+    num_slices=n_slices,  # Per bunch
+    bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
     num_turns=n_turns_wake,
     filling_scheme=filling_scheme,
     bunch_numbers=bunch_numbers,
@@ -213,7 +217,8 @@ betatron_map = xt.LineSegmentMap(
 
 line = xt.Line(elements=[wf, slicer_after_wf, betatron_map],
                element_names=['wf', 'slicer_after_wf', 'betatron_map'])
-particle_ref = xt.Particles(p0c=particles.p0c, mass0=particles.mass0, q0=particles.q0)
+particle_ref = xt.Particles(p0c=particles.p0c, mass0=particles.mass0,
+                            q0=particles.q0)
 line.build_tracker()
 
 line.track(particles, num_turns=n_turns)
@@ -221,10 +226,13 @@ line.track(particles, num_turns=n_turns)
 n_skip = 10
 
 ax00.plot(wf.slicer.zeta_centers, wf.slicer.mean('x'), '.', color='b')
-ax00.plot(z_all[::n_skip], x_before_wake[::n_skip], '.', color='r', markersize=1)
+ax00.plot(z_all[::n_skip], x_before_wake[::n_skip], '.', color='r',
+          markersize=1)
 
-ax01.plot(wf.slicer.zeta_centers, slicer_after_wf.mean('px') - wf.slicer.mean('px'), '.', color='b')
-ax01.plot(z_all[::n_skip], xp_after_wake[-1][::n_skip] - xp_before_wake[-1][::n_skip],
+ax01.plot(wf.slicer.zeta_centers,
+          slicer_after_wf.mean('px') - wf.slicer.mean('px'), '.', color='b')
+ax01.plot(z_all[::n_skip],
+          xp_after_wake[-1][::n_skip] - xp_before_wake[-1][::n_skip],
           '.', color='r', markersize=1)
 
 plt.figure(200)
@@ -239,9 +247,8 @@ t0 = time.time()
 wake_field.track(bunches)
 transverse_map.track(bunches)
 bunches.get_slices(slicer,
-                      statistics=['mean_x', 'mean_xp', 'mean_y', 'mean_yp'])
+                   statistics=['mean_x', 'mean_xp', 'mean_y', 'mean_yp'])
 t1 = time.time()
 print(f"PyHEADTAIL turn time {(t1-t0)*1e3} ms")
 
 plt.show()
-
