@@ -120,38 +120,3 @@ def get_intrabeam_scattering_growth_rates(
 
 
 # ----- API for Kick-Based IBS -----#
-
-# TODO: Favor the user creating basic kick element and inserting (see _best.py)
-def install_intrabeam_scattering_kick(
-    line: xt.Line,
-    formalism: str,  # let's give an enum for the hint or something?
-) -> None:
-    """
-    Installs an IntraBeam Scattering kick element at the end of the provided xtrack.Line object.
-
-    Parameters
-    ----------
-    line : xtrack.Line
-        Line in which the IBS kick element will be installed.
-    formalism : str
-        Which formalism to use for the IBS kicks. Can be "simple" (only valid above transition) or "kinetic".
-    recompute_rates_every_nturns : int
-        The period in [turns] with which to recompute the IBS growth rates during tracking.
-    """
-    # get the beam/optics params now but it might be outdated, or when the particles
-    # get to the element only? Would need to change the element logic
-    raise NotImplementedError("Not yet implemented")
-
-# TODO: see _best.py for things to do in here
-def configure_intrabeam_scattering(
-    line: xt.Line,
-    element_name: str,
-    recompute_rates_every_nturns: int,
-    formalism: str = None,
-):
-    """Configuration step for IBS parameters (like for beambeam for instance)
-    where we do the twiss etc"""
-    # Do a 4D twiss of the line and create opticsparameters
-    # Create a beamparameters object from the particles
-    # properly instantiate the kick element with the above
-    raise NotImplementedError("Not yet implemented")
