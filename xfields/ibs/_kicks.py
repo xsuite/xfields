@@ -424,3 +424,37 @@ class IBSSimpleKick(IBSKick):
         particles.px[particles.state > 0] += delta_px
         particles.py[particles.state > 0] += delta_py
         particles.delta[particles.state > 0] += delta_delta
+
+
+# ----- Kinetic Kick Implementation ----- #
+
+
+class IBSKineticKick(IBSKick):
+    r"""
+    Beam element to apply IBS effects to particles during tracking according to
+    the formalism introduced in :cite:`NuclInstr:Zenkevich:Kinetic_IBS`. It provides
+    momenta kicks based on analytical growth rates, weighted by the longitudinal
+    line density of the particles and including a random component.
+
+    The element starts off by default (will not affect particles) and has to be
+    configured through the `line.configure_intrabeam_scattering` method.
+
+    Attributes
+    ----------
+    num_slices : int
+        The number of slices used for the computation of the bunch's
+        longitudinal line density.
+    update_every : int
+        The frequency at which to recompute the kick coefficients, in
+        number of turns. They will be computed at the first turn of
+        tracking, and then every `update_every` turns afterwards.
+    diffusion_coefficients : DiffusionCoefficients
+        The computed diffusion coefficients, from the kinetic theory.
+        This attribute self-updates when they are computed with the
+        `.compute_kinetic_coefficients` method.
+    friction_coefficients : FrictionCoefficients
+        The computed friction coefficients, from the kinetic theory.
+        This attribute self-updates when they are computed with the
+        `.compute_kinetic_coefficients` method.
+    """
+    pass
