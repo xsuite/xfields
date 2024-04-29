@@ -179,3 +179,18 @@ def line_density(particles: xt.Particles, num_slices: int) -> ArrayLike:
     # Compute histogram on longitudinal distribution then compute and return line density
     counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)  # density to normalize
     return nplike.interp(zeta, bin_centers, counts_normed)
+
+
+# ----- Parent Class to Identify the IBS Kicks ----- #
+
+
+class IBSKick:
+    """
+    General class for IBS kicks to inherit from.
+    """
+
+    iscollective = True  # based on alive particles, need them all here
+
+    def to_dict(self) -> None:
+        """Raises an error as the line should be saved without the IBS kick element."""
+        raise NotImplementedError("IBS kick elements should not be saved as part of the line")
