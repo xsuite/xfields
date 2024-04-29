@@ -379,3 +379,48 @@ class IBSSimpleKick(IBSKick):
         # Self-update the instance's attributes and then return the results
         self.kick_coefficients = result
         return result
+
+    def track(self, particles: xt.Particles) -> None:
+        """
+        Method to determine and apply IBS momenta kicks based on the provided
+        `xtrack.Particles`. The kicks are implemented according to Eq (8) of
+        :cite:`PRAB:Bruce:Simple_IBS_Kicks`.
+
+        Parameters
+        ----------
+        particles : xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Intercept here if the kick element is "off" and has no scale strength - do not compute for nothing
+        if self._scale_strength == 0:
+            return
+        # ----------------------------------------------------------------------------------------------
+        # Check if coefficients need to be recomputed before applying kicks & recompute if necessary
+        if self._coefficients_need_recompute(particles) is True:
+            LOGGER.debug("Recomputing simple kick coefficients before applying kicks")
+            self.compute_kick_coefficients(particles)
+        # ----------------------------------------------------------------------------------------------
+        # Get the nplike_lib from the particles' context, to compute on the context device
+        _assert_accepted_context(particles._context)
+        nplike = particles._context.nplike_lib
+        # ----------------------------------------------------------------------------------------------
+        # Compute the line density - this is the rho_t(t) term in Eq (8) of reference
+        rho_t: ArrayLike = line_density(particles, self.num_slices)  # on context | does not include _factor
+        # ----------------------------------------------------------------------------------------------
+        # Determining size of arrays for kicks to apply: only the non-lost particles in the bunch
+        _size: int = particles.px[particles.state > 0].shape[0]  # same for py and delta
+        # ----------------------------------------------------------------------------------------------
+        # Determining kicks - this corresponds to the full result of Eq (8) of reference (\Delta p_u)
+        LOGGER.debug("Determining kicks to apply")
+        rng = nplike.random.default_rng()
+        Kx, Ky, Kz = self.kick_coefficients.as_tuple()  # floats
+        delta_px: ArrayLike = rng.standard_normal(_size) * Kx * np.sqrt(rho_t)  # on context
+        delta_py: ArrayLike = rng.standard_normal(_size) * Ky * np.sqrt(rho_t)  # on context
+        delta_delta: ArrayLike = rng.standard_normal(_size) * Kz * np.sqrt(rho_t)  # on context
+        # ----------------------------------------------------------------------------------------------
+        # Apply the kicks to the particles, applying the momenta deltas
+        LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
+        particles.px[particles.state > 0] += delta_px
+        particles.py[particles.state > 0] += delta_py
+        particles.delta[particles.state > 0] += delta_delta
