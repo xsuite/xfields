@@ -194,3 +194,44 @@ class IBSKick:
     def to_dict(self) -> None:
         """Raises an error as the line should be saved without the IBS kick element."""
         raise NotImplementedError("IBS kick elements should not be saved as part of the line")
+
+
+# ----- Simple Kick Implementation ----- #
+
+
+class IBSSimpleKick(IBSKick):
+    r"""
+    Beam element to apply IBS effects to particles during tracking according to
+    the formalism introduced in :cite:`PRAB:Bruce:Simple_IBS_Kicks`. It provides
+    momenta kicks based on analytical growth rates, weighted by the longitudinal
+    line density of the particles and including a random component.
+
+    The element starts off by default (will not affect particles) and has to be
+    configured through the `line.configure_intrabeam_scattering` method.
+
+    Warnings
+    --------
+        This formalism is only valid **above** transition energy. The implemented
+        weighted random-component momentum kick depends on the square root of the
+        growth rate, which is set to 0 if it is negative. Below transition it is
+        common to observe negative growth rates and emittance shrinkage, which this
+        kick would not be reprensentative of. A message is logged to inform the user
+        when this happens. For machines below transition energy, the kinetic formalism
+        should be used instead: see the `IBSKineticKick` class).
+
+    Attributes
+    ----------
+    num_slices : int
+        The number of slices used for the computation of the bunch's
+        longitudinal line density.
+    formalism : str
+        The formalism used for the computation of the growth rates.
+    update_every : int
+        The frequency at which to recompute the kick coefficients, in
+        number of turns. They will be computed at the first turn of
+        tracking, and then every `update_every` turns afterwards.
+    kick_coefficients : IBSKickCoefficients
+        The computed kick coefficients. This self-updates when they
+        are computed with the `.compute_kick_coefficients` method.
+    """
+    pass
