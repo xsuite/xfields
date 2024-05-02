@@ -11,6 +11,7 @@ from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 import xfields as xf
 import xtrack as xt
+from xfields import Wakefield
 
 # Machine settings
 

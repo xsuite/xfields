@@ -14,6 +14,7 @@ import xfields as xf
 import xtrack as xt
 from xfields import Wakefield
 
+
 # Machine settings
 
 n_turns_wake = 3
