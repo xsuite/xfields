@@ -6,34 +6,6 @@ from xobjects.test_helpers import for_all_test_contexts
 import xtrack as xt
 
 
-class TempResonatorFunction:
-    def __init__(self, R_shunt, frequency, Q, transverse=True):
-        self.R_shunt = R_shunt
-        self.frequency = frequency
-        self.Q = Q
-        self.transverse = transverse
-
-    def __call__(self, z):
-        R_s = self.R_shunt
-        Q = self.Q
-        f_r = self.frequency
-        omega_r = 2 * np.pi * f_r
-        alpha_t = omega_r / (2 * Q)
-        omega_bar = np.sqrt(omega_r**2 - alpha_t**2)
-        t = z/c
-
-        if self.transverse:
-            res = (t < 0) * (R_s * omega_r**2 / (Q * omega_bar)
-                   * np.exp(alpha_t * t)
-                   * np.sin(omega_bar * t))# Wake definition
-        else:
-            res = (t < 0) * 2 * (R_s * alpha_t * np.exp(alpha_t * t) *
-                                 (np.cos(omega_bar*t) +
-                                  alpha_t/omega_bar*np.sin(omega_bar*t)))
-
-        return res
-
-
 @for_all_test_contexts
 def test_longitudinal_wake_kick(test_context):
     n_turns_wake = 1
@@ -44,8 +16,6 @@ def test_longitudinal_wake_kick(test_context):
     bunch_spacing_buckets = 10
     n_slices = 100
     n_macroparticles = 2  # per bunch
-    wake_func = TempResonatorFunction(R_shunt=1e8, frequency=1e7, Q=1e3,
-                                      transverse=False)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -73,11 +43,13 @@ def test_longitudinal_wake_kick(test_context):
 
     delta_bef = particles.delta.copy()
 
-    wfz = Wakefield(
+    wfz = Wakefield.from_resonator_parameters(
+        r_shunt=1e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles'],
         kick='delta',
-        scale_kick=None,
-        function=wake_func
+        scale_kick=None
     )
 
     zeta_range_xf = zeta_range
@@ -123,8 +95,6 @@ def test_constant_wake_kick(test_context):
     bunch_spacing_buckets = 10
     n_slices = 100
     n_macroparticles = 2  # per bunch
-    wake_func_x = TempResonatorFunction(R_shunt=2e8, frequency=1e7, Q=1e3)
-    wake_func_y = TempResonatorFunction(R_shunt=3e8, frequency=1e7, Q=1e3)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -153,18 +123,22 @@ def test_constant_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield(
+    wfx = Wakefield.from_resonator_parameters(
+        r_shunt=2e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles'],
         kick='px',
         scale_kick=None,
-        function=wake_func_x
     )
 
-    wfy = Wakefield(
+    wfy = Wakefield.from_resonator_parameters(
+        r_shunt=3e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles'],
         kick='py',
         scale_kick=None,
-        function=wake_func_y
     )
 
     zeta_range_xf = zeta_range
@@ -220,8 +194,6 @@ def test_direct_dipolar_wake_kick(test_context):
     bunch_spacing_buckets = 10
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
-    wake_func_x = TempResonatorFunction(R_shunt=2e8, frequency=1e7, Q=1e3)
-    wake_func_y = TempResonatorFunction(R_shunt=3e8, frequency=1e7, Q=1e3)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -260,18 +232,22 @@ def test_direct_dipolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield(
+    wfx = Wakefield.from_resonator_parameters(
+        r_shunt=2e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_x],
         kick='px',
         scale_kick=scale_kick_x,
-        function=wake_func_x
     )
 
-    wfy = Wakefield(
+    wfy = Wakefield.from_resonator_parameters(
+        r_shunt=3e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_y],
         kick='py',
         scale_kick=scale_kick_y,
-        function=wake_func_y
     )
 
     zeta_range_xf = zeta_range
@@ -329,8 +305,6 @@ def test_cross_dipolar_wake_kick(test_context):
     bunch_spacing_buckets = 10
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
-    wake_func_x = TempResonatorFunction(R_shunt=2e8, frequency=1e7, Q=1e3)
-    wake_func_y = TempResonatorFunction(R_shunt=3e8, frequency=1e7, Q=1e3)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -369,18 +343,22 @@ def test_cross_dipolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield(
+    wfx = Wakefield.from_resonator_parameters(
+        r_shunt=2e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_x],
         kick='px',
         scale_kick=scale_kick_x,
-        function=wake_func_x
     )
 
-    wfy = Wakefield(
+    wfy = Wakefield.from_resonator_parameters(
+        r_shunt=3e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_y],
         kick='py',
         scale_kick=scale_kick_y,
-        function=wake_func_y
     )
 
     zeta_range_xf = zeta_range
@@ -439,8 +417,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
     n_bunches = 1
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
-    wake_func_x = TempResonatorFunction(R_shunt=2e8, frequency=1e7, Q=1e3)
-    wake_func_y = TempResonatorFunction(R_shunt=3e8, frequency=1e7, Q=1e3)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -485,18 +461,22 @@ def test_direct_quadrupolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield(
+    wfx = Wakefield.from_resonator_parameters(
+        r_shunt=2e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_x],
         kick='px',
         scale_kick=scale_kick_x,
-        function=wake_func_x
     )
 
-    wfy = Wakefield(
+    wfy = Wakefield.from_resonator_parameters(
+        r_shunt=3e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_y],
         kick='py',
         scale_kick=scale_kick_y,
-        function=wake_func_y
     )
 
     zeta_range_xf = zeta_range
@@ -557,8 +537,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
     n_bunches = 1
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
-    wake_func_x = TempResonatorFunction(R_shunt=2e8, frequency=1e7, Q=1e3)
-    wake_func_y = TempResonatorFunction(R_shunt=3e8, frequency=1e7, Q=1e3)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -603,18 +581,22 @@ def test_cross_quadrupolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield(
+    wfx = Wakefield.from_resonator_parameters(
+        r_shunt=2e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_x],
         kick='px',
         scale_kick=scale_kick_x,
-        function=wake_func_x
     )
 
-    wfy = Wakefield(
+    wfy = Wakefield.from_resonator_parameters(
+        r_shunt=3e8,
+        q_factor=1e7,
+        frequency=1e3,
         source_moments=['num_particles', source_moment_y],
         kick='py',
         scale_kick=scale_kick_y,
-        function=wake_func_y
     )
 
     zeta_range_xf = zeta_range
@@ -675,8 +657,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     n_bunches = 1
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
-    wake_func_x = TempResonatorFunction(R_shunt=2e8, frequency=1e7, Q=1e4)
-    wake_func_y = TempResonatorFunction(R_shunt=3e8, frequency=1e7, Q=1e4)
     circumference = 26658.883
     bucket_length = circumference/h_RF
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
@@ -715,18 +695,31 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield(
+    wfx = Wakefield.from_resonator_parameters(
+        r_shunt=2e8,
+        q_factor=1e7,
+        frequency=1e4,
         source_moments=['num_particles', source_moment_x],
         kick='px',
         scale_kick=scale_kick_x,
-        function=wake_func_x
     )
 
-    wfy = Wakefield(
+    wfy = Wakefield.from_resonator_parameters(
+        r_shunt=3e8,
+        q_factor=1e7,
+        frequency=1e4
+        
+
+
+
+
+
+
+
+        ,
         source_moments=['num_particles', source_moment_y],
         kick='py',
         scale_kick=scale_kick_y,
-        function=wake_func_y
     )
 
     zeta_range_xf = zeta_range

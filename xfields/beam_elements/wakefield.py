@@ -179,7 +179,7 @@ class MultiWakefield:
                                       bounds_error=False, fill_value=0.0)
                 )
                 wakefields.append(wakefield)
-        return MultiWakefield(wakefields, **kwargs)
+        return cls(wakefields, **kwargs)
         
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         self.pipeline_manager = pipeline_manager
@@ -757,25 +757,72 @@ class Wakefield:
 
         return z_out, moment_out
 
+    @classmethod
+    def from_resonator_parameters(cls, r_shunt, frequency, q_factor,
+                                  beta=1, **kwargs):
+        """
+        Parameters
+        ----------
+        r_shunt: float
+            Resonator shunt impedance
+        frequency: float
+            Resonator frequency
+        q_factor: float
+            Resonator quality factor
+        beta: float
+            Lorentz factor of the beam
 
-class TempResonatorFunction:
-    def __init__(self, r_shunt, frequency, q_factor):
-        self.r_shunt = r_shunt
-        self.frequency = frequency
-        self.q_factor = q_factor
+        Returns
+        -------
+        A resonator Wakefield
+        """
 
-    def __call__(self, z):
-        r_s = self.r_shunt
-        q_factor = self.q_factor
-        f_r = self.frequency
-        omega_r = 2 * np.pi * f_r
-        alpha_t = omega_r / (2 * q_factor)
-        omega_bar = np.sqrt(omega_r**2 - alpha_t**2)
+        assert 'function' not in kwargs
 
-        res = (z < 0) * (r_s * omega_r**2 / (q_factor * omega_bar) *
-                         np.exp(alpha_t * z / clight) *
-                         np.sin(omega_bar * z / clight))  # Wake definition
-        return res
+        if kwargs['kick'] == 'delta':
+            function = lambda z: _longitudinal_resonator_function(
+                z=z,
+                r_shunt=r_shunt,
+                frequency=frequency,
+                q_factor=q_factor,
+                beta=beta)
+        else:
+            function = lambda z: _transverse_resonator_function(
+                z=z,
+                r_shunt=r_shunt,
+                frequency=frequency,
+                q_factor=q_factor,
+                beta=beta)
+
+        return cls(function=function, **kwargs)
+
+
+def _transverse_resonator_function(z, r_shunt, frequency, q_factor, beta):
+    omega_r = 2 * np.pi * frequency
+    alpha_t = omega_r / (2 * q_factor)
+    omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
+
+    dt = beta*clight
+
+    res = (z < 0) * (r_shunt * omega_r ** 2 / (q_factor * omega_bar) *
+                     np.exp(alpha_t * z / dt) *
+                     np.sin(omega_bar * z / dt))  # Wake definition
+    return res
+
+
+def _longitudinal_resonator_function(z, r_shunt, frequency, q_factor, beta):
+    omega_r = 2 * np.pi * frequency
+    alpha_t = omega_r / (2 * q_factor)
+    omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
+
+    dt = beta*clight
+
+    res = (z < 0) * (-r_shunt * alpha_t *
+                     np.exp(alpha_t * z / dt) *
+                     (np.cos(omega_bar * z / dt) +
+                      alpha_t / omega_bar * np.sin(omega_bar * z / dt)))
+
+    return res
 
 
 def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,

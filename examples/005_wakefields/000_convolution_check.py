@@ -13,7 +13,6 @@ from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 import xfields as xf
 import xtrack as xt
-from xfields import Wakefield, TempResonatorFunction
 
 # Machine settings
 
@@ -188,13 +187,13 @@ store_particlenumber_per_mp = allbunches.particlenumber_per_mp
 z_source_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
-wf = Wakefield(
+wf = xf.Wakefield.from_resonator_parameters(
+    r_shunt=wakes.R_shunt,
+    q_factor=wakes.Q,
+    frequency=wakes.frequency,
     source_moments=['num_particles', 'x', 'y'],
     kick='px',
     scale_kick=None,
-    function=TempResonatorFunction(r_shunt=wakes.R_shunt,
-                                   frequency=wakes.frequency,
-                                   q_factor=wakes.Q),
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
