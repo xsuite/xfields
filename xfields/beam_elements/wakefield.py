@@ -7,9 +7,10 @@ from scipy.interpolate import interp1d
 import xtrack as xt
 import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
+from .sliced_element import SlicedElement
 
 
-class MultiWakefield:
+class MultiWakefield(SlicedElement):
     """
     An object handling many WakeField instances as a single beam element.
 
@@ -69,6 +70,9 @@ class MultiWakefield:
         all_slicer_moments = []
         for wf in self.wakefields:
             assert wf.moments_data is None
+
+            wf.init_slicer(zeta_range)
+
             wf._initialize_moments_and_conv_data(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper
@@ -84,15 +88,18 @@ class MultiWakefield:
 
         all_slicer_moments = list(set(all_slicer_moments))
 
-        self.slicer = xf.UniformBinSlicer(
-            zeta_range=zeta_range,
-            num_slices=num_slices,
+        super().__init__(
+            slicer_moments=all_slicer_moments,
+            log_moments=log_moments,
+            zeta_range=zeta_range,  # These are [a, b] in the paper
+            num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+            bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+            num_slots=num_slots,
             filling_scheme=filling_scheme,
             bunch_numbers=bunch_numbers,
-            bunch_spacing_zeta=bunch_spacing_zeta,
-            moments=all_slicer_moments
-            )
-            
+            _flatten=False
+        )
+
         self.pipeline_manager = None
     
     @classmethod
@@ -179,111 +186,26 @@ class MultiWakefield:
                                       bounds_error=False, fill_value=0.0)
                 )
                 wakefields.append(wakefield)
-        return MultiWakefield(wakefields, **kwargs)
+        return cls(wakefields, **kwargs)
         
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
-        self.pipeline_manager = pipeline_manager
         for wf in self.wakefields:
             assert wf.pipeline_manager is None
-        self.partners_names = partners_names
-        self.name = element_name
-        
-        self._send_buffer = self.slicer._to_npbuffer()
-        self._send_buffer_length = np.zeros(1, dtype=int)
-        self._send_buffer_length[0] = len(self._send_buffer)
 
-        self._recv_buffer = np.zeros_like(self._send_buffer)
-        self._recv_buffer_length_buffer = np.zeros(1, dtype=int)
-        
-    def _slicer_to_buffer(self, slicer):
-        self._send_buffer = slicer._to_npbuffer()
-        self._send_buffer_length[0] = len(slicer._to_npbuffer())
-        
-    def _ensure_recv_buffer_size(self):
-        if self._recv_buffer_length_buffer[0] != len(self._recv_buffer):
-            self._recv_buffer = np.zeros(self._recv_buffer_length_buffer[0],
-                                         dtype=self._recv_buffer.dtype)
-        
-    def _slice_set_from_buffer(self):
-        return xf.UniformBinSlicer._from_npbuffer(self._recv_buffer)
-    
-    def _slice_and_store(self, particles):
-        self.i_slice_particles = particles.particle_id * 0 + -999
-        self.i_bunch_particles = particles.particle_id * 0 + -9999
-        self.slicer.slice(particles, i_slice_particles=self.i_slice_particles,
-                          i_bunch_particles=self.i_bunch_particles)
-                        
+        super().init_pipeline(pipeline_manager=pipeline_manager,
+                              element_name=element_name,
+                              partners_names=partners_names)
+
     def track(self, particles):
-        _slice_result = None
-        if self.pipeline_manager is None:
-            self._slice_and_store(particles)
-            other_bunches_slicers = None
-        else:
-            other_bunches_slicers = []
-            is_ready_to_send = True
 
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_send(
-                        self.name,
-                        particles.name,
-                        partner_name,
-                        particles.at_turn[0],
-                        internal_tag=0
-                ):
-                    is_ready_to_send = False
-                    break
-
-            if is_ready_to_send:
-                self._slice_and_store(particles)
-                self._slicer_to_buffer(self.slicer)
-                for i_partner, partner_name in enumerate(self.partners_names):
-                    self.pipeline_manager.send_message(
-                        self._send_buffer_length,
-                        element_name=self.name,
-                        sender_name=particles.name,
-                        reciever_name=partner_name,
-                        turn=particles.at_turn[0],
-                        internal_tag=0
-                    )
-                    self.pipeline_manager.send_message(
-                        self._send_buffer,
-                        element_name=self.name,
-                        sender_name=particles.name,
-                        reciever_name=partner_name,
-                        turn=particles.at_turn[0],
-                        internal_tag=1)
-
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_recieve(
-                        self.name, partner_name,
-                        particles.name, internal_tag=0):
-                    return xt.PipelineStatus(on_hold=True)
-        if self.pipeline_manager is not None:
-            for i_partner, partner_name in enumerate(self.partners_names):
-                self.pipeline_manager.recieve_message(
-                    self._recv_buffer_length_buffer,
-                    self.name,
-                    partner_name,
-                    particles.name,
-                    internal_tag=0)
-                self._ensure_recv_buffer_size()
-                self.pipeline_manager.recieve_message(self._recv_buffer,
-                                                      self.name,
-                                                      partner_name,
-                                                      particles.name,
-                                                      internal_tag=1)
-                other_bunches_slicers.append(self._slice_set_from_buffer())
-
-        _slice_result = {'i_slice_particles': self.i_slice_particles,
-                         'i_bunch_particles': self.i_bunch_particles,
-                         'slicer': self.slicer}
+        super().track(particles)
 
         for wf in self.wakefields:
-            wf.track(particles, _slice_result=_slice_result,
-                     _other_bunches_slicers=other_bunches_slicers)
+            wf.track(particles, _slice_result=self._slice_result,
+                     _other_bunches_slicers=self.other_bunches_slicers)
 
 
-class Wakefield:
+class Wakefield(SlicedElement):
     """
     A beam element modelling a wakefield kick
 
@@ -361,6 +283,17 @@ class Wakefield:
             assert (num_slots is None and filling_scheme is not None and
                     bunch_numbers is not None)
 
+        super().__init__(
+            slicer_moments=source_moments,
+            log_moments=log_moments,
+            zeta_range=zeta_range,  # These are [a, b] in the paper
+            num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+            bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+            num_slots=num_slots,
+            filling_scheme=filling_scheme,
+            bunch_numbers=bunch_numbers,
+            _flatten=False)
+
         if zeta_range is not None:
             self._initialize_moments_and_conv_data(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
@@ -374,30 +307,6 @@ class Wakefield:
                 _flatten=_flatten)
                     
         self.pipeline_manager = None
-        
-    def init_pipeline(self, pipeline_manager, element_name, partners_names):
-        self.pipeline_manager = pipeline_manager
-        self.partners_names = partners_names
-        self.name = element_name
-        
-        self._send_buffer = self.slicer._to_npbuffer()
-        self._send_buffer_length = np.zeros(1, dtype=int)
-        self._send_buffer_length[0] = len(self._send_buffer)
-
-        self._recv_buffer = np.zeros_like(self._send_buffer)
-        self._recv_buffer_length_buffer = np.zeros(1, dtype=int)
-                            
-    def _slicer_to_buffer(self, slicer):
-        self._send_buffer = slicer._to_npbuffer()
-        self._send_buffer_length[0] = len(slicer._to_npbuffer())
-        
-    def _ensure_recv_buffer_size(self):
-        if self._recv_buffer_length_buffer[0] != len(self._recv_buffer):
-            self._recv_buffer = np.zeros(self._recv_buffer_length_buffer[0],
-                                         dtype=self._recv_buffer.dtype)
-        
-    def _slice_set_from_buffer(self):
-        return xf.UniformBinSlicer._from_npbuffer(self._recv_buffer)
     
     def _initialize_moments_and_conv_data(
             self,
@@ -410,22 +319,6 @@ class Wakefield:
             circumference=None,
             log_moments=None,
             _flatten=False):
-
-        slicer_moments = self.source_moments.copy()
-        if log_moments is not None:
-            slicer_moments += log_moments
-        slicer_moments = list(set(slicer_moments))
-        if 'num_particles' in slicer_moments:
-            slicer_moments.remove('num_particles')
-
-        self.slicer = xf.UniformBinSlicer(
-            zeta_range=zeta_range,
-            num_slices=num_slices,
-            filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
-            bunch_spacing_zeta=bunch_spacing_zeta,
-            moments=slicer_moments
-            )
 
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
@@ -496,19 +389,6 @@ class Wakefield:
 
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
-
-    def _slice_and_store(self, particles, _slice_result):
-        if _slice_result is not None:
-            self.i_slice_particles = _slice_result['i_slice_particles']
-            self.i_bunch_particles = _slice_result['i_bunch_particles']
-            self.slicer = _slice_result['slicer']
-        else:
-            # Measure slice moments and get slice indeces
-            self.i_slice_particles = particles.particle_id * 0 + -999
-            self.i_bunch_particles = particles.particle_id * 0 + -9999
-            self.slicer.slice(particles,
-                              i_slice_particles=self.i_slice_particles,
-                              i_bunch_particles=self.i_bunch_particles)
         
     def _add_slicer_moments_to_moments_data(self, slicer):
         # Set slice moments for fast convolution
@@ -758,23 +638,104 @@ class Wakefield:
         return z_out, moment_out
 
 
-class TempResonatorFunction:
-    def __init__(self, r_shunt, frequency, q_factor):
-        self.r_shunt = r_shunt
-        self.frequency = frequency
-        self.q_factor = q_factor
+class ResonatorWake(Wakefield):
+    """
+    A resonator wake. On top of the following parameters it takes the same
+    parameters as WakeField.
+    Changing r_shunt, q_factor, and frequency after initialization is forbidded
+    because the wake-associated quantities are computed upon initialization and
+    changing the parameters would not update them.
 
-    def __call__(self, z):
-        r_s = self.r_shunt
-        q_factor = self.q_factor
-        f_r = self.frequency
-        omega_r = 2 * np.pi * f_r
-        alpha_t = omega_r / (2 * q_factor)
-        omega_bar = np.sqrt(omega_r**2 - alpha_t**2)
+    Parameters
+    ----------
+    r_shunt: float
+        Resonator shunt impedance
+    frequency: float
+        Resonator frequency
+    q_factor: float
+        Resonator quality factor
+    beta: float
+        Lorentz factor of the beam
 
-        res = (z < 0) * (r_s * omega_r**2 / (q_factor * omega_bar) *
-                         np.exp(alpha_t * z / clight) *
-                         np.sin(omega_bar * z / clight))  # Wake definition
+    Returns
+    -------
+    A resonator Wakefield
+    """
+
+    def __init__(self, r_shunt, frequency, q_factor, beta=1, ** kwargs):
+
+        assert 'function' not in kwargs
+
+        self._r_shunt = r_shunt
+        self._frequency = frequency
+        self._q_factor = q_factor
+        self.beta = beta
+
+        if kwargs['kick'] == 'delta':
+            function = self._longitudinal_resonator_function
+        else:
+            function = self._transverse_resonator_function
+
+        super().__init__(function=function, **kwargs)
+
+    @property
+    def r_shunt(self):
+        return self._r_shunt
+
+    @r_shunt.setter
+    def r_shunt(self, value):
+        if hasattr(self, 'r_shunt'):
+            raise AttributeError('r_shunt cannot be changed after '
+                                 'initialization')
+        self._r_shunt = value
+
+    @property
+    def q_factor(self):
+        return self._q_factor
+
+    @q_factor.setter
+    def q_factor(self, value):
+        if hasattr(self, 'q_factor'):
+            raise AttributeError('q_factor cannot be changed after '
+                                 'initialization')
+        self._q_factor = value
+
+    @property
+    def frequency(self):
+        return self._frequency
+
+    @frequency.setter
+    def frequency(self, value):
+        if hasattr(self, 'frequency'):
+            raise AttributeError('frequency cannot be changed after '
+                                 'initialization')
+        self._frequency = value
+
+    def _transverse_resonator_function(self, z):
+        omega_r = 2 * np.pi * self.frequency
+        alpha_t = omega_r / (2 * self.q_factor)
+        omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
+
+        dt = self.beta*clight
+
+        res = (z < 0) * (self.r_shunt *
+                         omega_r ** 2 / (self.q_factor * omega_bar) *
+                         np.exp(alpha_t * z / dt) *
+                         np.sin(omega_bar * z / dt))  # Wake definition
+        return res
+
+    def _longitudinal_resonator_function(self, z):
+        omega_r = 2 * np.pi * self.frequency
+        alpha_t = omega_r / (2 * self.q_factor)
+        omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
+
+        dt = self.beta*clight
+
+        res = (z < 0) * (-self.r_shunt * alpha_t *
+                         np.exp(alpha_t * z / dt) *
+                         (np.cos(omega_bar * z / dt) +
+                          alpha_t / omega_bar * np.sin(omega_bar * z / dt)))
+
         return res
 
 
