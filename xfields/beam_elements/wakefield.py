@@ -71,7 +71,9 @@ class MultiWakefield(SlicedElement):
         for wf in self.wakefields:
             assert wf.moments_data is None
 
-            wf.init_slicer(zeta_range)
+            wf.init_slicer(zeta_range, num_slices, filling_scheme,
+                           bunch_numbers, bunch_spacing_zeta,
+                           wf.source_moments.copy())
 
             wf._initialize_moments_and_conv_data(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
@@ -202,7 +204,7 @@ class MultiWakefield(SlicedElement):
 
         for wf in self.wakefields:
             wf.track(particles, _slice_result=self._slice_result,
-                     _other_bunches_slicers=self.other_bunches_slicers)
+                     _other_bunch_slicers=self.other_bunch_slicers)
 
 
 class Wakefield(SlicedElement):
@@ -273,15 +275,6 @@ class Wakefield(SlicedElement):
         self.source_moments = source_moments
         self.function = function
         self.moments_data = None
-
-        if filling_scheme is None and bunch_numbers is None:
-            if num_slots is None:
-                num_slots = 1
-            filling_scheme = np.ones(num_slots, dtype=np.int64)
-            bunch_numbers = np.arange(num_slots, dtype=np.int64)
-        else:
-            assert (num_slots is None and filling_scheme is not None and
-                    bunch_numbers is not None)
 
         super().__init__(
             slicer_moments=source_moments,
@@ -417,7 +410,10 @@ class Wakefield(SlicedElement):
         self._slice_and_store(particles, _slice_result)
         self._add_slicer_moments_to_moments_data(self.slicer)
         
-    def track(self, particles, _slice_result=None, _other_bunches_slicers=None):
+    def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
+        # here we cannot reuse the track method from SlicedElement because
+        # we need to take care of updating the CompressedProfile as well.
+        # Can this be avoided?
         if self.moments_data is None:
             raise ValueError('moments_data is None. '
                              'Please initialize it before tracking.')
@@ -477,8 +473,8 @@ class Wakefield(SlicedElement):
                 other_bunch_slicer = self._slice_set_from_buffer()
                 self._add_slicer_moments_to_moments_data(other_bunch_slicer)
         
-        if _other_bunches_slicers is not None:
-            for other_bunch_slicer in _other_bunches_slicers:
+        if _other_bunch_slicers is not None:
+            for other_bunch_slicer in _other_bunch_slicers:
                 self._add_slicer_moments_to_moments_data(other_bunch_slicer)
 
         # Compute convolution
