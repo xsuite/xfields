@@ -12,7 +12,6 @@ from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 import xfields as xf
 import xtrack as xt
-from xfields import Wakefield
 
 
 # Machine settings
@@ -176,7 +175,7 @@ dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
 n_bunches_wake = 120  # Can be longer than filling scheme
 
-wf = Wakefield.from_resonator_parameters(
+wf = xf.ResonatorWake(
     r_shunt=wakes.R_shunt,
     q_factor=wakes.Q,
     frequency=wakes.frequency,

@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import c, e
-from xfields import Wakefield, MultiWakefield
+from xfields import ResonatorWake, MultiWakefield
 from xobjects.test_helpers import for_all_test_contexts
 import xtrack as xt
 
@@ -43,7 +43,7 @@ def test_longitudinal_wake_kick(test_context):
 
     delta_bef = particles.delta.copy()
 
-    wfz = Wakefield.from_resonator_parameters(
+    wfz = ResonatorWake(
         r_shunt=1e8,
         q_factor=1e7,
         frequency=1e3,
@@ -123,7 +123,7 @@ def test_constant_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield.from_resonator_parameters(
+    wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
@@ -132,7 +132,7 @@ def test_constant_wake_kick(test_context):
         scale_kick=None,
     )
 
-    wfy = Wakefield.from_resonator_parameters(
+    wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
@@ -232,7 +232,7 @@ def test_direct_dipolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield.from_resonator_parameters(
+    wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
@@ -241,7 +241,7 @@ def test_direct_dipolar_wake_kick(test_context):
         scale_kick=scale_kick_x,
     )
 
-    wfy = Wakefield.from_resonator_parameters(
+    wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
@@ -343,7 +343,7 @@ def test_cross_dipolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield.from_resonator_parameters(
+    wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
@@ -352,7 +352,7 @@ def test_cross_dipolar_wake_kick(test_context):
         scale_kick=scale_kick_x,
     )
 
-    wfy = Wakefield.from_resonator_parameters(
+    wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
@@ -461,7 +461,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield.from_resonator_parameters(
+    wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
@@ -470,7 +470,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
         scale_kick=scale_kick_x,
     )
 
-    wfy = Wakefield.from_resonator_parameters(
+    wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
@@ -581,7 +581,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield.from_resonator_parameters(
+    wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
@@ -590,7 +590,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
         scale_kick=scale_kick_x,
     )
 
-    wfy = Wakefield.from_resonator_parameters(
+    wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
@@ -695,7 +695,7 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     px_bef = particles.px.copy()
     py_bef = particles.py.copy()
 
-    wfx = Wakefield.from_resonator_parameters(
+    wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e4,
@@ -704,22 +704,13 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
         scale_kick=scale_kick_x,
     )
 
-    wfy = Wakefield.from_resonator_parameters(
+    wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
-        frequency=1e4
-        
-
-
-
-
-
-
-
-        ,
+        frequency=1e4,
         source_moments=['num_particles', source_moment_y],
         kick='py',
-        scale_kick=scale_kick_y,
+        scale_kick=scale_kick_y
     )
 
     zeta_range_xf = zeta_range

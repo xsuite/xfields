@@ -193,7 +193,7 @@ dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
 xf_slicer_list = []
 
-wf = xf.Wakefield.from_resonator_parameters(
+wf = xf.ResonatorWake(
     r_shunt=wakes.R_shunt,
     frequency=wakes.frequency,
     q_factor=wakes.Q,

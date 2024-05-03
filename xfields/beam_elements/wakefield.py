@@ -757,72 +757,106 @@ class Wakefield:
 
         return z_out, moment_out
 
-    @classmethod
-    def from_resonator_parameters(cls, r_shunt, frequency, q_factor,
-                                  beta=1, **kwargs):
-        """
-        Parameters
-        ----------
-        r_shunt: float
-            Resonator shunt impedance
-        frequency: float
-            Resonator frequency
-        q_factor: float
-            Resonator quality factor
-        beta: float
-            Lorentz factor of the beam
 
-        Returns
-        -------
-        A resonator Wakefield
-        """
+class ResonatorWake(Wakefield):
+    """
+    A resonator wake. On top of the following parameters it takes the same
+    parameters as WakeField.
+    Changing r_shunt, q_factor, and frequency after initialization is forbidded
+    because the wake-associated quantities are computed upon initialization and
+    changing the parameters would not update them.
+
+    Parameters
+    ----------
+    r_shunt: float
+        Resonator shunt impedance
+    frequency: float
+        Resonator frequency
+    q_factor: float
+        Resonator quality factor
+    beta: float
+        Lorentz factor of the beam
+
+    Returns
+    -------
+    A resonator Wakefield
+    """
+
+    def __init__(self, r_shunt, frequency, q_factor, beta=1, ** kwargs):
 
         assert 'function' not in kwargs
 
+        self._r_shunt = r_shunt
+        self._frequency = frequency
+        self._q_factor = q_factor
+        self.beta = beta
+
         if kwargs['kick'] == 'delta':
-            function = lambda z: _longitudinal_resonator_function(
-                z=z,
-                r_shunt=r_shunt,
-                frequency=frequency,
-                q_factor=q_factor,
-                beta=beta)
+            function = self._longitudinal_resonator_function
         else:
-            function = lambda z: _transverse_resonator_function(
-                z=z,
-                r_shunt=r_shunt,
-                frequency=frequency,
-                q_factor=q_factor,
-                beta=beta)
+            function = self._transverse_resonator_function
 
-        return cls(function=function, **kwargs)
+        super().__init__(function=function, **kwargs)
 
+    @property
+    def r_shunt(self):
+        return self._r_shunt
 
-def _transverse_resonator_function(z, r_shunt, frequency, q_factor, beta):
-    omega_r = 2 * np.pi * frequency
-    alpha_t = omega_r / (2 * q_factor)
-    omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
+    @r_shunt.setter
+    def r_shunt(self, value):
+        if hasattr(self, 'r_shunt'):
+            raise AttributeError('r_shunt cannot be changed after '
+                                 'initialization')
+        self._r_shunt = value
 
-    dt = beta*clight
+    @property
+    def q_factor(self):
+        return self._q_factor
 
-    res = (z < 0) * (r_shunt * omega_r ** 2 / (q_factor * omega_bar) *
-                     np.exp(alpha_t * z / dt) *
-                     np.sin(omega_bar * z / dt))  # Wake definition
-    return res
+    @q_factor.setter
+    def q_factor(self, value):
+        if hasattr(self, 'q_factor'):
+            raise AttributeError('q_factor cannot be changed after '
+                                 'initialization')
+        self._q_factor = value
 
+    @property
+    def frequency(self):
+        return self._frequency
 
-def _longitudinal_resonator_function(z, r_shunt, frequency, q_factor, beta):
-    omega_r = 2 * np.pi * frequency
-    alpha_t = omega_r / (2 * q_factor)
-    omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
+    @frequency.setter
+    def frequency(self, value):
+        if hasattr(self, 'frequency'):
+            raise AttributeError('frequency cannot be changed after '
+                                 'initialization')
+        self._frequency = value
 
-    dt = beta*clight
+    def _transverse_resonator_function(self, z):
+        omega_r = 2 * np.pi * self.frequency
+        alpha_t = omega_r / (2 * self.q_factor)
+        omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
 
-    res = (z < 0) * (-r_shunt * alpha_t *
-                     np.exp(alpha_t * z / dt) *
-                     (np.cos(omega_bar * z / dt) +
-                      alpha_t / omega_bar * np.sin(omega_bar * z / dt)))
+        dt = self.beta*clight
 
-    return res
+        res = (z < 0) * (self.r_shunt *
+                         omega_r ** 2 / (self.q_factor * omega_bar) *
+                         np.exp(alpha_t * z / dt) *
+                         np.sin(omega_bar * z / dt))  # Wake definition
+        return res
+
+    def _longitudinal_resonator_function(self, z):
+        omega_r = 2 * np.pi * self.frequency
+        alpha_t = omega_r / (2 * self.q_factor)
+        omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
+
+        dt = self.beta*clight
+
+        res = (z < 0) * (-self.r_shunt * alpha_t *
+                         np.exp(alpha_t * z / dt) *
+                         (np.cos(omega_bar * z / dt) +
+                          alpha_t / omega_bar * np.sin(omega_bar * z / dt)))
+
+        return res
 
 
 def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
