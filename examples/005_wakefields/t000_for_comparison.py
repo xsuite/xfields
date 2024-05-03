@@ -193,13 +193,13 @@ dipole_moment_matrix_multiturn = np.zeros((n_bunches, n_slices, n_turns))
 
 xf_slicer_list = []
 
-from wakefield import Wakefield, TempResonatorFunction
-
-wf = Wakefield(
+wf = xf.ResonatorWake(
+    r_shunt=wakes.R_shunt,
+    frequency=wakes.frequency,
+    q_factor=wakes.Q,
     source_moments=['num_particles', 'x', 'y'],
     kick=None,
     scale_kick=None, # The kick is scaled by position of the particle for quadrupolar, would be None for dipolar
-    function=TempResonatorFunction(R_shunt=wakes.R_shunt, frequency=wakes.frequency, Q=wakes.Q),
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length), # These are [a, b] in the paper
     slicer=None, # alternatively, a slicer can be used
     num_slices=n_slices, # Per bunch, this is N_1 in the paper

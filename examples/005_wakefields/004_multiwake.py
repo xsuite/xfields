@@ -11,7 +11,7 @@ from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 import xfields as xf
 import xtrack as xt
-from xfields import Wakefield, TempResonatorFunction, MultiWakefield
+from xfields import Wakefield, MultiWakefield
 
 # Machine settings
 
@@ -169,22 +169,24 @@ bunch_numbers = np.arange(num_slots, dtype=np.int64)
 
 # The kick is scaled by position of the particle for quadrupolar,
 # it would be None for dipolar
-wfx = Wakefield(
+wfx = xf.ResonatorWake(
+    r_shunt=wakes.R_shunt,
+    q_factor=wakes.Q,
+    frequency=wakes.frequency,
     source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None,
-    function=TempResonatorFunction(r_shunt=wakes.R_shunt,
-                                   frequency=wakes.frequency, q_factor=wakes.Q),
     filling_scheme=filling_scheme,
     bunch_numbers=bunch_numbers,
 )
 
-wfy = Wakefield(
+wfy = xf.ResonatorWake(
+    r_shunt=wakes.R_shunt,
+    q_factor=wakes.Q,
+    frequency=wakes.frequency,
     source_moments=['num_particles', 'y'],
     kick='py',
     scale_kick=None,
-    function=TempResonatorFunction(r_shunt=wakes.R_shunt,
-                                   frequency=wakes.frequency, q_factor=wakes.Q),
     filling_scheme=filling_scheme,
     bunch_numbers=bunch_numbers,
 )
