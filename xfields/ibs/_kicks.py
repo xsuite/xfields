@@ -348,6 +348,7 @@ class IBSSimpleKick(IBSKick):
         scaling_factor: float = float(2 * nplike.sqrt(np.pi) * bunch_length_rms)
         # ----------------------------------------------------------------------------------------------
         # Computing the analytical IBS growth rates through the instance's set TwissTable
+        # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
         growth_rates: IBSGrowthRates = self._twiss.get_ibs_growth_rates(
             formalism=self.formalism,
             gemitt_x=float(gemitt_x),
