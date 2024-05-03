@@ -179,7 +179,7 @@ class MultiWakefield:
                                       bounds_error=False, fill_value=0.0)
                 )
                 wakefields.append(wakefield)
-        return MultiWakefield(wakefields, **kwargs)
+        return cls(wakefields, **kwargs)
         
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         self.pipeline_manager = pipeline_manager
@@ -758,23 +758,104 @@ class Wakefield:
         return z_out, moment_out
 
 
-class TempResonatorFunction:
-    def __init__(self, r_shunt, frequency, q_factor):
-        self.r_shunt = r_shunt
-        self.frequency = frequency
-        self.q_factor = q_factor
+class ResonatorWake(Wakefield):
+    """
+    A resonator wake. On top of the following parameters it takes the same
+    parameters as WakeField.
+    Changing r_shunt, q_factor, and frequency after initialization is forbidded
+    because the wake-associated quantities are computed upon initialization and
+    changing the parameters would not update them.
 
-    def __call__(self, z):
-        r_s = self.r_shunt
-        q_factor = self.q_factor
-        f_r = self.frequency
-        omega_r = 2 * np.pi * f_r
-        alpha_t = omega_r / (2 * q_factor)
-        omega_bar = np.sqrt(omega_r**2 - alpha_t**2)
+    Parameters
+    ----------
+    r_shunt: float
+        Resonator shunt impedance
+    frequency: float
+        Resonator frequency
+    q_factor: float
+        Resonator quality factor
+    beta: float
+        Lorentz factor of the beam
 
-        res = (z < 0) * (r_s * omega_r**2 / (q_factor * omega_bar) *
-                         np.exp(alpha_t * z / clight) *
-                         np.sin(omega_bar * z / clight))  # Wake definition
+    Returns
+    -------
+    A resonator Wakefield
+    """
+
+    def __init__(self, r_shunt, frequency, q_factor, beta=1, ** kwargs):
+
+        assert 'function' not in kwargs
+
+        self._r_shunt = r_shunt
+        self._frequency = frequency
+        self._q_factor = q_factor
+        self.beta = beta
+
+        if kwargs['kick'] == 'delta':
+            function = self._longitudinal_resonator_function
+        else:
+            function = self._transverse_resonator_function
+
+        super().__init__(function=function, **kwargs)
+
+    @property
+    def r_shunt(self):
+        return self._r_shunt
+
+    @r_shunt.setter
+    def r_shunt(self, value):
+        if hasattr(self, 'r_shunt'):
+            raise AttributeError('r_shunt cannot be changed after '
+                                 'initialization')
+        self._r_shunt = value
+
+    @property
+    def q_factor(self):
+        return self._q_factor
+
+    @q_factor.setter
+    def q_factor(self, value):
+        if hasattr(self, 'q_factor'):
+            raise AttributeError('q_factor cannot be changed after '
+                                 'initialization')
+        self._q_factor = value
+
+    @property
+    def frequency(self):
+        return self._frequency
+
+    @frequency.setter
+    def frequency(self, value):
+        if hasattr(self, 'frequency'):
+            raise AttributeError('frequency cannot be changed after '
+                                 'initialization')
+        self._frequency = value
+
+    def _transverse_resonator_function(self, z):
+        omega_r = 2 * np.pi * self.frequency
+        alpha_t = omega_r / (2 * self.q_factor)
+        omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
+
+        dt = self.beta*clight
+
+        res = (z < 0) * (self.r_shunt *
+                         omega_r ** 2 / (self.q_factor * omega_bar) *
+                         np.exp(alpha_t * z / dt) *
+                         np.sin(omega_bar * z / dt))  # Wake definition
+        return res
+
+    def _longitudinal_resonator_function(self, z):
+        omega_r = 2 * np.pi * self.frequency
+        alpha_t = omega_r / (2 * self.q_factor)
+        omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
+
+        dt = self.beta*clight
+
+        res = (z < 0) * (-self.r_shunt * alpha_t *
+                         np.exp(alpha_t * z / dt) *
+                         (np.cos(omega_bar * z / dt) +
+                          alpha_t / omega_bar * np.sin(omega_bar * z / dt)))
+
         return res
 
 
