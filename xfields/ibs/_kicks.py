@@ -336,7 +336,8 @@ class IBSSimpleKick(IBSKick):
         gemitt_y: float = _gemitt_y(particles, self._twiss["bety", self._name], self._twiss["dy", self._name])
         # ----------------------------------------------------------------------------------------------
         # Computing standard deviation of (normalized) momenta, corresponding to sigma_{pu} in Eq (8) of reference
-        # Normalized: for momentum we have to multiply with gamma = beta / (1 + alpha^2), beta is included in the
+        # TODO: figure out this part below again, write the math down
+        # Normalized: for momentum we have to multiply with 1/gamma = beta / (1 + alpha^2), beta is included in the
         # std of p[xy]. If bunch is rotated, the std takes from the "other plane" so we normalize to compensate.
         sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)
         sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)
@@ -506,3 +507,131 @@ class IBSKineticKick(IBSKick):
         ):
             return True
         return False
+
+    def compute_kinetic_coefficients(
+        self, particles: xt.Particles
+    ) -> Tuple[DiffusionCoefficients, FrictionCoefficients]:
+        r"""
+        Computes the ``IBS`` friction coefficients (named :math:`D_x, D_y`
+        and :math:`D_z` in this code base) and friction coefficients (named
+        :math:`F_x, F_y` and :math:`F_z`) from the kinetic theory introduced
+        in :cite:`NuclInstr:Zenkevich:Kinetic_IBS`. These are computed from
+        terms of Nagaitsev's theory for faster evaluation, according to the
+        derivations done in :cite:arXiv:`Zampetakis:Interplay_SC_IBS_LHC`.
+
+        Notes
+        -----
+            The calculation is done according to the following steps, which are related
+            to the derivations found in :cite:arXiv:`Zampetakis:Interplay_SC_IBS_LHC`
+            (in which the generalized diffusion and friction coefficients are used):
+
+                - Computes various terms from the Nagaitsev formalism
+                - Computes the intermediate :math:`D_{xx}, D_{xz}, D_{yy}` and :math:`D_{zz}` terms from Eq (39-41, 44)
+                - Computes the intermediate :math:`K_x, K_y` and :math:`K_z` terms from Eq (42-44)
+                - Computes the diffusion coefficients :math:`D_{x,y,z}` from Eq (45-47)
+                - Computes the friction coefficients :math:`F_{x,y,z}` from Eq (48-50)
+
+        Parameters
+        ----------
+        particles : xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+
+        Returns
+        -------
+        DiffusionCoefficients, FrictionCoefficients
+            A tuple with the computed kinetic coefficients slotted into a
+            ``DiffusionCoefficients``  and a ``FrictionCoefficients`` objects.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # This full computation (apart from getting properties from the particles object) is done
+        # on the CPU, as no GPU context provides scipy's elliptic integrals. It is then better to
+        # do the rest of the computation on CPU than transfer arrays to GPU and finish it there.
+        # ----------------------------------------------------------------------------------------------
+        # Compute (geometric) emittances, momentum spread, bunch length and sigmas from the Particles
+        LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
+        gemitt_x: float = _gemitt_x(particles, self._twiss["betx", self._name], self._twiss["dx", self._name])
+        gemitt_y: float = _gemitt_y(particles, self._twiss["bety", self._name], self._twiss["dy", self._name])
+        total_beam_intensity: float = _beam_intensity(particles)
+        bunch_length: float = _bunch_length(particles)
+        sigma_delta: float = _sigma_delta(particles)
+        sigma_x: float = _sigma_x(particles)
+        sigma_y: float = _sigma_y(particles)
+        # ----------------------------------------------------------------------------------------------
+        # Allocating some properties to simple variables for readability
+        beta0: float = self._twiss.beta0
+        gamma0: float = self._twiss.gamma0
+        radius: float = self._twiss.particle_on_co.get_classical_particle_radius0()
+        circumference: float = self._twiss.circumference
+        betx = self._twiss.betx
+        bety = self._twiss.bety
+        dx = self._twiss.dx
+        # ----------------------------------------------------------------------------------------------
+        # Compute the Coulomb logarithm and then the common constant term of Eq (45-50)
+        # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
+        coulomb_logarithm: float = BjorkenMtingwaIBS(self._twiss).coulomb_log(
+            gemitt_x=gemitt_x,
+            gemitt_y=gemitt_y,
+            sigma_delta=sigma_delta,
+            bunch_length=bunch_length,
+            total_beam_intensity=total_beam_intensity,
+        )
+        const_numerator: float = total_beam_intensity * radius**2 * c * coulomb_logarithm
+        const_denominator: float = 12 * np.pi * beta0**3 * gamma0**5 * bunch_length
+        full_constant_term: float = const_numerator / const_denominator
+        # ----------------------------------------------------------------------------------------------
+        # Computing the constants from Eq (18-21) in Nagaitsev's paper
+        phix: ArrayLike = phi(betx, self._twiss.alfx, dx, self._twiss.dpx)
+        ax: ArrayLike = betx / gemitt_x
+        ay: ArrayLike = bety / gemitt_y
+        a_s: ArrayLike = ax * (dx**2 / betx**2 + phix**2) + 1 / sigma_delta**2
+        a1: ArrayLike = (ax + gamma0**2 * a_s) / 2.0
+        a2: ArrayLike = (ax - gamma0**2 * a_s) / 2.0
+        sqrt_term = np.sqrt(a2**2 + gamma0**2 * ax**2 * phix**2)  # qx in Michalis paper
+        # ----------------------------------------------------------------------------------------------
+        # Compute the eigen values of A matrix (L matrix in B&M) then elliptic integrals R1, R2 and R3
+        # They are arrays with one value per element in the lattice
+        # fmt: off
+        lambda_1: ArrayLike = ay
+        lambda_2: ArrayLike = a1 + sqrt_term
+        lambda_3: ArrayLike = a1 - sqrt_term
+        R1: ArrayLike = elliprd(1 / lambda_2, 1 / lambda_3, 1 / lambda_1) / lambda_1
+        R2: ArrayLike = elliprd(1 / lambda_3, 1 / lambda_1, 1 / lambda_2) / lambda_2
+        R3: ArrayLike = 3 * np.sqrt(lambda_1 * lambda_2 / lambda_3) - lambda_1 * R1 / lambda_3 - lambda_2 * R2 / lambda_3
+        # ----------------------------------------------------------------------------------------------
+        # Computing the Dxx, Dxz, Dyy, Dzz terms from Eq (39-41, 44)
+        Dxx: ArrayLike = 0.5 * (2 * R1 + R2 * (1 - a2 / sqrt_term) + R3 * (1 + a2 / sqrt_term))
+        Dxz: ArrayLike = 3 * gamma0**2 * phix**2 * ax * (R3 - R2) / sqrt_term
+        Dyy: ArrayLike = R2 + R3
+        Dzz: ArrayLike = 0.5 * gamma0**2 * (2 * R1 + R2 * (1 + a2 / sqrt_term) + R3 * (1 - a2 / sqrt_term))
+        # ----------------------------------------------------------------------------------------------
+        # Computing the Kx, Ky, Kz terms from Eq (42-44)
+        # TODO: remove comments below when Michalis has a new paper version online. Due to the factor
+        # 2 in Eq (9) it is included directly in here, but this is badly defined in the paper
+        Kx: ArrayLike = 1.0 * (R2 * (1 + a2 / sqrt_term) + R3 * (1 - a2 / sqrt_term))  # Eq says 0.5
+        Ky: ArrayLike = 2 * R1  # Eq says 1
+        Kz: ArrayLike = 1.0 * gamma0**2 * (R2 * (1 - a2 / sqrt_term) + R3 * (1 + a2 / sqrt_term))  # Eq says 0.5
+        # fmt: on
+        # ----------------------------------------------------------------------------------------------
+        # Computing integrands for the diffusion and friction terms from Eq (45-50)
+        # TODO: missing bet[xy] terms in paper are typos, remove this comment when new version is out
+        int_denominator: float = circumference * sigma_x * sigma_y  # common denominator to all integrands
+        Dx_integrand: ArrayLike = betx * (Dxx + (dx**2 / betx**2 + phix**2) * Dzz + Dxz) / int_denominator
+        Dy_integrand: ArrayLike = bety * Dyy / int_denominator
+        Dz_integrand: ArrayLike = Dzz / int_denominator
+        Fx_integrand: ArrayLike = betx * (Kx + (dx**2 / betx**2 + phix**2) * Kz) / int_denominator
+        Fy_integrand: ArrayLike = bety * Ky / int_denominator
+        Fz_integrand: ArrayLike = Kz / int_denominator
+        # ----------------------------------------------------------------------------------------------
+        # Integrating them to obtain the final diffusion and friction coefficients (full Eq (45-50))
+        ds: ArrayLike = np.diff(self._twiss.s)
+        Dx: float = np.sum(Dx_integrand[:-1] * ds) * full_constant_term / gemitt_x
+        Dy: float = np.sum(Dy_integrand[:-1] * ds) * full_constant_term / gemitt_y
+        Dz: float = np.sum(Dz_integrand[:-1] * ds) * full_constant_term / sigma_delta**2
+        Fx: float = np.sum(Fx_integrand[:-1] * ds) * full_constant_term / gemitt_x
+        Fy: float = np.sum(Fy_integrand[:-1] * ds) * full_constant_term / gemitt_y
+        Fz: float = np.sum(Fz_integrand[:-1] * ds) * full_constant_term / sigma_delta**2
+        # ----------------------------------------------------------------------------------------------
+        # Self-update the instance's attributes and then return the results
+        self.diffusion_coefficients = DiffusionCoefficients(Dx, Dy, Dz)
+        self.friction_coefficients = FrictionCoefficients(Fx, Fy, Fz)
+        return self.diffusion_coefficients, self.friction_coefficients
