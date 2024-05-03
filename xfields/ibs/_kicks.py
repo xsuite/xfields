@@ -336,9 +336,9 @@ class IBSSimpleKick(IBSKick):
         gemitt_y: float = _gemitt_y(particles, self._twiss["bety", self._name], self._twiss["dy", self._name])
         # ----------------------------------------------------------------------------------------------
         # Computing standard deviation of (normalized) momenta, corresponding to sigma_{pu} in Eq (8) of reference
-        # TODO: figure out this part below again, write the math down
-        # Normalized: for momentum we have to multiply with 1/gamma = beta / (1 + alpha^2), beta is included in the
-        # std of p[xy]. If bunch is rotated, the std takes from the "other plane" so we normalize to compensate.
+        # Normalized: for momentum we have to multiply with 1/sqrt(gamma) = sqrt(beta) / sqrt(1 + alpha^2), and the
+        # sqrt(beta) is included in the std of p[xy]. If bunch is rotated, the std takes from the "other plane" so
+        # we take the normalized momenta to compensate.
         sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)
         sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)
         # ----------------------------------------------------------------------------------------------
@@ -636,3 +636,74 @@ class IBSKineticKick(IBSKick):
         self.diffusion_coefficients = DiffusionCoefficients(Dx, Dy, Dz)
         self.friction_coefficients = FrictionCoefficients(Fx, Fy, Fz)
         return self.diffusion_coefficients, self.friction_coefficients
+
+    def track(self, particles: xt.Particles) -> None:
+        """
+        Method to determine and apply IBS momenta kicks based on the provided
+        `xtrack.Particles`. The kicks are implemented according to Eq (19) of
+        :cite:arXiv:`Zampetakis:Interplay_SC_IBS_LHC`.
+
+        Parameters
+        ----------
+        particles : xtrack.Particles
+            The particles to apply the IBS kicks to and compute it from.
+        """
+        # ----------------------------------------------------------------------------------------------
+        # Intercept here if the kick element is "off" and has no scale strength - do not compute for nothing
+        if self._scale_strength == 0:
+            return
+        # ----------------------------------------------------------------------------------------------
+        # Check if coefficients need to be recomputed before applying kicks & recompute if necessary
+        if self._coefficients_need_recompute(particles) is True:
+            LOGGER.debug("Recomputing simple kick coefficients before applying kicks")
+            self.compute_kinetic_coefficients(particles)
+        # ----------------------------------------------------------------------------------------------
+        # Get the nplike_lib from the particles' context, to compute on the context device
+        _assert_accepted_context(particles._context)
+        nplike = particles._context.nplike_lib
+        # ----------------------------------------------------------------------------------------------
+        # Compute delta_t for the turn and the line density (rho(z) term in Eq (19) of reference)
+        dt: float = self._twiss.T_rev0
+        rho_t: ArrayLike = line_density(particles, self.num_slices)  # on context
+        # ----------------------------------------------------------------------------------------------
+        # Compute the bunch_length * 2 * sqrt(pi) factor for the kicks
+        bunch_length: float = _bunch_length(particles)
+        factor: float = bunch_length * 2 * nplike.sqrt(np.pi)
+        # ----------------------------------------------------------------------------------------------
+        # Computing standard deviation of (normalized) momenta, corresponding to sigma_{pu} in Eq (8) of reference
+        # Normalized: for momentum we have to multiply with 1/sqrt(gamma) = sqrt(beta) / sqrt(1 + alpha^2), and the
+        # sqrt(beta) is included in the std of p[xy]. If bunch is rotated, the std takes from the "other plane" so
+        # we take the normalized momenta to compensate.
+        # fmt: off
+        sigma_delta: float = _sigma_delta(particles)                                                               # on context
+        sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)  # on context
+        sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)  # on context
+        # ----------------------------------------------------------------------------------------------
+        # Determining the Friction kicks (momenta change from friction forces)
+        # Friction term is in absolute value and depends on the momentum. If we have a distribution
+        # the friction term is with respect to the center -> if the beam is off-center we need to
+        # compensate for this, so we use deviation of particle p[xy] from distribution mean of p[xy]
+        LOGGER.debug("Determining friction kicks")
+        dev_px: ArrayLike = particles.px[particles.state > 0] - nplike.mean(particles.px[particles.state > 0])           # on context
+        dev_py: ArrayLike = particles.py[particles.state > 0] - nplike.mean(particles.py[particles.state > 0])           # on context
+        dev_delta: ArrayLike = particles.delta[particles.state > 0] - nplike.mean(particles.delta[particles.state > 0])  # on context
+        Fx, Fy, Fz = self.friction_coefficients.as_tuple()  # floats
+        delta_px_friction: ArrayLike = -Fx * dev_px * dt * rho_t        # on context
+        delta_py_friction: ArrayLike = -Fy * dev_py * dt * rho_t        # on context
+        delta_delta_friction: ArrayLike = -Fz * dev_delta * dt * rho_t  # on context
+        # ----------------------------------------------------------------------------------------------
+        # Determining the Diffusion kicks (momenta change from diffusion forces)
+        LOGGER.debug("Determining diffusion kicks")
+        Dx, Dy, Dz = self.diffusion_coefficients.as_tuple()  # floats
+        rng = nplike.random.default_rng()
+        _size = particles.px[particles.state > 0].shape[0]  # same for py and delta, it's the alive particles
+        # TODO: the factor 2 here is missing in the paper atm and it's a typo (remove when new paper is out)
+        delta_px_diffusion: ArrayLike = sigma_px_normalized * nplike.sqrt(2 * dt * Dx * rho_t) * rng.standard_normal(_size)  # on context
+        delta_py_diffusion: ArrayLike = sigma_py_normalized * nplike.sqrt(2 * dt * Dy * rho_t) * rng.standard_normal(_size)  # on context
+        delta_delta_diffusion: ArrayLike = sigma_delta * nplike.sqrt(2 * dt * Dz * rho_t) * rng.standard_normal(_size)       # on context
+        # ----------------------------------------------------------------------------------------------
+        # Applying the momenta kicks to the particles
+        LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
+        particles.px[particles.state > 0] += delta_px_friction + delta_px_diffusion
+        particles.py[particles.state > 0] += delta_py_friction + delta_py_diffusion
+        particles.delta[particles.state > 0] += delta_delta_friction + delta_delta_diffusion
