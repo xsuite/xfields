@@ -53,6 +53,8 @@ class SlicedElement:
                  _flatten=False,
                  with_compressed_profile=False):
 
+        self.with_compressed_profile = with_compressed_profile
+
         if filling_scheme is None and bunch_numbers is None:
             if num_slots is None:
                 num_slots = 1
@@ -69,7 +71,8 @@ class SlicedElement:
         slicer_moments = list(set(slicer_moments))
 
         self.init_slicer(zeta_range=zeta_range,
-                         num_slices=num_slices, filling_scheme=filling_scheme,
+                         num_slices=num_slices,
+                         filling_scheme=filling_scheme,
                          bunch_numbers=bunch_numbers,
                          bunch_spacing_zeta=bunch_spacing_zeta,
                          slicer_moments=slicer_moments)
@@ -156,12 +159,47 @@ class SlicedElement:
                               i_slice_particles=self.i_slice_particles,
                               i_bunch_particles=self.i_bunch_particles)
 
-    def track(self, particles):
-        self._slice_result = None
+    def _add_slicer_moments_to_moments_data(self, slicer):
+        if not self.with_compressed_profile:
+            raise RuntimeError('_initialize_conv_data can be called only if'
+                               'the sliced element has a CompressedProfile')
+        # Set slice moments for fast convolution
+        means = {}
+        for mm in self.moments_data.moments_names:
+            if mm == 'num_particles' or mm == 'result':
+                continue
+            means[mm] = slicer.mean(mm)
+
+        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_numbers):
+            moments_bunch = {}
+            for nn in means.keys():
+                moments_bunch[nn] = means[nn][i_bunch_in_slicer, :]
+            moments_bunch['num_particles'] = (
+                slicer.num_particles[i_bunch_in_slicer, :])
+            self.moments_data.set_moments(
+                moments=moments_bunch,
+                i_turn=0,
+                i_source=slicer.filled_slots[bunch_number])
+
+    def _update_moments_for_new_turn(self, particles, _slice_result=None):
+        if self.with_compressed_profile:
+            # Trash oldest turn
+            self.moments_data.data[:, 1:, :] = self.moments_data.data[:, :-1, :]
+            self.moments_data.data[:, 0, :] = 0
+
+        self._slice_and_store(particles, _slice_result)
+
+        if self.with_compressed_profile:
+            self._add_slicer_moments_to_moments_data(self.slicer)
+
+    def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
+        if not self.with_compressed_profile:
+            self._slice_result = None
 
         if self.pipeline_manager is None:
             self.other_bunch_slicers = None
-            self._slice_and_store(particles)
+            self._update_moments_for_new_turn(particles,
+                                              _slice_result=_slice_result)
         else:
             self.other_bunch_slicers = []
             is_ready_to_send = True
@@ -178,7 +216,8 @@ class SlicedElement:
                     break
 
             if is_ready_to_send:
-                self._slice_and_store(particles)
+                self._update_moments_for_new_turn(particles,
+                                                  _slice_result=_slice_result)
                 self._slicer_to_buffer(self.slicer)
                 for i_partner, partner_name in enumerate(self.partners_names):
                     self.pipeline_manager.send_message(
@@ -217,8 +256,18 @@ class SlicedElement:
                                                       partner_name,
                                                       particles.name,
                                                       internal_tag=1)
-                self.other_bunch_slicers.append(self._slice_set_from_buffer())
+                other_bunch_slicer = self._slice_set_from_buffer()
+                if not self.with_compressed_profile:
+                    self.other_bunch_slicers.append(other_bunch_slicer)
+                else:
+                    other_bunch_slicer = self._slice_set_from_buffer()
+                    self._add_slicer_moments_to_moments_data(other_bunch_slicer)
 
-        self._slice_result = {'i_slice_particles': self.i_slice_particles,
-                              'i_bunch_particles': self.i_bunch_particles,
-                              'slicer': self.slicer}
+        if _other_bunch_slicers is not None and self.with_compressed_profile:
+            for other_bunch_slicer in _other_bunch_slicers:
+                self._add_slicer_moments_to_moments_data(other_bunch_slicer)
+
+        if not self.with_compressed_profile:
+            self._slice_result = {'i_slice_particles': self.i_slice_particles,
+                                  'i_bunch_particles': self.i_bunch_particles,
+                                  'slicer': self.slicer}
