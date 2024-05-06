@@ -668,13 +668,13 @@ class IBSKineticKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Compute the bunch_length * 2 * sqrt(pi) factor for the kicks
         bunch_length: float = _bunch_length(particles)
-        factor: float = bunch_length * 2 * nplike.sqrt(np.pi)
-        # ----------------------------------------------------------------------------------------------
-        # Computing standard deviation of (normalized) momenta, corresponding to sigma_{pu} in Eq (8) of reference
-        # Normalized: for momentum we have to multiply with 1/sqrt(gamma) = sqrt(beta) / sqrt(1 + alpha^2), and the
-        # sqrt(beta) is included in the std of p[xy]. If bunch is rotated, the std takes from the "other plane" so
-        # we take the normalized momenta to compensate.
+        factor: float = float(bunch_length * 2 * np.sqrt(np.pi))
         # fmt: off
+        # ----------------------------------------------------------------------------------------------
+        # Computing standard deviation of (normalized) momenta, corresponding to sigma_{pu} in Eq (8) of
+        # reference. Normalized: for momentum we have to multiply with 1 / sqrt(gamma) which is equal to
+        # sqrt(beta) / sqrt(1 + alpha^2), and the sqrt(beta) is included in the std of p[xy]. If the bunch
+        # is rotated, the stdev takes from the "other plane" so we take the normalized momenta to compensate.
         sigma_delta: float = _sigma_delta(particles)                                                               # on context
         sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)  # on context
         sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)  # on context
@@ -707,3 +707,6 @@ class IBSKineticKick(IBSKick):
         particles.px[particles.state > 0] += delta_px_friction + delta_px_diffusion
         particles.py[particles.state > 0] += delta_py_friction + delta_py_diffusion
         particles.delta[particles.state > 0] += delta_delta_friction + delta_delta_diffusion
+
+
+# TODO: add xfields IBS to API reference docs
