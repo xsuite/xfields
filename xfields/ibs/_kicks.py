@@ -372,7 +372,7 @@ class IBSSimpleKick(IBSKick):
         # (the particles.delta in Xsuite), we multiply by beta0**2 to adapt
         LOGGER.debug("Computing simple kick coefficients")
         beta0 = self._twiss.beta0
-        revolution_frequency: float = self.optics.revolution_frequency
+        revolution_frequency: float = 1 / self._twiss.T_rev0
         Kx = float(sigma_px_normalized * nplike.sqrt(2 * scaling_factor * Tx / revolution_frequency))
         Ky = float(sigma_py_normalized * nplike.sqrt(2 * scaling_factor * Ty / revolution_frequency))
         Kz = float(sigma_delta * nplike.sqrt(2 * scaling_factor * Tz / revolution_frequency) * beta0**2)
