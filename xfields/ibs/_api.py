@@ -124,7 +124,9 @@ def get_intrabeam_scattering_growth_rates(
 # ----- API for Kick-Based IBS -----#
 
 
-def configure_intrabeam_scattering(line: xt.Line, update_every: int) -> None:
+def configure_intrabeam_scattering(
+    line: xt.Line, element: IBSKick = None, update_every: int = None, **kwargs
+) -> None:
     """
     Configures the IBS kick element in the line for tracking.
 
@@ -139,10 +141,18 @@ def configure_intrabeam_scattering(line: xt.Line, update_every: int) -> None:
     ----------
     line : xtrack.Line
         The line in which the IBS kick element was inserted.
+    element : IBSKick, optional
+        If provided, the element is first inserted in the line,
+        before proceeding to configuration. In this case the keyword
+        arguments are passed on to the `line.insert_element` method.
     update_every : int
         The frequency at which to recompute the kick coefficients, in
         number of turns. They will be computed at the first turn of
         tracking, and then every `update_every` turns afterwards.
+    **kwargs : dict, optional
+        Required if an element is provided. Keyword arguments are
+        passed to the `line.insert_element()` method according to
+        `line.insert_element(element=element, **kwargs)`.
 
     Raises
     ------
@@ -150,13 +160,23 @@ def configure_intrabeam_scattering(line: xt.Line, update_every: int) -> None:
         If the provided `update_every` is not a positive integer.
     AssertionError
         If more than one IBS kick element is found in the line.
+    AssertionError
+        If the element is an `IBSSimpleKick` and the line is operating
+        below transition energy.
     """
     # ----------------------------------------------------------------------------------------------
     # Asserting validity of provided parameters
     assert isinstance(update_every, int), "The 'update_every' parameter must be an integer"
     assert update_every > 0, "The 'update_every' parameter must be a positive integer"
     # ----------------------------------------------------------------------------------------------
-    # We will need a TwissTable for the elements
+    # If the user provided a valid element, we insert it in the line first (and pass kwargs)
+    if element is not None and isinstance(element, IBSKick):
+        LOGGER.info("Inserting provided element in the line, passing on keyword arguments")
+        line.discard_tracker()
+        line.insert_element(element=element, **kwargs)
+        line.build_tracker()
+    # ----------------------------------------------------------------------------------------------
+    # Otherwise, from here on we assume it's there. Now we need a TwissTable for the elements
     LOGGER.info("Computing Twiss for the provided line and configuring IBS kick element")
     twiss = line.twiss(method="4d")
     # ----------------------------------------------------------------------------------------------
