@@ -33,7 +33,8 @@ def get_intrabeam_scattering_growth_rates(
     **kwargs,
 ) -> IBSGrowthRates:
     """
-    Computes IntraBeam Scattering growth rates from the provided `xtrack.Line`.
+    Computes IntraBeam Scattering growth rates from the provided
+    `xtrack.TwissTable`.
 
     Parameters
     ----------
