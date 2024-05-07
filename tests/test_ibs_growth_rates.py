@@ -11,8 +11,6 @@ from ibs_conftest import (
 )
 from cpymad.madx import Madx
 
-from xfields.ibs import get_intrabeam_scattering_growth_rates
-
 # ------------------------------------------------------------------------
 # We compare our values to the ones of MAD-X, hence in the numpy function
 # ours should be the first argument.
