@@ -709,6 +709,3 @@ class IBSKineticKick(IBSKick):
         particles.px[particles.state > 0] += delta_px_friction + delta_px_diffusion
         particles.py[particles.state > 0] += delta_py_friction + delta_py_diffusion
         particles.delta[particles.state > 0] += delta_delta_friction + delta_delta_diffusion
-
-
-# TODO: add xfields IBS to API reference docs
