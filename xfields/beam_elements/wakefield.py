@@ -56,15 +56,11 @@ class MultiWakefield(SlicedElement):
                  _flatten=False):
 
         self.wakefields = wakefields
-        
-        if filling_scheme is None and bunch_numbers is None:
-            if num_slots is None:
-                num_slots = 1
-            filling_scheme = np.ones(num_slots, dtype=np.int64)
-            bunch_numbers = np.arange(num_slots, dtype=np.int64)
-        else:
-            assert (num_slots is None and filling_scheme is not None and
-                    bunch_numbers is not None)
+
+        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
+            filling_scheme=filling_scheme,
+            bunch_numbers=bunch_numbers,
+            num_slots=num_slots)
 
         all_slicer_moments = []
         for wf in self.wakefields:
