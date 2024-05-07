@@ -6,7 +6,7 @@
 from .longitudinal_profiles import LongitudinalProfileCoasting
 from .longitudinal_profiles import LongitudinalProfileQGaussian
 
-from .ibs import IBSKineticKick, IBSSimpleKick
+from .ibs import IBSAnalyticalKick, IBSKineticKick
 
 from .fieldmaps import TriLinearInterpolatedFieldMap
 from .fieldmaps import TriCubicInterpolatedFieldMap

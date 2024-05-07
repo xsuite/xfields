@@ -10,7 +10,7 @@ import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
 from xfields.ibs._formulary import _beam_intensity, _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
-from xfields.ibs._kicks import IBSKick, IBSSimpleKick
+from xfields.ibs._kicks import IBSAnalyticalKick, IBSKick
 
 LOGGER = getLogger(__name__)
 
@@ -161,8 +161,8 @@ def configure_intrabeam_scattering(
     AssertionError
         If more than one IBS kick element is found in the line.
     AssertionError
-        If the element is an `IBSSimpleKick` and the line is operating
-        below transition energy.
+        If the element is an `IBSAnalyticalKick` and the line is
+        operating below transition energy.
     """
     # ----------------------------------------------------------------------------------------------
     # Asserting validity of provided parameters
@@ -192,6 +192,6 @@ def configure_intrabeam_scattering(
     element._scale_strength = 1  # element is now ON, will track
     # ----------------------------------------------------------------------------------------------
     # Handle Simple kick specificities (valid above transition only)
-    if isinstance(element, IBSSimpleKick):
-        assert twiss.slip_factor >= 0, "IBSSimpleKick is not valid below transition"
+    if isinstance(element, IBSAnalyticalKick):
+        assert twiss.slip_factor >= 0, "IBSAnalyticalKick is not valid below transition"
     LOGGER.debug("Done configuring IntraBeam Scattering kick element")

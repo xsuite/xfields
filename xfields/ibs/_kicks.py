@@ -199,7 +199,7 @@ class IBSKick:
 # ----- Simple Kick Implementation ----- #
 
 
-class IBSSimpleKick(IBSKick):
+class IBSAnalyticalKick(IBSKick):
     r"""
     Beam element to apply IBS effects to particles during tracking according to
     the formalism introduced in :cite:`PRAB:Bruce:Simple_IBS_Kicks`. It provides
