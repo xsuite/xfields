@@ -1,7 +1,6 @@
-from numpy.testing import assert_allclose
-
 import pytest
 import xtrack as xt
+from cpymad.madx import Madx
 from ibs_conftest import (
     XTRACK_TEST_DATA,
     get_madx_ibs_growth_rates,
@@ -9,7 +8,7 @@ from ibs_conftest import (
     get_ref_particle_from_madx_beam,
     set_madx_beam_parameters,
 )
-from cpymad.madx import Madx
+from numpy.testing import assert_allclose
 
 # ------------------------------------------------------------------------
 # We compare our values to the ones of MAD-X, hence in the numpy function
@@ -24,6 +23,7 @@ from cpymad.madx import Madx
 
 
 # ----- Test with negative charge particle ----- #
+
 
 @pytest.mark.parametrize("bunched", [True, False])
 def test_clic_dr_growth_rates(bunched):
@@ -86,7 +86,9 @@ def test_clic_dr_growth_rates(bunched):
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
 
+
 # ----- Test with positive charge particle ----- #
+
 
 @pytest.mark.parametrize("bunched", [True, False])
 def test_sps_injection_protons_growth_rates(bunched):
@@ -141,7 +143,9 @@ def test_sps_injection_protons_growth_rates(bunched):
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
+
 # ----- Test with ion particles ----- #
+
 
 @pytest.mark.parametrize("bunched", [True, False])
 def test_sps_ions_growth_rates(bunched):
@@ -153,7 +157,8 @@ def test_sps_ions_growth_rates(bunched):
     madx.call(str(sps_dir / "sps_thin.seq"))
     madx.command.resbeam()
     # Ugly but let's just define an ion beam I know works
-    madx.input("""
+    madx.input(
+        """
     beam, particle=ion, sequence=default_beam, bunched=true, radiate=false, mass=193.6872729,
                charge=82.0, energy=36994.8, pc=36994.292969055605, gamma=191.00274089304915,
                beta=0.9999862945347887, brho=1504.8741294778524, ex=6.603137104875076e-09,
@@ -162,7 +167,8 @@ def test_sps_ions_growth_rates(bunched):
                npart=349999999.99999994, bcurrent=2.432286253834961e-06, freq0=0.04337527083539999,
                circ=6911.5038, dtbyds=0.0, deltap=0.0, alfa=2.7410742582906136e-05, u0=0.0, qs=0.0,
                arad=4.9989457074038745e-17, bv=1.0, pdamp={1.0,1.0,2.0}, n1min=-1.0;
-    """)
+    """
+    )
     madx.use(sequence="sps")
     # -----------------------------------------------------
     # Beam is fully setup in file, get growth rates
@@ -208,7 +214,9 @@ def test_sps_ions_growth_rates(bunched):
     assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
     assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
+
 # ----- Test with vertical dispersion ----- #
+
 
 @pytest.mark.parametrize("bunched", [True, False])
 def test_hllhc14_growth_rates(bunched):
