@@ -94,7 +94,7 @@ def test_clic_dr_growth_rates(bunched):
 def test_sps_injection_protons_growth_rates(bunched):
     """Compare to MAD-X for the SPS injection protons."""
     # -----------------------------------------------------
-    # Have MAD-X load CLIC DR sequence, beam etc.
+    # Have MAD-X load SPS sequence, beam etc.
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
     madx = Madx(stdout=False)
     madx.call(str(sps_dir / "sps_thin.seq"))
@@ -151,7 +151,7 @@ def test_sps_injection_protons_growth_rates(bunched):
 def test_sps_ions_growth_rates(bunched):
     """Compare to MAD-X for the SPS injection protons."""
     # -----------------------------------------------------
-    # Have MAD-X load CLIC DR sequence, beam etc.
+    # Have MAD-X load SPS sequence
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
     madx = Madx(stdout=False)
     madx.call(str(sps_dir / "sps_thin.seq"))
@@ -226,7 +226,7 @@ def test_hllhc14_growth_rates(bunched):
     vertical growth rate will be blatantly wrong.
     """
     # -----------------------------------------------------
-    # Have MAD-X load SPS sequence, beam etc. as done in
+    # Have MAD-X load HLLHC sequence, beam etc. as done in
     # the script next to it that creates the xtrack.Line
     hllhc14_dir = XTRACK_TEST_DATA / "hllhc14_input_mad"
     madx = Madx(stdout=False)
