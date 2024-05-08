@@ -313,9 +313,9 @@ class IBSAnalyticalKick(IBSKick):
         particles : xtrack.Particles
             The particles to apply the IBS kicks to and compute it from.
         **kwargs : dict, optional
-            Keyword arguments will be passed to the growth rates calculation
-            done by the analytical class. Note that `gemitt_x`, `gemitt_x`,
-            `sigma_delta`, and `bunch_length` are already provided.
+            Keyword arguments will be passed to the growth rates calculation.
+            Note that `gemitt_x`, `gemitt_y`, `sigma_delta`, and `bunch_length`
+            are already provided.
 
         Returns
         -------
