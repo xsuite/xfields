@@ -46,11 +46,11 @@ class DiffusionCoefficients(xo.HybridClass):
     Attributes:
     -----------
     Dx : float
-        Horizontal diffusion coefficient.
+        Horizontal diffusion coefficient, in [s^-1].
     Dy : float
-        Vertical diffusion coefficient.
+        Vertical diffusion coefficient, in [s^-1].
     Dz : float
-        Longitudinal diffusion coefficient.
+        Longitudinal diffusion coefficient, in [s^-1].
     """
 
     _xofields = {
@@ -77,11 +77,11 @@ class FrictionCoefficients(xo.HybridClass):
     Attributes:
     -----------
     Fx : float
-        Horizontal friction coefficient.
+        Horizontal friction coefficient, in [s^-1].
     Fy : float
-        Vertical friction coefficient.
+        Vertical friction coefficient, in [s^-1].
     Fz : float
-        Longitudinal friction coefficient.
+        Longitudinal friction coefficient, in [s^-1].
     """
 
     _xofields = {
@@ -108,11 +108,11 @@ class IBSKickCoefficients(xo.HybridClass):
     Attributes:
     -----------
     Kx : float
-        Horizontal kick coefficient.
+        Horizontal kick coefficient, in [s^-1].
     Ky : float
-        Vertical kick coefficient.
+        Vertical kick coefficient, in [s^-1].
     Kz : float
-        Longitudinal kick coefficient.
+        Longitudinal kick coefficient, in [s^-1].
     """
 
     _xofields = {
