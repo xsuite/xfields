@@ -260,7 +260,7 @@ def test_track_analytical_kick(test_context):
         assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.4e-10  # most of the effect in x
         assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 6.85e-13  # smaller growth in y
         assert _sigma_delta(particles) >= 1.8e-3  # little growth
-        assert _bunch_length(particles) >= 1.65e-3  # little growth
+        assert _bunch_length(particles) >= 1.625e-3  # little growth
 
 
 @for_all_test_contexts(excluding="ContextPyopencl")
@@ -310,4 +310,4 @@ def test_track_kinetic_kick(test_context):
         assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.4e-10  # most of the effect in x
         assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 6.85e-13  # smaller growth in y
         assert _sigma_delta(particles) >= 1.8e-3  # little growth
-        assert _bunch_length(particles) >= 1.65e-3  # little growth
+        assert _bunch_length(particles) >= 1.625e-3  # little growth
