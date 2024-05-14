@@ -6,6 +6,7 @@ from logging import getLogger
 from typing import Literal
 
 import numpy as np
+import xobjects as xo
 import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
@@ -125,7 +126,11 @@ def get_intrabeam_scattering_growth_rates(
 
 
 def configure_intrabeam_scattering(
-    line: xt.Line, element: IBSKick = None, update_every: int = None, **kwargs
+    line: xt.Line,
+    element: IBSKick = None,
+    update_every: int = None,
+    _context: xo.context.XContext = None,
+    **kwargs,
 ) -> None:
     """
     Configures the IBS kick element in the line for tracking.
@@ -145,10 +150,17 @@ def configure_intrabeam_scattering(
         If provided, the element is first inserted in the line,
         before proceeding to configuration. In this case the keyword
         arguments are passed on to the `line.insert_element` method.
+        This will also discard and rebuild the line tracker.
     update_every : int
         The frequency at which to recompute the kick coefficients, in
         number of turns. They will be computed at the first turn of
         tracking, and then every `update_every` turns afterwards.
+    _context : xo.context.XContext, optional
+        If `element` is provided and `_context` is provided, then this
+        is used when rebuilding the line tracker. If one has specific
+        needs for the built tracker, they should rebuild it themselves
+        after calling this function.
+
     **kwargs : dict, optional
         Required if an element is provided. Keyword arguments are
         passed to the `line.insert_element()` method according to
@@ -174,7 +186,7 @@ def configure_intrabeam_scattering(
         LOGGER.info("Inserting provided element in the line, passing on keyword arguments")
         line.discard_tracker()
         line.insert_element(element=element, **kwargs)
-        line.build_tracker()
+        line.build_tracker(_context=_context)
     # ----------------------------------------------------------------------------------------------
     # Otherwise, from here on we assume it's there. Now we need a TwissTable for the elements
     LOGGER.info("Computing Twiss for the provided line and configuring IBS kick element")
