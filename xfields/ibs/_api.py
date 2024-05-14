@@ -129,7 +129,6 @@ def configure_intrabeam_scattering(
     line: xt.Line,
     element: IBSKick = None,
     update_every: int = None,
-    _context: xo.context.XContext = None,
     **kwargs,
 ) -> None:
     """
@@ -155,11 +154,6 @@ def configure_intrabeam_scattering(
         The frequency at which to recompute the kick coefficients, in
         number of turns. They will be computed at the first turn of
         tracking, and then every `update_every` turns afterwards.
-    _context : xo.context.XContext, optional
-        If `element` is provided and `_context` is provided, then this
-        is used when rebuilding the line tracker. If one has specific
-        needs for the built tracker, they should rebuild it themselves
-        after calling this function.
 
     **kwargs : dict, optional
         Required if an element is provided. Keyword arguments are
@@ -184,9 +178,15 @@ def configure_intrabeam_scattering(
     # If the user provided a valid element, we insert it in the line first (and pass kwargs)
     if element is not None and isinstance(element, IBSKick):
         LOGGER.info("Inserting provided element in the line, passing on keyword arguments")
-        line.discard_tracker()
+        if line.tracker is not None:
+            # if there's a tracker we discard and will build it back identical
+            _buffer = line._buffer
+            line.discard_tracker()
+        else:
+            _buffer = None
         line.insert_element(element=element, **kwargs)
-        line.build_tracker(_context=_context)
+        if _buffer is not None:
+            line.build_tracker(_buffer=_buffer)
     # ----------------------------------------------------------------------------------------------
     # Otherwise, from here on we assume it's there. Now we need a TwissTable for the elements
     LOGGER.info("Computing Twiss for the provided line and configuring IBS kick element")
