@@ -56,7 +56,7 @@ ibs_kick = xf.IBSKineticKick(num_slices=50)
 # the kick at the end of the line and configure it. This internally
 # provides the necessary information to the element
 line.configure_intrabeam_scattering(
-    element=ibs_kick, name="ibskick", index=-1, update_every=50, _context=context
+    element=ibs_kick, name="ibskick", index=-1, update_every=50
 )
 
 ##############################################
