@@ -6,10 +6,10 @@ from scipy.interpolate import interp1d
 
 import xtrack as xt
 import xfields as xf
-from xfields.slicers.compressed_profile import CompressedProfile
+from .sliced_element import SlicedElement
 
 
-class MultiWakefield:
+class MultiWakefield(SlicedElement):
     """
     An object handling many WakeField instances as a single beam element.
 
@@ -56,43 +56,50 @@ class MultiWakefield:
                  _flatten=False):
 
         self.wakefields = wakefields
-        
-        if filling_scheme is None and bunch_numbers is None:
-            if num_slots is None:
-                num_slots = 1
-            filling_scheme = np.ones(num_slots, dtype=np.int64)
-            bunch_numbers = np.arange(num_slots, dtype=np.int64)
-        else:
-            assert (num_slots is None and filling_scheme is not None and
-                    bunch_numbers is not None)
+
+        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
+            filling_scheme=filling_scheme,
+            bunch_numbers=bunch_numbers,
+            num_slots=num_slots)
 
         all_slicer_moments = []
         for wf in self.wakefields:
             assert wf.moments_data is None
-            wf._initialize_moments_and_conv_data(
+
+            wf.init_slicer(zeta_range=zeta_range, num_slices=num_slices,
+                           filling_scheme=filling_scheme,
+                           bunch_numbers=bunch_numbers,
+                           bunch_spacing_zeta=bunch_spacing_zeta,
+                           slicer_moments=wf.source_moments.copy())
+
+            wf._initialize_moments(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper
                 bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
                 filling_scheme=filling_scheme,
-                bunch_numbers=bunch_numbers,
-                circumference=circumference,
-                log_moments=log_moments,
                 num_turns=num_turns,
-                _flatten=_flatten
-            )
+                circumference=circumference)
+
+            wf._initialize_conv_data(_flatten=_flatten)
             all_slicer_moments += wf.slicer.moments
 
         all_slicer_moments = list(set(all_slicer_moments))
 
-        self.slicer = xf.UniformBinSlicer(
-            zeta_range=zeta_range,
-            num_slices=num_slices,
+        super().__init__(
+            slicer_moments=all_slicer_moments,
+            log_moments=log_moments,
+            zeta_range=zeta_range,  # These are [a, b] in the paper
+            num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+            bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+            num_slots=num_slots,
             filling_scheme=filling_scheme,
             bunch_numbers=bunch_numbers,
-            bunch_spacing_zeta=bunch_spacing_zeta,
-            moments=all_slicer_moments
-            )
-            
+            num_turns=num_turns,
+            circumference=circumference,
+            _flatten=False,
+            with_compressed_profile=False
+        )
+
         self.pipeline_manager = None
     
     @classmethod
@@ -182,108 +189,24 @@ class MultiWakefield:
         return cls(wakefields, **kwargs)
         
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
-        self.pipeline_manager = pipeline_manager
         for wf in self.wakefields:
             assert wf.pipeline_manager is None
-        self.partners_names = partners_names
-        self.name = element_name
-        
-        self._send_buffer = self.slicer._to_npbuffer()
-        self._send_buffer_length = np.zeros(1, dtype=int)
-        self._send_buffer_length[0] = len(self._send_buffer)
 
-        self._recv_buffer = np.zeros_like(self._send_buffer)
-        self._recv_buffer_length_buffer = np.zeros(1, dtype=int)
-        
-    def _slicer_to_buffer(self, slicer):
-        self._send_buffer = slicer._to_npbuffer()
-        self._send_buffer_length[0] = len(slicer._to_npbuffer())
-        
-    def _ensure_recv_buffer_size(self):
-        if self._recv_buffer_length_buffer[0] != len(self._recv_buffer):
-            self._recv_buffer = np.zeros(self._recv_buffer_length_buffer[0],
-                                         dtype=self._recv_buffer.dtype)
-        
-    def _slice_set_from_buffer(self):
-        return xf.UniformBinSlicer._from_npbuffer(self._recv_buffer)
-    
-    def _slice_and_store(self, particles):
-        self.i_slice_particles = particles.particle_id * 0 + -999
-        self.i_bunch_particles = particles.particle_id * 0 + -9999
-        self.slicer.slice(particles, i_slice_particles=self.i_slice_particles,
-                          i_bunch_particles=self.i_bunch_particles)
-                        
-    def track(self, particles):
-        _slice_result = None
-        if self.pipeline_manager is None:
-            self._slice_and_store(particles)
-            other_bunches_slicers = None
-        else:
-            other_bunches_slicers = []
-            is_ready_to_send = True
+        super().init_pipeline(pipeline_manager=pipeline_manager,
+                              element_name=element_name,
+                              partners_names=partners_names)
 
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_send(
-                        self.name,
-                        particles.name,
-                        partner_name,
-                        particles.at_turn[0],
-                        internal_tag=0
-                ):
-                    is_ready_to_send = False
-                    break
+    def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
+        assert _slice_result is None and _other_bunch_slicers is None
 
-            if is_ready_to_send:
-                self._slice_and_store(particles)
-                self._slicer_to_buffer(self.slicer)
-                for i_partner, partner_name in enumerate(self.partners_names):
-                    self.pipeline_manager.send_message(
-                        self._send_buffer_length,
-                        element_name=self.name,
-                        sender_name=particles.name,
-                        reciever_name=partner_name,
-                        turn=particles.at_turn[0],
-                        internal_tag=0
-                    )
-                    self.pipeline_manager.send_message(
-                        self._send_buffer,
-                        element_name=self.name,
-                        sender_name=particles.name,
-                        reciever_name=partner_name,
-                        turn=particles.at_turn[0],
-                        internal_tag=1)
-
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_recieve(
-                        self.name, partner_name,
-                        particles.name, internal_tag=0):
-                    return xt.PipelineStatus(on_hold=True)
-        if self.pipeline_manager is not None:
-            for i_partner, partner_name in enumerate(self.partners_names):
-                self.pipeline_manager.recieve_message(
-                    self._recv_buffer_length_buffer,
-                    self.name,
-                    partner_name,
-                    particles.name,
-                    internal_tag=0)
-                self._ensure_recv_buffer_size()
-                self.pipeline_manager.recieve_message(self._recv_buffer,
-                                                      self.name,
-                                                      partner_name,
-                                                      particles.name,
-                                                      internal_tag=1)
-                other_bunches_slicers.append(self._slice_set_from_buffer())
-
-        _slice_result = {'i_slice_particles': self.i_slice_particles,
-                         'i_bunch_particles': self.i_bunch_particles,
-                         'slicer': self.slicer}
+        super().track(particles)
 
         for wf in self.wakefields:
-            wf.track(particles, _slice_result=_slice_result,
-                     _other_bunches_slicers=other_bunches_slicers)
+            wf.track(particles, _slice_result=self._slice_result,
+                     _other_bunch_slicers=self.other_bunch_slicers)
 
 
-class Wakefield:
+class Wakefield(SlicedElement):
     """
     A beam element modelling a wakefield kick
 
@@ -352,92 +275,27 @@ class Wakefield:
         self.function = function
         self.moments_data = None
 
-        if filling_scheme is None and bunch_numbers is None:
-            if num_slots is None:
-                num_slots = 1
-            filling_scheme = np.ones(num_slots, dtype=np.int64)
-            bunch_numbers = np.arange(num_slots, dtype=np.int64)
-        else:
-            assert (num_slots is None and filling_scheme is not None and
-                    bunch_numbers is not None)
-
-        if zeta_range is not None:
-            self._initialize_moments_and_conv_data(
-                zeta_range=zeta_range,  # These are [a, b] in the paper
-                num_slices=num_slices,  # Per bunch, this is N_1 in the paper
-                bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-                filling_scheme=filling_scheme,
-                bunch_numbers=bunch_numbers,
-                num_turns=num_turns,
-                circumference=circumference,
-                log_moments=log_moments,
-                _flatten=_flatten)
-                    
-        self.pipeline_manager = None
-        
-    def init_pipeline(self, pipeline_manager, element_name, partners_names):
-        self.pipeline_manager = pipeline_manager
-        self.partners_names = partners_names
-        self.name = element_name
-        
-        self._send_buffer = self.slicer._to_npbuffer()
-        self._send_buffer_length = np.zeros(1, dtype=int)
-        self._send_buffer_length[0] = len(self._send_buffer)
-
-        self._recv_buffer = np.zeros_like(self._send_buffer)
-        self._recv_buffer_length_buffer = np.zeros(1, dtype=int)
-                            
-    def _slicer_to_buffer(self, slicer):
-        self._send_buffer = slicer._to_npbuffer()
-        self._send_buffer_length[0] = len(slicer._to_npbuffer())
-        
-    def _ensure_recv_buffer_size(self):
-        if self._recv_buffer_length_buffer[0] != len(self._recv_buffer):
-            self._recv_buffer = np.zeros(self._recv_buffer_length_buffer[0],
-                                         dtype=self._recv_buffer.dtype)
-        
-    def _slice_set_from_buffer(self):
-        return xf.UniformBinSlicer._from_npbuffer(self._recv_buffer)
-    
-    def _initialize_moments_and_conv_data(
-            self,
-            zeta_range=None,  # These are [a, b] in the paper
-            num_slices=None,  # Per bunch, this is N_1 in the paper
-            bunch_spacing_zeta=None,  # This is P in the paper
-            filling_scheme=None,
-            bunch_numbers=None,
-            num_turns=1,
-            circumference=None,
-            log_moments=None,
-            _flatten=False):
-
-        slicer_moments = self.source_moments.copy()
-        if log_moments is not None:
-            slicer_moments += log_moments
-        slicer_moments = list(set(slicer_moments))
-        if 'num_particles' in slicer_moments:
-            slicer_moments.remove('num_particles')
-
-        self.slicer = xf.UniformBinSlicer(
-            zeta_range=zeta_range,
-            num_slices=num_slices,
+        super().__init__(
+            slicer_moments=source_moments,
+            log_moments=log_moments,
+            zeta_range=zeta_range,  # These are [a, b] in the paper
+            num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+            bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+            num_slots=num_slots,
             filling_scheme=filling_scheme,
             bunch_numbers=bunch_numbers,
-            bunch_spacing_zeta=bunch_spacing_zeta,
-            moments=slicer_moments
-            )
+            with_compressed_profile=True,
+            num_turns=num_turns,
+            circumference=circumference,
+            _flatten=False)
 
-        self.moments_data = CompressedProfile(
-                moments=self.source_moments + ['result'],
-                zeta_range=zeta_range,
-                num_slices=num_slices,
-                bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=len(filling_scheme),
-                num_turns=num_turns,
-                circumference=circumference)
+        if zeta_range is not None:
+            self._initialize_conv_data(_flatten=_flatten)
 
+        self.pipeline_manager = None
+
+    def _initialize_conv_data(self, _flatten=False):
         if not _flatten:
-
             self._N_aux = self.moments_data._N_aux
             self._M_aux = self.moments_data._M_aux
             self._N_S = self.moments_data._N_S
@@ -496,110 +354,17 @@ class Wakefield:
 
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
-
-    def _slice_and_store(self, particles, _slice_result):
-        if _slice_result is not None:
-            self.i_slice_particles = _slice_result['i_slice_particles']
-            self.i_bunch_particles = _slice_result['i_bunch_particles']
-            self.slicer = _slice_result['slicer']
-        else:
-            # Measure slice moments and get slice indeces
-            self.i_slice_particles = particles.particle_id * 0 + -999
-            self.i_bunch_particles = particles.particle_id * 0 + -9999
-            self.slicer.slice(particles,
-                              i_slice_particles=self.i_slice_particles,
-                              i_bunch_particles=self.i_bunch_particles)
         
-    def _add_slicer_moments_to_moments_data(self, slicer):
-        # Set slice moments for fast convolution
-        means = {}
-        for mm in self.moments_data.moments_names:
-            if mm == 'num_particles' or mm == 'result':
-                continue
-            means[mm] = slicer.mean(mm)
-
-        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_numbers):
-            moments_bunch = {}
-            for nn in means.keys():
-                moments_bunch[nn] = means[nn][i_bunch_in_slicer, :]
-            moments_bunch['num_particles'] = (
-                slicer.num_particles[i_bunch_in_slicer, :])
-            self.moments_data.set_moments(
-                moments=moments_bunch,
-                i_turn=0,
-                i_source=slicer.filled_slots[bunch_number])
-
-    def _update_moments_for_new_turn(self, particles, _slice_result=None):
-        # Trash oldest turn
-        self.moments_data.data[:, 1:, :] = self.moments_data.data[:, :-1, :]
-        self.moments_data.data[:, 0, :] = 0
-
-        self._slice_and_store(particles, _slice_result)
-        self._add_slicer_moments_to_moments_data(self.slicer)
-        
-    def track(self, particles, _slice_result=None, _other_bunches_slicers=None):
+    def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
+        # here we cannot reuse the track method from SlicedElement because
+        # we need to take care of updating the CompressedProfile as well.
+        # Can this be avoided?
         if self.moments_data is None:
             raise ValueError('moments_data is None. '
                              'Please initialize it before tracking.')
         
-        if self.pipeline_manager is None:
-            self._update_moments_for_new_turn(particles, _slice_result)
-        else:
-            is_ready_to_send = True
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_send(
-                        self.name,
-                        particles.name,
-                        partner_name,
-                        particles.at_turn[0],
-                        internal_tag=0):
-                    is_ready_to_send = False
-                    break
-            if is_ready_to_send:
-                self._update_moments_for_new_turn(particles, _slice_result)
-                self._slicer_to_buffer(self.slicer)
-                for i_partner, partner_name in enumerate(self.partners_names):
-                    self.pipeline_manager.send_message(
-                        self._send_buffer_length,
-                        element_name=self.name,
-                        sender_name=particles.name,
-                        reciever_name=partner_name,
-                        turn=particles.at_turn[0],
-                        internal_tag=0)
-                    self.pipeline_manager.send_message(
-                        self._send_buffer,
-                        element_name=self.name,
-                        sender_name=particles.name,
-                        reciever_name=partner_name,
-                        turn=particles.at_turn[0],
-                        internal_tag=1)
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_recieve(
-                        self.name, partner_name,
-                        particles.name,
-                        internal_tag=0):
-                    return xt.PipelineStatus(on_hold=True)
-        if self.pipeline_manager is not None:
-            for i_partner, partner_name in enumerate(self.partners_names):
-                self.pipeline_manager.recieve_message(
-                    self._recv_buffer_length_buffer,
-                    self.name,
-                    partner_name,
-                    particles.name,
-                    internal_tag=0)
-                self._ensure_recv_buffer_size()
-                self.pipeline_manager.recieve_message(
-                    self._recv_buffer,
-                    self.name,
-                    partner_name,
-                    particles.name,
-                    internal_tag=1)
-                other_bunch_slicer = self._slice_set_from_buffer()
-                self._add_slicer_moments_to_moments_data(other_bunch_slicer)
-        
-        if _other_bunches_slicers is not None:
-            for other_bunch_slicer in _other_bunches_slicers:
-                self._add_slicer_moments_to_moments_data(other_bunch_slicer)
+        super().track(particles=particles, _slice_result=_slice_result,
+                      _other_bunch_slicers=_other_bunch_slicers)
 
         # Compute convolution
         self._compute_convolution(moment_names=self.source_moments)
