@@ -6,7 +6,6 @@ from logging import getLogger
 from typing import Literal
 
 import numpy as np
-import xobjects as xo
 import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
@@ -84,8 +83,8 @@ def get_intrabeam_scattering_growth_rates(
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
     if isinstance(particles, xt.Particles):
         # TODO: wait for production-ready functionality from xtrack to handle this
-        raise NotImplementedError("Not yet implemented")
-        LOGGER.info("Particles provided, will determine emittances, etc. from them")
+        raise NotImplementedError("Using provided xt.Particles is not yet implemented, please provide parameters.")
+        LOGGER.info("Will determine emittances, etc. from provided xt.Particles object")
         gemitt_x = _gemitt_x(particles, twiss.betx[0], twiss.dx[0])
         gemitt_y = _gemitt_y(particles, twiss.bety[0], twiss.dy[0])
         sigma_delta = _sigma_delta(particles)
