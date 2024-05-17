@@ -1,6 +1,8 @@
 import numpy as np
 
 from .sliced_element import SlicedElement
+from mpi4py import MPI
+import h5py as hp
 
 
 class SlicedMonitor(SlicedElement):
@@ -31,8 +33,19 @@ class SlicedMonitor(SlicedElement):
         Use flattened wakes
     """
 
+    _stats_to_store = [
+                'mean_x', 'mean_px', 'mean_y', 'mean_py', 'mean_zeta',
+                'mean_delta', 'sigma_x', 'sigma_y', 'sigma_zeta', 'sigma_delta',
+                'epsn_x', 'epsn_y', 'epsn_z', 'num_particles']
+
     def __init__(self,
                  file_backend,
+                 monitor_bunches,
+                 monitor_slices,
+                 monitor_particles,
+                 n_steps,
+                 buffer_size,
+                 beta_gamma,
                  slicer_moments=None,
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
@@ -40,9 +53,29 @@ class SlicedMonitor(SlicedElement):
                  num_slots=None,
                  filling_scheme=None,
                  bunch_numbers=None,
+                 stats_to_store=None,
                  _flatten=False):
 
+        if stats_to_store is not None:
+            for stat in stats_to_store:
+                assert stat in self._stats_to_store
+            self.stats_to_store = stats_to_store
+        else:
+            self.stats_to_store = [
+                'mean_x', 'mean_px', 'mean_y', 'mean_py', 'mean_zeta',
+                'mean_delta', 'sigma_x', 'sigma_y', 'sigma_zeta', 'sigma_delta',
+                'epsn_x', 'epsn_y', 'epsn_z', 'num_particles']
+
         self.file_backend = file_backend
+        self.bunch_buffer = None
+        self.slice_buffer = None
+        self.particle_buffer = None
+        self.n_steps = n_steps
+        self.buffer_size = buffer_size
+        self.beta_gamma = beta_gamma
+        self.monitor_bunches = monitor_bunches,
+        self.monitor_slices = monitor_slices,
+        self.monitor_particles = monitor_particles,
 
         super().__init__(
             slicer_moments=slicer_moments,
@@ -57,46 +90,218 @@ class SlicedMonitor(SlicedElement):
 
         self.i_turn = 0
 
+    def _init_bunch_buffer(self):
+        buf = {}
+        for bid in self.slicer.bunch_numbers:
+            buf[bid] = {}
+            for stats in self.stats_to_store:
+                buf[bid][stats] = np.zeros(self.n_steps)
+
+        return buf
+
+    def _init_slice_buffer(self):
+        buf = {}
+        for bid in self.slicer.bunch_numbers:
+            buf[bid] = {}
+            for stats in self.stats_to_store:
+                buf[bid][stats] = np.zeros(self.slicer.num_slices, self.n_steps)
+
+        return buf
+
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
         super().track(particles=particles,
                       _slice_result=_slice_result,
                       _other_bunch_slicers=_other_bunch_slicers
                       )
 
-        # dump beam data
+        if self.monitor_bunches:
+            if self.bunch_buffer is None:
+                self.bunch_buffer = self._init_bunch_buffer()
+
+            if self.monitor_slices:
+                if self.slice_buffer is None:
+                    self.slice_buffer = self._init_slice_buffer()
+
+            self._update_bunch_buffer(particles)
+
         self.file_backend.dump_data(self.i_turn, self.slicer, particles)
 
         self.i_turn += 1
 
+    def _update_bunch_buffer(self, particles):
+        i_bunch_particles = self._slice_result['i_bunch_particles']
 
+        write_pos = self.i_turn % self.buffer_size
+        for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
+            for stat in self.stats_to_store:
+                mom = getattr(particles, stat.split('_')[-1])
+                if stat.startswith('mean'):
+                    val = self.slicer.mean(mom)[i_bunch, :]
+                    self.bunch_buffer[bid][stat][:, write_pos] = val
+                elif stat.startswith('sigma'):
+                    val = self.slicer.std(mom)[i_bunch, :]
+                    self.bunch_buffer[bid][stat][write_pos] = val
+                elif stat.startswith('epsn'):
+                    mom_p = getattr(particles, 'p'+stat.split('_')[-1])
+                    val = np.linalg.det(np.cov(mom, mom_p)) * self.beta_gamma
+                    self.bunch_buffer[bid][stat][write_pos] = val
+
+    def _update_slice_buffer(self, particles):
+        i_bunch_particles = self._slice_result['i_bunch_particles']
+
+        write_pos = self.i_turn % self.buffer_size
+        for bid in self.slicer.bunch_numbers:
+            for stat in self.stats_to_store:
+                mom = getattr(particles, stat.split('_')[-1])
+                if stat.startswith('mean'):
+                    val = np.mean(mom[i_bunch_particles == bid])
+                    self.bunch_buffer[bid][stat][write_pos] = val
+                elif stat.startswith('sigma'):
+                    val = np.std(mom[i_bunch_particles == bid])
+                    self.bunch_buffer[bid][stat][write_pos] = val
+                elif stat.startswith('epsn'):
+                    mom_p = getattr(particles, 'p'+stat.split('_')[-1])
+                    val = np.linalg.det(np.cov(mom, mom_p)) * self.beta_gamma
+                    self.bunch_buffer[bid][stat][write_pos] = val
+
+'''
 class BaseFileBackend:
-    def __init__(self, base_filename, monitor_beam, beam_monitor_stride,
+    def __init__(self, base_filename,
                  monitor_bunches, bunch_monitor_stride,
-                 monitor_particles, particle_monitor_stride):
+                 monitor_slices, slice_monitor_stride,
+                 monitor_particles, particle_monitor_stride,
+                 parameters_dict=None, bunch_ids=None):
 
         self.base_filename = base_filename
-        self.monitor_beam = monitor_beam
-        self.beam_monitor_stride = beam_monitor_stride
         self.monitor_bunches = monitor_bunches
         self.bunch_monitor_stride = bunch_monitor_stride
+        self.monitor_slices = monitor_slices
+        self.slice_monitor_stride = slice_monitor_stride
         self.monitor_particles = monitor_particles
         self.particle_monitor_stride = particle_monitor_stride
+        self.parameters_dict = parameters_dict
 
-    def init_files(self):
-        raise RuntimeError('File backend must implement init_files')
+        if bunch_ids is not None:
+            self.bunch_ids = bunch_ids
+        else:
+            self.bunch_ids = np.array([0])
+
+        self.bunch_buffer = None
+        self.slice_buffer = None
+        self.particle_buffer = None
+
+    def init_files(self, stats_to_store, n_steps):
+        if self.monitor_bunches:
+            self.init_bunch_monitor_file(stats_to_store, n_steps)
+
+        if self.monitor_slices:
+            self.init_slice_monitor_file()
+
+        if self.monitor_particles:
+            self.init_particle_monitor_file()
+
+    def init_bunch_monitor_file(self, stats_to_store, n_steps):
+        raise RuntimeError('File backend must implement '
+                           'init_bunch_monitor_file')
+
+    def init_slice_monitor_file(self):
+        raise RuntimeError('File backend must implement '
+                           'init_slice_monitor_file')
+
+    def init_particle_monitor_file(self):
+        raise RuntimeError('File backend must implement '
+                           'init_particle_monitor_file')
 
     def dump_data(self, i_turn, slicer, particles):
-        if self.monitor_beam and i_turn % self.beam_monitor_stride == 0:
-            self.dump_beam_data(slicer)
+        if self.monitor_bunches and i_turn % self.bunch_monitor_stride == 0:
+            self.dump_bunch_data(i_turn, particles)
 
-        if self.monitor_beam and i_turn % self.beam_monitor_stride == 0:
-            self.dump_beam_data(slicer)
+        if self.monitor_slices and i_turn % self.slice_monitor_stride == 0:
+            self.dump_slice_data(i_turn, slicer)
 
-    def dump_beam_data(self, slicer):
-        raise RuntimeError('File backend must implement dump_beam_data')
+        if self.monitor_particles and i_turn % self.particle_monitor_stride == 0:
+            self.dump_particle_data(i_turn, slicer, particles)
 
-    def dump_bunch_data(self, slicer):
+    def dump_bunch_data(self, i_turn, slicer):
         raise RuntimeError('File backend must implement dump_bunch_data')
 
-    def dump_particle_data(self, slicer, particles):
+    def dump_slice_data(self, i_turn, slicer):
+        raise RuntimeError('File backend must implement dump_slice_data')
+
+    def dump_particle_data(self, i_turn, slicer, particles):
         raise RuntimeError('File backend must implement dump_bunch_data')
+
+
+class HDF5BackEnd(BaseFileBackend):
+    def __init__(self, base_filename,
+                 monitor_bunches, bunch_monitor_stride,
+                 monitor_slices, slice_monitor_stride,
+                 monitor_particles, particle_monitor_stride,
+                 parameters_dict=None, bunch_ids=None, use_mpi=False):
+
+        self.use_mpi = use_mpi
+
+        super().__init__(base_filename=base_filename,
+                         monitor_bunches=monitor_bunches,
+                         bunch_monitor_stride=bunch_monitor_stride,
+                         monitor_slices=monitor_slices,
+                         slice_monitor_stride=slice_monitor_stride,
+                         monitor_particles=monitor_particles,
+                         particle_monitor_stride=particle_monitor_stride,
+                         parameters_dict=parameters_dict,
+                         bunch_ids=bunch_ids)
+
+    def init_bunch_monitor_file(self, stats_to_store, n_steps):
+        """
+        Initialize HDF5 file and create its basic structure (groups and
+        datasets). One group is created for bunch-specific data. One dataset for
+        each of the quantities defined in self.stats_to_store is generated.
+        If specified by the user, write the contents of the parameters_dict as
+        metadata (attributes) to the file. Maximum file compression is activated
+        only if not using MPI.
+        """
+        if self.base_filename is not None:
+            filename = f'{self.base_filename}_bunchmonitor.h5'
+        else:
+            filename = f'bunchmonitor.h5'
+
+        if self.use_mpi:
+            h5file = hp.File(filename, 'w', driver='mpio',
+                             comm=MPI.COMM_WORLD)
+            kwargs_gr = {}
+        else:
+            h5file = hp.File(filename, 'w')
+            kwargs_gr = {'compression': 'gzip', 'compression_opts': 9}
+
+        if self.parameters_dict:
+            for key in self.parameters_dict:
+                h5file.attrs[key] = self.parameters_dict[key]
+
+        h5group = h5file.create_group('Bunches')
+        for bid in self.bunch_ids:
+            gr = h5group.create_group(repr(bid))
+            for stats in sorted(stats_to_store):
+                gr.create_dataset(stats, shape=(n_steps,),
+                                  **kwargs_gr)
+
+        h5file.close()
+
+    def dump_bunch_data(self, i_turn, particles):
+        pass
+
+    def _write_data_to_buffer(self, i_turn, particles):
+        """ Store the data in the self.buffer dictionary before writing
+        them to file. The buffer is implemented as a shift register. To
+        find the slice_set-specific data, a slice_set, defined by the
+        slicing configuration self.slicer must be requested from the
+        bunch (instance of the Particles class), including all the
+        statistics that are to be saved. """
+
+        # Handle the different statistics quantities, which can
+        # either be methods (like mean(), ...) or simply attributes
+        # (macroparticlenumber or n_macroparticles_per_slice) of the bunch
+        # or slice_set resp.
+
+        # bunch-specific data.
+        pass
+'''
