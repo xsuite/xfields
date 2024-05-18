@@ -4,8 +4,16 @@ from .sliced_element import SlicedElement
 from mpi4py import MPI
 import h5py as hp
 
+COORDS = ['x', 'px', 'y', 'py', 'zeta', 'delta']
+SECOND_MOMENTS = {}
+for c1 in COORDS:
+    for c2 in COORDS:
+        if c1 + '_' + c2 in SECOND_MOMENTS or c2 + '_' + c1 in SECOND_MOMENTS:
+            continue
+        SECOND_MOMENTS[c1 + '_' + c2] = (c1, c2)
 
-class SlicedMonitor(SlicedElement):
+
+class CollectiveMonitor(SlicedElement):
     """
     Base class for elements with a slicer.
 
@@ -35,8 +43,9 @@ class SlicedMonitor(SlicedElement):
 
     _stats_to_store = [
                 'mean_x', 'mean_px', 'mean_y', 'mean_py', 'mean_zeta',
-                'mean_delta', 'sigma_x', 'sigma_y', 'sigma_zeta', 'sigma_delta',
-                'epsn_x', 'epsn_y', 'epsn_z', 'num_particles']
+                'mean_delta', 'sigma_x', 'sigma_y', 'sigma_zeta',
+                'sigma_px', 'sigma_py', 'sigma_delta',
+                'epsn_x', 'epsn_y', 'epsn_zeta', 'num_particles']
 
     def __init__(self,
                  file_backend,
@@ -46,7 +55,7 @@ class SlicedMonitor(SlicedElement):
                  n_steps,
                  buffer_size,
                  beta_gamma,
-                 slicer_moments=None,
+                 slicer_moments='all',
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
@@ -61,10 +70,7 @@ class SlicedMonitor(SlicedElement):
                 assert stat in self._stats_to_store
             self.stats_to_store = stats_to_store
         else:
-            self.stats_to_store = [
-                'mean_x', 'mean_px', 'mean_y', 'mean_py', 'mean_zeta',
-                'mean_delta', 'sigma_x', 'sigma_y', 'sigma_zeta', 'sigma_delta',
-                'epsn_x', 'epsn_y', 'epsn_z', 'num_particles']
+            self.stats_to_store = self._stats_to_store
 
         self.file_backend = file_backend
         self.bunch_buffer = None
@@ -76,6 +82,11 @@ class SlicedMonitor(SlicedElement):
         self.monitor_bunches = monitor_bunches,
         self.monitor_slices = monitor_slices,
         self.monitor_particles = monitor_particles,
+
+        if slicer_moments == 'all':
+            slicer_moments = COORDS + list(SECOND_MOMENTS.keys())
+
+        self.pipeline_manager = None
 
         super().__init__(
             slicer_moments=slicer_moments,
@@ -104,7 +115,8 @@ class SlicedMonitor(SlicedElement):
         for bid in self.slicer.bunch_numbers:
             buf[bid] = {}
             for stats in self.stats_to_store:
-                buf[bid][stats] = np.zeros(self.slicer.num_slices, self.n_steps)
+                buf[bid][stats] = np.zeros((self.slicer.num_slices,
+                                            self.n_steps))
 
         return buf
 
@@ -118,13 +130,15 @@ class SlicedMonitor(SlicedElement):
             if self.bunch_buffer is None:
                 self.bunch_buffer = self._init_bunch_buffer()
 
-            if self.monitor_slices:
-                if self.slice_buffer is None:
-                    self.slice_buffer = self._init_slice_buffer()
-
             self._update_bunch_buffer(particles)
 
-        self.file_backend.dump_data(self.i_turn, self.slicer, particles)
+        if self.monitor_slices:
+            if self.slice_buffer is None:
+                self.slice_buffer = self._init_slice_buffer()
+
+            self._update_slice_buffer()
+
+        # self.file_backend.dump_data(self.i_turn, self.slicer, particles)
 
         self.i_turn += 1
 
@@ -133,36 +147,57 @@ class SlicedMonitor(SlicedElement):
 
         write_pos = self.i_turn % self.buffer_size
         for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
+            bunch_mask = (i_bunch_particles == bid)
             for stat in self.stats_to_store:
-                mom = getattr(particles, stat.split('_')[-1])
-                if stat.startswith('mean'):
-                    val = self.slicer.mean(mom)[i_bunch, :]
-                    self.bunch_buffer[bid][stat][:, write_pos] = val
-                elif stat.startswith('sigma'):
-                    val = self.slicer.std(mom)[i_bunch, :]
-                    self.bunch_buffer[bid][stat][write_pos] = val
-                elif stat.startswith('epsn'):
-                    mom_p = getattr(particles, 'p'+stat.split('_')[-1])
-                    val = np.linalg.det(np.cov(mom, mom_p)) * self.beta_gamma
-                    self.bunch_buffer[bid][stat][write_pos] = val
+                if stat == 'num_particles':
+                    val = np.sum(self.slicer.num_particles[i_bunch, :])
+                else:
+                    mom = getattr(particles, stat.split('_')[-1])
+                    if stat.startswith('mean'):
+                        val = np.mean(mom[bunch_mask])
+                    elif stat.startswith('sigma'):
+                        val = np.std(mom[bunch_mask])
+                    elif stat.startswith('epsn'):
+                        if stat.split('_')[-1] != 'zeta':
+                            mom_p_str = 'p' + stat.split('_')[-1]
+                        else:
+                            mom_p_str = 'delta'
+                        mom_p = getattr(particles, mom_p_str)
+                        val = (np.sqrt(np.linalg.det(np.cov(mom[bunch_mask],
+                                                            mom_p[bunch_mask]))) *
+                               self.beta_gamma)
+                    elif stat == 'num_particles':
+                        val = np.sum(self.slicer.num_particles[i_bunch, :])
+                    else:
+                        raise ValueError('Unknown statistics f{stat}')
 
-    def _update_slice_buffer(self, particles):
-        i_bunch_particles = self._slice_result['i_bunch_particles']
+                self.bunch_buffer[bid][stat][write_pos] = val
 
+    def _update_slice_buffer(self):
         write_pos = self.i_turn % self.buffer_size
-        for bid in self.slicer.bunch_numbers:
+        for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
             for stat in self.stats_to_store:
-                mom = getattr(particles, stat.split('_')[-1])
+                mom_str = stat.split('_')[-1]
                 if stat.startswith('mean'):
-                    val = np.mean(mom[i_bunch_particles == bid])
-                    self.bunch_buffer[bid][stat][write_pos] = val
+                    val = self.slicer.mean(mom_str)[i_bunch, :]
                 elif stat.startswith('sigma'):
-                    val = np.std(mom[i_bunch_particles == bid])
-                    self.bunch_buffer[bid][stat][write_pos] = val
+                    val = self.slicer.std(mom_str)[i_bunch, :]
                 elif stat.startswith('epsn'):
-                    mom_p = getattr(particles, 'p'+stat.split('_')[-1])
-                    val = np.linalg.det(np.cov(mom, mom_p)) * self.beta_gamma
-                    self.bunch_buffer[bid][stat][write_pos] = val
+                    if mom_str != 'zeta':
+                        mom_p_str = 'p' + stat.split('_')[-1]
+                    else:
+                        mom_p_str = 'delta'
+
+                    val = (np.sqrt(self.slicer.var(mom_str)[i_bunch, :] *
+                            self.slicer.var(mom_p_str)[i_bunch, :] -
+                            self.slicer.cov(mom_str, mom_p_str)[i_bunch, :]) *
+                           self.beta_gamma)
+                elif stat == 'num_particles':
+                    val = self.slicer.num_particles[i_bunch, :]
+                else:
+                    raise ValueError('Unknown statistics f{stat}')
+
+                self.slice_buffer[bid][stat][:, write_pos] = val
 
 '''
 class BaseFileBackend:
