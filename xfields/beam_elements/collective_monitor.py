@@ -79,9 +79,9 @@ class CollectiveMonitor(SlicedElement):
         self.n_steps = n_steps
         self.buffer_size = buffer_size
         self.beta_gamma = beta_gamma
-        self.monitor_bunches = monitor_bunches,
-        self.monitor_slices = monitor_slices,
-        self.monitor_particles = monitor_particles,
+        self.monitor_bunches = monitor_bunches
+        self.monitor_slices = monitor_slices
+        self.monitor_particles = monitor_particles
 
         if slicer_moments == 'all':
             slicer_moments = COORDS + list(SECOND_MOMENTS.keys())
@@ -174,6 +174,7 @@ class CollectiveMonitor(SlicedElement):
                 self.bunch_buffer[bid][stat][write_pos] = val
 
     def _update_slice_buffer(self):
+        print('bla')
         write_pos = self.i_turn % self.buffer_size
         for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
             for stat in self.stats_to_store:
@@ -189,8 +190,8 @@ class CollectiveMonitor(SlicedElement):
                         mom_p_str = 'delta'
 
                     val = (np.sqrt(self.slicer.var(mom_str)[i_bunch, :] *
-                            self.slicer.var(mom_p_str)[i_bunch, :] -
-                            self.slicer.cov(mom_str, mom_p_str)[i_bunch, :]) *
+                           self.slicer.var(mom_p_str)[i_bunch, :] -
+                           self.slicer.cov(mom_str, mom_p_str)[i_bunch, :]) *
                            self.beta_gamma)
                 elif stat == 'num_particles':
                     val = self.slicer.num_particles[i_bunch, :]
