@@ -5,8 +5,6 @@
 import xpart as xp
 import xtrack as xt
 
-from xfields.ibs import get_intrabeam_scattering_growth_rates
-
 ##########################
 # Load xt.Line from file #
 ##########################

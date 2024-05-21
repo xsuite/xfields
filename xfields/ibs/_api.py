@@ -10,6 +10,7 @@ import xtrack as xt
 
 from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
 from xfields.ibs._formulary import _beam_intensity, _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
+from xfields.ibs._kicks import IBSAnalyticalKick, IBSKick
 
 LOGGER = getLogger(__name__)
 
@@ -32,7 +33,8 @@ def get_intrabeam_scattering_growth_rates(
     **kwargs,
 ) -> IBSGrowthRates:
     """
-    Computes IntraBeam Scattering growth rates from the provided `xtrack.Line`.
+    Computes IntraBeam Scattering growth rates from the provided
+    `xtrack.TwissTable`.
 
     Parameters
     ----------
@@ -81,8 +83,8 @@ def get_intrabeam_scattering_growth_rates(
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
     if isinstance(particles, xt.Particles):
         # TODO: wait for production-ready functionality from xtrack to handle this
-        raise NotImplementedError("Not yet implemented")
-        LOGGER.info("Particles provided, will determine emittances, etc. from them")
+        raise NotImplementedError("Using provided xt.Particles is not yet implemented, please provide parameters.")
+        LOGGER.info("Will determine emittances, etc. from provided xt.Particles object")
         gemitt_x = _gemitt_x(particles, twiss.betx[0], twiss.dx[0])
         gemitt_y = _gemitt_y(particles, twiss.bety[0], twiss.dy[0])
         sigma_delta = _sigma_delta(particles)
@@ -121,37 +123,86 @@ def get_intrabeam_scattering_growth_rates(
 
 # ----- API for Kick-Based IBS -----#
 
-# TODO: Favor the user creating basic kick element and inserting (see _best.py)
-def install_intrabeam_scattering_kick(
+
+def configure_intrabeam_scattering(
     line: xt.Line,
-    formalism: str,  # let's give an enum for the hint or something?
+    element: IBSKick = None,
+    update_every: int = None,
+    **kwargs,
 ) -> None:
     """
-    Installs an IntraBeam Scattering kick element at the end of the provided xtrack.Line object.
+    Configures the IBS kick element in the line for tracking.
+
+    Notes
+    -----
+        This **should be** one of the last steps taken before tracking.
+        At the very least, if steps are taken that change the lattice's
+        optics after this configuration, then this function should be
+        called once again.
 
     Parameters
     ----------
     line : xtrack.Line
-        Line in which the IBS kick element will be installed.
-    formalism : str
-        Which formalism to use for the IBS kicks. Can be "simple" (only valid above transition) or "kinetic".
-    recompute_rates_every_nturns : int
-        The period in [turns] with which to recompute the IBS growth rates during tracking.
-    """
-    # get the beam/optics params now but it might be outdated, or when the particles
-    # get to the element only? Would need to change the element logic
-    raise NotImplementedError("Not yet implemented")
+        The line in which the IBS kick element was inserted.
+    element : IBSKick, optional
+        If provided, the element is first inserted in the line,
+        before proceeding to configuration. In this case the keyword
+        arguments are passed on to the `line.insert_element` method.
+        This will also discard and rebuild the line tracker.
+    update_every : int
+        The frequency at which to recompute the kick coefficients, in
+        number of turns. They will be computed at the first turn of
+        tracking, and then every `update_every` turns afterwards.
 
-# TODO: see _best.py for things to do in here
-def configure_intrabeam_scattering(
-    line: xt.Line,
-    element_name: str,
-    recompute_rates_every_nturns: int,
-    formalism: str = None,
-):
-    """Configuration step for IBS parameters (like for beambeam for instance)
-    where we do the twiss etc"""
-    # Do a 4D twiss of the line and create opticsparameters
-    # Create a beamparameters object from the particles
-    # properly instantiate the kick element with the above
-    raise NotImplementedError("Not yet implemented")
+    **kwargs : dict, optional
+        Required if an element is provided. Keyword arguments are
+        passed to the `line.insert_element()` method according to
+        `line.insert_element(element=element, **kwargs)`.
+
+    Raises
+    ------
+    AssertionError
+        If the provided `update_every` is not a positive integer.
+    AssertionError
+        If more than one IBS kick element is found in the line.
+    AssertionError
+        If the element is an `IBSAnalyticalKick` and the line is
+        operating below transition energy.
+    """
+    # ----------------------------------------------------------------------------------------------
+    # Asserting validity of provided parameters
+    assert isinstance(update_every, int), "The 'update_every' parameter must be an integer"
+    assert update_every > 0, "The 'update_every' parameter must be a positive integer"
+    # ----------------------------------------------------------------------------------------------
+    # If the user provided a valid element, we insert it in the line first (and pass kwargs)
+    if element is not None and isinstance(element, IBSKick):
+        LOGGER.info("Inserting provided element in the line, passing on keyword arguments")
+        if line.tracker is not None:
+            # if there's a tracker we discard and will build it back identical
+            _buffer = line._buffer
+            line.discard_tracker()
+        else:
+            _buffer = None
+        line.insert_element(element=element, **kwargs)
+        if _buffer is not None:
+            line.build_tracker(_buffer=_buffer)
+    # ----------------------------------------------------------------------------------------------
+    # Otherwise, from here on we assume it's there. Now we need a TwissTable for the elements
+    LOGGER.info("Computing Twiss for the provided line and configuring IBS kick element")
+    twiss = line.twiss(method="4d")
+    # ----------------------------------------------------------------------------------------------
+    # Figure out the IBS kick element and its name in the line
+    only_ibs_kicks = {name: element for name, element in line.element_dict.items() if isinstance(element, IBSKick)}
+    assert len(only_ibs_kicks) == 1, "Only one 'IBSKick' element should be present in the line"
+    name, element = only_ibs_kicks.popitem()
+    # ----------------------------------------------------------------------------------------------
+    # Set necessary (private) attributes for the kick to function
+    element.update_every = update_every
+    element._name = name
+    element._twiss = twiss
+    element._scale_strength = 1  # element is now ON, will track
+    # ----------------------------------------------------------------------------------------------
+    # Handle Simple kick specificities (valid above transition only)
+    if isinstance(element, IBSAnalyticalKick):
+        assert twiss.slip_factor >= 0, "IBSAnalyticalKick is not valid below transition"
+    LOGGER.debug("Done configuring IntraBeam Scattering kick element")

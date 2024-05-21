@@ -107,6 +107,35 @@ def _gemitt_y(particles: xt.Particles, bety: float, dy: float) -> float:
     return float((sigma_y**2 - (dy * sig_delta) ** 2) / bety)
 
 
+def _current_turn(particles: xt.Particles) -> int:
+    """
+    Get the current tracking turn from one of
+    the alive particles.
+    """
+    _assert_accepted_context(particles._context)
+    return int(particles.at_turn[particles.state > 0][0])
+
+
+def _sigma_px(particles: xt.Particles) -> float:
+    """
+    Get the horizontal momentum standard deviation
+    from the particles.
+    """
+    _assert_accepted_context(particles._context)
+    nplike = particles._context.nplike_lib
+    return float(nplike.std(particles.px[particles.state > 0]))
+
+
+def _sigma_py(particles: xt.Particles) -> float:
+    """
+    Get the vertical momentum standard deviation
+    from the particles.
+    """
+    _assert_accepted_context(particles._context)
+    nplike = particles._context.nplike_lib
+    return float(nplike.std(particles.py[particles.state > 0]))
+
+
 # ----- Private helperto check the validity of the context ----- #
 
 

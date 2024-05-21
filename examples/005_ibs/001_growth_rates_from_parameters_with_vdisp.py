@@ -7,8 +7,6 @@ import json
 import numpy as np
 import xtrack as xt
 
-from xfields.ibs import get_intrabeam_scattering_growth_rates
-
 ##########################
 # Load xt.Line from file #
 ##########################
