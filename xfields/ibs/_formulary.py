@@ -136,7 +136,7 @@ def _sigma_py(particles: xt.Particles) -> float:
     return float(nplike.std(particles.py[particles.state > 0]))
 
 
-# ----- Private helperto check the validity of the context ----- #
+# ----- Private helper to check the validity of the context ----- #
 
 
 def _assert_accepted_context(ctx: xo.context.XContext):
@@ -149,3 +149,6 @@ def _assert_accepted_context(ctx: xo.context.XContext):
     assert not isinstance(ctx, xo.ContextPyopencl), (
         "PyOpenCL context is not supported for IBS. " "Please use either the CPU or CuPy context."
     )
+
+    assert not isinstance(ctx, xo.ContextCupy), (
+        "Temporarily disabled CuPy support for IBS. ")
