@@ -227,7 +227,9 @@ def test_track_analytical_kick(test_context):
     clic_dir = XTRACK_TEST_DATA / "clic_dr"
     linefile = clic_dir / "line.json"
     line = xt.Line.from_json(linefile)
-    ibskick = IBSAnalyticalKick(formalism="Nagaitsev", num_slices=50)
+    ibskick = IBSAnalyticalKick(formalism="Nagaitsev", num_slices=50,
+                                _context=test_context)
+    line.build_tracker(_context=test_context)
     # -----------------------------------------------------
     # Activate cavities, configure IBS and generate particles
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
@@ -277,7 +279,8 @@ def test_track_kinetic_kick(test_context):
     clic_dir = XTRACK_TEST_DATA / "clic_dr"
     linefile = clic_dir / "line.json"
     line = xt.Line.from_json(linefile)
-    ibskick = IBSKineticKick(num_slices=50)
+    ibskick = IBSKineticKick(num_slices=50, _context=test_context)
+    line.build_tracker(_context=test_context)
     # -----------------------------------------------------
     # Activate cavities, configure IBS and generate particles
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
