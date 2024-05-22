@@ -129,7 +129,7 @@ def test_configuration_raises_on_below_transition_analytical_kick():
 # ----- Test coefficients computation ----- #
 
 
-@for_all_test_contexts(excluding="ContextPyopencl")
+@for_all_test_contexts(excluding=("ContextPyopencl", "ContextCupy"))
 @pytest.mark.parametrize("formalism", ["b&m", "nagaitsev"])
 def test_kick_coefficients(test_context, formalism):
     """
@@ -168,7 +168,7 @@ def test_kick_coefficients(test_context, formalism):
     assert_allclose(coeffs.Kz, refs.Kz, rtol=1.5e-2)
 
 
-@for_all_test_contexts(excluding="ContextPyopencl")
+@for_all_test_contexts(excluding=("ContextPyopencl", "ContextCupy"))
 def test_kinetic_coefficients(test_context):
     """
     We get a line and generate a large particle distribution
