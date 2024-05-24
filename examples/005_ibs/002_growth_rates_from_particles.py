@@ -69,6 +69,11 @@ print("-------------------------------")
 print(f"Nagaitsev:       {nag_growth_rates}")
 print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 
+# Computed from particles object:
+# -------------------------------
+# Nagaitsev:       IBSGrowthRates(Tx=1.54e-06, Ty=-1.46e-07, Tz=1.65e-06)
+# Bjorken-Mtingwa: IBSGrowthRates(Tx=1.54e-06, Ty=-1.48e-07, Tz=1.65e-06)
+
 ###################################
 # Get growth rates with Nagaitsev #
 ###################################
@@ -106,3 +111,8 @@ print("Computed from normalized emittances (rough equivalent):")
 print("-------------------------------------------------------")
 print(f"Nagaitsev:       {nag_growth_rates}")
 print(f"Bjorken-Mtingwa: {bm_growth_rates}")
+
+# Computed from normalized emittances (rough equivalent):
+# -------------------------------------------------------
+# Nagaitsev:       IBSGrowthRates(Tx=1.54e-06, Ty=-1.46e-07, Tz=1.65e-06)
+# Bjorken-Mtingwa: IBSGrowthRates(Tx=1.54e-06, Ty=-1.48e-07, Tz=1.65e-06)

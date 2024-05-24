@@ -17,7 +17,26 @@ context = xo.ContextCpu(omp_num_threads="auto")
 fname_line_particles = "../../../xtrack/test_data/sps_w_spacecharge/"\
                        "line_no_spacecharge_and_particle.json"
 line: xt.Line = xt.Line.from_json(fname_line_particles)
-line.build_tracker()
+line.build_tracker(_context=context)
+
+#######################################
+# Create and Install IBS Kick Element #
+#######################################
+
+# For the analytical kick formalism: kicks are computed based
+# on the analytical growth rates (so it needs a formalism)
+# ibs_kick = xf.IBSAnalyticalKick(formalism="nagaitsev", num_slices=50)
+
+# For the kinetic formalism: kicks are computed based on the
+# friction and diffusion terms of the kinetic theory of gases
+ibs_kick = xf.IBSKineticKick(num_slices=50)
+
+# By default the element is off until configuration. Let's install
+# the kick at the end of the line and configure it. This internally
+# provides the necessary information to the element
+line.configure_intrabeam_scattering(
+    element=ibs_kick, name="ibskick", index=-1, update_every=50
+)
 
 ############################################
 # Define parameters and Generate Particles #
@@ -38,25 +57,6 @@ particles = xp.generate_matched_gaussian_bunch(
     sigma_z=bunch_length,
     line=line,
     _context=context,
-)
-
-#######################################
-# Create and Install IBS Kick Element #
-#######################################
-
-# For the analytical kick formalism: kicks are computed based
-# on the analytical growth rates (so it needs a formalism)
-# ibs_kick = xf.IBSAnalyticalKick(formalism="nagaitsev", num_slices=50)
-
-# For the kinetic formalism: kicks are computed based on the
-# friction and diffusion terms of the kinetic theory of gases
-ibs_kick = xf.IBSKineticKick(num_slices=50)
-
-# By default the element is off until configuration. Let's install
-# the kick at the end of the line and configure it. This internally
-# provides the necessary information to the element
-line.configure_intrabeam_scattering(
-    element=ibs_kick, name="ibskick", index=-1, update_every=50
 )
 
 ##############################################

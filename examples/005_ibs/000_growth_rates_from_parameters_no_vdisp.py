@@ -4,8 +4,6 @@
 # ########################################### #
 import xtrack as xt
 
-from xfields.ibs import get_intrabeam_scattering_growth_rates
-
 ##########################
 # Load xt.Line from file #
 ##########################
@@ -63,6 +61,11 @@ print("------------------------------------")
 print(f"Nagaitsev:       {nag_growth_rates}")
 print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 
+# Computed from normalized emittances:
+# ------------------------------------
+# Nagaitsev:       IBSGrowthRates(Tx=0.00104, Ty=0.011, Tz=0.00803)
+# Bjorken-Mtingwa: IBSGrowthRates(Tx=0.00111, Ty=0.0109, Tz=0.008)
+
 #####################
 # Define parameters #
 #####################
@@ -108,3 +111,8 @@ print("Computed from geometric emittances (rough equivalent):")
 print("------------------------------------------------------")
 print(f"Nagaitsev:       {nag_growth_rates2}")
 print(f"Bjorken-Mtingwa: {bm_growth_rates2}")
+
+# Computed from geometric emittances (rough equivalent):
+# ------------------------------------------------------
+# Nagaitsev:       IBSGrowthRates(Tx=0.00103, Ty=0.0111, Tz=0.00803)
+# Bjorken-Mtingwa: IBSGrowthRates(Tx=0.00111, Ty=0.0109, Tz=0.008)

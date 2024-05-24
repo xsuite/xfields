@@ -4,7 +4,6 @@
 # ########################################### #
 import json
 
-import numpy as np
 import xtrack as xt
 
 ##########################
@@ -60,7 +59,6 @@ bm_growth_rates = tw.get_ibs_growth_rates(
     bunched=True,
 )
 
-
 ##########################################################
 # Compare: we expect Nagaitsev to be wrong in horizontal #
 ##########################################################
@@ -70,6 +68,11 @@ print("Computed from normalized emittances:")
 print("------------------------------------")
 print(f"Nagaitsev:       {nag_growth_rates}")
 print(f"Bjorken-Mtingwa: {bm_growth_rates}")
+
+# Computed from normalized emittances:
+# ------------------------------------
+# Nagaitsev:       IBSGrowthRates(Tx=6.24e-05, Ty=-2.27e-09, Tz=0.00031)
+# Bjorken-Mtingwa: IBSGrowthRates(Tx=6.21e-05, Ty=1.1e-06, Tz=0.00031)
 
 #####################
 # Define parameters #
@@ -115,3 +118,8 @@ print("Computed from geometric emittances (rough equivalent):")
 print("------------------------------------------------------")
 print(f"Nagaitsev:       {nag_growth_rates2}")
 print(f"Bjorken-Mtingwa: {bm_growth_rates2}")
+
+# Computed from geometric emittances (rough equivalent):
+# ------------------------------------------------------
+# Nagaitsev:       IBSGrowthRates(Tx=6.24e-05, Ty=-2.27e-09, Tz=0.00031)
+# Bjorken-Mtingwa: IBSGrowthRates(Tx=6.21e-05, Ty=1.1e-06, Tz=0.00031)
