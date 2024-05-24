@@ -237,7 +237,7 @@ def test_track_analytical_kick(test_context):
     line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
-        num_particles=1000,
+        num_particles=2500,
         nemitt_x=5.66e-7,
         nemitt_y=3.7e-9,
         sigma_z=1.58e-3,
@@ -248,20 +248,21 @@ def test_track_analytical_kick(test_context):
     # -----------------------------------------------------
     # Perform a few checks before tracking
     with flaky_assertions():
-        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=10e-2)
-        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=10e-2)
-        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=10e-2)
-        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=10e-2)
+        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=5e-2)
+        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=5e-2)
+        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=5e-2)
+        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=5e-2)
     # -----------------------------------------------------
     # Track for 1000 turns, and make final checks on emittances. Random
     # numbers are involved so we can't expect big accuracy. Without the
     # IBS though emittances would stay constant, so these are enough.
-    line.track(particles, num_turns=1000)
+    line.track(particles, num_turns=2000)
     with flaky_assertions():
-        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.4e-10  # most of the effect in x
-        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 6.85e-13  # smaller growth in y
-        assert _sigma_delta(particles) >= 1.8e-3  # little growth
-        assert _bunch_length(particles) >= 1.625e-3  # little growth
+        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.7e-10  # most of the effect in x
+        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 7.3e-13  # smaller growth in y
+        # These two grow just a tad and oscillate a bit, check is loose
+        assert _sigma_delta(particles) >= 1.825e-3  # very little growth here
+        assert _bunch_length(particles) >= 1.66e-3  # very little growth here
 
 
 @for_all_test_contexts(excluding=["ContextPyopencl", "ContextCupy"])
@@ -288,7 +289,7 @@ def test_track_kinetic_kick(test_context):
     line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
-        num_particles=1000,
+        num_particles=2500,
         nemitt_x=5.66e-7,
         nemitt_y=3.7e-9,
         sigma_z=1.58e-3,
@@ -299,17 +300,18 @@ def test_track_kinetic_kick(test_context):
     # -----------------------------------------------------
     # Perform a few checks before tracking
     with flaky_assertions():
-        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=10e-2)
-        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=10e-2)
-        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=10e-2)
-        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=10e-2)
+        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=5e-2)
+        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=5e-2)
+        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=5e-2)
+        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=5e-2)
     # -----------------------------------------------------
     # Track for 1000 turns, and make final checks on emittances. Random
     # numbers are involved so we can't expect big accuracy. Without the
     # IBS though emittances would stay constant, so these are enough.
-    line.track(particles, num_turns=1000)
+    line.track(particles, num_turns=2000)
     with flaky_assertions():
-        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.4e-10  # most of the effect in x
-        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 6.85e-13  # smaller growth in y
-        assert _sigma_delta(particles) >= 1.8e-3  # little growth
-        assert _bunch_length(particles) >= 1.625e-3  # little growth
+        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.7e-10  # most of the effect in x
+        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 7.3e-13  # smaller growth in y
+        # These two grow just a tad and oscillate a bit, check is loose
+        assert _sigma_delta(particles) >= 1.825e-3  # very little growth here
+        assert _bunch_length(particles) >= 1.66e-3  # very little growth here
