@@ -213,7 +213,7 @@ def test_kinetic_coefficients(test_context):
 # ----- Tests with tracking ----- #
 
 
-@for_all_test_contexts(excluding=["ContextPyopencl", "ContextCupy"])
+@for_all_test_contexts(excluding=["ContextPyopencl"])
 @retry()
 def test_track_analytical_kick(test_context):
     """
@@ -265,7 +265,7 @@ def test_track_analytical_kick(test_context):
         assert _bunch_length(particles) >= 1.66e-3  # very little growth here
 
 
-@for_all_test_contexts(excluding=["ContextPyopencl", "ContextCupy"])
+@for_all_test_contexts(excluding=["ContextPyopencl"])
 @retry()
 def test_track_kinetic_kick(test_context):
     """
