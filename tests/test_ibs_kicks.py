@@ -129,7 +129,7 @@ def test_configuration_raises_on_below_transition_analytical_kick():
 # ----- Test coefficients computation ----- #
 
 
-@for_all_test_contexts(excluding=("ContextPyopencl", "ContextCupy"))
+@for_all_test_contexts(excluding=("ContextPyopencl"))
 @pytest.mark.parametrize("formalism", ["b&m", "nagaitsev"])
 def test_kick_coefficients(test_context, formalism):
     """
@@ -168,7 +168,7 @@ def test_kick_coefficients(test_context, formalism):
     assert_allclose(coeffs.Kz, refs.Kz, rtol=1.5e-2)
 
 
-@for_all_test_contexts(excluding=("ContextPyopencl", "ContextCupy"))
+@for_all_test_contexts(excluding=("ContextPyopencl"))
 def test_kinetic_coefficients(test_context):
     """
     We get a line and generate a large particle distribution
@@ -214,7 +214,7 @@ def test_kinetic_coefficients(test_context):
 
 
 @for_all_test_contexts(excluding=["ContextPyopencl"])
-@retry()
+@retry()  # emittances fluctuate around a given trend
 def test_track_analytical_kick(test_context):
     """
     Track a particle distribution in CLIC DR with exagerated
@@ -266,7 +266,7 @@ def test_track_analytical_kick(test_context):
 
 
 @for_all_test_contexts(excluding=["ContextPyopencl"])
-@retry()
+@retry()  # emittances fluctuate around a given trend
 def test_track_kinetic_kick(test_context):
     """
     Track a particle distribution in CLIC DR with exagerated
