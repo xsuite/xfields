@@ -150,5 +150,5 @@ def _assert_accepted_context(ctx: xo.context.XContext):
         "PyOpenCL context is not supported for IBS. " "Please use either the CPU or CuPy context."
     )
 
-    assert not isinstance(ctx, xo.ContextCupy), (
-        "Temporarily disabled CuPy support for IBS. ")
+    # assert not isinstance(ctx, xo.ContextCupy), (
+    #     "Temporarily disabled CuPy support for IBS. ")
