@@ -237,7 +237,7 @@ def test_track_analytical_kick(test_context):
     line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
-        num_particles=2500,
+        num_particles=2000,
         nemitt_x=5.66e-7,
         nemitt_y=3.7e-9,
         sigma_z=1.58e-3,
@@ -289,7 +289,7 @@ def test_track_kinetic_kick(test_context):
     line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
-        num_particles=2500,
+        num_particles=2000,
         nemitt_x=5.66e-7,
         nemitt_y=3.7e-9,
         sigma_z=1.58e-3,
