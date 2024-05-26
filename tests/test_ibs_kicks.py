@@ -144,6 +144,7 @@ def test_kick_coefficients(test_context, formalism):
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
     linefile = sps_dir / "line_no_spacecharge_and_particle.json"
     line = xt.Line.from_json(linefile)
+    line.build_tracker(_context=test_context)
     ibskick = IBSAnalyticalKick(formalism=formalism, num_slices=50)
     # -----------------------------------------------------
     # Configure in line and generate particles distribution
@@ -182,6 +183,7 @@ def test_kinetic_coefficients(test_context):
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
     linefile = sps_dir / "line_no_spacecharge_and_particle.json"
     line = xt.Line.from_json(linefile)
+    line.build_tracker(_context=test_context)
     ibskick = IBSKineticKick(num_slices=50)
     # -----------------------------------------------------
     # Configure in line and generate particles distribution
