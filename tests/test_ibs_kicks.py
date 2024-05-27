@@ -236,7 +236,7 @@ def test_track_analytical_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.lag = 180
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
+    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=2000,
@@ -288,7 +288,7 @@ def test_track_kinetic_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.lag = 180
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
+    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=2000,
