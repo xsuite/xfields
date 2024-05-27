@@ -29,7 +29,7 @@ tw = line.twiss(method="4d")
 #######################################
 
 # ibs_kick = xf.IBSKineticKick(num_slices=50)
-ibs_kick = xf.IBSAnalyticalKick(formalism="b&m", num_slices=50)
+ibs_kick = xf.IBSAnalyticalKick(formalism="nagaitsev", num_slices=50)
 line.configure_intrabeam_scattering(
     element=ibs_kick, name="ibskick", index=-1, update_every=50
 )
