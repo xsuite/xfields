@@ -10,6 +10,7 @@ from xfields.ibs._formulary import _gemitt_x, _gemitt_y, _sigma_delta, _bunch_le
 import numpy as np
 import matplotlib.pyplot as plt
 
+# context = xo.ContextCupy()
 context = xo.ContextCpu(omp_num_threads="auto")
 
 ##########################
