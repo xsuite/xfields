@@ -48,6 +48,7 @@ z_plot = np.linspace(z_lim[0], z_lim[1], 1000)
 
 import matplotlib.pyplot as plt
 plt.close('all')
+plt.figure(1)
 
 for x in x_list:
 
@@ -60,4 +61,23 @@ for x in x_list:
 plt.legend()
 plt.xlabel('z [m]')
 plt.ylabel('dphi/dz [V/m]')
+
+
+z_list = np.linspace(z_lim[0], z_lim[1], 11)
+x_plot = np.linspace(x_lim[0], x_lim[1], 1000)
+
+plt.figure(2)
+
+for z in z_list:
+
+    z_plot = z * np.ones_like(x_plot)
+    y_plot = np.zeros_like(x_plot)
+
+    rho, phi, dphi_dx, dphi_dy, dphi_dz = fmap.get_values_at_points(x_plot, y_plot, z_plot)
+    plt.plot(x_plot, dphi_dz, label=f'z = {z}')
+
+plt.legend()
+plt.xlabel('x [m]')
+plt.ylabel('dphi/dz [V/m]')
+
 plt.show()
