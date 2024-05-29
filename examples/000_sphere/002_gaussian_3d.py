@@ -6,11 +6,10 @@
 import time
 
 import numpy as np
-from numpy.random import rand
 from numpy import pi
-
-from xobjects import ContextCpu, ContextCupy, ContextPyopencl
+from scipy.integrate import cumulative_trapezoid
 from xfields import TriLinearInterpolatedFieldMap
+from scipy.constants import epsilon_0
 
 
 sigma_x = 0.001
@@ -49,6 +48,11 @@ z_plot = np.linspace(z_lim[0], z_lim[1], 1000)
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(1)
+sp_phi = plt.subplot(3, 1, 1)
+sp_dphi_dz = plt.subplot(3, 1, 2, sharex=sp_phi)
+sp_simpl_corr = plt.subplot(3, 1, 3, sharex=sp_phi)
+
+rho_on_axis, _, _, _, dphi_dz_on_axis = fmap.get_values_at_points(0*z_plot, 0*z_plot, z_plot)
 
 for x in x_list:
 
@@ -56,12 +60,15 @@ for x in x_list:
     y_plot = np.zeros_like(z_plot)
 
     rho, phi, dphi_dx, dphi_dy, dphi_dz = fmap.get_values_at_points(x_plot, y_plot, z_plot)
-    plt.plot(z_plot, dphi_dz, label=f'x = {x}')
+    sp_dphi_dz.plot(z_plot, dphi_dz, label=f'x = {x}')
+    sp_phi.plot(z_plot, phi, label=f'x = {x}')
+    sp_simpl_corr.plot(z_plot, dphi_dz-dphi_dz_on_axis, label=f'x = {x}')
+
 
 plt.legend()
-plt.xlabel('z [m]')
-plt.ylabel('dphi/dz [V/m]')
-
+sp_dphi_dz.set_xlabel('z [m]')
+sp_dphi_dz.set_ylabel('dphi/dz [V/m]')
+sp_phi.set_ylabel('phi [V]')
 
 z_list = np.linspace(z_lim[0], z_lim[1], 11)
 x_plot = np.linspace(x_lim[0], x_lim[1], 1000)
