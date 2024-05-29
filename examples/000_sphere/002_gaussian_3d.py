@@ -54,6 +54,10 @@ sp_simpl_corr = plt.subplot(3, 1, 3, sharex=sp_phi)
 
 rho_on_axis, _, _, _, dphi_dz_on_axis = fmap.get_values_at_points(0*z_plot, 0*z_plot, z_plot)
 
+lam = np.sum(fmap.rho, axis=(0, 1)) * fmap.dx * fmap.dy
+lam_prime = (lam[2:] - lam[:-2]) / (2*fmap.dz)
+lam_prime = np.concatenate([lam_prime[:1], lam_prime, lam_prime[-1:]])
+
 for x in x_list:
 
     x_plot = x * np.ones_like(z_plot)
@@ -86,5 +90,16 @@ for z in z_list:
 plt.legend()
 plt.xlabel('x [m]')
 plt.ylabel('dphi/dz [V/m]')
+
+plt.figure(100)
+sp_lam = plt.subplot(2, 1, 1)
+sp_lam_prime = plt.subplot(2, 1, 2, sharex=sp_lam)
+
+sp_lam.plot(fmap.z_grid, lam, label='lam')
+sp_lam_prime.plot(fmap.z_grid, lam_prime, label='lam_prime')
+
+sp_lam.set_ylabel(r'$\lambda$(z)')
+sp_lam_prime.set_ylabel(r'$\lambda^{\prime}$(z)')
+sp_lam_prime.set_xlabel('z [m]')
 
 plt.show()
