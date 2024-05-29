@@ -58,6 +58,10 @@ lam = np.sum(fmap.rho, axis=(0, 1)) * fmap.dx * fmap.dy
 lam_prime = (lam[2:] - lam[:-2]) / (2*fmap.dz)
 lam_prime = np.concatenate([lam_prime[:1], lam_prime, lam_prime[-1:]])
 
+lam0 = np.max(lam)
+
+
+
 for x in x_list:
 
     x_plot = x * np.ones_like(z_plot)
@@ -74,18 +78,35 @@ sp_dphi_dz.set_xlabel('z [m]')
 sp_dphi_dz.set_ylabel('dphi/dz [V/m]')
 sp_phi.set_ylabel('phi [V]')
 
-z_list = np.linspace(z_lim[0], z_lim[1], 11)
-x_plot = np.linspace(x_lim[0], x_lim[1], 1000)
+x_corr = 0.001
+y_corr = 0.002
 
-plt.figure(2)
+x_integ = np.linspace(0, x_corr, 1000)
+y_integ = np.linspace(0, y_corr, 1000)
+r_integ = np.sqrt(x_integ**2 + y_integ**2)
 
-for z in z_list:
+_, _, dphi_dx_integ, dphi_dy_integ, _ = fmap.get_values_at_points(x_integ, y_integ, 0*x_integ)
+dphi_dr_integ = np.sqrt(dphi_dx_integ**2 + dphi_dy_integ**2) / lam0 # need to go to normalized potentional
 
-    z_plot = z * np.ones_like(x_plot)
-    y_plot = np.zeros_like(x_plot)
+phi_corr = -cumulative_trapezoid(dphi_dr_integ, r_integ, initial=0)
+dphi_dz_corr = lam_prime * phi_corr[-1]
 
-    rho, phi, dphi_dx, dphi_dy, dphi_dz = fmap.get_values_at_points(x_plot, y_plot, z_plot)
-    plt.plot(x_plot, dphi_dz, label=f'z = {z}')
+_, _, _, _, dphi_dz_check1 = fmap.get_values_at_points(x_corr + 0*fmap.z_grid, y_corr + 0*fmap.z_grid, fmap.z_grid)
+_, _, _, _, dphi_dz_check0 = fmap.get_values_at_points(0*fmap.z_grid, 0*fmap.z_grid, fmap.z_grid)
+dphi_dz_corr_check = dphi_dz_check1 - dphi_dz_check0
+
+# z_list = np.linspace(z_lim[0], z_lim[1], 11)
+# x_plot = np.linspace(x_lim[0], x_lim[1], 1000)
+
+# plt.figure(2)
+
+# for z in z_list:
+
+#     z_plot = z * np.ones_like(x_plot)
+#     y_plot = np.zeros_like(x_plot)
+
+#     rho, phi, dphi_dx, dphi_dy, dphi_dz = fmap.get_values_at_points(x_plot, y_plot, z_plot)
+#     plt.plot(x_plot, dphi_dz, label=f'z = {z}')
 
 plt.legend()
 plt.xlabel('x [m]')
@@ -101,5 +122,15 @@ sp_lam_prime.plot(fmap.z_grid, lam_prime, label='lam_prime')
 sp_lam.set_ylabel(r'$\lambda$(z)')
 sp_lam_prime.set_ylabel(r'$\lambda^{\prime}$(z)')
 sp_lam_prime.set_xlabel('z [m]')
+
+plt.figure(101)
+sp_dphi_dz_corr = plt.subplot(2, 1, 1, sharex=sp_lam)
+sp_dphi_dz_ratio = plt.subplot(2, 1, 2, sharex=sp_lam)
+sp_dphi_dz_corr.plot(fmap.z_grid, dphi_dz_corr, label='dphi_dz_corr')
+sp_dphi_dz_corr.plot(fmap.z_grid, dphi_dz_corr_check, label='dphi_dz_check')
+
+sp_dphi_dz_ratio.plot(fmap.z_grid, dphi_dz_corr / dphi_dz_corr_check, label='dphi_dz_corr / dphi_dz_check1')
+sp_dphi_dz_ratio.set_ylim(0.8, 1.2)
+
 
 plt.show()
