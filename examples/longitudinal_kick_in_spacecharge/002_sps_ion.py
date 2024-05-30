@@ -69,9 +69,10 @@ print('New Qs = {:.6f} when Qs changed by factor {}\n'.format(twiss['qs'], scale
 
 # Generate particles spread out in lognitudinal space make linear spacing between close to center of RF bucket and to separatrix
 zetas = np.linspace(0.05, 0.7 / scale_factor_Qs, num=number_of_particles)
-particles = xp.build_particles(line = line, particle_ref = line.particle_ref,
+p0 = xp.build_particles(line = line, particle_ref = line.particle_ref,
                             x_norm=0.1, y_norm=0.1, delta=0.0, zeta=zetas,
                             nemitt_x = nemitt_x, nemitt_y = nemitt_y, _context=context) # default transverse amplitude is 0.1 sigmas
+
 
 # Install frozen space charge, emulating a Gaussian bunch
 lprofile = xf.LongitudinalProfileQGaussian(
@@ -89,51 +90,33 @@ xf.install_spacecharge_frozen(line = line,
                    num_spacecharge_interactions = num_spacecharge_interactions)
 
 line.build_tracker(_context = context)
+line.enable_time_dependent_vars = True
+line.track(p0.copy(), num_turns=num_turns, with_progress=True,
+           log=xt.Log(zeta=lambda l, p: p.zeta.copy()))
+log_no_kick = line.log_last_track
 
 tt = line.get_table()
 tt_sc = tt.rows[tt.element_type=='SpaceChargeBiGaussian']
 for nn in tt_sc.name:
     line[nn].z_kick_num_integ_per_sigma = 5
 
-# Start dictionary
-zeta_vals = np.zeros([len(particles.zeta), num_turns])
-delta_vals = np.zeros([len(particles.delta), num_turns])
-zeta_vals[:, 0] = particles.zeta
-delta_vals[:, 0] = particles.delta
+line.track(p0.copy(), num_turns=num_turns, with_progress=True,
+              log=xt.Log(zeta=lambda l, p: p.zeta.copy()))
+log_with_kick = line.log_last_track
 
-# Track particles
-time00 = time.time()
-for turn in range(1, num_turns):
-    if turn % 10 == 0:
-        print(f'Tracking turn {turn}')
-    line.track(particles)
-    zeta_vals[:, turn] = particles.zeta
-    delta_vals[:, turn] = particles.delta
-time01 = time.time()
-dt0 = time01-time00
-print('\nTracking time: {:.1f} s = {:.1f} min'.format(dt0, dt0/60))
+zeta_no_kick = np.stack(log_no_kick['zeta'])
+zeta_with_kick = np.stack(log_with_kick['zeta'])
 
-# Plot relative zeta values
-fig, ax = plt.subplots(1, 1, figsize = (8, 4.5))
-turns = np.arange(len(zeta_vals[0]))
-i = -2 # index of particle to plot - select penultimate
-ax.plot(turns, zeta_vals[i, :] / zeta_vals[i, 0], alpha=0.8, label='Qs changed by factor {}'.format(scale_factor_Qs))
-ax.set_xlabel('Turns')
-ax.set_ylabel(r'$\zeta$ / $\zeta_{0}$')
-ax.set_ylim(0.95, 1.05)
-ax.legend(loc='upper left', fontsize=10)
-plt.tight_layout()
-
-# Plot particle evolution in longitudinal phase space
-fig2, ax2 = plt.subplots(1, 1, figsize = (8, 4.5))
-for i in range(number_of_particles):
-    ax2.scatter(zeta_vals[i, :], delta_vals[i, :] * 1e3, c=range(num_turns), marker='.')
-ax2.set_xlabel(r'$\zeta$ [m]')
-ax2.set_ylabel(r'$\delta$ [1e-3]')
-
-# Adding color bar for the number of turns
-cbar = plt.colorbar(ax2.collections[0], ax=ax2)
-cbar.set_label('Number of Turns')
-plt.tight_layout()
-
+import matplotlib.pyplot as plt
+plt.close('all')
+plt.figure(1)
+i_part_plot = -1
+plt.plot(zeta_no_kick[:, i_part_plot], label='No z kick')
+plt.plot(zeta_with_kick[:, i_part_plot], label='With z kick')
+z0 = p0.zeta[i_part_plot]
+plt.ylim([z0*0.99, z0*1.05])
+plt.xlabel('Turns')
+plt.ylabel(r'zeta [m]')
+plt.grid()
+plt.legend()
 plt.show()
