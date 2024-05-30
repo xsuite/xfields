@@ -188,6 +188,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'longitudinal_profile': LongitudinalProfileQGaussian, # TODO: Will become unionref
         'fieldmap': BiGaussianFieldMap,
         'length': xo.Float64,
+        'z_kick_num_integ_per_sigma': xo.Int64,
         }
 
     _extra_c_sources = [
@@ -227,6 +228,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  sigma_y=None,
                  fieldmap=None,
                  min_sigma_diff=1e-10,
+                 z_kick_num_integ_per_sigma=0,
                  **kwargs # to avoid issues when building form dict
                  ):
 
@@ -264,6 +266,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                          updatable=True)
             else:
                 self.fieldmap=fieldmap
+
+        self.z_kick_num_integ_per_sigma = z_kick_num_integ_per_sigma
 
         self.iscollective = None # Inferred from _update_flag
 

@@ -14,7 +14,7 @@ from scipy.constants import epsilon_0
 
 sigma_x = 0.001
 sigma_y = 0.002
-sigma_z = 0.1
+sigma_z = 1.
 
 x_lim = (-3*sigma_x, 3*sigma_x)
 y_lim = (-3*sigma_y, 3*sigma_y)
@@ -81,14 +81,18 @@ sp_phi.set_ylabel('phi [V]')
 x_corr = 0.001
 y_corr = 0.002
 
-x_integ = np.linspace(0, x_corr, 1000)
-y_integ = np.linspace(0, y_corr, 1000)
-r_integ = np.sqrt(x_integ**2 + y_integ**2)
+n_integ = 1000
+x_integ = np.linspace(0, x_corr, n_integ)
+y_integ = np.linspace(0, y_corr, n_integ)
+dx_integ = x_integ[1] - x_integ[0]
+dy_integ = y_integ[1] - y_integ[0]
+# r_integ = np.sqrt(x_integ**2 + y_integ**2)
 
 _, _, dphi_dx_integ, dphi_dy_integ, _ = fmap.get_values_at_points(x_integ, y_integ, 0*x_integ)
-dphi_dr_integ = np.sqrt(dphi_dx_integ**2 + dphi_dy_integ**2) / lam0 # need to go to normalized potentional
+# dphi_dr_integ = np.sqrt(dphi_dx_integ**2 + dphi_dy_integ**2) / lam0 # need to go to normalized potentional
 
-phi_corr = -cumulative_trapezoid(dphi_dr_integ, r_integ, initial=0)
+phi_corr = np.cumsum(dphi_dx_integ * dx_integ + dphi_dy_integ * dy_integ) / lam0
+# phi_corr[-1] *= 0.5
 dphi_dz_corr = lam_prime * phi_corr[-1]
 
 _, _, _, _, dphi_dz_check1 = fmap.get_values_at_points(x_corr + 0*fmap.z_grid, y_corr + 0*fmap.z_grid, fmap.z_grid)
