@@ -49,7 +49,7 @@ spch_pic.track(p)
 spch_pic.update_on_track = False
 
 x_test = 1.1 * sigma_x
-y_test = 0.4 * sigma_y
+y_test = -0.4 * sigma_y
 z_test = np.linspace(-z_lim, z_lim, 1000)
 
 p_test_pic = xp.Particles(
