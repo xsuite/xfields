@@ -80,13 +80,8 @@ particles = xp.generate_matched_gaussian_bunch(
          line=line, _context=context
 )
 
-particles.x += 1e-3
-particles.y += 2e-3
-particles.xp += 3e-3
-particles.yp += 4e-3
-particles.zeta += 6e-3
-particles.delta += 7e-3
-
 line.track(particles)
 
 print('a')
+
+

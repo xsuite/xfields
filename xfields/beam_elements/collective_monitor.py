@@ -1,8 +1,7 @@
 import numpy as np
 
 from .sliced_element import SlicedElement
-from mpi4py import MPI
-import h5py as hp
+import openpmd_api as io
 
 COORDS = ['x', 'px', 'y', 'py', 'zeta', 'delta']
 SECOND_MOMENTS = {}
@@ -48,12 +47,11 @@ class CollectiveMonitor(SlicedElement):
                 'epsn_x', 'epsn_y', 'epsn_zeta', 'num_particles']
 
     def __init__(self,
-                 file_backend,
+                 base_file_name,
                  monitor_bunches,
                  monitor_slices,
                  monitor_particles,
                  n_steps,
-                 buffer_size,
                  beta_gamma,
                  slicer_moments='all',
                  zeta_range=None,  # These are [a, b] in the paper
@@ -63,6 +61,7 @@ class CollectiveMonitor(SlicedElement):
                  filling_scheme=None,
                  bunch_numbers=None,
                  stats_to_store=None,
+                 output_extension=None,
                  _flatten=False):
 
         if stats_to_store is not None:
@@ -72,16 +71,17 @@ class CollectiveMonitor(SlicedElement):
         else:
             self.stats_to_store = self._stats_to_store
 
-        self.file_backend = file_backend
+        self.base_file_name = base_file_name
         self.bunch_buffer = None
         self.slice_buffer = None
         self.particle_buffer = None
         self.n_steps = n_steps
-        self.buffer_size = buffer_size
         self.beta_gamma = beta_gamma
         self.monitor_bunches = monitor_bunches
         self.monitor_slices = monitor_slices
         self.monitor_particles = monitor_particles
+
+        self.output_extension = output_extension
 
         if slicer_moments == 'all':
             slicer_moments = COORDS + list(SECOND_MOMENTS.keys())
@@ -99,8 +99,24 @@ class CollectiveMonitor(SlicedElement):
             with_compressed_profile=False
         )
 
+        if self.monitor_bunches:
+            self.bunch_series = io.Series(
+                self.base_file_name + '_bunches.h5',
+                io.Access.create)
+
+        if self.monitor_slices:
+            self.slice_series = io.Series(
+                self.base_file_name + '_slices.h5',
+                io.Access.create)
+
+        if self.monitor_particles:
+            self.particle_series = io.Series(
+                self.base_file_name + '_particles.h5',
+                io.Access.create)
+
         self.i_turn = 0
 
+    '''
     def _init_bunch_buffer(self):
         buf = {}
         for bid in self.slicer.bunch_numbers:
@@ -119,6 +135,7 @@ class CollectiveMonitor(SlicedElement):
                                             self.n_steps))
 
         return buf
+    '''
 
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
         super().track(particles=particles,
@@ -126,21 +143,57 @@ class CollectiveMonitor(SlicedElement):
                       _other_bunch_slicers=_other_bunch_slicers
                       )
 
+        #if self.monitor_bunches:
+        #    if self.bunch_buffer is None:
+        #        self.bunch_buffer = self._init_bunch_buffer()
+        #
+        #    self._update_bunch_buffer(particles)
+
+        #if self.monitor_slices:
+        #    if self.slice_buffer is None:
+        #        self.slice_buffer = self._init_slice_buffer()
+        #
+        #    self._update_slice_buffer()
+
         if self.monitor_bunches:
-            if self.bunch_buffer is None:
-                self.bunch_buffer = self._init_bunch_buffer()
-
-            self._update_bunch_buffer(particles)
-
-        if self.monitor_slices:
-            if self.slice_buffer is None:
-                self.slice_buffer = self._init_slice_buffer()
-
-            self._update_slice_buffer()
+            self._update_bunch_series(particles)
 
         # self.file_backend.dump_data(self.i_turn, self.slicer, particles)
 
         self.i_turn += 1
+
+    def _update_bunch_series(self, particles):
+        i_bunch_particles = self._slice_result['i_bunch_particles']
+
+        bunch_it = self.bunch_series.iterations[self.i_turn]
+        bunches = bunch_it.particles['bunches']
+
+        for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
+            bunch_mask = (i_bunch_particles == bid)
+            for stat in self.stats_to_store:
+                if stat == 'num_particles':
+                    val = np.sum(self.slicer.num_particles[i_bunch, :])
+                else:
+                    mom = getattr(particles, stat.split('_')[-1])
+                    if stat.startswith('mean'):
+                        val = np.mean(mom[bunch_mask])
+                    elif stat.startswith('sigma'):
+                        val = np.std(mom[bunch_mask])
+                    elif stat.startswith('epsn'):
+                        if stat.split('_')[-1] != 'zeta':
+                            mom_p_str = 'p' + stat.split('_')[-1]
+                        else:
+                            mom_p_str = 'delta'
+                        mom_p = getattr(particles, mom_p_str)
+                        val = (np.sqrt(np.linalg.det(np.cov(mom[bunch_mask],
+                                                            mom_p[bunch_mask]))) *
+                               self.beta_gamma)
+                    elif stat == 'num_particles':
+                        val = np.sum(self.slicer.num_particles[i_bunch, :])
+                    else:
+                        raise ValueError('Unknown statistics f{stat}')
+
+                self.bunch_buffer[bid][stat][write_pos] = val
 
     def _update_bunch_buffer(self, particles):
         i_bunch_particles = self._slice_result['i_bunch_particles']
@@ -200,21 +253,21 @@ class CollectiveMonitor(SlicedElement):
 
                 self.slice_buffer[bid][stat][:, write_pos] = val
 
-'''
+
 class BaseFileBackend:
     def __init__(self, base_filename,
-                 monitor_bunches, bunch_monitor_stride,
-                 monitor_slices, slice_monitor_stride,
-                 monitor_particles, particle_monitor_stride,
+                 #monitor_bunches, bunch_monitor_stride,
+                 #monitor_slices, slice_monitor_stride,
+                 #monitor_particles, particle_monitor_stride,
                  parameters_dict=None, bunch_ids=None):
 
         self.base_filename = base_filename
-        self.monitor_bunches = monitor_bunches
-        self.bunch_monitor_stride = bunch_monitor_stride
-        self.monitor_slices = monitor_slices
-        self.slice_monitor_stride = slice_monitor_stride
-        self.monitor_particles = monitor_particles
-        self.particle_monitor_stride = particle_monitor_stride
+        #self.monitor_bunches = monitor_bunches
+        #self.bunch_monitor_stride = bunch_monitor_stride
+        #self.monitor_slices = monitor_slices
+        #self.slice_monitor_stride = slice_monitor_stride
+        #self.monitor_particles = monitor_particles
+        #self.particle_monitor_stride = particle_monitor_stride
         self.parameters_dict = parameters_dict
 
         if bunch_ids is not None:
@@ -226,6 +279,7 @@ class BaseFileBackend:
         self.slice_buffer = None
         self.particle_buffer = None
 
+    '''
     def init_files(self, stats_to_store, n_steps):
         if self.monitor_bunches:
             self.init_bunch_monitor_file(stats_to_store, n_steps)
@@ -235,6 +289,7 @@ class BaseFileBackend:
 
         if self.monitor_particles:
             self.init_particle_monitor_file()
+    '''
 
     def init_bunch_monitor_file(self, stats_to_store, n_steps):
         raise RuntimeError('File backend must implement '
@@ -267,7 +322,7 @@ class BaseFileBackend:
     def dump_particle_data(self, i_turn, slicer, particles):
         raise RuntimeError('File backend must implement dump_bunch_data')
 
-
+'''
 class HDF5BackEnd(BaseFileBackend):
     def __init__(self, base_filename,
                  monitor_bunches, bunch_monitor_stride,
