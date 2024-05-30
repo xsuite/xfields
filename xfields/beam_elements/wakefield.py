@@ -6,10 +6,10 @@ from scipy.interpolate import interp1d
 
 import xtrack as xt
 import xfields as xf
-from .sliced_element import SlicedElement
+from .element_with_slicer import ElementWithSlicer
 
 
-class MultiWakefield(SlicedElement):
+class MultiWakefield(ElementWithSlicer):
     """
     An object handling many WakeField instances as a single beam element.
 
@@ -206,7 +206,7 @@ class MultiWakefield(SlicedElement):
                      _other_bunch_slicers=self.other_bunch_slicers)
 
 
-class Wakefield(SlicedElement):
+class Wakefield(ElementWithSlicer):
     """
     A beam element modelling a wakefield kick
 
@@ -356,7 +356,7 @@ class Wakefield(SlicedElement):
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
         
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
-        # here we cannot reuse the track method from SlicedElement because
+        # here we cannot reuse the track method from ElementWithSlicer because
         # we need to take care of updating the CompressedProfile as well.
         # Can this be avoided?
         if self.moments_data is None:

@@ -5,7 +5,7 @@ import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
 
 
-class SlicedElement:
+class ElementWithSlicer:
     """
     Base class for elements with a slicer.
 
