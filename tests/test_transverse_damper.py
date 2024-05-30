@@ -11,7 +11,7 @@ from xobjects.test_helpers import for_all_test_contexts
 
 
 @for_all_test_contexts
-def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
+def test_transverse_damper(test_context):
     longitudinal_mode = 'nonlinear'
     # Machine settings
     n_turns = 1000
