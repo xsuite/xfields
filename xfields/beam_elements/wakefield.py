@@ -130,6 +130,9 @@ class MultiWakefield(ElementWithSlicer):
           time: [ns]
           transverse wake components: [V/pC/mm]
           longitudinal wake component: [V/pC].
+
+        Acknowledgment: this method is largely copied from the
+        PyHEADTAIL.impedances.wakes.WakeTable class
         """
 
         valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
