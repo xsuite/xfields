@@ -1,4 +1,3 @@
-import matplotlib.pyplot as plt
 import numpy as np
 from scipy.constants import c, e
 from xfields import ResonatorWake, MultiWakefield
@@ -72,13 +71,6 @@ def test_longitudinal_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta, particles.delta - delta_bef, 'b.')
-        plt.plot(zeta, wfz.function(-particles.zeta[1] +
-                                    zeta)*scale[0], 'rx')
-        plt.show()
-
     assert np.allclose((particles.delta - delta_bef)[0],
                        (wfz.function(-particles.zeta[1] +
                                      particles.zeta[0]) * scale[0]),
@@ -104,8 +96,6 @@ def test_constant_wake_kick(test_context):
 
     i_source = -10
     i_test = 10
-
-    flag_plot = False
 
     particles = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
@@ -161,19 +151,6 @@ def test_constant_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta, particles.px - px_bef, 'b.')
-        plt.plot(zeta, wfx.function(-particles.zeta[1] +
-                                    zeta)*scale[0], 'rx')
-        plt.show()
-
-        plt.figure(76)
-        plt.plot(particles.zeta, particles.py - py_bef, 'b.')
-        plt.plot(zeta, wfy.function(-particles.zeta[1] +
-                                    zeta)*scale[0], 'rx')
-        plt.show()
-
     assert np.allclose((particles.px - px_bef)[0],
                        (wfx.function(-particles.zeta[1] +
                                      particles.zeta[0]) * scale[0]),
@@ -201,8 +178,6 @@ def test_direct_dipolar_wake_kick(test_context):
     zeta = np.linspace(zeta_range[0] + dz/2, zeta_range[1]-dz/2,
                        n_macroparticles)
     i_source = -10
-
-    flag_plot = False
 
     source_moment_x = 'x'
     source_moment_y = 'y'
@@ -270,19 +245,6 @@ def test_direct_dipolar_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta, (particles.px - px_bef)/displace_x, 'b.')
-        plt.plot(particles.zeta, wfx.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale[0], 'rx')
-        plt.show()
-
-        plt.figure(76)
-        plt.plot(particles.zeta, (particles.py - py_bef)/displace_y, 'b.')
-        plt.plot(particles.zeta, wfy.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale, 'rx')
-        plt.show()
-
     mask = particles.zeta < particles.zeta[i_source]
 
     assert np.allclose((particles.px - px_bef)[mask]/displace_x,
@@ -312,8 +274,6 @@ def test_cross_dipolar_wake_kick(test_context):
     zeta = np.linspace(zeta_range[0] + dz/2, zeta_range[1]-dz/2,
                        n_macroparticles)
     i_source = -10
-
-    flag_plot = False
 
     source_moment_x = 'y'
     source_moment_y = 'x'
@@ -381,19 +341,6 @@ def test_cross_dipolar_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta, (particles.px - px_bef)/displace_y, 'b.')
-        plt.plot(particles.zeta, wfx.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale[0], 'rx')
-        plt.show()
-
-        plt.figure(76)
-        plt.plot(particles.zeta, (particles.py - py_bef)/displace_x, 'b.')
-        plt.plot(particles.zeta, wfy.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale, 'rx')
-        plt.show()
-
     mask = particles.zeta < particles.zeta[i_source]
 
     assert np.allclose((particles.px - px_bef)[mask]/displace_y,
@@ -414,7 +361,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
     p0 = 7000e9 * e / c
     h_RF = 600
     bunch_spacing_buckets = 10
-    n_bunches = 1
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
     circumference = 26658.883
@@ -425,8 +371,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
                        n_macroparticles)
     i_source = -10
     i_test = 10
-
-    flag_plot = False
 
     source_moment_x = 'x'
     source_moment_y = 'y'
@@ -458,9 +402,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
     particles.x[i_test] += displace_x_test
     particles.y[i_test] += displace_y_test
 
-    px_bef = particles.px.copy()
-    py_bef = particles.py.copy()
-
     wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
@@ -499,23 +440,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta,
-                 (particles.px - px_bef)/(displace_x_test*displace_x_source),
-                 '.')
-        plt.plot(particles.zeta, wfx.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale[0], 'x')
-        plt.show()
-
-        plt.figure(76)
-        plt.plot(particles.zeta,
-                 (particles.py - py_bef)/(displace_y_test*displace_y_source),
-                 '.')
-        plt.plot(particles.zeta, wfy.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale, 'x')
-        plt.show()
-
     assert np.allclose(particles.px[i_test]/(displace_x_test*displace_x_source),
                        (wfx.function(-particles.zeta[i_source] +
                                      particles.zeta) * scale[0])[i_test],
@@ -534,7 +458,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
     p0 = 7000e9 * e / c
     h_RF = 600
     bunch_spacing_buckets = 10
-    n_bunches = 1
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
     circumference = 26658.883
@@ -545,8 +468,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
                        n_macroparticles)
     i_source = -10
     i_test = 10
-
-    flag_plot = False
 
     source_moment_x = 'x'
     source_moment_y = 'y'
@@ -578,9 +499,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
     particles.x[i_test] += displace_x_test
     particles.y[i_test] += displace_y_test
 
-    px_bef = particles.px.copy()
-    py_bef = particles.py.copy()
-
     wfx = ResonatorWake(
         r_shunt=2e8,
         q_factor=1e7,
@@ -619,23 +537,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta,
-                 (particles.px - px_bef)/(displace_y_test*displace_x_source),
-                 '.')
-        plt.plot(particles.zeta, wfx.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale[0], 'x')
-        plt.show()
-
-        plt.figure(76)
-        plt.plot(particles.zeta,
-                 (particles.py - py_bef)/(displace_x_test*displace_y_source),
-                 '.')
-        plt.plot(particles.zeta, wfy.function(-particles.zeta[i_source] +
-                                              particles.zeta)*scale, 'x')
-        plt.show()
-
     assert np.allclose(particles.px[i_test]/(displace_y_test*displace_x_source),
                        (wfx.function(-particles.zeta[i_source] +
                                      particles.zeta) * scale[0])[i_test],
@@ -654,7 +555,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     p0 = 7000e9 * e / c
     h_RF = 600
     bunch_spacing_buckets = 10
-    n_bunches = 1
     n_slices = 100
     n_macroparticles = n_slices  # per bunch
     circumference = 26658.883
@@ -664,8 +564,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     zeta = np.linspace(zeta_range[0] + dz/2, zeta_range[1]-dz/2,
                        n_macroparticles)
     i_source = -10
-
-    flag_plot = False
 
     source_moment_x = 'x'
     source_moment_y = 'y'
@@ -732,31 +630,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     line.track(particles, num_turns=n_turns_wake)
 
     scale = -particles.q0 ** 2 * e ** 2 / (particles.p0c * e)
-
-    if flag_plot:
-        plt.figure(75)
-        plt.plot(particles.zeta, (particles.px - px_bef)/displace_x_source, '.')
-        plt.plot(particles.zeta,
-                 wfx.function(-particles.zeta[i_source] +
-                              particles.zeta - circumference) * scale +
-                 wfx.function(-particles.zeta[i_source] +
-                              particles.zeta) * scale +
-                 wfx.function(-particles.zeta[i_source] +
-                              particles.zeta) * scale
-                 , 'x')
-        plt.show()
-
-        plt.figure(76)
-        plt.plot(particles.zeta, (particles.py - py_bef)/displace_y_source, '.')
-        plt.plot(particles.zeta,
-                 wfy.function(-particles.zeta[i_source] +
-                              particles.zeta - circumference) * scale +
-                 wfy.function(-particles.zeta[i_source] +
-                              particles.zeta) * scale +
-                 wfy.function(-particles.zeta[i_source] +
-                              particles.zeta) * scale
-                 , 'x')
-        plt.show()
 
     assert np.allclose((particles.px - px_bef)/displace_x_source,
                        wfx.function(-particles.zeta[i_source] +
