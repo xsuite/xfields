@@ -73,6 +73,7 @@ class SpaceCharge3D(xt.BeamElement):
     _xofields = {
         'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap),
         'length': xo.Float64,
+        'apply_z_kick': xo.Int64,
         }
 
     _extra_c_sources = [
@@ -110,7 +111,6 @@ class SpaceCharge3D(xt.BeamElement):
                  fftplan=None):
 
         self.update_on_track = update_on_track
-        self.apply_z_kick = apply_z_kick
 
         if solver=='FFTSolver3D':
             assert gamma0 is not None, ('To use FFTSolver3D '
@@ -158,7 +158,7 @@ class SpaceCharge3D(xt.BeamElement):
                  fieldmap=fieldmap,
                  length=length)
 
-        # temp_buff is deallocate here
+        self.apply_z_kick = apply_z_kick
 
     @property
     def iscollective(self):
