@@ -88,7 +88,8 @@ void SpaceChargeBiGaussian_track_local_particle(
 			printf("lam_prime = %e\n", lam_prime);
 			printf("phi = %e\n", phi);
 
-			LocalParticle_add_to_delta(part, factor*lam_prime*phi);
+			LocalParticle_update_delta(part,
+				LocalParticle_get_delta(part) + factor*lam_prime*phi);
 
 		}
 

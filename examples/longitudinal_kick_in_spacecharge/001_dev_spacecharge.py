@@ -58,8 +58,12 @@ p_test_pic = xp.Particles(
         y=y_test,
         zeta=z_test,
         )
+p_zero_pic = p_test_pic.copy()
+p_zero_pic.x = 0
+p_zero_pic.y = 0
 p_test_frozen = p_test_pic.copy()
 spch_pic.track(p_test_pic)
+spch_pic.track(p_zero_pic)
 
 spch_frozen = xf.SpaceChargeBiGaussian(
     length=spch_pic.length,
@@ -72,3 +76,14 @@ spch_frozen = xf.SpaceChargeBiGaussian(
     z_kick_num_integ_per_sigma=10,
 )
 spch_frozen.track(p_test_frozen)
+
+import matplotlib.pyplot as plt
+plt.close('all')
+plt.figure(1)
+plt.plot(z_test, p_test_pic.pzeta - p_zero_pic.pzeta, label='PIC')
+plt.plot(z_test, p_test_frozen.pzeta, label='Frozen')
+plt.legend()
+plt.xlabel('z [m]')
+plt.ylabel(r'$\Delta p_z$')
+
+plt.show()
