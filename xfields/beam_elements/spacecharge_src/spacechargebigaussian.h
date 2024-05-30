@@ -63,8 +63,10 @@ void SpaceChargeBiGaussian_track_local_particle(
 			}
 			const int64_t n_integ = n_sigma * z_kick_num_integ_per_sigma;
 
-			const double dx = fabs(x / (n_sigma - 1));
-			const double dy = fabs(y / (n_sigma - 1));
+			const double dx = fabs(x / (n_integ - 1));
+			const double dy = fabs(y / (n_integ - 1));
+			printf("dx = %e\n", dx);
+			printf("dy = %e\n", dy);
 
 			double phi = 0.0;
 			double dphi_integ;
@@ -83,6 +85,8 @@ void SpaceChargeBiGaussian_track_local_particle(
 
 			double const lam_prime =
 				LongitudinalProfileQGaussian_line_density_derivative_scalar(prof, z);
+			printf("lam_prime = %e\n", lam_prime);
+			printf("phi = %e\n", phi);
 
 			LocalParticle_add_to_delta(part, factor*lam_prime*phi);
 

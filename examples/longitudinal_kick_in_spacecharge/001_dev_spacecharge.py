@@ -10,6 +10,7 @@ import numpy as np
 from xobjects import ContextCpu, ContextCupy, ContextPyopencl
 import xtrack as xt
 import xpart as xp
+import xfields as xf
 
 num_particles = int(10e6)
 bunch_intensity = 2.5e11
@@ -34,8 +35,7 @@ x_lim = 5.*sigma_x
 y_lim = 5.*sigma_y
 z_lim = 5.*sigma_z
 
-from xfields import SpaceCharge3D
-spcharge = SpaceCharge3D(
+spch_pic = xf.SpaceCharge3D(
         length=100, update_on_track=True, apply_z_kick=True,
         x_range=(-x_lim, x_lim),
         y_range=(-y_lim, y_lim),
@@ -44,19 +44,31 @@ spcharge = SpaceCharge3D(
         solver='FFTSolver3D',
         gamma0=p.gamma0[0])
 
-spcharge.track(p)
+spch_pic.track(p)
 
-spcharge.update_on_track = False
+spch_pic.update_on_track = False
 
 x_test = 1.1 * sigma_x
 y_test = 0.4 * sigma_y
 z_test = np.linspace(-z_lim, z_lim, 1000)
 
-p_test = xp.Particles(
+p_test_pic = xp.Particles(
         p0c=p0c,
         x=x_test,
         y=y_test,
         zeta=z_test,
         )
-import pdb; pdb.set_trace()
-spcharge.track(p_test)
+p_test_frozen = p_test_pic.copy()
+spch_pic.track(p_test_pic)
+
+spch_frozen = xf.SpaceChargeBiGaussian(
+    length=spch_pic.length,
+    longitudinal_profile=xf.LongitudinalProfileQGaussian(
+        number_of_particles=num_particles,
+        sigma_z=sigma_z,
+    ),
+    sigma_x=sigma_x,
+    sigma_y=sigma_y,
+    z_kick_num_integ_per_sigma=10,
+)
+spch_frozen.track(p_test_frozen)
