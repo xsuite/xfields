@@ -49,6 +49,45 @@ double LongitudinalProfileQGaussian_line_density_scalar(
     }
 }
 
+/*gpufun*/
+double LongitudinalProfileQGaussian_line_density_derivative_scalar(
+		LongitudinalProfileQGaussianData prof, double z){
+
+    const double number_of_particles = 
+	    LongitudinalProfileQGaussianData_get_number_of_particles(prof);
+    const double q = LongitudinalProfileQGaussianData_get__q_param(prof);
+    const double cq = LongitudinalProfileQGaussianData_get__cq_param(prof);
+    const double q_tol = LongitudinalProfileQGaussianData_get__q_tol(prof);
+    const double z0 = LongitudinalProfileQGaussianData_get__z0(prof);
+    const double beta_param = LongitudinalProfileQGaussianData_get__beta_param(prof);
+    const double sqrt_beta_param = 
+	    LongitudinalProfileQGaussianData_get__sqrt_beta_param(prof);
+    const double z_min = LongitudinalProfileQGaussianData_get__support_min(prof);
+    const double z_max = LongitudinalProfileQGaussianData_get__support_max(prof);
+
+    const double factor = number_of_particles*sqrt_beta_param/cq;
+
+
+    if (fabs(q-1.) < q_tol){
+	if (z<z_max && z>z_min){
+	    double z_m_z0 = z - z0;
+		return -2*factor*beta_param*z_m_z0*exp(-beta_param*z_m_z0*z_m_z0 );
+	}
+	else{
+		return 0;
+	}
+    }
+    else{
+    	double exponent = 1./(1.-q);
+	if (z<z_max && z>z_min){
+		return -9999.0;
+	}
+	else{
+		return 0;
+	}
+    }
+}
+
 
 
 /*gpukern*/
