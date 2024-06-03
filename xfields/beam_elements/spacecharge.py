@@ -191,6 +191,10 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'z_kick_num_integ_per_sigma': xo.Int64,
         }
 
+    rename = {
+        'z_kick_num_integ_per_sigma': '_z_kick_num_integ_per_sigma',
+    }
+
     _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
         _pkg_root.joinpath('headers/sincos.h'),
@@ -220,7 +224,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  _xobject=None,
                  update_on_track=False,
                  length=None,
-                 apply_z_kick=False,
                  longitudinal_profile=None,
                  mean_x=0.,
                  mean_y=0.,
@@ -244,15 +247,11 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                      _buffer=_buffer,
                      _offset=_offset)
 
-            if apply_z_kick:
-                raise NotImplementedError
-
             assert longitudinal_profile is not None, (
                 'Longitudinal profile must be provided')
 
             self.length = length
             self.longitudinal_profile = longitudinal_profile
-            self.apply_z_kick = apply_z_kick
             self._init_update_on_track(update_on_track)
 
             if fieldmap is None:
@@ -294,7 +293,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
 
         super().track(particles)
 
-
     def _init_update_on_track(self, update_on_track):
         self.update_mean_x_on_track = False
         self.update_mean_y_on_track = False
@@ -312,6 +310,16 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                 assert nn in ['mean_x', 'mean_y',
                               'sigma_x', 'sigma_y']
                 setattr(self, f'update_{nn}_on_track', True)
+
+    @property
+    def z_kick_num_integ_per_sigma(self):
+        return self._z_kick_num_integ_per_sigma
+
+    @z_kick_num_integ_per_sigma.setter
+    def z_kick_num_integ_per_sigma(self, value):
+        if value > 0 and value < 3:
+            raise ValueError('z_kick_num_integ_per_sigma must be 0 or >=3')
+        self._z_kick_num_integ_per_sigma = value
 
     @property
     def _update_flag(self):
@@ -362,6 +370,3 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
-
-
-
