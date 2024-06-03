@@ -306,9 +306,9 @@ def test_spacecharge_pic_zkick(test_context):
     spch_frozen.track(p_test_frozen)
 
     xo.assert_allclose(p_test_pic.px, p_test_frozen.px,
-                    rtol=0, atol=0.1*np.max(np.abs(p_test_frozen.px)))
+                    rtol=0, atol=float(0.1*np.max(np.abs(p_test_frozen.px))))
     xo.assert_allclose(p_test_pic.py, p_test_frozen.py,
-                    rtol=0, atol=0.1*np.max(np.abs(p_test_frozen.py)))
+                    rtol=0, atol=float(0.1*np.max(np.abs(p_test_frozen.py))))
     xo.assert_allclose(p_test_pic.pzeta - p_zero_pic.pzeta, p_test_frozen.pzeta,
-                    rtol=0, atol=0.1*np.max(np.abs(p_test_frozen.pzeta)))
+                    rtol=0, atol=float(0.1*np.max(np.abs(p_test_frozen.pzeta))))
     xo.assert_allclose(p_test_frozen.pzeta.max(), 1.3e-13, rtol=0.1, atol=0)
