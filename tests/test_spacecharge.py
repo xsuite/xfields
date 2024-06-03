@@ -268,7 +268,7 @@ def test_spacecharge_pic_zkick(test_context):
         z_range=(-z_lim, z_lim),
         nx=256, ny=256, nz=100,
         solver='FFTSolver3D',
-        gamma0=float(p.gamma0[0]))
+        gamma0=float(p._xobject.gamma0[0]))
 
     spch_pic.track(p)
 
