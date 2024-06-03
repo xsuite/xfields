@@ -7,10 +7,9 @@ import time
 
 import numpy as np
 
-from xobjects import ContextCpu, ContextCupy, ContextPyopencl
-import xtrack as xt
 import xpart as xp
 import xfields as xf
+import xobjects as xo
 
 num_particles = int(10e6)
 bunch_intensity = 2.5e11
@@ -76,6 +75,14 @@ spch_frozen = xf.SpaceChargeBiGaussian(
     z_kick_num_integ_per_sigma=10,
 )
 spch_frozen.track(p_test_frozen)
+
+xo.assert_allclose(p_test_pic.px, p_test_frozen.px,
+                   rtol=0, atol=0.1*np.max(np.abs(p_test_frozen.px)))
+xo.assert_allclose(p_test_pic.py, p_test_frozen.py,
+                   rtol=0, atol=0.1*np.max(np.abs(p_test_frozen.py)))
+xo.assert_allclose(p_test_pic.pzeta - p_zero_pic.pzeta, p_test_frozen.pzeta,
+                   rtol=0, atol=0.1*np.max(np.abs(p_test_frozen.pzeta)))
+xo.assert_allclose(p_test_frozen.pzeta.max(), 1.3e-13, rtol=0.1, atol=0)
 
 import matplotlib.pyplot as plt
 plt.close('all')
