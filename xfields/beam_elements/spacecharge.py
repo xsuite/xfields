@@ -73,6 +73,7 @@ class SpaceCharge3D(xt.BeamElement):
     _xofields = {
         'fieldmap': xo.Ref(TriLinearInterpolatedFieldMap),
         'length': xo.Float64,
+        'apply_z_kick': xo.Int64,
         }
 
     _extra_c_sources = [
@@ -110,7 +111,6 @@ class SpaceCharge3D(xt.BeamElement):
                  fftplan=None):
 
         self.update_on_track = update_on_track
-        self.apply_z_kick = apply_z_kick
 
         if solver=='FFTSolver3D':
             assert gamma0 is not None, ('To use FFTSolver3D '
@@ -158,7 +158,7 @@ class SpaceCharge3D(xt.BeamElement):
                  fieldmap=fieldmap,
                  length=length)
 
-        # temp_buff is deallocate here
+        self.apply_z_kick = apply_z_kick
 
     @property
     def iscollective(self):
@@ -188,7 +188,12 @@ class SpaceChargeBiGaussian(xt.BeamElement):
         'longitudinal_profile': LongitudinalProfileQGaussian, # TODO: Will become unionref
         'fieldmap': BiGaussianFieldMap,
         'length': xo.Float64,
+        'z_kick_num_integ_per_sigma': xo.Int64,
         }
+
+    rename = {
+        'z_kick_num_integ_per_sigma': '_z_kick_num_integ_per_sigma',
+    }
 
     _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
@@ -219,7 +224,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  _xobject=None,
                  update_on_track=False,
                  length=None,
-                 apply_z_kick=False,
                  longitudinal_profile=None,
                  mean_x=0.,
                  mean_y=0.,
@@ -227,6 +231,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                  sigma_y=None,
                  fieldmap=None,
                  min_sigma_diff=1e-10,
+                 z_kick_num_integ_per_sigma=0,
                  **kwargs # to avoid issues when building form dict
                  ):
 
@@ -242,15 +247,11 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                      _buffer=_buffer,
                      _offset=_offset)
 
-            if apply_z_kick:
-                raise NotImplementedError
-
             assert longitudinal_profile is not None, (
                 'Longitudinal profile must be provided')
 
             self.length = length
             self.longitudinal_profile = longitudinal_profile
-            self.apply_z_kick = apply_z_kick
             self._init_update_on_track(update_on_track)
 
             if fieldmap is None:
@@ -264,6 +265,8 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                          updatable=True)
             else:
                 self.fieldmap=fieldmap
+
+        self.z_kick_num_integ_per_sigma = z_kick_num_integ_per_sigma
 
         self.iscollective = None # Inferred from _update_flag
 
@@ -290,7 +293,6 @@ class SpaceChargeBiGaussian(xt.BeamElement):
 
         super().track(particles)
 
-
     def _init_update_on_track(self, update_on_track):
         self.update_mean_x_on_track = False
         self.update_mean_y_on_track = False
@@ -308,6 +310,16 @@ class SpaceChargeBiGaussian(xt.BeamElement):
                 assert nn in ['mean_x', 'mean_y',
                               'sigma_x', 'sigma_y']
                 setattr(self, f'update_{nn}_on_track', True)
+
+    @property
+    def z_kick_num_integ_per_sigma(self):
+        return self._z_kick_num_integ_per_sigma
+
+    @z_kick_num_integ_per_sigma.setter
+    def z_kick_num_integ_per_sigma(self, value):
+        if value > 0 and value < 3:
+            raise ValueError('z_kick_num_integ_per_sigma must be 0 or >=3')
+        self._z_kick_num_integ_per_sigma = value
 
     @property
     def _update_flag(self):
@@ -358,6 +370,3 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     @ sigma_y.setter
     def sigma_y(self, value):
         self.fieldmap.sigma_y = value
-
-
-
