@@ -1,0 +1,206 @@
+import numpy as np
+import xobjects as xo
+import xtrack as xt
+import xfields as xf
+
+
+class CompressedProfile(xt.BeamElement):
+    """
+    An object holding a compressed version of the beam data.
+
+    Parameters
+    ----------.
+    moments: List
+        Stored momemts
+    zeta_range : Tuple
+        Zeta range for each bunch.
+    num_slices : int
+        Number of slices per bunch.
+    bunch_spacing_zeta : float
+        Bunch spacing in meters.
+    num_periods: int
+        Number of periods in the compressed profile. Concretely, this is the
+        number of bunches in the beam.
+    num_turns: int
+        Number of turns for which the moments are recorded.
+    num_targets: int
+        Number of target bunches. If it is not specified it is just the same
+        as `num_bunches`.
+    num_slices_target: int
+        Number of slices per target bunch.
+    circumference: float
+        Machine length in meters.
+    """
+
+    _xofields = {
+        '_N_aux': xo.Int64,
+        '_N_S': xo.Int64,
+        'num_turns': xo.Int64,
+    }
+
+    pkg_root = xf.general._pkg_root
+    _extra_c_sources = [pkg_root.joinpath('headers/compressed_profile.h')]
+
+    _per_particle_kernels = {
+        '_interp_result': xo.Kernel(
+            c_name='CompressedProfile_interp_result',
+            args=[
+                xo.Arg(xo.Int64, name='data_shape_0'),
+                xo.Arg(xo.Int64, name='data_shape_1'),
+                xo.Arg(xo.Int64, name='data_shape_2'),
+                xo.Arg(xo.Float64, pointer=True, name='data'),
+                xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles'),
+                xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
+                xo.Arg(xo.Float64, pointer=True, name='out'),
+            ]),
+        }
+
+    def __init__(self,
+                 moments,
+                 zeta_range=None,  # These are [a, b] in the paper
+                 num_slices=None,  # Per bunch, this is N_1 in the paper
+                 bunch_spacing_zeta=None,  # This is P in the paper
+                 num_periods=None,
+                 num_turns=1,
+                 num_targets=None,
+                 num_slices_target=None,
+                 circumference=None
+                 ):
+
+        self.xoinitialize()
+
+        if num_turns > 1:
+            assert circumference is not None, (
+                'circumference must be specified if num_turns > 1')
+
+        self.circumference = circumference
+
+        self.dz = (zeta_range[1] - zeta_range[0]) / num_slices  # h in the paper
+        self._z_a = zeta_range[0]
+        self._z_b = zeta_range[1]
+
+        self._N_1 = num_slices  # N_1 in the
+        self._z_P = bunch_spacing_zeta  # P in the paper
+        self._N_S = num_periods  # N_S in the paper
+
+        if num_slices_target is not None:
+            self._N_2 = num_slices_target
+        else:
+            self._N_2 = self._N_1
+
+        if num_targets is not None:
+            self._N_T = num_targets
+        else:
+            self._N_T = self._N_S
+
+        self.num_turns = num_turns
+
+        self._BB = 1  # B in the paper
+        # (for now we assume that B=0 is the first bunch in time
+        # and the last one in zeta)
+        self._AA = self._BB - self._N_S
+
+        self._N_aux = self._N_1 + self._N_2  # n_aux in the paper
+
+        # Compute m_aux
+        self._M_aux = (self._N_S +
+                       self._N_T - 1) * self._N_aux  # m_aux in the paper
+
+        self.moments_names = moments
+        self.data = np.zeros(
+            (len(moments), self.num_turns, self._M_aux), dtype=np.float64)
+
+    def __getitem__(self, key):
+        assert isinstance(key, str), 'other modes not supported yet'
+        assert key in self.moments_names, (
+            f'Moment {key} not in defined moments_names')
+        i_moment = self.moments_names.index(key)
+        return self.data[i_moment]
+
+    def __setitem__(self, key, value):
+        self[key][:] = value
+
+    @property
+    def num_slices(self):
+        return self._N_1
+
+    @property
+    def num_periods(self):
+        return self._N_S
+
+    @property
+    def z_period(self):
+        return self._z_P
+
+    def set_moments(self, i_source, i_turn, moments):
+        """
+        Set the moments for a given source and turn.
+
+        Parameters
+        ----------
+        i_source : int
+            The source index, 0 <= i_source < self.num_periods
+        i_turn : int
+            The turn index, 0 <= i_turn < self.num_turns
+        moments : dict
+            A dictionary of the form {moment_name: moment_value}
+
+        """
+
+        assert np.isscalar(i_source)
+        assert np.isscalar(i_turn)
+
+        assert i_source < self._N_S
+        assert i_source >= 0
+
+        assert i_turn < self.num_turns
+        assert i_turn >= 0
+
+        for nn, vv in moments.items():
+            assert nn in self.moments_names, (
+                f'Moment {nn} not in defined moments_names')
+            assert len(vv) == self._N_1, (
+                f'Length of moment {nn} is not equal to num_slices')
+            i_moment = self.moments_names.index(nn)
+            i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
+            i_end_in_moments_data = i_start_in_moments_data + self._N_1
+
+            self.data[i_moment, i_turn,
+                      i_start_in_moments_data:i_end_in_moments_data] = vv
+
+    def get_moment_profile(self, moment_name, i_turn):
+        """
+        Get the moment profile for a given turn.
+
+        Parameters
+        ----------
+        moment_name : str
+            The name of the moment to get
+        i_turn : int
+            The turn index, 0 <= i_turn < self.num_turns
+
+        Returns
+        -------
+        z_out : np.ndarray
+            The z positions within the moment profile
+        moment_out : np.ndarray
+            The moment profile
+        """
+
+        z_out = np.zeros(self._N_S * self._N_1)
+        moment_out = np.zeros(self._N_S * self._N_1)
+        i_moment = self.moments_names.index(moment_name)
+        for i_source in range(self._N_S):
+            i_start_out = (self._N_S - (i_source + 1)) * self._N_1
+            i_end_out = i_start_out + self._N_1
+            z_out[i_start_out:i_end_out] = (
+                self._z_a + self.dz / 2
+                - i_source * self._z_P + self.dz * np.arange(self._N_1))
+
+            i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
+            i_end_in_moments_data = i_start_in_moments_data + self._N_1
+            moment_out[i_start_out:i_end_out] = (
+                self.data[i_moment, i_turn,
+                          i_start_in_moments_data:i_end_in_moments_data])
+
+        return z_out, moment_out

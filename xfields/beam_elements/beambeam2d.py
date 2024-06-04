@@ -249,7 +249,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
                                     self.config_for_update.partner_particles_name,
                                     particles.name,
                                     internal_tag=0)
-                self.update_from_recieved_moments()
+                self.update_from_received_moments()
             else:
                 return xt.PipelineStatus(on_hold=True)
 
@@ -272,7 +272,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         moments[5] = nplike_lib.sum(y_diff**2*particles.weight) / moments[0]
         return moments
 
-    def update_from_recieved_moments(self):
+    def update_from_received_moments(self):
         # reference frame transformation as in https://github.com/lhcopt/lhcmask/blob/865eaf9d7b9b888c6486de00214c0c24ac93cfd3/pymask/beambeam.py#L310
         self.other_beam_num_particles = self.partner_moments[0]
 

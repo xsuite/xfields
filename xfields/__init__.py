@@ -12,6 +12,8 @@ from .fieldmaps import TriLinearInterpolatedFieldMap
 from .fieldmaps import TriCubicInterpolatedFieldMap
 from .fieldmaps import BiGaussianFieldMap, mean_and_std
 
+from .slicers import UniformBinSlicer
+
 from .solvers.fftsolvers import FFTSolver3D
 
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
@@ -22,6 +24,9 @@ from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
+from .beam_elements.wakefield import Wakefield, ResonatorWake
+from .beam_elements.wakefield import MultiWakefield
+from .beam_elements.transverse_damper import TransverseDamper
 
 from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
