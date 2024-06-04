@@ -64,7 +64,7 @@ n_turns_wake = 1
 flatten = False
 flag_plot = True
 n_macroparticles = 10**5
-num_slices = 500
+num_slices = 100
 
 # Beam settings
 intensity = 2.3e11
