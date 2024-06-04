@@ -101,7 +101,7 @@ class MultiWakefield(ElementWithSlicer):
         )
 
         self.pipeline_manager = None
-    
+
     @classmethod
     def from_table(cls, wake_file, wake_file_columns,
                    use_components=None, beta0=1.0, **kwargs):
@@ -140,7 +140,7 @@ class MultiWakefield(ElementWithSlicer):
                                  'quadrupole_x', 'quadrupole_y',
                                  'quadrupole_xy', 'quadrupole_yx',
                                  'longitudinal']
-        
+
         wake_data = np.loadtxt(wake_file)
         if len(wake_file_columns) != wake_data.shape[1]:
             raise ValueError("Length of wake_file_columns list does not" +
@@ -149,12 +149,12 @@ class MultiWakefield(ElementWithSlicer):
         if 'time' not in wake_file_columns:
             raise ValueError("No wake_file_column with name 'time' has" +
                              " been specified. \n")
-                             
+
         if use_components is not None:
             for component in use_components:
                 assert component in valid_wake_components
                 assert component in wake_file_columns
-                             
+
         itime = wake_file_columns.index('time')
         wake_distance = -1E-9 * wake_data[:, itime] * beta0 * clight
         wakefields = []
@@ -190,7 +190,7 @@ class MultiWakefield(ElementWithSlicer):
                 )
                 wakefields.append(wakefield)
         return cls(wakefields, **kwargs)
-        
+
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         for wf in self.wakefields:
             assert wf.pipeline_manager is None
@@ -357,7 +357,7 @@ class Wakefield(ElementWithSlicer):
 
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
-        
+
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
         # here we cannot reuse the track method from ElementWithSlicer because
         # we need to take care of updating the CompressedProfile as well.
@@ -365,7 +365,7 @@ class Wakefield(ElementWithSlicer):
         if self.moments_data is None:
             raise ValueError('moments_data is None. '
                              'Please initialize it before tracking.')
-        
+
         super().track(particles=particles, _slice_result=_slice_result,
                       _other_bunch_slicers=_other_bunch_slicers)
 
@@ -637,6 +637,11 @@ def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
         z_b_turn = z_b + tt * circumference
         temp_z = np.arange(
             z_c - z_b_turn, z_d - z_a_turn + dz/10, dz)[:-1]
+
+        if z_p is None: # single bunch mode
+            assert dd - aa - (cc - bb + 1) == 1
+            z_p = 0
+
         for ii, ll in enumerate(range(
                 cc - bb + 1, dd - aa)):
             z_wake[tt, ii * n_aux:(ii + 1) * n_aux] = temp_z + ll * z_p
