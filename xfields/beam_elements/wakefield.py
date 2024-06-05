@@ -213,24 +213,24 @@ class Wakefield(ElementWithSlicer):
         self.slicer.bunch_spacing_zeta
 
     @property
-    def num_slots(self):
-        ...
-
-    @property
     def filling_scheme(self):
-        ...
+        assert len(self.slicer.filled_slots) == 1, (
+            'Only single bunch mode is supported for now')
+        assert self.slicer.filled_slots[0] == 0, (
+            'Only single bunch mode is supported for now')
+        return None
 
     @property
     def bunch_numbers(self):
-        ...
+        return self.slicer.bunch_numbers
 
     @property
     def num_turns(self):
-        ...
+        return self.moments_data.num_turns
 
     @property
     def circumference(self):
-        ...
+        return self.moments_data.circumference
 
 
 class WakeComponent:
