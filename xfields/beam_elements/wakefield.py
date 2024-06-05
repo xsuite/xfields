@@ -210,7 +210,7 @@ class Wakefield(ElementWithSlicer):
 
     @property
     def bunch_spacing_zeta(self):
-        self.slicer.bunch_spacing_zeta
+        return self.slicer.bunch_spacing_zeta
 
     @property
     def filling_scheme(self):
