@@ -25,7 +25,7 @@ wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
                      'quadrupole_x', 'quadrupole_y', 'dipole_xy',
                      'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                      'constant_x', 'constant_y']
-wf = xf.MultiWakefield.from_table(
+wf = xf.Wakefield.from_table(
     wake_table_filename, wake_file_columns,
     zeta_range = (-0.5*bucket_length_m, 0.5*bucket_length_m),
     num_slices=100,

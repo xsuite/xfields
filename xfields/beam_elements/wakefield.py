@@ -9,7 +9,7 @@ import xfields as xf
 from .element_with_slicer import ElementWithSlicer
 
 
-class MultiWakefield(ElementWithSlicer):
+class Wakefield(ElementWithSlicer):
     """
     An object handling many WakeField instances as a single beam element.
 
@@ -43,7 +43,7 @@ class MultiWakefield(ElementWithSlicer):
         Use flattened wakes
     """
 
-    def __init__(self, wakefields,
+    def __init__(self, components,
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
@@ -55,7 +55,7 @@ class MultiWakefield(ElementWithSlicer):
                  log_moments=None,
                  _flatten=False):
 
-        self.wakefields = wakefields
+        self.components = components
 
         filling_scheme, bunch_numbers = self._check_filling_scheme_info(
             filling_scheme=filling_scheme,
@@ -63,14 +63,8 @@ class MultiWakefield(ElementWithSlicer):
             num_slots=num_slots)
 
         all_slicer_moments = []
-        for wf in self.wakefields:
+        for wf in self.components:
             assert wf.moments_data is None
-
-            wf.init_slicer(zeta_range=zeta_range, num_slices=num_slices,
-                           filling_scheme=filling_scheme,
-                           bunch_numbers=bunch_numbers,
-                           bunch_spacing_zeta=bunch_spacing_zeta,
-                           slicer_moments=wf.source_moments.copy())
 
             wf._initialize_moments(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
@@ -81,7 +75,7 @@ class MultiWakefield(ElementWithSlicer):
                 circumference=circumference)
 
             wf._initialize_conv_data(_flatten=_flatten)
-            all_slicer_moments += wf.slicer.moments
+            all_slicer_moments += wf.source_moments
 
         all_slicer_moments = list(set(all_slicer_moments))
 
@@ -181,7 +175,7 @@ class MultiWakefield(ElementWithSlicer):
                     elif tokens[0] == 'quadrupole':
                         scale_kick = coord_source
                 wake_strength = conversion_factor * wake_data[:, i_component]
-                wakefield = xf.Wakefield(
+                wakefield = xf.WakeComponent(
                     source_moments=source_moments,
                     kick=kick,
                     scale_kick=scale_kick,
@@ -192,7 +186,7 @@ class MultiWakefield(ElementWithSlicer):
         return cls(wakefields, **kwargs)
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
-        for wf in self.wakefields:
+        for wf in self.components:
             assert wf.pipeline_manager is None
 
         super().init_pipeline(pipeline_manager=pipeline_manager,
@@ -202,14 +196,15 @@ class MultiWakefield(ElementWithSlicer):
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
         assert _slice_result is None and _other_bunch_slicers is None
 
+        # Use common slicer from parent class to measure all moments
         super().track(particles)
 
-        for wf in self.wakefields:
+        for wf in self.components:
             wf.track(particles, _slice_result=self._slice_result,
                      _other_bunch_slicers=self.other_bunch_slicers)
 
 
-class Wakefield(ElementWithSlicer):
+class WakeComponent(ElementWithSlicer):
     """
     A beam element modelling a wakefield kick
 
@@ -526,7 +521,7 @@ class Wakefield(ElementWithSlicer):
         return z_out, moment_out
 
 
-class ResonatorWake(Wakefield):
+class ResonatorWake(WakeComponent):
     """
     A resonator wake. On top of the following parameters it takes the same
     parameters as WakeField.
