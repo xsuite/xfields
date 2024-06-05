@@ -81,19 +81,19 @@ print('Initialising wake')
 n_slices = 100
 n_turns_wake = 1
 circumference = 27E3
-wfx_0 = xf.Wakefield(
+wfx_0 = xf.WakeComponent(
     source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None,
     function=MinistryOfSillyWakes(1.0),
 )
-wfy_0 = xf.Wakefield(
+wfy_0 = xf.WakeComponent(
     source_moments=['num_particles', 'y'],
     kick='py',
     scale_kick=None,
     function=MinistryOfSillyWakes(-1.0),
 )
-wf_0 = xf.MultiWakefield(
+wf_0 = xf.Wakefield(
     wakefields=[wfx_0, wfy_0],
     zeta_range=(-1.1*sigma_zeta, 1.1*sigma_zeta),
     num_slices=n_slices,  # per bunch
@@ -105,19 +105,19 @@ wf_0 = xf.MultiWakefield(
 )
 wf_0.init_pipeline(pipeline_manager=pipeline_manager,
                    element_name='wake', partners_names=['b1'])
-wfx_1 = xf.Wakefield(
+wfx_1 = xf.WakeComponent(
     source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None,
     function=MinistryOfSillyWakes(1.0),
 )
-wfy_1 = xf.Wakefield(
+wfy_1 = xf.WakeComponent(
     source_moments=['num_particles', 'y'],
     kick='py',
     scale_kick=None,
     function=MinistryOfSillyWakes(-1.0),
 )
-wf_1 = xf.MultiWakefield(
+wf_1 = xf.Wakefield(
     wakefields=[wfx_1, wfy_1],
     zeta_range=(-1.1*sigma_zeta, 1.1*sigma_zeta),
     num_slices=n_slices,  # per bunch

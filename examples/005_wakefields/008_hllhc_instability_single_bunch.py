@@ -121,7 +121,7 @@ components = ['dipole_x', 'dipole_y',
               'quadrupole_x', 'quadrupole_y', 'dipole_xy',
               'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
               'constant_x', 'constant_y']
-wf = xf.MultiWakefield.from_table(
+wf = xf.Wakefield.from_table(
     wake_table_name, wake_file_columns,
     use_components=components,
     zeta_range=zeta_range,

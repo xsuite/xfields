@@ -25,7 +25,7 @@ from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
 from .beam_elements.wakefield import WakeComponent, ResonatorWake
-from .beam_elements.wakefield import Wakefield
+from .beam_elements.wakefield import WakeComponent
 from .beam_elements.transverse_damper import TransverseDamper
 
 from .general import _pkg_root

@@ -1,6 +1,6 @@
 import numpy as np
 from scipy.constants import c, e
-from xfields import ResonatorWake, MultiWakefield
+from xfields import ResonatorWake, Wakefield
 from xobjects.test_helpers import for_all_test_contexts
 import xtrack as xt
 
@@ -53,7 +53,7 @@ def test_longitudinal_wake_kick(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfz],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
@@ -133,7 +133,7 @@ def test_constant_wake_kick(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
@@ -227,7 +227,7 @@ def test_direct_dipolar_wake_kick(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
@@ -323,7 +323,7 @@ def test_cross_dipolar_wake_kick(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
@@ -422,7 +422,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
@@ -519,7 +519,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
@@ -613,7 +613,7 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
 
     zeta_range_xf = zeta_range
 
-    wf = MultiWakefield(
+    wf = Wakefield(
         wakefields=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
