@@ -67,12 +67,17 @@ mean_y_xt = np.zeros(n_turns)
 
 plt.ion()
 
-fig1 = plt.figure()
-ax = fig1.add_subplot(111)
-line1, = ax.plot(mean_x_xt, 'r-', label='average x-position')
-line2, = ax.plot(mean_x_xt, 'm-', label='exponential fit')
-ax.set_ylim(-3.5, -1)
-ax.set_xlim(0, n_turns)
+fig1 = plt.figure(figsize=(6.4*1.7, 4.8))
+ax_x = fig1.add_subplot(121)
+line1_x, = ax_x.plot(mean_x_xt, 'r-', label='average x-position')
+line2_x, = ax_x.plot(mean_x_xt, 'm-', label='exponential fit')
+ax_x.set_ylim(-3.5, -1)
+ax_x.set_xlim(0, n_turns)
+ax_y = fig1.add_subplot(122, sharex=ax_x)
+line1_y, = ax_y.plot(mean_y_xt, 'b-', label='average y-position')
+line2_y, = ax_y.plot(mean_y_xt, 'c-', label='exponential fit')
+ax_y.set_ylim(-3.5, -1)
+ax_y.set_xlim(0, n_turns)
 
 plt.xlabel('turn')
 plt.ylabel('log10(average x-position)')
@@ -104,12 +109,19 @@ for i_turn in range(n_turns):
         fit_y_xt = linregress(turns[i_fit_start: i_fit_end],
                               np.log(ampls_y_xt[i_fit_start: i_fit_end]))
 
-        line1.set_xdata(turns[:i_turn])
-        line1.set_ydata(np.log10(np.abs(mean_x_xt[:i_turn])))
-        line2.set_xdata(turns[:i_turn])
-        line2.set_ydata(np.log10(np.exp(fit_x_xt.intercept +
+        line1_x.set_xdata(turns[:i_turn])
+        line1_x.set_ydata(np.log10(np.abs(mean_x_xt[:i_turn])))
+        line2_x.set_xdata(turns[:i_turn])
+        line2_x.set_ydata(np.log10(np.exp(fit_x_xt.intercept +
                                  fit_x_xt.slope*turns[:i_turn])))
+
+        line1_y.set_xdata(turns[:i_turn])
+        line1_y.set_ydata(np.log10(np.abs(mean_y_xt[:i_turn])))
+        line2_y.set_xdata(turns[:i_turn])
+        line2_y.set_ydata(np.log10(np.exp(fit_y_xt.intercept +
+                                 fit_y_xt.slope*turns[:i_turn])))
         print(f'xtrack h growth rate: {fit_x_xt.slope}')
+        print(f'xtrack v growth rate: {fit_y_xt.slope}')
 
         fig1.canvas.draw()
         fig1.canvas.flush_events()
