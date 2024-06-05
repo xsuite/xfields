@@ -4,7 +4,7 @@ from scipy.constants import c as clight
 from scipy.constants import e as qe
 from scipy.interpolate import interp1d
 
-import xtrack as xt
+import xobjects as xo
 import xfields as xf
 from .element_with_slicer import ElementWithSlicer
 
@@ -232,6 +232,45 @@ class Wakefield(ElementWithSlicer):
     def circumference(self):
         return self.moments_data.circumference
 
+    def __add__(self, other):
+
+        if other == 0:
+            return self
+
+        assert isinstance(other, Wakefield)
+
+        new_components = self.components + other.components
+
+        # Check consistency
+        xo.assert_allclose(self.zeta_range, other.zeta_range, atol=1e-12, rtol=0)
+        xo.assert_allclose(self.num_slices, other.num_slices, atol=0, rtol=0)
+        if self.bunch_spacing_zeta is None:
+            assert other.bunch_spacing_zeta is None, (
+                'Bunch spacing zeta is not consistent')
+        else:
+            xo.assert_allclose(self.bunch_spacing_zeta, other.bunch_spacing_zeta, atol=1e-12, rtol=0)
+        if self.filling_scheme is None:
+            assert other.filling_scheme is None, (
+                'Filling scheme is not consistent')
+        else:
+            xo.assert_allclose(self.filling_scheme, other.filling_scheme, atol=0, rtol=0)
+        xo.assert_allclose(self.bunch_numbers, other.bunch_numbers, atol=0, rtol=0)
+        xo.assert_allclose(self.num_turns, other.num_turns, atol=0, rtol=0)
+        xo.assert_allclose(self.circumference, other.circumference, atol=0, rtol=0)
+
+        return Wakefield(
+                 components=new_components,
+                 zeta_range=self.zeta_range,
+                 num_slices=self.num_slices,
+                 bunch_spacing_zeta=self.bunch_spacing_zeta,
+                 filling_scheme=self.filling_scheme,
+                 bunch_numbers=(self.bunch_numbers if self.filling_scheme else None),
+                 num_turns=self.num_turns,
+                 circumference=self.circumference
+        )
+
+    def __radd__(self, other):
+        return self.__add__(other)
 
 class WakeComponent:
     """
