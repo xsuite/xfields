@@ -56,18 +56,19 @@ class Wakefield(ElementWithSlicer):
                  _flatten=False):
 
         self.components = components
-
-        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
-            filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
-            num_slots=num_slots)
+        self.pipeline_manager = None
 
         all_slicer_moments = []
         for cc in self.components:
             assert cc.moments_data is None
             all_slicer_moments += cc.source_moments
 
-        all_slicer_moments = list(set(all_slicer_moments))
+        self.all_slicer_moments = list(set(all_slicer_moments))
+
+        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
+            filling_scheme=filling_scheme,
+            bunch_numbers=bunch_numbers,
+            num_slots=num_slots)
 
         super().__init__(
             slicer_moments=all_slicer_moments,
@@ -98,7 +99,6 @@ class Wakefield(ElementWithSlicer):
 
         all_slicer_moments = list(set(all_slicer_moments))
 
-        self.pipeline_manager = None
 
     @classmethod
     def from_table(cls, wake_file, wake_file_columns,
