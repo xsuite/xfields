@@ -63,19 +63,19 @@ class Wakefield(ElementWithSlicer):
             num_slots=num_slots)
 
         all_slicer_moments = []
-        for wf in self.components:
-            assert wf.moments_data is None
+        for cc in self.components:
+            assert cc.moments_data is None
+            all_slicer_moments += cc.source_moments
 
-            wf._initialize_moments(
-                zeta_range=zeta_range,  # These are [a, b] in the paper
-                num_slices=num_slices,  # Per bunch, this is N_1 in the paper
-                bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-                filling_scheme=filling_scheme,
-                num_turns=num_turns,
-                circumference=circumference)
+            # cc._initialize_moments(
+            #     zeta_range=zeta_range,  # These are [a, b] in the paper
+            #     num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+            #     bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+            #     filling_scheme=filling_scheme,
+            #     num_turns=num_turns,
+            #     circumference=circumference)
 
-            wf._initialize_conv_data(_flatten=_flatten)
-            all_slicer_moments += wf.source_moments
+            # cc._initialize_conv_data(_flatten=_flatten)
 
         all_slicer_moments = list(set(all_slicer_moments))
 
@@ -91,8 +91,22 @@ class Wakefield(ElementWithSlicer):
             num_turns=num_turns,
             circumference=circumference,
             _flatten=False,
-            with_compressed_profile=False
+            with_compressed_profile=True
         )
+
+        self._initialize_moments(
+            zeta_range=zeta_range,  # These are [a, b] in the paper
+            num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+            bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+            filling_scheme=filling_scheme,
+            num_turns=num_turns,
+            circumference=circumference)
+
+        for cc in self.components:
+            cc._initialize_conv_data(_flatten=_flatten,
+                                     moments_data=self.moments_data)
+
+        all_slicer_moments = list(set(all_slicer_moments))
 
         self.pipeline_manager = None
 
@@ -194,17 +208,19 @@ class Wakefield(ElementWithSlicer):
                               partners_names=partners_names)
 
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
-        assert _slice_result is None and _other_bunch_slicers is None
 
         # Use common slicer from parent class to measure all moments
         super().track(particles)
 
         for wf in self.components:
-            wf.track(particles, _slice_result=self._slice_result,
-                     _other_bunch_slicers=self.other_bunch_slicers)
+            wf.track(particles, _slice_result=_slice_result,
+                     _other_bunch_slicers=_other_bunch_slicers,
+                     i_bunch_particles=self.i_bunch_particles,
+                     i_slice_particles=self.i_slice_particles,
+                     moments_data=self.moments_data)
 
 
-class WakeComponent(ElementWithSlicer):
+class WakeComponent:
     """
     A beam element modelling a wakefield kick
 
@@ -273,31 +289,33 @@ class WakeComponent(ElementWithSlicer):
         self.function = function
         self.moments_data = None
 
-        super().__init__(
-            slicer_moments=source_moments,
-            log_moments=log_moments,
-            zeta_range=zeta_range,  # These are [a, b] in the paper
-            num_slices=num_slices,  # Per bunch, this is N_1 in the paper
-            bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-            num_slots=num_slots,
-            filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
-            with_compressed_profile=True,
-            num_turns=num_turns,
-            circumference=circumference,
-            _flatten=False)
+        # super().__init__(
+        #     slicer_moments=source_moments,
+        #     log_moments=log_moments,
+        #     zeta_range=zeta_range,  # These are [a, b] in the paper
+        #     num_slices=num_slices,  # Per bunch, this is N_1 in the paper
+        #     bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
+        #     num_slots=num_slots,
+        #     filling_scheme=filling_scheme,
+        #     bunch_numbers=bunch_numbers,
+        #     with_compressed_profile=True,
+        #     num_turns=num_turns,
+        #     circumference=circumference,
+        #     _flatten=False)
 
-        if zeta_range is not None:
-            self._initialize_conv_data(_flatten=_flatten)
+        # if zeta_range is not None:
+        #     self._initialize_conv_data(_flatten=_flatten)
 
-        self.pipeline_manager = None
+        # self.pipeline_manager = None
 
-    def _initialize_conv_data(self, _flatten=False):
+    def _initialize_conv_data(self, _flatten=False, moments_data=None):
+        assert moments_data is not None
         if not _flatten:
-            self._N_aux = self.moments_data._N_aux
-            self._M_aux = self.moments_data._M_aux
-            self._N_S = self.moments_data._N_S
-            self._N_T = self._N_S
+            self._N_aux = moments_data._N_aux
+            self._M_aux = moments_data._M_aux
+            self._N_1 = moments_data._N_1
+            self._N_S = moments_data._N_S
+            self._N_T = moments_data._N_S
             self._BB = 1  # B in the paper
             # (for now we assume that B=0 is the first bunch in time and the
             # last one in zeta)
@@ -306,10 +324,13 @@ class WakeComponent(ElementWithSlicer):
             self._DD = self._BB
 
             # Build wake matrix
-            self.z_wake = _build_z_wake(self._z_a, self._z_b, self.num_turns,
-                                        self._N_aux, self._M_aux,
-                                        self.circumference, self.dz, self._AA,
-                                        self._BB, self._CC, self._DD, self._z_P)
+            self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,
+                                        moments_data.num_turns,
+                                        moments_data._N_aux, moments_data._M_aux,
+                                        moments_data.circumference,
+                                        moments_data.dz, self._AA,
+                                        self._BB, self._CC, self._DD,
+                                        moments_data._z_P)
 
             self.G_aux = self.function(self.z_wake)
 
@@ -319,9 +340,10 @@ class WakeComponent(ElementWithSlicer):
                 ((self._N_S - 1) * self._N_aux + self._N_1) / self._M_aux)
 
         else:
-            self._N_S_flatten = self.moments_data._N_S * self.num_turns
-            self._N_T_flatten = self.moments_data._N_S
-            self._N_aux = self.moments_data._N_aux
+            raise NotImplementedError('Flattened wakes are not implemented yet')
+            self._N_S_flatten = moments_data._N_S * moments_data.num_turns
+            self._N_T_flatten = moments_data._N_S
+            self._N_aux = moments_data._N_aux
             self._M_aux_flatten = ((self._N_S_flatten + self._N_T_flatten - 1)
                                    * self._N_aux)
             self._BB_flatten = 1  # B in the paper
@@ -333,14 +355,14 @@ class WakeComponent(ElementWithSlicer):
 
             # Build wake matrix
             self.z_wake = _build_z_wake(
-                self._z_a,
-                self._z_b,
+                moments_data._z_a,
+                moments_data._z_b,
                 1,  # num_turns
                 self._N_aux, self._M_aux_flatten,
                 0,  # circumference, does not matter since we are doing one pass
-                self.dz,
+                moments_data.dz,
                 self._AA_flatten, self._BB_flatten,
-                self._CC_flatten, self._DD_flatten, self._z_P)
+                self._CC_flatten, self._DD_flatten, moments_data._z_P)
 
             self.G_aux = self.function(self.z_wake)
 
@@ -353,31 +375,38 @@ class WakeComponent(ElementWithSlicer):
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
 
-    def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
+    def track(self, particles, _slice_result=None, _other_bunch_slicers=None,
+              i_bunch_particles=None, i_slice_particles=None,
+              moments_data=None):
         # here we cannot reuse the track method from ElementWithSlicer because
         # we need to take care of updating the CompressedProfile as well.
         # Can this be avoided?
-        if self.moments_data is None:
-            raise ValueError('moments_data is None. '
-                             'Please initialize it before tracking.')
+        # if self.moments_data is None:
+        #     raise ValueError('moments_data is None. '
+        #                      'Please initialize it before tracking.')
 
-        super().track(particles=particles, _slice_result=_slice_result,
-                      _other_bunch_slicers=_other_bunch_slicers)
+        # super().track(particles=particles, _slice_result=_slice_result,
+        #               _other_bunch_slicers=_other_bunch_slicers)
+
+        assert moments_data is not None
+        assert i_bunch_particles is not None
+        assert i_slice_particles is not None
 
         # Compute convolution
-        self._compute_convolution(moment_names=self.source_moments)
+        self._compute_convolution(moment_names=self.source_moments,
+                                  moments_data=moments_data)
         # Apply kicks
         interpolated_result = particles.zeta * 0
-        assert self.moments_data.moments_names[-1] == 'result'
-        md = self.moments_data
-        self.moments_data._interp_result(
+        assert moments_data.moments_names[-1] == 'result'
+        md = moments_data
+        moments_data._interp_result(
             particles=particles,
             data_shape_0=md.data.shape[0],
             data_shape_1=md.data.shape[1],
             data_shape_2=md.data.shape[2],
             data=md.data,
-            i_bunch_particles=self.i_bunch_particles,
-            i_slice_particles=self.i_slice_particles,
+            i_bunch_particles=i_bunch_particles,
+            i_slice_particles=i_slice_particles,
             out=interpolated_result)
         # interpolated result will be zero for lost particles (so nothing to
         # do for them)
@@ -390,16 +419,16 @@ class WakeComponent(ElementWithSlicer):
         getattr(particles, self.kick)[:] += (scaling_constant *
                                              interpolated_result)
 
-    def _compute_convolution(self, moment_names):
+    def _compute_convolution(self, moment_names, moments_data):
 
         if isinstance(moment_names, str):
             moment_names = [moment_names]
 
-        rho_aux = np.ones(shape=self.moments_data['result'].shape,
+        rho_aux = np.ones(shape=moments_data['result'].shape,
                           dtype=np.float64)
 
         for nn in moment_names:
-            rho_aux *= self.moments_data[nn]
+            rho_aux *= moments_data[nn]
 
         if not self._flatten:
             rho_hat = np.fft.rfft(rho_aux, axis=1)
@@ -407,7 +436,7 @@ class WakeComponent(ElementWithSlicer):
         else:
             rho_aux_flatten = np.zeros((1, self._M_aux_flatten),
                                        dtype=np.float64)
-            _N_aux_turn = self.moments_data._N_S * self._N_aux
+            _N_aux_turn = moments_data._N_S * self._N_aux
             for tt in range(self.num_turns):
                 rho_aux_flatten[
                     0, tt * _N_aux_turn: (tt + 1) * _N_aux_turn] = \
@@ -433,92 +462,7 @@ class WakeComponent(ElementWithSlicer):
             self._res_flatten = res_flatten  # for debugging
             self._rho_flatten = rho_aux_flatten  # for debugging
 
-        self.moments_data['result'] = res.real
-
-    # Parameters from CompressedProfile
-    @property
-    def _N_1(self):
-        return self.moments_data._N_1
-
-    @property
-    def _N_2(self):
-        return self.moments_data._N_2
-
-    @property
-    def _z_a(self):
-        return self.moments_data._z_a
-
-    @property
-    def _z_b(self):
-        return self.moments_data._z_b
-
-    @property
-    def z_period(self):
-        return self.moments_data.z_period
-
-    @property
-    def _z_P(self):
-        return self.moments_data._z_P
-
-    @property
-    def circumference(self):
-        return self.moments_data.circumference
-
-    @property
-    def dz(self):
-        return self.moments_data.dz
-
-    @property
-    def num_slices(self):
-        return self.moments_data.num_slices
-
-    @property
-    def num_periods(self):
-        return self.moments_data.num_periods
-
-    @property
-    def num_turns(self):
-        return self.moments_data.num_turns
-
-    def set_moments(self, i_source, i_turn, moments):
-        """
-        Set the moments for a given source and turn.
-
-        Parameters
-        ----------
-        i_source : int
-            The source index, 0 <= i_source < self.num_periods
-        i_turn : int
-            The turn index, 0 <= i_turn < self.num_turns
-        moments : dict
-            A dictionary of the form {moment_name: moment_value}
-
-        """
-
-        self.moments_data.set_moments(i_source, i_turn, moments)
-
-    def get_moment_profile(self, moment_name, i_turn):
-        """
-        Get the moment profile for a given turn.
-
-        Parameters
-        ----------
-        moment_name : str
-            The name of the moment to get
-        i_turn : int
-            The turn index, 0 <= i_turn < self.num_turns
-
-        Returns
-        -------
-        z_out : np.ndarray
-            The z positions within the moment profile
-        moment_out : np.ndarray
-            The moment profile
-        """
-        z_out, moment_out = self.moments_data.get_moment_profile(
-                moment_name, i_turn)
-
-        return z_out, moment_out
+        moments_data['result'] = res.real
 
 
 class ResonatorWake(WakeComponent):

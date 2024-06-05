@@ -121,15 +121,14 @@ class ElementWithSlicer:
             num_turns=1,
             circumference=None):
 
-        if zeta_range is not None:
-            self.moments_data = CompressedProfile(
-                    moments=self.source_moments + ['result'],
-                    zeta_range=zeta_range,
-                    num_slices=num_slices,
-                    bunch_spacing_zeta=bunch_spacing_zeta,
-                    num_periods=len(filling_scheme),
-                    num_turns=num_turns,
-                    circumference=circumference)
+        self.moments_data = CompressedProfile(
+                moments=self.source_moments + ['result'],
+                zeta_range=zeta_range,
+                num_slices=num_slices,
+                bunch_spacing_zeta=bunch_spacing_zeta,
+                num_periods=len(filling_scheme),
+                num_turns=num_turns,
+                circumference=circumference)
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         self.pipeline_manager = pipeline_manager
