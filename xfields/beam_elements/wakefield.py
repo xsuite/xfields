@@ -67,16 +67,6 @@ class Wakefield(ElementWithSlicer):
             assert cc.moments_data is None
             all_slicer_moments += cc.source_moments
 
-            # cc._initialize_moments(
-            #     zeta_range=zeta_range,  # These are [a, b] in the paper
-            #     num_slices=num_slices,  # Per bunch, this is N_1 in the paper
-            #     bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-            #     filling_scheme=filling_scheme,
-            #     num_turns=num_turns,
-            #     circumference=circumference)
-
-            # cc._initialize_conv_data(_flatten=_flatten)
-
         all_slicer_moments = list(set(all_slicer_moments))
 
         super().__init__(
@@ -258,25 +248,6 @@ class WakeComponent:
         self.source_moments = source_moments
         self.function = function
         self.moments_data = None
-
-        # super().__init__(
-        #     slicer_moments=source_moments,
-        #     log_moments=log_moments,
-        #     zeta_range=zeta_range,  # These are [a, b] in the paper
-        #     num_slices=num_slices,  # Per bunch, this is N_1 in the paper
-        #     bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-        #     num_slots=num_slots,
-        #     filling_scheme=filling_scheme,
-        #     bunch_numbers=bunch_numbers,
-        #     with_compressed_profile=True,
-        #     num_turns=num_turns,
-        #     circumference=circumference,
-        #     _flatten=False)
-
-        # if zeta_range is not None:
-        #     self._initialize_conv_data(_flatten=_flatten)
-
-        # self.pipeline_manager = None
 
     def _initialize_conv_data(self, _flatten=False, moments_data=None):
         assert moments_data is not None
