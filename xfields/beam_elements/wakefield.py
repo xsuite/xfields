@@ -23,8 +23,6 @@ class Wakefield(ElementWithSlicer):
         Number of slices per bunch used in the underlying slicer.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
-    num_slots : int
-        Number of filled slots.
     filling_scheme: np.ndarray
         List of zeros and ones representing the filling scheme. The length
         of the array is equal to the number of slots in the machine and each
@@ -47,7 +45,6 @@ class Wakefield(ElementWithSlicer):
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
-                 num_slots=None,
                  filling_scheme=None,
                  bunch_numbers=None,
                  num_turns=1,
@@ -65,18 +62,12 @@ class Wakefield(ElementWithSlicer):
 
         self.all_slicer_moments = list(set(all_slicer_moments))
 
-        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
-            filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
-            num_slots=num_slots)
-
         super().__init__(
             slicer_moments=all_slicer_moments,
             log_moments=log_moments,
             zeta_range=zeta_range,  # These are [a, b] in the paper
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-            num_slots=num_slots,
             filling_scheme=filling_scheme,
             bunch_numbers=bunch_numbers,
             num_turns=num_turns,
@@ -207,6 +198,40 @@ class Wakefield(ElementWithSlicer):
                      i_bunch_particles=self.i_bunch_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
+
+    @property
+    def zeta_range(self):
+        return (self.slicer.zeta_centers[0] - self.slicer.dzeta / 2,
+                self.slicer.zeta_centers[-1] + self.slicer.dzeta / 2)
+
+    @property
+    def num_slices(self):
+       return self.slicer.num_slices
+
+    @property
+    def bunch_spacing_zeta(self):
+        self.slicer.bunch_spacing_zeta
+
+    @property
+    def num_slots(self):
+        ...
+
+    @property
+    def filling_scheme(self):
+        ...
+
+    @property
+    def bunch_numbers(self):
+        ...
+
+    @property
+    def num_turns(self):
+        ...
+
+    @property
+    def circumference(self):
+        ...
+
 
 class WakeComponent:
     """

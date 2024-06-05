@@ -19,8 +19,6 @@ class ElementWithSlicer:
         Number of slices per bunch used in the underlying slicer.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
-    num_slots : int
-        Number of filled slots.
     filling_scheme: np.ndarray
         List of zeros and ones representing the filling scheme. The length
         of the array is equal to the number of slots in the machine and each
@@ -45,7 +43,6 @@ class ElementWithSlicer:
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
-                 num_slots=None,
                  filling_scheme=None,
                  bunch_numbers=None,
                  num_turns=1,
@@ -54,11 +51,6 @@ class ElementWithSlicer:
                  with_compressed_profile=False):
 
         self.with_compressed_profile = with_compressed_profile
-
-        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
-            filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
-            num_slots=num_slots)
 
         self.source_moments = slicer_moments.copy()
 
@@ -81,19 +73,6 @@ class ElementWithSlicer:
                 filling_scheme=filling_scheme,
                 num_turns=num_turns,
                 circumference=circumference)
-
-    @staticmethod
-    def _check_filling_scheme_info(filling_scheme, bunch_numbers, num_slots):
-        if filling_scheme is None and bunch_numbers is None:
-            if num_slots is None:
-                num_slots = 1
-            filling_scheme = np.ones(num_slots, dtype=np.int64)
-            bunch_numbers = np.arange(num_slots, dtype=np.int64)
-        else:
-            assert (num_slots is None and filling_scheme is not None and
-                    bunch_numbers is not None)
-
-        return filling_scheme, bunch_numbers
 
     def init_slicer(self, zeta_range, num_slices, filling_scheme,
                     bunch_numbers, bunch_spacing_zeta, slicer_moments):
@@ -126,7 +105,7 @@ class ElementWithSlicer:
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=len(filling_scheme),
+                num_periods=(len(filling_scheme) if filling_scheme else 1),
                 num_turns=num_turns,
                 circumference=circumference)
 
