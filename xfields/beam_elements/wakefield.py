@@ -15,7 +15,7 @@ class Wakefield(ElementWithSlicer):
 
     Parameters
     ----------
-    wakefields : xfields.WakeField
+    components : xfields.WakeField
         List of wake fields.
     zeta_range : Tuple
         Zeta range for each bunch used in the underlying slicer.
@@ -165,7 +165,7 @@ class Wakefield(ElementWithSlicer):
 
         itime = wake_file_columns.index('time')
         wake_distance = -1E-9 * wake_data[:, itime] * beta0 * clight
-        wakefields = []
+        components = []
         for i_component, component in enumerate(wake_file_columns):
             if i_component != itime and (use_components is None or
                                          component in use_components):
@@ -196,8 +196,8 @@ class Wakefield(ElementWithSlicer):
                     function=interp1d(wake_distance, wake_strength,
                                       bounds_error=False, fill_value=0.0)
                 )
-                wakefields.append(wakefield)
-        return cls(wakefields, **kwargs)
+                components.append(wakefield)
+        return cls(components, **kwargs)
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         for wf in self.components:

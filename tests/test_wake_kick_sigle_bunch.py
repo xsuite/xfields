@@ -54,7 +54,7 @@ def test_longitudinal_wake_kick(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfz],
+        components=[wfz],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -134,7 +134,7 @@ def test_constant_wake_kick(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfx, wfy],
+        components=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -228,7 +228,7 @@ def test_direct_dipolar_wake_kick(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfx, wfy],
+        components=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -324,7 +324,7 @@ def test_cross_dipolar_wake_kick(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfx, wfy],
+        components=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -423,7 +423,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfx, wfy],
+        components=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -520,7 +520,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfx, wfy],
+        components=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -614,7 +614,7 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     zeta_range_xf = zeta_range
 
     wf = Wakefield(
-        wakefields=[wfx, wfy],
+        components=[wfx, wfy],
         zeta_range=zeta_range_xf,
         num_slices=n_slices,  # per bunch
         bunch_spacing_zeta=bunch_spacing_buckets * bucket_length,

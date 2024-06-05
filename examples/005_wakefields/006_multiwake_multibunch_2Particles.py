@@ -94,7 +94,7 @@ wfy_0 = xf.WakeComponent(
     function=MinistryOfSillyWakes(-1.0),
 )
 wf_0 = xf.Wakefield(
-    wakefields=[wfx_0, wfy_0],
+    components=[wfx_0, wfy_0],
     zeta_range=(-1.1*sigma_zeta, 1.1*sigma_zeta),
     num_slices=n_slices,  # per bunch
     bunch_spacing_zeta=bunch_spacing,
@@ -118,7 +118,7 @@ wfy_1 = xf.WakeComponent(
     function=MinistryOfSillyWakes(-1.0),
 )
 wf_1 = xf.Wakefield(
-    wakefields=[wfx_1, wfy_1],
+    components=[wfx_1, wfy_1],
     zeta_range=(-1.1*sigma_zeta, 1.1*sigma_zeta),
     num_slices=n_slices,  # per bunch
     bunch_spacing_zeta=bunch_spacing,

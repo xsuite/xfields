@@ -192,7 +192,7 @@ wfy = xf.ResonatorWake(
 )
 
 wf = Wakefield(
-    wakefields=[wfx, wfy],
+    components=[wfx, wfy],
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,  # Per bunch
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
