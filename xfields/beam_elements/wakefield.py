@@ -207,18 +207,16 @@ class Wakefield(ElementWithSlicer):
                               element_name=element_name,
                               partners_names=partners_names)
 
-    def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
+    def track(self, particles):
 
         # Use common slicer from parent class to measure all moments
         super().track(particles)
 
         for wf in self.components:
-            wf.track(particles, _slice_result=_slice_result,
-                     _other_bunch_slicers=_other_bunch_slicers,
+            wf.track(particles,
                      i_bunch_particles=self.i_bunch_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
-
 
 class WakeComponent:
     """
@@ -375,22 +373,8 @@ class WakeComponent:
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
 
-    def track(self, particles, _slice_result=None, _other_bunch_slicers=None,
-              i_bunch_particles=None, i_slice_particles=None,
-              moments_data=None):
-        # here we cannot reuse the track method from ElementWithSlicer because
-        # we need to take care of updating the CompressedProfile as well.
-        # Can this be avoided?
-        # if self.moments_data is None:
-        #     raise ValueError('moments_data is None. '
-        #                      'Please initialize it before tracking.')
-
-        # super().track(particles=particles, _slice_result=_slice_result,
-        #               _other_bunch_slicers=_other_bunch_slicers)
-
-        assert moments_data is not None
-        assert i_bunch_particles is not None
-        assert i_slice_particles is not None
+    def track(self, particles, i_bunch_particles, i_slice_particles,
+              moments_data):
 
         # Compute convolution
         self._compute_convolution(moment_names=self.source_moments,
