@@ -20,14 +20,15 @@ num_slices = 100
 circumference = 26658.8832
 bucket_length_m = circumference / 35640
 
-wake_table_filename = xf.general._pkg_root.joinpath('../test_data/HLLHC_wake.dat')
+wake_table_filename = xf.general._pkg_root.joinpath(
+    '../test_data/HLLHC_wake.dat')
 wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
                      'quadrupole_x', 'quadrupole_y', 'dipole_xy',
                      'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                      'constant_x', 'constant_y']
 wf = xf.Wakefield.from_table(
     wake_table_filename, wake_file_columns,
-    zeta_range = (-0.5*bucket_length_m, 0.5*bucket_length_m),
+    zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
     num_slices=100,
     num_turns=1.,
     circumference=circumference
@@ -37,10 +38,9 @@ one_turn_map = xt.LineSegmentMap(
     length=circumference, betx=70., bety=80.,
     qx=62.31, qy=60.32,
     longitudinal_mode='linear_fixed_qs',
-    dqx=-10., dqy=-10., # <-- to see fast mode-0 instability
+    dqx=-10., dqy=-10.,  # <-- to see fast mode-0 instability
     qs=2e-3, bets=731.27
 )
-
 
 # Generate line
 line = xt.Line(elements=[one_turn_map, wf],
@@ -52,8 +52,8 @@ line.build_tracker()
 
 # Generate particles
 particles = xp.generate_matched_gaussian_bunch(line=line,
-         num_particles=100_000, total_intensity_particles=2.3e11,
-         nemitt_x=2e-6, nemitt_y=2e-6, sigma_z=0.075)
+                    num_particles=100_000, total_intensity_particles=2.3e11,
+                    nemitt_x=2e-6, nemitt_y=2e-6, sigma_z=0.075)
 
 # Apply a distortion to the bunch to trigger an instability
 amplitude = 1e-3
@@ -113,13 +113,13 @@ for i_turn in range(n_turns):
         line1_x.set_ydata(np.log10(np.abs(mean_x_xt[:i_turn])))
         line2_x.set_xdata(turns[:i_turn])
         line2_x.set_ydata(np.log10(np.exp(fit_x_xt.intercept +
-                                 fit_x_xt.slope*turns[:i_turn])))
+                                          fit_x_xt.slope*turns[:i_turn])))
 
         line1_y.set_xdata(turns[:i_turn])
         line1_y.set_ydata(np.log10(np.abs(mean_y_xt[:i_turn])))
         line2_y.set_xdata(turns[:i_turn])
         line2_y.set_ydata(np.log10(np.exp(fit_y_xt.intercept +
-                                 fit_y_xt.slope*turns[:i_turn])))
+                                          fit_y_xt.slope*turns[:i_turn])))
         print(f'xtrack h growth rate: {fit_x_xt.slope}')
         print(f'xtrack v growth rate: {fit_y_xt.slope}')
 
