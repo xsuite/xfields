@@ -265,14 +265,6 @@ class WakeComponent:
                  kick,
                  scale_kick,
                  function,
-                 zeta_range=None,  # These are [a, b] in the paper
-                 num_slices=None,  # Per bunch, this is N_1 in the paper
-                 bunch_spacing_zeta=None,  # This is P in the paper
-                 num_slots=None,
-                 filling_scheme=None,
-                 bunch_numbers=None,
-                 num_turns=1,
-                 circumference=None,
                  log_moments=None,
                  _flatten=False):
 
