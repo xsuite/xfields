@@ -234,26 +234,6 @@ class WakeComponent:
     scale_kick:
         Moment by which the wake kick is scaled (e.g. it is None for a constant,
         or dipolar, while it is 'x' for a x-quadrupolar wake).
-    zeta_range : Tuple
-        Zeta range for each bunch used in the underlying slicer.
-    num_slices : int
-        Number of slices per bunch used in the underlying slicer.
-    bunch_spacing_zeta : float
-        Bunch spacing in meters.
-    num_slots : int
-        Number of bunches in the beam.
-    filling_scheme: np.ndarray
-        List of zeros and ones representing the filling scheme. The length
-        of the array is equal to the number of slots in the machine and each
-        element of the array holds a one if the slot is filled or a zero
-        otherwise.
-    bunch_numbers: np.ndarray
-        List of the bunches indicating which slots from the filling scheme are
-        used (not all the bunches are used when using multi-processing)
-    num_turns : int
-        Number of turns which are consiered for the multi-turn wake.
-    circumference: float
-        Machine length in meters.
     log_moments: list
         List of moments logged in the slicer.
     _flatten: bool
