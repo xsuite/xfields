@@ -28,6 +28,7 @@ wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
                      'constant_x', 'constant_y']
 wf = xf.Wakefield.from_table(
     wake_table_filename, wake_file_columns,
+    use_components=['dipole_x', 'dipole_y'],
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
     num_slices=100,
     num_turns=1.,
