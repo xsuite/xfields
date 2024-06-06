@@ -193,7 +193,9 @@ class CollectiveMonitor(SlicedElement):
                     else:
                         raise ValueError('Unknown statistics f{stat}')
 
-                self.bunch_buffer[bid][stat][write_pos] = val
+                bunches[stat] = val
+
+        self.bunch_series.flush()
 
     def _update_bunch_buffer(self, particles):
         i_bunch_particles = self._slice_result['i_bunch_particles']
