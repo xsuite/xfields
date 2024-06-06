@@ -188,8 +188,6 @@ class Wakefield(ElementWithSlicer):
         return df
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
-        for wf in self.components:
-            assert wf.pipeline_manager is None
 
         super().init_pipeline(pipeline_manager=pipeline_manager,
                               element_name=element_name,
