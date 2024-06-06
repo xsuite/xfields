@@ -79,7 +79,7 @@ def test_multiwake_transverse_dipole_coupling(test_context):
     wf_0.init_pipeline(pipeline_manager=pipeline_manager,
                        element_name='wake',
                        partners_names=['b1'])
-    wf_1 = xf.Wakefield.from_table(wake_table_name, wake_file_columns,
+    wf_1 = xf.Wakefield.from_table(wake_df,
                                    use_components=components,
                                    zeta_range=zeta_range,
                                    num_slices=num_slices,  # per bunch
