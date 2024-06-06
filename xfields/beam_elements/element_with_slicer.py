@@ -105,7 +105,8 @@ class ElementWithSlicer:
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=(len(filling_scheme) if filling_scheme else 1),
+                num_periods=(len(filling_scheme) if filling_scheme is not None
+                                                 else 1),
                 num_turns=num_turns,
                 circumference=circumference)
 

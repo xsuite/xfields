@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
@@ -90,40 +91,59 @@ class Wakefield(ElementWithSlicer):
 
         all_slicer_moments = list(set(all_slicer_moments))
 
-
     @classmethod
-    def from_table(cls, wake_file, wake_file_columns,
-                   use_components=None, beta0=1.0, **kwargs):
-        """
-        Load data from the wake_file and store them in a dictionary
-        self.wake_table. Keys are the names specified by the user in
-        wake_file_columns and describe the names of the wake field
-        components (e.g. dipole_x or dipole_yx). The dict values are
-        given by the corresponding data read from the table. The
-        nomenclature of the wake components must be strictly obeyed.
-        Valid names for wake components are:
+    def from_table(cls, df, use_components, beta0=1.0,
+                   **kwargs):
+        valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
+                                 'dipole_y', 'dipole_xy', 'dipole_yx',
+                                 'quadrupole_x', 'quadrupole_y',
+                                 'quadrupole_xy', 'quadrupole_yx',
+                                 'longitudinal']
 
-        'constant_x', 'constant_y', 'dipole_x', 'dipole_y', 'dipole_xy',
-        'dipole_yx', 'quadrupole_x', 'quadrupole_y', 'quadrupole_xy',
-        'quadrupole_yx', 'longitudinal'.
+        if 'time' not in list(df.keys()):
+            raise ValueError("No wake_file_column with name 'time' has" +
+                             " been specified. \n")
 
-        The order of wake_file_columns is relevant and must correspond
-        to the one in the wake_file. There is no way to check this here
-        and it is in the responsibility of the user to ensure it is
-        correct. Two checks made here are whether the length of
-        wake_file_columns corresponds to the number of columns in the
-        wake_file and whether a column 'time' is specified.
+        if use_components is not None:
+            for component in use_components:
+                assert component in valid_wake_components
 
-        The units and signs of the wake table data are assumed to follow
-        the HEADTAIL conventions, i.e.
-          time: [ns]
-          transverse wake components: [V/pC/mm]
-          longitudinal wake component: [V/pC].
+        wake_distance = df['time'] * beta0 * clight
+        components = []
+        for component in list(df.keys()):
+            if component != 'time' and (use_components is None or
+                                        component in use_components):
+                assert component in valid_wake_components
+                scale_kick = None
+                source_moments = ['num_particles']
+                if component == 'longitudinal':
+                    kick = 'delta'
+                else:
+                    tokens = component.split('_')
+                    coord_target = tokens[1][0]
+                    if len(tokens[1]) == 2:
+                        coord_source = tokens[1][1]
+                    else:
+                        coord_source = coord_target
+                    kick = 'p'+coord_target
+                    if tokens[0] == 'dipole':
+                        source_moments.append(coord_source)
+                    elif tokens[0] == 'quadrupole':
+                        scale_kick = coord_source
+                wake_strength = df[component]
+                wakefield = xf.WakeComponent(
+                    source_moments=source_moments,
+                    kick=kick,
+                    scale_kick=scale_kick,
+                    function=interp1d(wake_distance, wake_strength,
+                                      bounds_error=False, fill_value=0.0)
+                )
+                components.append(wakefield)
+        return cls(components, **kwargs)
 
-        Acknowledgment: this method is largely copied from the
-        PyHEADTAIL.impedances.wakes.WakeTable class
-        """
-
+    @staticmethod
+    def table_from_headtail_file(wake_file, wake_file_columns, use_components=None,
+                                 flag_pyht_units=False):
         valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
                                  'dipole_y', 'dipole_xy', 'dipole_yx',
                                  'quadrupole_x', 'quadrupole_y',
@@ -144,41 +164,28 @@ class Wakefield(ElementWithSlicer):
                 assert component in valid_wake_components
                 assert component in wake_file_columns
 
+        dict_components = {}
+
+        conversion_factor_time = -1E-9 if flag_pyht_units else 1
+
         itime = wake_file_columns.index('time')
-        wake_distance = -1E-9 * wake_data[:, itime] * beta0 * clight
-        components = []
+        dict_components['time'] = conversion_factor_time * wake_data[:, itime]
+
         for i_component, component in enumerate(wake_file_columns):
-            if i_component != itime and (use_components is None or
-                                         component in use_components):
+            if component != 'time' and (use_components is None or
+                                        component in use_components):
                 assert component in valid_wake_components
-                scale_kick = None
-                source_moments = ['num_particles']
                 if component == 'longitudinal':
-                    kick = 'delta'
-                    conversion_factor = -1E12
+                    conversion_factor = -1E12 if flag_pyht_units else 1
                 else:
-                    conversion_factor = -1E15
-                    tokens = component.split('_')
-                    coord_target = tokens[1][0]
-                    if len(tokens[1]) == 2:
-                        coord_source = tokens[1][1]
-                    else:
-                        coord_source = coord_target
-                    kick = 'p'+coord_target
-                    if tokens[0] == 'dipole':
-                        source_moments.append(coord_source)
-                    elif tokens[0] == 'quadrupole':
-                        scale_kick = coord_source
-                wake_strength = conversion_factor * wake_data[:, i_component]
-                wakefield = xf.WakeComponent(
-                    source_moments=source_moments,
-                    kick=kick,
-                    scale_kick=scale_kick,
-                    function=interp1d(wake_distance, wake_strength,
-                                      bounds_error=False, fill_value=0.0)
-                )
-                components.append(wakefield)
-        return cls(components, **kwargs)
+                    conversion_factor = -1E15 if flag_pyht_units else 1
+
+                dict_components[component] = (wake_data[:, i_component] *
+                                              conversion_factor)
+
+        df = pd.DataFrame(data=dict_components)
+
+        return df
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         for wf in self.components:
