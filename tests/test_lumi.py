@@ -12,7 +12,7 @@ import xpart as xp
 from xobjects.test_helpers import for_all_test_contexts
 
 @for_all_test_contexts
-def test_beambeam3d_bhabha_ws_no_config(test_context):
+def test_beambeam3d_lumi_ws_no_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
@@ -92,10 +92,8 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     line = xt.Line(elements = [el_beambeam_b1])
     line.build_tracker(_context=test_context)
 
-    assert line._needs_rng == False
-
     record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-        xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(0), "lumitable": int(n_slices*n_macroparticles_b1)})
+        xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(0), "lumitable": int(1)})
     line.track(particles_b1, num_turns=1)
     line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -109,7 +107,7 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     piwi    = sigma_z_tot / sigma_x * phi  # [1]
     lumi_ip = bunch_intensity**2 / (4*np.pi*sigma_x*np.sqrt(1 + piwi**2)*sigma_y)  # [m^-2] for 1 IP
 
-    lumi_ws_b1 = np.sum(record_ws_b1.lumitable.luminosity)
+    lumi_ws_b1 = record_ws_b1.lumitable.luminosity[0]
     rel_err_ws_b1 = 100*(lumi_ws_b1 - lumi_ip) / lumi_ip
     print("WS beam 1:", lumi_ws_b1, rel_err_ws_b1, "[%]")
 
@@ -117,7 +115,7 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     assert np.allclose(lumi_ws_b1, lumi_ip, rtol=1.5e-1, atol=0)
 
 @for_all_test_contexts
-def test_beambeam3d_bhabha_ws_config(test_context):
+def test_beambeam3d_lumi_ws_config(test_context):
 
     if isinstance(test_context, xo.ContextPyopencl):
         pytest.skip("Not implemented for OpenCL")
@@ -213,13 +211,8 @@ def test_beambeam3d_bhabha_ws_config(test_context):
     line = xt.Line(elements = [el_beambeam_b1])
     line.build_tracker(_context=test_context)
 
-    assert line._needs_rng == False
-
-    line.configure_radiation(model_bhabha='quantum')
-    assert line._needs_rng == True
-
     record_ws_b1 = line.start_internal_logging_for_elements_of_type(
-        xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(0), "lumitable": int(n_slices*n_macroparticles_b1)})
+        xf.BeamBeamBiGaussian3D, capacity={"beamstrahlungtable": int(0), "bhabhatable": int(0), "lumitable": int(1)})
     line.track(particles_b1, num_turns=1)
     line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
 
@@ -233,7 +226,7 @@ def test_beambeam3d_bhabha_ws_config(test_context):
     piwi    = sigma_z_tot / sigma_x * phi  # [1]
     lumi_ip = bunch_intensity**2 / (4*np.pi*sigma_x*np.sqrt(1 + piwi**2)*sigma_y)  # [m^-2] for 1 IP
 
-    lumi_ws_b1 = np.sum(record_ws_b1.lumitable.luminosity)
+    lumi_ws_b1 = record_ws_b1.lumitable.luminosity[0]
     rel_err_ws_b1 = 100*(lumi_ws_b1 - lumi_ip) / lumi_ip
     print("WS beam 1:", lumi_ws_b1, rel_err_ws_b1, "[%]")
 
@@ -242,7 +235,7 @@ def test_beambeam3d_bhabha_ws_config(test_context):
 
 
 @for_all_test_contexts
-def test_beambeam3d_bhabha_qss(test_context):
+def test_beambeam3d_lumi_qss(test_context):
 
     if isinstance(test_context, xo.ContextPyopencl):
         pytest.skip("Not implemented for OpenCL")
@@ -375,15 +368,6 @@ def test_beambeam3d_bhabha_qss(test_context):
     line_b1.build_tracker(_context=test_context)
     line_b2.build_tracker(_context=test_context)
 
-    assert line_b1._needs_rng == False
-    assert line_b2._needs_rng == False
-
-    line_b1.configure_radiation(model_bhabha='quantum')
-    line_b2.configure_radiation(model_bhabha='quantum')
-
-    assert line_b1._needs_rng == True
-    assert line_b2._needs_rng == True
-
     particles_b1.name = "b1"
     particles_b2.name = "b2"
 
@@ -395,13 +379,13 @@ def test_beambeam3d_bhabha_qss(test_context):
                                                                 capacity={
                                                                     "beamstrahlungtable": int(0),
                                                                     "bhabhatable": int(0),
-                                                                    "lumitable": int(n_slices*n_macroparticles_b1)
+                                                                    "lumitable": int(1)
                                                                 })
     record_qss_b2 = line_b2.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                                 capacity={
                                                                     "beamstrahlungtable": int(0),
                                                                     "bhabhatable": int(0),
-                                                                    "lumitable": int(n_slices*n_macroparticles_b2)
+                                                                    "lumitable": int(1)
                                                                 })
 
     multitracker.track(num_turns=1)
@@ -419,8 +403,8 @@ def test_beambeam3d_bhabha_qss(test_context):
     piwi    = sigma_z_tot / sigma_x * phi  # [1]
     lumi_ip = bunch_intensity**2 / (4*np.pi*sigma_x*np.sqrt(1 + piwi**2)*sigma_y)  # [m^-2] for 1 IP
 
-    lumi_qss_b1 = np.sum(record_qss_b1.lumitable.luminosity)
-    lumi_qss_b2 = np.sum(record_qss_b2.lumitable.luminosity)
+    lumi_qss_b1 = record_qss_b1.lumitable.luminosity[0]
+    lumi_qss_b2 = record_qss_b2.lumitable.luminosity[0]
     rel_err_qss_b1 = 100*(lumi_qss_b1 - lumi_ip) / lumi_ip
     rel_err_qss_b2 = 100*(lumi_qss_b2 - lumi_ip) / lumi_ip
     print("QSS beam 1:", lumi_qss_b1, rel_err_qss_b1, "[%]")
@@ -432,7 +416,7 @@ def test_beambeam3d_bhabha_qss(test_context):
 
 
 @for_all_test_contexts
-def test_beambeam3d_bhabha_ss(test_context):
+def test_beambeam3d_lumi_ss(test_context):
 
     if isinstance(test_context, xo.ContextPyopencl):
         pytest.skip("Not implemented for OpenCL")
@@ -565,15 +549,6 @@ def test_beambeam3d_bhabha_ss(test_context):
     line_b1.build_tracker(_context=test_context)
     line_b2.build_tracker(_context=test_context)
 
-    assert line_b1._needs_rng == False
-    assert line_b2._needs_rng == False
-
-    line_b1.configure_radiation(model_bhabha='quantum')
-    line_b2.configure_radiation(model_bhabha='quantum')
-
-    assert line_b1._needs_rng == True
-    assert line_b2._needs_rng == True
-
     particles_b1.name = "b1"
     particles_b2.name = "b2"
 
@@ -584,14 +559,14 @@ def test_beambeam3d_bhabha_ss(test_context):
     record_ss_b1 = line_b1.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                                 capacity={
                                                                     "beamstrahlungtable": int(0),
-                                                                    "bhabhatable": int(3e3),
-                                                                    "lumitable": int(n_slices*n_macroparticles_b1)
+                                                                    "bhabhatable": int(0),
+                                                                    "lumitable": int(1)
                                                                 })
     record_ss_b2 = line_b2.start_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D, 
                                                                 capacity={
                                                                     "beamstrahlungtable": int(0),
-                                                                    "bhabhatable": int(3e3),
-                                                                    "lumitable": int(n_slices*n_macroparticles_b2)
+                                                                    "bhabhatable": int(0),
+                                                                    "lumitable": int(1)
                                                                 })
 
     multitracker.track(num_turns=1)
@@ -609,8 +584,8 @@ def test_beambeam3d_bhabha_ss(test_context):
     piwi    = sigma_z_tot / sigma_x * phi  # [1] 
     lumi_ip = bunch_intensity**2 / (4*np.pi*sigma_x*np.sqrt(1 + piwi**2)*sigma_y)  # [m^-2] for 1 IP
 
-    lumi_ss_b1 = np.sum(record_ss_b1.lumitable.luminosity)
-    lumi_ss_b2 = np.sum(record_ss_b2.lumitable.luminosity)
+    lumi_ss_b1 = record_ss_b1.lumitable.luminosity[0]
+    lumi_ss_b2 = record_ss_b2.lumitable.luminosity[0]
     rel_err_ss_b1 = 100*(lumi_ss_b1 - lumi_ip) / lumi_ip
     rel_err_ss_b2 = 100*(lumi_ss_b2 - lumi_ip) / lumi_ip
     print("SS beam 1:", lumi_ss_b1, rel_err_ss_b1, "[%]")

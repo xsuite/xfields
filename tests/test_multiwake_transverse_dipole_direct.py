@@ -64,7 +64,7 @@ def test_multiwake_transverse_dipole_direct(test_context):
                          'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                          'constant_x', 'constant_y']
     components = ['dipole_x', 'dipole_y']
-    wf_0 = xf.MultiWakefield.from_table(wake_table_name,
+    wf_0 = xf.Wakefield.from_table(wake_table_name,
                                         wake_file_columns,
                                         use_components=components,
                                         zeta_range=zeta_range,
@@ -77,7 +77,7 @@ def test_multiwake_transverse_dipole_direct(test_context):
     wf_0.init_pipeline(pipeline_manager=pipeline_manager,
                        element_name='wake',
                        partners_names=['b1'])
-    wf_1 = xf.MultiWakefield.from_table(wake_table_name,
+    wf_1 = xf.Wakefield.from_table(wake_table_name,
                                         wake_file_columns,
                                         use_components=components,
                                         zeta_range=zeta_range,

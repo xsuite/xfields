@@ -38,14 +38,14 @@ particles.x[ioffset] += 1.0
 particles.y[ioffset] += 1.0
 
 print('Initialising wakes')
-wfx = xf.Wakefield(
+wfx = xf.WakeComponent(
     source_moments=['num_particles', 'x'],
     kick='px',
     scale_kick=None,
     function=MinistryOfSillyWakes(1.0)
 )
 
-wfy = xf.Wakefield(
+wfy = xf.WakeComponent(
     source_moments=['num_particles', 'y'],
     kick='py',
     scale_kick=None,
@@ -55,8 +55,8 @@ wfy = xf.Wakefield(
 n_slices = 1000
 n_turns_wake = 1
 circumference = 27E3
-wf = xf.MultiWakefield(
-    wakefields=[wfx, wfy],
+wf = xf.Wakefield(
+    components=[wfx, wfy],
     zeta_range=(-1.1*sigma_zeta,1.1*sigma_zeta),
     num_slices=n_slices,  # per bunch
     bunch_spacing_zeta=bunch_spacing,

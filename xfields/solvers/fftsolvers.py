@@ -207,6 +207,96 @@ class FFTSolver2p5D(FFTSolver3D):
         self._gint_rep_transf_dev = gint_rep_transf_dev
         self.fftplan = fftplan
 
+class FFTSolver2p5DAveraged(Solver):
+
+    def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
+
+        if context is None:
+            context = context_default
+        self.context = context
+
+        # Build grid for primitive function
+        xg_F = np.arange(0, nx+2) * dx - dx/2
+        yg_F = np.arange(0, ny+2) * dy - dy/2
+        XX_F, YY_F= np.meshgrid(xg_F, yg_F, indexing='ij')
+
+        # Compute primitive
+        F_temp = primitive_func_2p5d(XX_F, YY_F)
+
+        # Integrated Green Function (I will transform inplace)
+        gint_rep= np.zeros((2*nx, 2*ny), dtype=np.complex128, order='F')
+        gint_rep[:nx+1, :ny+1] = (F_temp[ 1:,  1:]
+                                - F_temp[:-1,  1:]
+                                - F_temp[ 1:, :-1]
+                                + F_temp[:-1, :-1])
+
+        # Replicate
+        # To define how to make the replicas I have a look at:
+        # np.abs(np.fft.fftfreq(10))*10
+        # = [0., 1., 2., 3., 4., 5., 4., 3., 2., 1.]
+        gint_rep[nx+1:, :ny+1] = gint_rep[nx-1:0:-1, :ny+1]
+        gint_rep[:nx+1, ny+1:] = gint_rep[:nx+1, ny-1:0:-1]
+        gint_rep[nx+1:, ny+1:] = gint_rep[nx-1:0:-1, ny-1:0:-1]
+
+
+        # Prepare fft plan
+        if fftplan is None:
+            temp_dev = context.zeros((2*nx, 2*ny),
+                                    dtype=np.complex128, order='F')
+            fftplan = context.plan_FFT(temp_dev, axes=(0,1))
+            del(temp_dev)
+
+        # Transform the green function
+        gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
+
+        # Transfer to GPU (if needed)
+        gint_rep_transf_dev = context.nparray_to_context_array(
+                                       np.atleast_2d(gint_rep_transf))
+
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        self.nx = nx
+        self.ny = ny
+        self.nz = nz
+        self._gint_rep_transf_dev = gint_rep_transf_dev
+        self.fftplan = fftplan
+
+    #@profile
+    def solve(self, rho):
+
+        '''
+        Solves Poisson's equation in free space for a given charge density.
+
+        Args:
+            rho (float64 array): charge density at the grid points in
+                Coulomb/m^3.
+        Returns:
+            phi (float64 array): electric potential at the grid points in Volts.
+        '''
+
+        _workspace_dev = self.context.zeros(
+                (2*self.nx, 2*self.ny), dtype=np.complex128, order='F')
+
+        sum_rho_xy = rho.sum(axis=0).sum(axis=0)
+        sum_rho = sum_rho_xy.sum()
+        _workspace_dev[:self.nx, :self.ny] = rho.sum(axis=2)
+        self.fftplan.transform(_workspace_dev) # rho_rep_hat
+
+        _workspace_dev[:,:] *= (
+                        self._gint_rep_transf_dev) # phi_rep_hat
+
+        self.fftplan.itransform(_workspace_dev) #phi_rep
+        phi_sum = _workspace_dev.real[:self.nx, :self.ny]
+
+        phi = 0 * rho
+        for iz in range(self.nz):
+            phi[:, :, iz] = phi_sum * sum_rho_xy[iz] / sum_rho
+
+        self._sum_rho_xy = sum_rho_xy
+        self._sum_rho = sum_rho
+
+        return phi
 
 def primitive_func_3d(x,y,z):
     abs_r = np.sqrt(x * x + y * y + z * z)

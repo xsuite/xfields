@@ -11,6 +11,149 @@
 #endif
 
 /*gpufun*/
+void do_luminosity(BeamBeamBiGaussian3DData el, LocalParticle *part,
+               double* rho, double* wgt,
+               double const x_bar_hat_star, double const y_bar_hat_star,
+               double const Sig_11_hat_star, double const Sig_33_hat_star,
+               double const num_part_slice){
+
+    // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
+    get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), rho);
+    *wgt =  LocalParticle_get_weight(part) * num_part_slice * (*rho);  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+
+    // init record table
+    BeamBeamBiGaussian3DRecordData lumi_record = NULL;
+    LumiTableData lumi_table                   = NULL;
+    RecordIndex lumi_table_index               = NULL;
+    lumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+    if (lumi_record){
+        lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
+        lumi_table_index =                      LumiTableData_getp__index(lumi_table);
+
+    const int at_turn = LocalParticle_get_at_turn(part);
+    /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
+    atomicAdd(lumi_address, *wgt);
+    }
+}
+
+/*gpufun*/
+void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
+               double* rho, double* wgt,
+               const int64_t flag_luminosity, double const q0,
+               double const x_bar_hat_star, double const y_bar_hat_star,
+               double const Sig_11_hat_star, double const Sig_33_hat_star,
+               double const num_part_slice, double const S,
+               double* px_star, double* py_star, double* pzeta_star,
+               double px_slice_star, double py_slice_star, double pzeta_slice_star){
+
+    // init record table
+    BeamBeamBiGaussian3DRecordData bhabha_record = NULL;
+    BhabhaTableData bhabha_table                 = NULL;
+    RecordIndex bhabha_table_index               = NULL;
+    bhabha_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+    if (bhabha_record){
+        bhabha_table       = BeamBeamBiGaussian3DRecordData_getp_bhabhatable(bhabha_record);
+        bhabha_table_index =                      BhabhaTableData_getp__index(bhabha_table);
+    }
+
+    // switch for beam size effect
+    const int64_t flag_beamsize_effect = BeamBeamBiGaussian3DData_get_flag_beamsize_effect(el);
+
+    // gaussian charge density, we are centered at the strong slice centroid
+    if (flag_luminosity != 1 && flag_beamsize_effect == 0){
+      get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), rho);
+      *wgt =  LocalParticle_get_weight(part) * num_part_slice * (*rho);  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+    }
+
+    LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
+
+    const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0
+
+    const double compt_x_min = BeamBeamBiGaussian3DData_get_compt_x_min(el);
+    int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
+
+    // generate virtual photons of the opposite slice
+    double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon, radius, theta;
+    for (int i_phot=0; i_phot<n_photons; i_phot++){
+
+      mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
+
+      // apply beam size effect here (affects x and y only)
+      switch(flag_beamsize_effect){
+      case 0:  // this is w.r.t of the strong slice centroid
+          radius = 0.0;
+          x_photon = x_bar_hat_star;
+          y_photon = y_bar_hat_star;
+          break;
+      case 1:  // photons distributed on a disc around centroid
+          radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
+          //printf("radius: %.6e\n", radius);
+          radius = min(radius, 1e5);
+          x_photon = x_bar_hat_star + rndm_sincos(part, &theta) * radius;
+          y_photon = y_bar_hat_star + theta * radius;
+
+          // resample charge density at randomized photon location
+          get_charge_density(x_photon, y_photon, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), rho);
+          *wgt =  LocalParticle_get_weight(part) * num_part_slice * (*rho);  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
+          break;
+      }
+
+      // virtual photons are located at the opposite slice centroid
+
+      px_photon = px_slice_star;
+      py_photon = py_slice_star;
+      pzeta_photon = pzeta_slice_star;
+
+      //if (radius < sqrt(Sig_33_hat_star)){
+        // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
+        compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
+                 e_photon, compt_x_min, q2,
+                 x_photon, y_photon, S, px_photon, py_photon, pzeta_photon,
+                 *wgt, px_star, py_star, pzeta_star, q0);
+
+        // reload pzeta since they changed from compton; px and py are changed only locally
+        *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
+     // }
+    }
+}
+
+
+/*gpufun*/
+void do_beamstrahlung(BeamBeamBiGaussian3DData el, LocalParticle *part,
+                      double Fx_star, double Fy_star,
+                      double* pzeta_star, const int i_slice, double const num_part_slice,
+                      const int64_t flag_beamstrahlung){
+
+        // init record table
+        BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL;
+        BeamstrahlungTableData beamstrahlung_table          = NULL;
+        RecordIndex beamstrahlung_table_index               = NULL;
+        beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
+        if (beamstrahlung_record){
+            beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
+            beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
+        }
+
+        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
+        if(flag_beamstrahlung==1){
+
+            // get unboosted strong slice RMS [m]
+            double sqrtSigma_11 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_11_beamstrahlung(el, i_slice);
+            double sqrtSigma_33 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_33_beamstrahlung(el, i_slice);
+            double sqrtSigma_55 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_55_beamstrahlung(el, i_slice);
+            beamstrahlung_avg(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
+                num_part_slice, sqrtSigma_11, sqrtSigma_33, sqrtSigma_55);
+        } else if (flag_beamstrahlung==2){
+            double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
+            double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star_beamstrahlung(el, i_slice);  // half slice width [m]
+            beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
+        }
+        *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
+    }
+
+
+
+/*gpufun*/
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part,
         const int i_slice,
@@ -132,98 +275,19 @@ void synchrobeam_kick(
     // calculate luminosity
     const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
     if (flag_luminosity == 1){
-
-        // gaussian charge density: at x, y density given by the 2D gaussian, local lumi depending on x y, total lumi sum of all
-        get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
-        wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
-
-        // init record table
-        BeamBeamBiGaussian3DRecordData lumi_record = NULL;
-        LumiTableData lumi_table                   = NULL;
-        RecordIndex lumi_table_index               = NULL;
-        lumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
-        if (lumi_record){
-            lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
-            lumi_table_index =                      LumiTableData_getp__index(lumi_table);
-
-        const int at_turn = LocalParticle_get_at_turn(part);
-        /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);
-        atomicAdd(lumi_address, wgt);
-        }
+        do_luminosity(el, part, &rho, &wgt,
+            x_bar_hat_star, y_bar_hat_star, Sig_11_hat_star, Sig_33_hat_star,
+            num_part_slice);
     }
 
     // emit bhabha photons from single macropart
     #ifndef XFIELDS_BB3D_NO_BHABHA
     const int64_t flag_bhabha = BeamBeamBiGaussian3DData_get_flag_bhabha(el);
     if (flag_bhabha == 1) {
-
-        // init record table
-        BeamBeamBiGaussian3DRecordData bhabha_record = NULL;
-        BhabhaTableData bhabha_table                 = NULL;
-        RecordIndex bhabha_table_index               = NULL;
-        bhabha_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
-        if (bhabha_record){
-            bhabha_table       = BeamBeamBiGaussian3DRecordData_getp_bhabhatable(bhabha_record);
-            bhabha_table_index =                      BhabhaTableData_getp__index(bhabha_table);
-        }
-
-        // switch for beam size effect
-        const int64_t flag_beamsize_effect = BeamBeamBiGaussian3DData_get_flag_beamsize_effect(el);
-
-        // gaussian charge density, we are centered at the strong slice centroid
-        if (flag_luminosity != 1 && flag_beamsize_effect == 0){
-          get_charge_density(x_bar_hat_star, y_bar_hat_star, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
-          wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
-        }
-
-        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
-    
-        const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0    
-
-        const double compt_x_min = BeamBeamBiGaussian3DData_get_compt_x_min(el);
-        int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
-    
-        // generate virtual photons of the opposite slice
-        double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon, radius, theta;
-        for (int i_phot=0; i_phot<n_photons; i_phot++){
-    
-          mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
-    
-          // apply beam size effect here (affects x and y only)
-          switch(flag_beamsize_effect){
-          case 0:  // this is w.r.t of the strong slice centroid
-              radius = 0.0;
-              x_photon = 0.0;
-              y_photon = 0.0;
-              break;
-          case 1:  // photons distributed on a disc around centroid
-              radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
-              //printf("radius: %.6e\n", radius);
-              radius = min(radius, 1e5);
-              x_photon = rndm_sincos(part, &theta) * radius;
-              y_photon = theta * radius;
-
-              // resample charge density at randomized photon location
-              get_charge_density(x_bar_hat_star+x_photon, y_bar_hat_star+y_photon, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), &rho);
-              wgt =  LocalParticle_get_weight(part) * num_part_slice * rho;  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
-              break;
-          }
-
-          // virtual photons are located at the opposite slice centroid
-
-          px_photon = px_slice_star;
-          py_photon = py_slice_star; 
-          pzeta_photon = pzeta_slice_star;
-          
-          //if (radius < sqrt(Sig_33_hat_star)){
-            // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
-            compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
-              e_photon, compt_x_min, q2, px_photon, py_photon, pzeta_photon, wgt, px_star, py_star, pzeta_star, q0);
-    
-            // reload pzeta since they changed from compton; px and py are changed only locally
-            *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
-         // }
-        }
+        do_bhabha(el, part, &rho, &wgt, flag_luminosity, q0,
+            x_bar_hat_star, y_bar_hat_star, Sig_11_hat_star, Sig_33_hat_star,
+            num_part_slice, S, px_star, py_star, pzeta_star,
+            px_slice_star, py_slice_star, pzeta_slice_star);
     }
     #endif
 
@@ -231,32 +295,8 @@ void synchrobeam_kick(
     #ifndef XFIELDS_BB3D_NO_BEAMSTR
     const int64_t flag_beamstrahlung = BeamBeamBiGaussian3DData_get_flag_beamstrahlung(el);
     if(flag_beamstrahlung!=0){
-
-        // init record table
-        BeamBeamBiGaussian3DRecordData beamstrahlung_record = NULL;
-        BeamstrahlungTableData beamstrahlung_table          = NULL;
-        RecordIndex beamstrahlung_table_index               = NULL;
-        beamstrahlung_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
-        if (beamstrahlung_record){
-            beamstrahlung_table       = BeamBeamBiGaussian3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-            beamstrahlung_table_index =                      BeamstrahlungTableData_getp__index(beamstrahlung_table);
-        }
-
-        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
-        if(flag_beamstrahlung==1){
-
-            // get unboosted strong slice RMS [m]
-            double sqrtSigma_11 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_11_beamstrahlung(el, i_slice);
-            double sqrtSigma_33 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_33_beamstrahlung(el, i_slice);
-            double sqrtSigma_55 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_55_beamstrahlung(el, i_slice);
-            beamstrahlung_avg(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
-                num_part_slice, sqrtSigma_11, sqrtSigma_33, sqrtSigma_55); 
-        } else if (flag_beamstrahlung==2){
-            double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
-            double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star_beamstrahlung(el, i_slice);  // half slice width [m]
-            beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
-        }
-        *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
+        do_beamstrahlung(el, part, Fx_star, Fy_star, pzeta_star,
+           i_slice, num_part_slice, flag_beamstrahlung);
     }
     #endif
 
@@ -269,6 +309,7 @@ void synchrobeam_kick(
     *y_star = *y_star - S*Fy_star;
     *py_star = *py_star + Fy_star;
 }
+
 
 /*gpufun*/
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, LocalParticle* part0){

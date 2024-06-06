@@ -162,6 +162,11 @@ def install_dummy_bb_lenses(bb_df, line):
     for iipp in ip_names:
         s_ips[iipp] = line.get_s_position(iipp)
 
+    s_insertions = []
+    for nn in bb_df.index:
+        s_insertions.append(s_ips[bb_df.loc[nn, 'ip_name']] + bb_df.loc[nn, 'atPosition'])
+    line.cut_at_s(s_insertions)
+
     for nn in bb_df.index:
         print(f'Insert: {nn}     ', end='\r', flush=True)
         ll = bb_df.loc[nn, 'label']

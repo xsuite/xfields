@@ -5,7 +5,7 @@ import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
 
 
-class SlicedElement:
+class ElementWithSlicer:
     """
     Base class for elements with a slicer.
 
@@ -19,8 +19,6 @@ class SlicedElement:
         Number of slices per bunch used in the underlying slicer.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
-    num_slots : int
-        Number of filled slots.
     filling_scheme: np.ndarray
         List of zeros and ones representing the filling scheme. The length
         of the array is equal to the number of slots in the machine and each
@@ -45,7 +43,6 @@ class SlicedElement:
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
-                 num_slots=None,
                  filling_scheme=None,
                  bunch_numbers=None,
                  num_turns=1,
@@ -54,11 +51,6 @@ class SlicedElement:
                  with_compressed_profile=False):
 
         self.with_compressed_profile = with_compressed_profile
-
-        filling_scheme, bunch_numbers = self._check_filling_scheme_info(
-            filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
-            num_slots=num_slots)
 
         self.source_moments = slicer_moments.copy()
 
@@ -121,15 +113,14 @@ class SlicedElement:
             num_turns=1,
             circumference=None):
 
-        if zeta_range is not None:
-            self.moments_data = CompressedProfile(
-                    moments=self.source_moments + ['result'],
-                    zeta_range=zeta_range,
-                    num_slices=num_slices,
-                    bunch_spacing_zeta=bunch_spacing_zeta,
-                    num_periods=len(filling_scheme),
-                    num_turns=num_turns,
-                    circumference=circumference)
+        self.moments_data = CompressedProfile(
+                moments=self.source_moments + ['result'],
+                zeta_range=zeta_range,
+                num_slices=num_slices,
+                bunch_spacing_zeta=bunch_spacing_zeta,
+                num_periods=(len(filling_scheme) if filling_scheme else 1),
+                num_turns=num_turns,
+                circumference=circumference)
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
         self.pipeline_manager = pipeline_manager

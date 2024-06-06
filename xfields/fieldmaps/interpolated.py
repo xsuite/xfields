@@ -9,7 +9,7 @@ import xobjects as xo
 import xpart as xp
 import xtrack as xt
 
-from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D
+from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D, FFTSolver2p5DAveraged
 from ..general import _pkg_root
 
 _TriLinearInterpolatedFielmap_kernels = {
@@ -167,8 +167,6 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
     _depends_on = [xp.Particles]
 
     _kernels = _TriLinearInterpolatedFielmap_kernels
-
-    _average_transverse_distribution = False
 
     def __init__(self,
                  _context=None,
@@ -385,15 +383,10 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     grid1d_offset=self._xobject.rho._offset
                                  +self._xobject.rho._data_offset)
 
-        if self._average_transverse_distribution:
-            self._rho_before_average = self.rho.copy()
-            charge_per_slice = self.rho.sum(axis=(0,1))
-            total_transverse_distribution = self.rho.sum(axis=2)
-            total_charge = charge_per_slice.sum()
-
-            for ii in range(self.nz):
-                self.rho[:,:,ii] = (total_transverse_distribution
-                                    * charge_per_slice[ii] / total_charge)
+        if hasattr(self, '_average_transverse_distribution'):
+            raise NotImplementedError(
+                '`_average_transverse_distribution` has been removed, '
+                'use `solver=FFTSolver2p5DAveraged` instead')
 
         if update_phi:
             self.update_phi_from_rho(solver=solver)
@@ -530,6 +523,14 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                     fftplan=fftplan)
         elif solver == 'FFTSolver2p5D':
             solver = FFTSolver2p5D(
+                    dx=self.dx*scale_dx,
+                    dy=self.dy*scale_dy,
+                    dz=self.dz*scale_dz,
+                    nx=self.nx, ny=self.ny, nz=self.nz,
+                    context=self._buffer.context,
+                    fftplan=fftplan)
+        elif solver == 'FFTSolver2p5DAveraged':
+            solver = FFTSolver2p5DAveraged(
                     dx=self.dx*scale_dx,
                     dy=self.dy*scale_dy,
                     dz=self.dz*scale_dz,

@@ -11,7 +11,7 @@ from PyHEADTAIL.machines.synchrotron import Synchrotron as PyHTSynchrotron
 
 import xfields as xf
 import xtrack as xt
-from xfields import Wakefield, MultiWakefield
+from xfields import WakeComponent, Wakefield
 
 # Machine settings
 
@@ -191,8 +191,8 @@ wfy = xf.ResonatorWake(
     bunch_numbers=bunch_numbers,
 )
 
-wf = MultiWakefield(
-    wakefields=[wfx, wfy],
+wf = Wakefield(
+    components=[wfx, wfy],
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,  # Per bunch
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,

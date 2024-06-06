@@ -12,8 +12,8 @@
 #ifndef XFIELDS_COMPUTESLICEMOMENTS_H__
 #define XFIELDS_COMPUTESLICEMOMENTS_H__
 
-void compute_slice_moments_cuda_1(ParticlesData particles, int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices){};
-void compute_slice_moments_cuda_2(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles){};
+void compute_slice_moments_cuda_sums_per_slice(ParticlesData particles, int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices, const int64_t shared_mem_size_bytes){};
+void compute_slice_moments_cuda_moments_from_sums(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles){};
 
 int64_t binary_search(const double* bins, int first, int last, const double x){
     // bins must be in descending order: bins[i-1] >= x > bins[i]. If bins in increasing order, change < to >.
@@ -166,8 +166,8 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
 __global__ void digitize(ParticlesData particles, const double* particles_zeta, const double* bin_edges, int n_slices, int64_t* particles_slice){};
 __global__ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, double* moments, int n_slices, int threshold_n_macroparticles){};
 
-__global__ void compute_slice_moments_cuda_1(ParticlesData particles,
-                        int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices) {
+__global__ void compute_slice_moments_cuda_sums_per_slice(ParticlesData particles,
+                        int64_t* particles_slice, double* moments, const int64_t num_macroparticles, const int64_t n_slices, const int64_t shared_mem_size_bytes) {
 
         // each thread loads one element from global to shared mem
         unsigned int tid = threadIdx.x;
@@ -231,7 +231,7 @@ __global__ void compute_slice_moments_cuda_1(ParticlesData particles,
 
 	}
 
-__global__ void compute_slice_moments_cuda_2(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles) {
+__global__ void compute_slice_moments_cuda_moments_from_sums(double* moments, const int64_t n_slices, const int64_t weight, const int64_t threshold_num_macroparticles) {
 
     unsigned int gid = blockIdx.x*blockDim.x + threadIdx.x;
     

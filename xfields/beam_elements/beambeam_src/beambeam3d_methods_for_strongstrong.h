@@ -31,6 +31,7 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
     const double shift_pzeta = BeamBeamBiGaussian3DData_get_ref_shift_pzeta(el)
                             + BeamBeamBiGaussian3DData_get_other_beam_shift_pzeta(el);
 
+
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
@@ -54,7 +55,6 @@ void BeamBeamBiGaussian3D_change_ref_frame_local_particle(
         LocalParticle_update_pzeta(part, pzeta);
 
     //end_per_particle_block
-
 }
 
 /*gpufun*/
@@ -124,6 +124,9 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 LocalParticle* part0,
                 /*gpuglmem*/ int64_t* i_slice_for_particles){
 
+
+
+
     //start_per_particle_block (part0->part)
 
         const int64_t i_slice = i_slice_for_particles[part->ipart];
@@ -140,6 +143,10 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
 
             const double q0 = LocalParticle_get_q0(part);
             const double p0c = LocalParticle_get_p0c(part); // eV
+
+
+
+
             synchrobeam_kick(
                 el, part,
                 i_slice, q0, p0c,
@@ -160,6 +167,7 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
         }
 
     //end_per_particle_block
+
 
 }
 

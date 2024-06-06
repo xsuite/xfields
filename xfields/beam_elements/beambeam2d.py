@@ -52,14 +52,14 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
     def __init__(self,
                     scale_strength=1.,
 
-                    other_beam_q0=None,
-                    other_beam_beta0=None,
+                    other_beam_q0=0,
+                    other_beam_beta0=1,
 
-                    other_beam_num_particles=None,
+                    other_beam_num_particles=0,
 
-                    other_beam_Sigma_11=None,
-                    other_beam_Sigma_13=None,
-                    other_beam_Sigma_33=None,
+                    other_beam_Sigma_11=1,
+                    other_beam_Sigma_13=0,
+                    other_beam_Sigma_33=1,
 
                     ref_shift_x=0,
                     ref_shift_y=0,
@@ -117,11 +117,6 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         if 'post_subtract_px' in params.keys(): post_subtract_px = params['post_subtract_px']
         if 'post_subtract_py' in params.keys(): post_subtract_py = params['post_subtract_py']
 
-        
-        # Mandatory sigmas
-        assert other_beam_Sigma_11 is not None, ("`other_beam_Sigma_11` must be provided")
-        assert other_beam_Sigma_33 is not None, ("`other_beam_Sigma_33` must be provided")
-
         # Coupling between transverse planes
         if other_beam_Sigma_13 is None:
             other_beam_Sigma_13 = 0
@@ -129,17 +124,14 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
         if np.abs(other_beam_Sigma_13) > 0:
             raise NotImplementedError("Coupled case not tested yet.")
 
-        assert other_beam_num_particles is not None, ("`other_beam_num_particles` must be provided")
         self.other_beam_num_particles = other_beam_num_particles
 
         self.other_beam_Sigma_11 = other_beam_Sigma_11
         self.other_beam_Sigma_13 = other_beam_Sigma_13
         self.other_beam_Sigma_33 = other_beam_Sigma_33
 
-        assert other_beam_q0 is not None
         self.other_beam_q0 = other_beam_q0
 
-        assert other_beam_beta0 is not None
         self.other_beam_beta0 = other_beam_beta0
 
         self.ref_shift_x = ref_shift_x
