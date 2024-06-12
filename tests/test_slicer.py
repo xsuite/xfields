@@ -264,8 +264,7 @@ def test_slicer_moments_single_bunch(test_context):
                          **{c1_name: [99, 100, 101],
                             c2_name: [201, 200, 199]},
                         _context=test_context)
-        c1 = getattr(p, c1_name)
-        c2 = getattr(p, c2_name)
+
 
         slicer_single_bunch.slice(p)
 
@@ -290,6 +289,9 @@ def test_slicer_moments_single_bunch(test_context):
 
             sl.move(_context=xo.context_default)
             p.move(_context=xo.context_default)
+
+            c1 = getattr(p, c1_name)
+            c2 = getattr(p, c2_name)
 
             xo.assert_allclose(sl.zeta_centers, np.array([-2 / 3, 0, 2 / 3]),
                                rtol=0,
