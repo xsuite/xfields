@@ -58,11 +58,11 @@ def test_slice_attribution_single_bunch(test_context):
     slicer.slice(particles=p, i_bunch_particles=i_bunch_particles,
                  i_slice_particles=i_slice_particles)
 
-    assert np.all(np.array(i_slice_expected) == i_slice_particles)
-    assert np.all(i_bunch_particles == i_bunch_expected)
+    xo.assert_allclose(np.array(i_slice_expected), i_slice_particles, atol=0, rtol=0)
+    xo.assert_allclose(i_bunch_particles, i_bunch_expected,  atol=0, rtol=0)
 
     expected_num_particles = np.array([40, 20, 50])
-    assert np.allclose(slicer.num_particles, expected_num_particles,
+    xo.assert_allclose(slicer.num_particles, expected_num_particles,
                        atol=1e-12, rtol=0)
 
 

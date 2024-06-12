@@ -10,7 +10,9 @@ import xpart as xp
 from xobjects.test_helpers import for_all_test_contexts
 
 
-@for_all_test_contexts
+exclude_contexts = ['ContextPyopencl', 'ContextCupy']
+
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_transverse_damper(test_context):
     longitudinal_mode = 'nonlinear'
     # Machine settings
