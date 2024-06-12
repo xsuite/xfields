@@ -261,7 +261,7 @@ def test_slicer_moments_single_bunch(test_context):
         p = xt.Particles(zeta=[0.97, 0.98, 0.99],
                          weight=[1, 2, 1],
                          **{c1_name: [99, 100, 101],
-                            c2_name: [201, 200, 199]}
+                            c2_name: [201, 200, 199]},
                         _context=test_context)
         c1 = getattr(p, c1_name)
         c2 = getattr(p, c2_name)
