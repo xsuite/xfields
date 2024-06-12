@@ -153,7 +153,7 @@ def test_slicer_moments_single_bunch(test_context):
 
     # try round-trip with _to/_from_npbuffer
     slicer_single_bunch_buffer = xf.UniformBinSlicer._from_npbuffer(
-        slicer_single_bunch._to_npbuffer())
+        slicer_single_bunch.copy(_buffer=xo.context_default)._to_npbuffer())
 
     # Test sum
     pp1 = p.filter(p.zeta < 0.98)
