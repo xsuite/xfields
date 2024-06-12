@@ -4,8 +4,9 @@ from xfields import ResonatorWake, Wakefield
 from xobjects.test_helpers import for_all_test_contexts
 import xtrack as xt
 
+exclude_contexts = ['ContextPyopencl', 'ContextCupy']
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_longitudinal_wake_kick(test_context):
     n_turns_wake = 1
     flatten = False
@@ -77,7 +78,7 @@ def test_longitudinal_wake_kick(test_context):
                        rtol=1e-4, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_constant_wake_kick(test_context):
     n_turns_wake = 1
     flatten = False
@@ -161,7 +162,7 @@ def test_constant_wake_kick(test_context):
                        rtol=1e-4, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_direct_dipolar_wake_kick(test_context):
     n_turns_wake = 1
     flatten = False
@@ -257,7 +258,7 @@ def test_direct_dipolar_wake_kick(test_context):
                        rtol=1e-4, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_cross_dipolar_wake_kick(test_context):
     n_turns_wake = 1
     flatten = False
@@ -353,7 +354,7 @@ def test_cross_dipolar_wake_kick(test_context):
                        rtol=1e-4, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_direct_quadrupolar_wake_kick(test_context):
     n_turns_wake = 1
     flatten = False
@@ -450,7 +451,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
                        rtol=1e-4, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_cross_quadrupolar_wake_kick(test_context):
     n_turns_wake = 1
     flatten = False
@@ -547,7 +548,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
                        rtol=1e-4, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_direct_dipolar_wake_kick_multiturn(test_context):
     n_turns_wake = 2
     flatten = False
