@@ -446,6 +446,8 @@ def test_slicer_moments_multi_bunch(test_context):
 
         sl.move(_context=xo.context_default)
         p.move(_context=xo.context_default)
+        p1.move(_context=xo.context_default)
+        p2.move(_context=xo.context_default)
 
         xo.assert_allclose(sl.zeta_centers,
                            np.array([[-2 / 3, 0, 2 / 3],
@@ -577,6 +579,8 @@ def test_slicer_moments_multi_bunch(test_context):
 
         sl.move(_context=test_context)
         p.move(_context=test_context)
+        p1.move(_context=test_context)
+        p2.move(_context=test_context)
 
     # Check slicer_part
     for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy,
