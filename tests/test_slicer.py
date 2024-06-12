@@ -248,6 +248,7 @@ def test_slicer_moments_single_bunch(test_context):
         assert np.all(sl.cov('x', 'y') == sl.cov('x_y'))
 
         sl.move(_context=test_context)
+        p.move(_context=test_context)
 
     # # Same parametrized
 
@@ -286,6 +287,10 @@ def test_slicer_moments_single_bunch(test_context):
 
         for sl in [slicer_single_bunch, slicer_single_bunch_copy,
                    slicer_single_bunch_buffer, slicer_single_bunch_sum]:
+
+            sl.move(_context=xo.context_default)
+            p.move(_context=xo.context_default)
+
             xo.assert_allclose(sl.zeta_centers, np.array([-2 / 3, 0, 2 / 3]),
                                rtol=0,
                                atol=1e-12)
@@ -363,6 +368,9 @@ def test_slicer_moments_single_bunch(test_context):
                           sl.cov(c1_name + '_' + c2_name))
             assert np.all(sl.cov(c1_name, c2_name) ==
                           sl.cov(c1_name + '_' + c2_name))
+
+            sl.move(_context=test_context)
+            p.move(_context=test_context)
 
 
 @for_all_test_contexts
