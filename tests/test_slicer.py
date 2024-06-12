@@ -166,6 +166,9 @@ def test_slicer_moments_single_bunch(test_context):
 
     for sl in [slicer_single_bunch, slicer_single_bunch_copy,
                slicer_single_bunch_buffer, slicer_single_bunch_sum]:
+
+        sl.move(_context=xo.context_default)
+
         assert sl.bunch_spacing_zeta == 0
 
         xo.assert_allclose(sl.zeta_centers, np.array([-2 / 3, 0, 2 / 3]),
@@ -242,6 +245,8 @@ def test_slicer_moments_single_bunch(test_context):
         assert np.all(sl.mean('x', 'y') == sl.mean('x_y'))
         assert np.all(sl.cov('xy') == sl.cov('x_y'))
         assert np.all(sl.cov('x', 'y') == sl.cov('x_y'))
+
+        sl.move(_context=test_context)
 
     # # Same parametrized
 
