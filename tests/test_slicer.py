@@ -128,9 +128,9 @@ def test_slice_attribution_multi_bunch(test_context):
         [40000, 20000, 50000],
     ])
 
-    assert np.all(i_slice_particles == i_slice_expected_mb)
-    assert np.all(i_bunch_particles == i_bunch_expected_mb)
-    assert np.allclose(slicer.num_particles, expected_num_particles_mb,
+    xo.assert_allclose(i_slice_particles, i_slice_expected_mb, rtol=0, atol=0)
+    xo.assert_allclose(i_bunch_particles == i_bunch_expected_mb, rtol=0, atol=0)
+    xo.assert_allclose(slicer.num_particles, expected_num_particles_mb,
                        atol=1e-12, rtol=0)
 
 
