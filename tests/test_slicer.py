@@ -168,6 +168,7 @@ def test_slicer_moments_single_bunch(test_context):
                slicer_single_bunch_buffer, slicer_single_bunch_sum]:
 
         sl.move(_context=xo.context_default)
+        p.move(_context=xo.context_default)
 
         assert sl.bunch_spacing_zeta == 0
 
