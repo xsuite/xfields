@@ -228,7 +228,7 @@ def test_slicer_moments_single_bunch(test_context):
                            rtol=0, atol=1e-12)
         xo.assert_allclose(sl.var('x')[0, :], sl.cov('x', 'x'),
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.var('x')[0, :] sl.mean('xx') - sl.mean('x') ** 2,
+        xo.assert_allclose(sl.var('x')[0, :], sl.mean('xx') - sl.mean('x') ** 2,
                            rtol=0, atol=1e-12)
         xo.assert_allclose(sl.var('zeta')[0, :],
                            sl.mean('zetazeta') - sl.mean('zeta') ** 2,
