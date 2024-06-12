@@ -702,9 +702,9 @@ def test_slicer_moments_multi_bunch(test_context):
 
         # Test round-trip with _to/_from_npbuffer
         slicer_multi_bunch_buffer = xf.UniformBinSlicer._from_npbuffer(
-            slicer_multi_bunch._to_npbuffer())
+            slicer_multi_bunch.copy(_context=xo.context_default)._to_npbuffer())
         slicer_multi_bunch_part_buffer = xf.UniformBinSlicer._from_npbuffer(
-            slicer_multi_bunch_part._to_npbuffer())
+            slicer_multi_bunch_part.copy(_context=xo.context_default)._to_npbuffer())
 
         c1_p1 = getattr(p1, c1_name)
         c2_p1 = getattr(p1, c2_name)
