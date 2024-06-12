@@ -712,6 +712,7 @@ def test_slicer_moments_multi_bunch(test_context):
         c2_p2 = getattr(p2, c2_name)
         for sl in [slicer_multi_bunch, slicer_multi_bunch_copy,
                    slicer_multi_bunch_buffer, slicer_multi_bunch_sum]:
+            sl.move(_context=xo.context_default)
             xo.assert_allclose(sl.zeta_centers,
                                np.array([[-2 / 3, 0, 2 / 3],
                                          [-10 - 2 / 3, -10, -10 + 2 / 3],
@@ -848,6 +849,7 @@ def test_slicer_moments_multi_bunch(test_context):
                           sl.cov(c1_name + '_' + c2_name))
             assert np.all(sl.cov(c1_name, c2_name) ==
                           sl.cov(c1_name + '_' + c2_name))
+            sl.move(_context=test_context)
 
         # Check slicer_part
         for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy,
