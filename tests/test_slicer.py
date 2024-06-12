@@ -223,21 +223,21 @@ def test_slicer_moments_single_bunch(test_context):
                            [0, 0,
                             (p.x * p.zeta * p.weight).sum() / p.weight.sum()],
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.cov('x', 'y')[0, :],
+        xo.assert_allclose(sl.cov('x', 'y'),
                            sl.mean('xy') - sl.mean('x') * sl.mean('y'),
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.var('x')[0, :], sl.cov('x', 'x'),
+        xo.assert_allclose(sl.var('x'), sl.cov('x', 'x'),
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.var('x')[0, :], sl.mean('xx') - sl.mean('x') ** 2,
+        xo.assert_allclose(sl.var('x'), sl.mean('xx') - sl.mean('x') ** 2,
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.var('zeta')[0, :],
+        xo.assert_allclose(sl.var('zeta'),
                            sl.mean('zetazeta') - sl.mean('zeta') ** 2,
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.std('x')[0, :], np.sqrt(sl.var('x')),
+        xo.assert_allclose(sl.std('x'), np.sqrt(sl.var('x')),
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.std('y')[0, :], np.sqrt(sl.var('y')),
+        xo.assert_allclose(sl.std('y'), np.sqrt(sl.var('y')),
                            rtol=0, atol=1e-12)
-        xo.assert_allclose(sl.std('zeta')[0, :], np.sqrt(sl.var('zeta')),
+        xo.assert_allclose(sl.std('zeta'), np.sqrt(sl.var('zeta')),
                            rtol=0, atol=1e-12)
 
         assert np.all(sl.sum('xy') == sl.sum('x_y'))
