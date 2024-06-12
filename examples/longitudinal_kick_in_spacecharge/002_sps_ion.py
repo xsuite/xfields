@@ -95,6 +95,8 @@ line.track(p0.copy(), num_turns=num_turns, with_progress=True,
            log=xt.Log(zeta=lambda l, p: p.zeta.copy()))
 log_no_kick = line.log_last_track
 
+# The following lines are equivalent to setting configure_longitudinal_sc_kick=True
+# in xf.install_spacecharge_frozen()
 tt = line.get_table()
 tt_sc = tt.rows[tt.element_type=='SpaceChargeBiGaussian']
 for nn in tt_sc.name:

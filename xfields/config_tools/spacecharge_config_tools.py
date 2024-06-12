@@ -51,7 +51,7 @@ def install_spacecharge_frozen(line=None, _buffer=None,
     delta_rms : float
         Matched momentum spread. If None, it is computed from a matched gaussian bunch.
     configure_longitudinal_sc_kick : bool
-        whether space charge elements should apply 
+        whether space charge elements should apply longitudinal kick (default is False)
     z_kick_num_integ_per_sigma : int
         number of integrated longitudinal kick per sigma
 
