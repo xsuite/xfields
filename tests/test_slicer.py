@@ -854,6 +854,9 @@ def test_slicer_moments_multi_bunch(test_context):
         # Check slicer_part
         for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy,
                    slicer_multi_bunch_part_buffer, slicer_multi_bunch_part_sum]:
+
+            sl.move(_context=xo.context_default)
+
             xo.assert_allclose(sl.zeta_centers,
                                slicer_multi_bunch.zeta_centers[:-1],
                                rtol=0, atol=1e-12)
@@ -923,3 +926,5 @@ def test_slicer_moments_multi_bunch(test_context):
                                rtol=0, atol=1e-12)
             xo.assert_allclose(sl.std('zeta'), np.sqrt(sl.var('zeta')),
                                rtol=0, atol=1e-12)
+
+            sl.move(_context=test_context)
