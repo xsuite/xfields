@@ -443,6 +443,10 @@ def test_slicer_moments_multi_bunch(test_context):
     for sl in [slicer_multi_bunch, slicer_multi_bunch_copy,
                slicer_multi_bunch_buffer,
                slicer_multi_bunch_sum]:
+
+        sl.move(_context=xo.context_default)
+        p.move(_context=xo.context_default)
+
         xo.assert_allclose(sl.zeta_centers,
                            np.array([[-2 / 3, 0, 2 / 3],
                                      [-10 - 2 / 3, -10, -10 + 2 / 3],
@@ -571,10 +575,17 @@ def test_slicer_moments_multi_bunch(test_context):
         assert np.all(sl.cov('xy') == sl.cov('x_y'))
         assert np.all(sl.cov('x', 'y') == sl.cov('x_y'))
 
+        sl.move(_context=test_context)
+        p.move(_context=test_context)
+
     # Check slicer_part
     for sl in [slicer_multi_bunch_part, slicer_multi_bunch_part_copy,
                slicer_multi_bunch_part_buffer,
                slicer_multi_bunch_part_sum]:
+
+        sl.move(_context=xo.context_default)
+        p.move(_context=xo.context_default)
+
         xo.assert_allclose(sl.zeta_centers,
                            slicer_multi_bunch.zeta_centers[:-1],
                            rtol=0, atol=1e-12)
@@ -632,6 +643,9 @@ def test_slicer_moments_multi_bunch(test_context):
         xo.assert_allclose(sl.std('zeta'), np.sqrt(sl.var('zeta')),
                            rtol=0, atol=1e-12)
 
+        sl.move(_context=test_context)
+        p.move(_context=test_context)
+
     # # Same parametrized
 
     moms = ['x_px', 'x_y', 'x_py', 'x_delta',
@@ -653,6 +667,8 @@ def test_slicer_moments_multi_bunch(test_context):
                c2_name: [201, 200, 199]})
 
         p = xt.Particles.merge([p1, p2])
+
+        p.move(_context=test_context)
 
         slicer_multi_bunch.slice(p)
         slicer_multi_bunch_part.slice(p)
