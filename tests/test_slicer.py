@@ -856,6 +856,7 @@ def test_slicer_moments_multi_bunch(test_context):
                    slicer_multi_bunch_part_buffer, slicer_multi_bunch_part_sum]:
 
             sl.move(_context=xo.context_default)
+            slicer_multi_bunch.move(_context=xo.context_default)
 
             xo.assert_allclose(sl.zeta_centers,
                                slicer_multi_bunch.zeta_centers[:-1],
@@ -928,3 +929,4 @@ def test_slicer_moments_multi_bunch(test_context):
                                rtol=0, atol=1e-12)
 
             sl.move(_context=test_context)
+            slicer_multi_bunch.move(_context=test_context)
