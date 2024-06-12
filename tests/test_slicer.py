@@ -62,7 +62,7 @@ def test_slice_attribution_single_bunch(test_context):
     xo.assert_allclose(i_bunch_particles, i_bunch_expected,  atol=0, rtol=0)
 
     expected_num_particles = np.array([40, 20, 50])
-    xo.assert_allclose(slicer.num_particles, expected_num_particles,
+    xo.assert_allclose(slicer.num_particles[0, :], expected_num_particles,
                        atol=1e-12, rtol=0)
 
 
