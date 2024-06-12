@@ -175,7 +175,7 @@ def test_slicer_moments_single_bunch(test_context):
         xo.assert_allclose(sl.zeta_centers, np.array([-2 / 3, 0, 2 / 3]),
                            rtol=0,
                            atol=1e-12)
-        xo.assert_allclose(sl.num_particlesi[0, :], [0, 0, p.weight.sum()], rtol=0,
+        xo.assert_allclose(sl.num_particles[0, :], [0, 0, p.weight.sum()], rtol=0,
                            atol=1e-12)
         xo.assert_allclose(sl.sum('x'), [0, 0, (p.x * p.weight).sum()], rtol=0,
                            atol=1e-12)
