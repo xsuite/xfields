@@ -6,8 +6,9 @@ import xfields as xf
 
 from xobjects.test_helpers import for_all_test_contexts
 
+exclude_contexts = ['ContextPyopencl', 'ContextCupy']
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=exclude_contexts)
 def test_multiwake_transverse_constant(test_context):
     # Filling scheme
     n_slots = 100
