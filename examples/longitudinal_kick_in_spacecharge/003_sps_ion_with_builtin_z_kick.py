@@ -9,7 +9,7 @@ import xobjects as xo
 import xfields as xf
 import matplotlib.pyplot as plt
 
-test_on_gpu = True
+test_on_gpu = False
 
 def change_synchrotron_tune_by_factor(A, line, sigma_z, Nb):
     """
@@ -85,32 +85,7 @@ lprofile = xf.LongitudinalProfileQGaussian(
         z0=0.,
         q_parameter=1.0)
 
-##### Install frozen space charge as base - first adding z kick manually
-xf.install_spacecharge_frozen(line = line,
-                   particle_ref = line.particle_ref,
-                   longitudinal_profile = lprofile,
-                   nemitt_x = nemitt_x, nemitt_y = nemitt_y,
-                   sigma_z = sigma_z,
-                   num_spacecharge_interactions = num_spacecharge_interactions)
-
-line.build_tracker(_context = context)
-line.enable_time_dependent_vars = True
-
-# The following lines are equivalent to setting configure_longitudinal_sc_kick=True
-# in xf.install_spacecharge_frozen()
-tt = line.get_table()
-tt_sc = tt.rows[tt.element_type=='SpaceChargeBiGaussian']
-for nn in tt_sc.name:
-    line[nn].z_kick_num_integ_per_sigma = 5
-
-line.track(p0.copy(), num_turns=num_turns, with_progress=True,
-           log=xt.Log(zeta=lambda l, p: p.zeta.copy()))
-log_manual_kick = line.log_last_track
-
-##### Re-install frozen space charge, but directly configuring SC elements with z kick
-# Remove and rebuild space charge elements (recycling the track kernel)
-line = line.filter_elements(exclude_types_starting_with='SpaceCh')
-
+##### Install frozen space charge, but directly configuring SC elements with z kick
 xf.install_spacecharge_frozen(line = line,
                    particle_ref = line.particle_ref,
                    longitudinal_profile = lprofile,
@@ -119,18 +94,20 @@ xf.install_spacecharge_frozen(line = line,
                    num_spacecharge_interactions = num_spacecharge_interactions,
                    z_kick_num_integ_per_sigma=5)
 
+line.build_tracker(_context = context)
+line.enable_time_dependent_vars = True
+
+
 line.track(p0.copy(), num_turns=num_turns, with_progress=True,
               log=xt.Log(zeta=lambda l, p: p.zeta.copy()))
 log_with_builtin_kick = line.log_last_track
 
-zeta_manual_kick = np.stack(log_manual_kick['zeta'])
 zeta_with_builtin_kick = np.stack(log_with_builtin_kick['zeta'])
 
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(1)
 i_part_plot = -1
-plt.plot(zeta_manual_kick[:, i_part_plot], label='With manual z kick')
 plt.plot(zeta_with_builtin_kick[:, i_part_plot], label='With built-in z kick')
 z0 = p0.zeta[i_part_plot]
 plt.ylim([z0*0.99, z0*1.05])
