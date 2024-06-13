@@ -323,9 +323,13 @@ class IBSAnalyticalKick(IBSKick):
             An ``IBSKickCoefficients`` object with the computed kick coefficients.
         """
         # ----------------------------------------------------------------------------------------------
-        # Get the nplike_lib from the particles' context, to compute on the context device
+        # This full computation (apart from getting properties from the particles object) is done
+        # on the CPU, as the growth rates are computed on CPU. The rest of the computing is made of
+        # small operations, better to do these on CPU than transfer to GPU and finish there. The full
+        # computing is dominated by the growth rates computation in any case.
+        # ----------------------------------------------------------------------------------------------
+        # Make sure the particles' context will not cause issues
         _assert_accepted_context(particles._context)
-        nplike = particles._context.nplike_lib
         # ----------------------------------------------------------------------------------------------
         # Compute the momentum spread, bunch length and (geometric) emittances from the Particles object
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
@@ -339,13 +343,11 @@ class IBSAnalyticalKick(IBSKick):
         # Normalized: for momentum we have to multiply with 1/sqrt(gamma) = sqrt(beta) / sqrt(1 + alpha^2), and the
         # sqrt(beta) is included in the std of p[xy]. If bunch is rotated, the std takes from the "other plane" so
         # we take the normalized momenta to compensate.
-        sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)
-        sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)
+        sigma_px_normalized: float = _sigma_px(particles) / np.sqrt(1 + self._twiss["alfx", self._name] ** 2)
+        sigma_py_normalized: float = _sigma_py(particles) / np.sqrt(1 + self._twiss["alfy", self._name] ** 2)
         # ----------------------------------------------------------------------------------------------
         # Determine the "scaling factor", corresponding to 2 * sigma_t * sqrt(pi) in Eq (8) of reference
-        zeta: ArrayLike = particles.zeta[particles.state > 0]  # careful to only consider active particles
-        bunch_length_rms: float = nplike.std(zeta)  # rms bunch length in [m]
-        scaling_factor: float = float(2 * nplike.sqrt(np.pi) * bunch_length_rms)
+        scaling_factor: float = float(2 * np.sqrt(np.pi) * bunch_length)
         # ----------------------------------------------------------------------------------------------
         # Computing the analytical IBS growth rates through the instance's set TwissTable
         # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
@@ -361,9 +363,9 @@ class IBSAnalyticalKick(IBSKick):
         Tx, Ty, Tz = growth_rates.as_tuple()  # each is a float
         # ----------------------------------------------------------------------------------------------
         # Making sure we do not have negative growth rates (see class docstring warning for detail)
-        Tx = 0.0 if Tx < 0 else float(Tx)
-        Ty = 0.0 if Ty < 0 else float(Ty)
-        Tz = 0.0 if Tz < 0 else float(Tz)
+        Tx: float = 0.0 if Tx < 0 else float(Tx)
+        Ty: float = 0.0 if Ty < 0 else float(Ty)
+        Tz: float = 0.0 if Tz < 0 else float(Tz)
         if any(rate == 0 for rate in (Tx, Ty, Tz)):
             LOGGER.debug("At least one IBS growth rate was negative, and was set to 0")
         # ----------------------------------------------------------------------------------------------
@@ -373,9 +375,9 @@ class IBSAnalyticalKick(IBSKick):
         LOGGER.debug("Computing simple kick coefficients")
         beta0 = self._twiss.beta0
         revolution_frequency: float = 1 / self._twiss.T_rev0
-        Kx = float(sigma_px_normalized * nplike.sqrt(2 * scaling_factor * Tx / revolution_frequency))
-        Ky = float(sigma_py_normalized * nplike.sqrt(2 * scaling_factor * Ty / revolution_frequency))
-        Kz = float(sigma_delta * nplike.sqrt(2 * scaling_factor * Tz / revolution_frequency) * beta0**2)
+        Kx = float(sigma_px_normalized * np.sqrt(2 * scaling_factor * Tx / revolution_frequency))
+        Ky = float(sigma_py_normalized * np.sqrt(2 * scaling_factor * Ty / revolution_frequency))
+        Kz = float(sigma_delta * np.sqrt(2 * scaling_factor * Tz / revolution_frequency) * beta0**2)
         result = IBSKickCoefficients(Kx, Ky, Kz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attributes and then return the results

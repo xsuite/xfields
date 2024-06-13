@@ -129,7 +129,7 @@ def test_configuration_raises_on_below_transition_analytical_kick():
 # ----- Test coefficients computation ----- #
 
 
-@for_all_test_contexts(excluding=("ContextPyopencl", "ContextCupy"))
+@for_all_test_contexts(excluding=("ContextPyopencl"))
 @pytest.mark.parametrize("formalism", ["b&m", "nagaitsev"])
 def test_kick_coefficients(test_context, formalism):
     """
@@ -144,6 +144,7 @@ def test_kick_coefficients(test_context, formalism):
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
     linefile = sps_dir / "line_no_spacecharge_and_particle.json"
     line = xt.Line.from_json(linefile)
+    line.build_tracker(_context=test_context)
     ibskick = IBSAnalyticalKick(formalism=formalism, num_slices=50)
     # -----------------------------------------------------
     # Configure in line and generate particles distribution
@@ -168,7 +169,7 @@ def test_kick_coefficients(test_context, formalism):
     assert_allclose(coeffs.Kz, refs.Kz, rtol=1.5e-2)
 
 
-@for_all_test_contexts(excluding=("ContextPyopencl", "ContextCupy"))
+@for_all_test_contexts(excluding=("ContextPyopencl"))
 def test_kinetic_coefficients(test_context):
     """
     We get a line and generate a large particle distribution
@@ -182,6 +183,7 @@ def test_kinetic_coefficients(test_context):
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
     linefile = sps_dir / "line_no_spacecharge_and_particle.json"
     line = xt.Line.from_json(linefile)
+    line.build_tracker(_context=test_context)
     ibskick = IBSKineticKick(num_slices=50)
     # -----------------------------------------------------
     # Configure in line and generate particles distribution
@@ -213,8 +215,8 @@ def test_kinetic_coefficients(test_context):
 # ----- Tests with tracking ----- #
 
 
-@for_all_test_contexts(excluding=["ContextPyopencl", "ContextCupy"])
-@retry()
+@for_all_test_contexts(excluding=["ContextPyopencl"])
+@retry()  # emittances fluctuate around a given trend
 def test_track_analytical_kick(test_context):
     """
     Track a particle distribution in CLIC DR with exagerated
@@ -234,10 +236,10 @@ def test_track_analytical_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.lag = 180
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
+    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
-        num_particles=1000,
+        num_particles=2000,
         nemitt_x=5.66e-7,
         nemitt_y=3.7e-9,
         sigma_z=1.58e-3,
@@ -248,24 +250,25 @@ def test_track_analytical_kick(test_context):
     # -----------------------------------------------------
     # Perform a few checks before tracking
     with flaky_assertions():
-        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=10e-2)
-        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=10e-2)
-        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=10e-2)
-        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=10e-2)
+        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=5e-2)
+        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=5e-2)
+        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=5e-2)
+        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=5e-2)
     # -----------------------------------------------------
     # Track for 1000 turns, and make final checks on emittances. Random
     # numbers are involved so we can't expect big accuracy. Without the
     # IBS though emittances would stay constant, so these are enough.
-    line.track(particles, num_turns=1000)
+    line.track(particles, num_turns=2000)
     with flaky_assertions():
-        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.4e-10  # most of the effect in x
-        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 6.85e-13  # smaller growth in y
-        assert _sigma_delta(particles) >= 1.8e-3  # little growth
-        assert _bunch_length(particles) >= 1.625e-3  # little growth
+        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.7e-10  # most of the effect in x
+        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 7.3e-13  # smaller growth in y
+        # These two grow just a tad and oscillate a bit, check is loose
+        assert _sigma_delta(particles) >= 1.825e-3  # very little growth here
+        assert _bunch_length(particles) >= 1.66e-3  # very little growth here
 
 
-@for_all_test_contexts(excluding=["ContextPyopencl", "ContextCupy"])
-@retry()
+@for_all_test_contexts(excluding=["ContextPyopencl"])
+@retry()  # emittances fluctuate around a given trend
 def test_track_kinetic_kick(test_context):
     """
     Track a particle distribution in CLIC DR with exagerated
@@ -285,10 +288,10 @@ def test_track_kinetic_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.lag = 180
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=50)
+    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", index=-1, update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
-        num_particles=1000,
+        num_particles=2000,
         nemitt_x=5.66e-7,
         nemitt_y=3.7e-9,
         sigma_z=1.58e-3,
@@ -299,17 +302,18 @@ def test_track_kinetic_kick(test_context):
     # -----------------------------------------------------
     # Perform a few checks before tracking
     with flaky_assertions():
-        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=10e-2)
-        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=10e-2)
-        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=10e-2)
-        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=10e-2)
+        assert_allclose(_gemitt_x(particles, tw.betx[0], tw.dx[0]), 1e-10, rtol=5e-2)
+        assert_allclose(_gemitt_y(particles, tw.bety[0], tw.dy[0]), 6.65e-13, rtol=5e-2)
+        assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=5e-2)
+        assert_allclose(_bunch_length(particles), 1.58e-3, rtol=5e-2)
     # -----------------------------------------------------
     # Track for 1000 turns, and make final checks on emittances. Random
     # numbers are involved so we can't expect big accuracy. Without the
     # IBS though emittances would stay constant, so these are enough.
-    line.track(particles, num_turns=1000)
+    line.track(particles, num_turns=2000)
     with flaky_assertions():
-        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.4e-10  # most of the effect in x
-        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 6.85e-13  # smaller growth in y
-        assert _sigma_delta(particles) >= 1.8e-3  # little growth
-        assert _bunch_length(particles) >= 1.625e-3  # little growth
+        assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.7e-10  # most of the effect in x
+        assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 7.3e-13  # smaller growth in y
+        # These two grow just a tad and oscillate a bit, check is loose
+        assert _sigma_delta(particles) >= 1.825e-3  # very little growth here
+        assert _bunch_length(particles) >= 1.66e-3  # very little growth here
