@@ -200,7 +200,7 @@ void UniformBinSlicer_slice_x_only(UniformBinSlicerData el,
 
     int64_t const num_bunches = UniformBinSlicerData_get_num_bunches(el);
     double const bunch_spacing_zeta = UniformBinSlicerData_get_bunch_spacing_zeta(el);
-    double* num_particles = UniformBinSlicerData_getp1_num_particles(el, 0);
+    /*gpuglmem*/ double* num_particles = UniformBinSlicerData_getp1_num_particles(el, 0);
 
     /*gpuglmem*/ double* sum_x = (UniformBinSlicerData_len_sum_x(el) > 0) ?  UniformBinSlicerData_getp1_sum_x(el, 0) : NULL ;
     // double* sum_px = (UniformBinSlicerData_len_sum_px(el) > 0) ?  UniformBinSlicerData_getp1_sum_px(el, 0) : NULL ;
