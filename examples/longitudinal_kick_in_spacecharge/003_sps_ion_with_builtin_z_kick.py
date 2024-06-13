@@ -9,6 +9,8 @@ import xobjects as xo
 import xfields as xf
 import matplotlib.pyplot as plt
 
+test_on_gpu = True
+
 def change_synchrotron_tune_by_factor(A, line, sigma_z, Nb):
     """
     Scale synchrotron tune Qs while keeping bucket half-height delta constant, also adjusting
@@ -46,7 +48,11 @@ def change_synchrotron_tune_by_factor(A, line, sigma_z, Nb):
     return line, sigma_z_new, Nb_new
 
 # Initialize chosen context, number of turns, particles and space charge interactions
-context = xo.ContextCpu(omp_num_threads='auto')
+if test_on_gpu:
+    context = xo.ContextCupy()
+else:
+    context = xo.ContextCpu(omp_num_threads='auto')
+
 num_turns = 5000
 number_of_particles = 5
 num_spacecharge_interactions = 1080
