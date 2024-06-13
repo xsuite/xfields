@@ -21,7 +21,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
                                num_spacecharge_interactions=None,
                                tol_spacecharge_position=None,
                                s_spacecharge=None,
-                               delta_rms=None):
+                               delta_rms=None,
+                               z_kick_num_integ_per_sigma=0):
 
     '''
     Install spacecharge elements (frozen modeling) in a xtrack.Line object.
@@ -48,6 +49,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
         Position of the spacecharge elements.
     delta_rms : float
         Matched momentum spread. If None, it is computed from a matched gaussian bunch.
+    z_kick_num_integ_per_sigma : int
+        number of integrated longitudinal kick per sigma (default is 0)
 
     Returns
     -------
@@ -134,6 +137,13 @@ def install_spacecharge_frozen(line=None, _buffer=None,
                                /particle_ref.beta0/particle_ref.gamma0
                              + (tw_at_sc['dy'][ii]*delta_rms)**2)
         sc.length = sc_lengths[ii]
+
+    # Configure longitudinal kick
+    if z_kick_num_integ_per_sigma>0:
+        tt = line.get_table()
+        tt_sc = tt.rows[tt.element_type=='SpaceChargeBiGaussian']
+        for nn in tt_sc.name:
+            line[nn].z_kick_num_integ_per_sigma = z_kick_num_integ_per_sigma
 
 
 def replace_spacecharge_with_quasi_frozen(
