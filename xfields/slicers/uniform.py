@@ -363,8 +363,8 @@ class UniformBinSlicer(xt.BeamElement):
         assert isinstance(other, UniformBinSlicer)
         assert self.num_slices == other.num_slices
         assert self.dzeta == other.dzeta
-        assert np.all(self.filled_slots == other.filled_slots)
-        assert np.all(self.bunch_numbers == other.bunch_numbers)
+        assert (self.filled_slots == other.filled_slots).all()
+        assert (self.bunch_numbers == other.bunch_numbers).all()
 
         for cc in COORDS:
             if len(getattr(self, '_sum_' + cc)) > 0:
