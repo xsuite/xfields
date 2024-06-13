@@ -85,8 +85,7 @@ xf.install_spacecharge_frozen(line = line,
                    longitudinal_profile = lprofile,
                    nemitt_x = nemitt_x, nemitt_y = nemitt_y,
                    sigma_z = sigma_z,
-                   num_spacecharge_interactions = num_spacecharge_interactions,
-                   configure_longitudinal_sc_kick=False)
+                   num_spacecharge_interactions = num_spacecharge_interactions)
 
 line.build_tracker(_context = context)
 line.enable_time_dependent_vars = True
@@ -112,7 +111,7 @@ xf.install_spacecharge_frozen(line = line,
                    nemitt_x = nemitt_x, nemitt_y = nemitt_y,
                    sigma_z = sigma_z,
                    num_spacecharge_interactions = num_spacecharge_interactions,
-                   configure_longitudinal_sc_kick=True)
+                   z_kick_num_integ_per_sigma=5)
 
 line.track(p0.copy(), num_turns=num_turns, with_progress=True,
               log=xt.Log(zeta=lambda l, p: p.zeta.copy()))
