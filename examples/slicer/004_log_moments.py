@@ -22,10 +22,11 @@ p = xp.generate_matched_gaussian_bunch(
 
 
 class LogMoments:
-    def __init__(self, transverse_coupling=True):
+    def __init__(self, twiss_parameters=True, transverse_coupling=True):
         self.slicer = xf.UniformBinSlicer(zeta_range=(-999, +999), num_slices=1)
         self.dummy_line = xt.Line(elements=[xt.Drift(length=1e-12)])
         self.transverse_coupling = transverse_coupling
+        self.twiss_parameters = twiss_parameters
 
     def __call__(self, line, particles):
 
@@ -106,24 +107,26 @@ class LogMoments:
         nemitt_y = eival_y.imag * gamma0 * beta0
         nemitt_zeta = eival_zeta.imag * gamma0 * beta0
 
-        # I build a dummy stable R matrix with the same eigenvectors
-        dummy_lam = np.diag([
-            np.exp(-1j*np.pi/3), np.exp(+1j*np.pi/3),
-            np.exp(-1j*np.pi/4), np.exp(+1j*np.pi/4),
-            np.exp(-1j*np.pi/5), np.exp(+1j*np.pi/5),
-        ])
-        dummy_R = eivec @ dummy_lam @ np.linalg.inv(eivec)
+        if self.twiss_parameters:
+            # I build a dummy stable R matrix with the same eigenvectors
+            dummy_lam = np.diag([
+                np.exp(-1j*np.pi/3), np.exp(+1j*np.pi/3),
+                np.exp(-1j*np.pi/4), np.exp(+1j*np.pi/4),
+                np.exp(-1j*np.pi/5), np.exp(+1j*np.pi/5),
+            ])
+            dummy_R = eivec @ dummy_lam @ np.linalg.inv(eivec)
 
-        # Feed to twiss method to get optics parameters
-        tw_from_sigmas = self.dummy_line.twiss(
-                                particle_on_co=line.particle_ref.copy(),
-                                R_matrix=dummy_R,
-                                compute_chromatic_properties=False)
+            # Feed to twiss method to get optics parameters
+            tw_from_sigmas = self.dummy_line.twiss(
+                                    particle_on_co=line.particle_ref.copy(),
+                                    R_matrix=dummy_R,
+                                    compute_chromatic_properties=False)
 
         # build output
         out = dict(nemitt_x=nemitt_x, nemitt_y=nemitt_y, nemitt_zeta=nemitt_zeta)
-        for kk in tw_from_sigmas._col_names:
-            out[kk] = tw_from_sigmas[kk, 0]
+        if self.twiss_parameters:
+            for kk in tw_from_sigmas._col_names:
+                out[kk] = tw_from_sigmas[kk, 0]
 
         out['mean_x'] = slicer.mean('x')[0, 0]
         out['mean_px'] = slicer.mean('px')[0, 0]
@@ -144,5 +147,5 @@ class LogMoments:
         return out
 
 line.enable_time_dependent_vars = True
-logmom = LogMoments(transverse_coupling=True)
+logmom = LogMoments(transverse_coupling=True, twiss_parameters=True)
 line.track(p, num_turns=10, log=[logmom, 't_turn_s'])
