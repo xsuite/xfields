@@ -21,7 +21,7 @@ p = xp.generate_matched_gaussian_bunch(
     sigma_z=0.07)
 
 
-class LogMoments:
+class LogBunchMoments:
     def __init__(self, twiss_parameters=True, transverse_coupling=True):
         self.slicer = xf.UniformBinSlicer(zeta_range=(-999, +999), num_slices=1)
         self.dummy_line = xt.Line(elements=[xt.Drift(length=1e-12)])
@@ -147,5 +147,5 @@ class LogMoments:
         return out
 
 line.enable_time_dependent_vars = True
-logmom = LogMoments(transverse_coupling=True, twiss_parameters=True)
+logmom = LogBunchMoments(transverse_coupling=True, twiss_parameters=True)
 line.track(p, num_turns=10, log=[logmom, 't_turn_s'])

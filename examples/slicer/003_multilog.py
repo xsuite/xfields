@@ -19,5 +19,4 @@ class MyLog:
 
 p = line.build_particles(x=0)
 
-line.enable_time_dependent_vars = True
 line.track(p, num_turns=10, log=xt.Log(moments=MyLog()))
