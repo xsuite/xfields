@@ -145,4 +145,4 @@ class LogMoments:
 
 line.enable_time_dependent_vars = True
 logmom = LogMoments(transverse_coupling=True)
-line.track(p, num_turns=10, log=xt.Log(logmom))
+line.track(p, num_turns=10, log=[logmom, 't_turn_s'])
