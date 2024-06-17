@@ -19,7 +19,9 @@ class CollectiveMonitor(ElementWithSlicer):
     A class to monitor the collective motion of the beam. The monitor can save
     bunch-by-bunch, slice-by-slice and particle-by-particle data. For the
     particle-by-particle data, a mask can be used to select the particles to
-    be monitored.
+    be monitored. The monitor collects a buffer of `flush_data_every` turns
+    before saving the data to disk, in order to reduce the number of I/O and
+    avoid storing too much data in memory.
 
     Parameters
     ----------
@@ -33,6 +35,16 @@ class CollectiveMonitor(ElementWithSlicer):
         If True, the particle-by-particle data is monitored
     particle_monitor_mask : np.ndarray
         Mask identifying the particles to be monitored
+    flush_data_every: int
+        Number of turns after which the data is saved to disk
+    stats_to_store : list
+        List of the statistics to store for the bunch-by-bunch and
+        slice-by-slice data
+    stats_to_store_particles : list
+        List of the statistics to store for the particle-by-particle data
+    backend: str
+        Backend used to save the data. For the moment only 'hdf5' and 'json'
+        are supported, with 'hdf5' being the default
     zeta_range : Tuple
         Zeta range for each bunch used in the underlying slicer.
     num_slices : int
@@ -47,11 +59,6 @@ class CollectiveMonitor(ElementWithSlicer):
     bunch_numbers: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
-    stats_to_store : list
-        List of the statistics to store
-    backend: str
-        Backend used to save the data. For the moment only 'hdf5' and 'json'
-        are supported, with 'hdf5' being the default
     _flatten: bool
         Use flattened wakes
     """
@@ -94,9 +101,9 @@ class CollectiveMonitor(ElementWithSlicer):
                  monitor_particles,
                  particle_monitor_mask=None,
                  flush_data_every=1,
-                 zeta_range=None,  # These are [a, b] in the paper
-                 num_slices=None,  # Per bunch, this is N_1 in the paper
-                 bunch_spacing_zeta=None,  # This is P in the paper
+                 zeta_range=None,
+                 num_slices=None,
+                 bunch_spacing_zeta=None,
                  filling_scheme=None,
                  bunch_numbers=None,
                  stats_to_store=None,
