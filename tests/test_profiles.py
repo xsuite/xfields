@@ -63,4 +63,4 @@ def test_qgauss_derivative(test_context):
 
         numerical_derivative = np.gradient(lden, z)
 
-        assert np.isclose(lderivative, numerical_derivative, rtol=1e-5)
+        assert np.isclose(lderivative, numerical_derivative, rtol=1e-5).all()
