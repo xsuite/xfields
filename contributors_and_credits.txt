@@ -10,5 +10,6 @@ CERN contributors:
  - K. Paraschou
  - M. Schwinzerl
  - F. Soubelet
+ - E. Waagaard
 
 The Particle In Cell implementation is largely based on the PyPIC package (https://github.com/pycomplete/pypic)
