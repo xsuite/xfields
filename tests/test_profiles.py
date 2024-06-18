@@ -55,11 +55,9 @@ def test_qgauss_derivative(test_context):
         lden_dev = lprofile.line_density(z_dev)
         lden = test_context.nparray_from_context_array(lden_dev)
 
-        # Then get computed derivative of line density
         lderivative_dev = lprofile.line_derivative(z_dev)
         lderivative = test_context.nparray_from_context_array(lderivative_dev)
 
-        # Compare derivatives
-        finite_difference_derivative = np.diff(lden)
+        numerical_derivative = np.gradient(lden, z)
 
-        assert np.isclose(lderivative, finite_difference_derivative)
+        assert np.isclose(lderivative, numerical_derivative)
