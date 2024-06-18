@@ -36,6 +36,12 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
                         xo.Arg(xo.Int64, name='n'),
                         xo.Arg(xo.Float64, pointer=True, name='z'),
                         xo.Arg(xo.Float64, pointer=True, name='res')],
+                  n_threads='n'),
+                  'line_derivative_qgauss':
+        xo.Kernel(args=[xo.Arg(xo.ThisClass, name='prof'),
+                        xo.Arg(xo.Int64, name='n'),
+                        xo.Arg(xo.Float64, pointer=True, name='z'),
+                        xo.Arg(xo.Float64, pointer=True, name='res')],
                   n_threads='n')}
 
     @staticmethod
