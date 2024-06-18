@@ -80,7 +80,10 @@ double LongitudinalProfileQGaussian_line_density_derivative_scalar(
     else{
     	double exponent = 1./(1.-q);
 	if (z<z_max && z>z_min){
-		return -9999.0;
+	    double z_m_z0 = z - z0;
+    		double q_exp_arg =  -(beta_param*z_m_z0*z_m_z0 );
+    		double q_exp_res = pow((1.+(1.-q)*q_exp_arg), exponent-1.);
+    		return -2*factor*beta_param*z_m_z0*q_exp_res;
 	}
 	else{
 		return 0;
