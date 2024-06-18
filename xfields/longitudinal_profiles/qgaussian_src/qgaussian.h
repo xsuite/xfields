@@ -107,4 +107,19 @@ void line_density_qgauss(LongitudinalProfileQGaussianData prof,
    }//end_vectorize
 }
 
+
+/*gpukern*/
+void line_derivative_qgauss(LongitudinalProfileQGaussianData prof,
+		               const int64_t n,
+		  /*gpuglmem*/ const double* z, 
+		  /*gpuglmem*/       double* res){
+
+   #pragma omp parallel for //only_for_context cpu_openmp 
+   for(int ii; ii<n; ii++){ //vectorize_over ii n 
+
+       res[ii] = LongitudinalProfileQGaussian_line_density_derivative_scalar(prof, z[ii]);
+  
+   }//end_vectorize
+}
+
 #endif
