@@ -9,8 +9,6 @@ import xobjects as xo
 import xpart as xp
 import xfields as xf
 
-longitudinal_mode = 'nonlinear'
-
 # Simulation settings
 n_turns = 10_000
 n_turns_wake = 1
@@ -26,8 +24,12 @@ wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
                      'quadrupole_x', 'quadrupole_y', 'dipole_xy',
                      'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                      'constant_x', 'constant_y']
+wf_df = xf.Wakefield.table_from_headtail_file(
+    wake_file=wake_table_filename,
+    wake_file_columns=wake_file_columns
+)
 wf = xf.Wakefield.from_table(
-    wake_table_filename, wake_file_columns,
+    wf_df,
     use_components=['dipole_x', 'dipole_y'],
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
     num_slices=100,
