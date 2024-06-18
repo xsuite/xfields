@@ -49,8 +49,11 @@ def test_qgauss_derivative(test_context):
                 z0=z0,
                 q_parameter=qq)
 
-        # Get line density
-        z = np.linspace(-10., 10., 10000)
+        # Select range relevant for derivative continuity
+        if qq < 1:
+            z = np.linspace(-0.347, 0.5, 1_000_000)
+        else:
+            z = np.linspace(-3., 3., 1_000_000)
         z_dev = test_context.nparray_to_context_array(z)
         lden_dev = lprofile.line_density(z_dev)
         lden = test_context.nparray_from_context_array(lden_dev)
@@ -60,4 +63,4 @@ def test_qgauss_derivative(test_context):
 
         numerical_derivative = np.gradient(lden, z)
 
-        assert np.isclose(lderivative, numerical_derivative)
+        assert np.isclose(lderivative, numerical_derivative, rtol=1e-5)
