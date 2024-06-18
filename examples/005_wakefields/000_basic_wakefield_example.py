@@ -1,19 +1,14 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from scipy.constants import c, e, physical_constants
 from scipy.signal import hilbert
 from scipy.stats import linregress
 
 import xtrack as xt
-import xobjects as xo
 import xpart as xp
 import xfields as xf
 
 # Simulation settings
 n_turns = 10_000
-n_turns_wake = 1
-n_macroparticles = int(1e5)
-num_slices = 100
 
 circumference = 26658.8832
 bucket_length_m = circumference / 35640
@@ -32,7 +27,7 @@ wf = xf.Wakefield.from_table(
     wf_df,
     use_components=['dipole_x', 'dipole_y'],
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
-    num_slices=100,
+    num_slices=20,
     num_turns=1.,
     circumference=circumference
 )
