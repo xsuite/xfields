@@ -27,6 +27,7 @@ from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
 from .beam_elements.wakefield import WakeComponent, ResonatorWake
 from .beam_elements.wakefield import Wakefield
 from .beam_elements.transverse_damper import TransverseDamper
+from .beam_elements.collective_monitor import CollectiveMonitor
 
 from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
