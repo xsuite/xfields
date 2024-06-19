@@ -64,31 +64,28 @@ def test_multiwake_transverse_dipole_coupling(test_context):
                          'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                          'constant_x', 'constant_y']
     components = ['dipole_xy', 'dipole_yx']
-    wake_df = xf.Wakefield.table_from_headtail_file(wake_table_name,
-                                                    wake_file_columns,
-                                                    use_components=components,
-                                                    flag_pyht_units=True)
-    wf_0 = xf.Wakefield.from_table(wake_df,
-                                   use_components=components,
-                                   zeta_range=zeta_range,
-                                   num_slices=num_slices,  # per bunch
-                                   bunch_spacing_zeta=bunch_spacing,
-                                   filling_scheme=filling_scheme,
-                                   bunch_numbers=bunch_numbers_0,
-                                   num_turns=n_turns_wake,
-                                   circumference=circumference)
-    wf_0.init_pipeline(pipeline_manager=pipeline_manager,
-                       element_name='wake',
+    wake_df = xf.read_headtail_file(wake_table_name,
+                                    wake_file_columns)
+    wf_0 = xf.WakefieldFromTable(wake_df,
+                                 use_components=components,
+                                 zeta_range=zeta_range,
+                                 num_slices=num_slices,  # per bunch
+                                 bunch_spacing_zeta=bunch_spacing,
+                                 filling_scheme=filling_scheme,
+                                 bunch_numbers=bunch_numbers_0,
+                                 num_turns=n_turns_wake,
+                                 circumference=circumference)
+    wf_0.init_pipeline(pipeline_manager=pipeline_manager, element_name='wake',
                        partners_names=['b1'])
-    wf_1 = xf.Wakefield.from_table(wake_df,
-                                   use_components=components,
-                                   zeta_range=zeta_range,
-                                   num_slices=num_slices,  # per bunch
-                                   bunch_spacing_zeta=bunch_spacing,
-                                   filling_scheme=filling_scheme,
-                                   bunch_numbers=bunch_numbers_1,
-                                   num_turns=n_turns_wake,
-                                   circumference=circumference)
+    wf_1 = xf.WakefieldFromTable(wake_df,
+                                 use_components=components,
+                                 zeta_range=zeta_range,
+                                 num_slices=num_slices,  # per bunch
+                                 bunch_spacing_zeta=bunch_spacing,
+                                 filling_scheme=filling_scheme,
+                                 bunch_numbers=bunch_numbers_1,
+                                 num_turns=n_turns_wake,
+                                 circumference=circumference)
     wf_1.init_pipeline(pipeline_manager=pipeline_manager,
                        element_name='wake',
                        partners_names=['b0'])
