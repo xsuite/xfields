@@ -41,13 +41,9 @@ class WakefieldFromTable(Wakefield):
     def __init__(self, df, use_components, zeta_range, num_slices,
                  num_turns, circumference, beta0=1,
                  bunch_spacing_zeta=None, filling_scheme=None,
-                 bunch_numbers=None, log_moments=False, flatten=False):
+                 bunch_numbers=None, log_moments=None, _flatten=False):
         self.df = df
         self.use_components = use_components
-        self.zeta_range = zeta_range
-        self.num_slices = num_slices
-        self.num_turns = num_turns
-        self.circumference = circumference
 
         valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
                                  'dipole_y', 'dipole_xy', 'dipole_yx',
@@ -114,4 +110,4 @@ class WakefieldFromTable(Wakefield):
             num_turns=num_turns,
             circumference=circumference,
             log_moments=log_moments,
-            flatten=flatten)
+            _flatten=_flatten)
