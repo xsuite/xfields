@@ -90,57 +90,6 @@ class Wakefield(ElementWithSlicer):
 
         all_slicer_moments = list(set(all_slicer_moments))
 
-    @classmethod
-    def from_table(cls, df, use_components, beta0=1.0,
-                   **kwargs):
-        valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
-                                 'dipole_y', 'dipole_xy', 'dipole_yx',
-                                 'quadrupole_x', 'quadrupole_y',
-                                 'quadrupole_xy', 'quadrupole_yx',
-                                 'longitudinal']
-
-        if 'time' not in list(df.keys()):
-            raise ValueError("No wake_file_column with name 'time' has" +
-                             " been specified. \n")
-
-        if use_components is not None:
-            for component in use_components:
-                assert component in valid_wake_components
-
-        wake_distance = df['time'] * beta0 * clight
-        components = []
-        for component in list(df.keys()):
-            if component != 'time' and (use_components is None or
-                                        component in use_components):
-                assert component in valid_wake_components
-                scale_kick = None
-                source_moments = ['num_particles']
-                if component == 'longitudinal':
-                    kick = 'delta'
-                else:
-                    tokens = component.split('_')
-                    coord_target = tokens[1][0]
-                    if len(tokens[1]) == 2:
-                        coord_source = tokens[1][1]
-                    else:
-                        coord_source = coord_target
-                    kick = 'p'+coord_target
-                    if tokens[0] == 'dipole':
-                        source_moments.append(coord_source)
-                    elif tokens[0] == 'quadrupole':
-                        scale_kick = coord_source
-                wake_strength = df[component]
-                wakefield = xf.WakeComponent(
-                    source_moments=source_moments,
-                    kick=kick,
-                    scale_kick=scale_kick,
-                    function=interp1d(wake_distance, wake_strength,
-                                      bounds_error=False, fill_value=0.0)
-                )
-                components.append(wakefield)
-        return cls(components, **kwargs)
-
-
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
 
         super().init_pipeline(pipeline_manager=pipeline_manager,
