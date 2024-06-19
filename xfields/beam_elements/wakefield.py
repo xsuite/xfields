@@ -142,8 +142,7 @@ class Wakefield(ElementWithSlicer):
         return cls(components, **kwargs)
 
     @staticmethod
-    def table_from_headtail_file(wake_file, wake_file_columns, use_components=None,
-                                 flag_pyht_units=False):
+    def table_from_headtail_file(wake_file, wake_file_columns):
         valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
                                  'dipole_y', 'dipole_xy', 'dipole_yx',
                                  'quadrupole_x', 'quadrupole_y',
@@ -159,26 +158,20 @@ class Wakefield(ElementWithSlicer):
             raise ValueError("No wake_file_column with name 'time' has" +
                              " been specified. \n")
 
-        if use_components is not None:
-            for component in use_components:
-                assert component in valid_wake_components
-                assert component in wake_file_columns
-
         dict_components = {}
 
-        conversion_factor_time = -1E-9 if flag_pyht_units else 1
+        conversion_factor_time = -1E-9
 
         itime = wake_file_columns.index('time')
         dict_components['time'] = conversion_factor_time * wake_data[:, itime]
 
         for i_component, component in enumerate(wake_file_columns):
-            if component != 'time' and (use_components is None or
-                                        component in use_components):
+            if component != 'time':
                 assert component in valid_wake_components
                 if component == 'longitudinal':
-                    conversion_factor = -1E12 if flag_pyht_units else 1
+                    conversion_factor = -1E12
                 else:
-                    conversion_factor = -1E15 if flag_pyht_units else 1
+                    conversion_factor = -1E15
 
                 dict_components[component] = (wake_data[:, i_component] *
                                               conversion_factor)
