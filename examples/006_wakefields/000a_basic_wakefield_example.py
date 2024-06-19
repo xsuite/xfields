@@ -23,7 +23,7 @@ wf_df = xf.read_headtail_file(
     wake_file=wake_table_filename,
     wake_file_columns=wake_file_columns
 )
-wf = xf.Wakefield.from_table(
+wf = xf.WakefieldFromTable(
     wf_df,
     use_components=['dipole_x', 'dipole_y'],
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
