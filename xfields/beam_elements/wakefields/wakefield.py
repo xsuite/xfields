@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 
 import xobjects as xo
 import xfields as xf
-from .element_with_slicer import ElementWithSlicer
+from ..element_with_slicer import ElementWithSlicer
 
 
 class Wakefield(ElementWithSlicer):
