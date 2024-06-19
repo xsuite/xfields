@@ -5,7 +5,7 @@ from scipy.interpolate import interp1d
 
 from .wakefield import Wakefield, WakeComponent
 
-class TableWakeField(Wakefield):
+class WakefieldFromTable(Wakefield):
     """
     Wakefield from a table.
 
