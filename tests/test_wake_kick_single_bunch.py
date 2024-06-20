@@ -367,7 +367,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
     dz = (zeta_range[1] - zeta_range[0])/n_slices
     zeta = np.linspace(zeta_range[0] + dz/2, zeta_range[1]-dz/2,
-                        n_macroparticles)
+                       n_macroparticles)
     i_test = 10
 
     displace_x_test = 2
@@ -421,7 +421,7 @@ def test_direct_quadrupolar_wake_kick(test_context):
     )
 
     line = xt.Line(elements=[wf],
-                    element_names=['wf'])
+                   element_names=['wf'])
     line.build_tracker()
 
     line.track(particles, num_turns=1)
