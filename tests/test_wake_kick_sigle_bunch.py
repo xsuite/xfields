@@ -26,8 +26,6 @@ def test_longitudinal_wake_kick(test_context):
     i_source = -10
     i_test = 10
 
-    flag_plot = False
-
     particles = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
         p0=p0,
@@ -369,20 +367,11 @@ def test_direct_quadrupolar_wake_kick(test_context):
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
     dz = (zeta_range[1] - zeta_range[0])/n_slices
     zeta = np.linspace(zeta_range[0] + dz/2, zeta_range[1]-dz/2,
-                       n_macroparticles)
-    i_source = -10
+                        n_macroparticles)
     i_test = 10
-
-    source_moment_x = 'x'
-    source_moment_y = 'y'
-
-    scale_kick_x = 'x'
-    scale_kick_y = 'y'
 
     displace_x_test = 2
     displace_y_test = 3
-    displace_x_source = 4
-    displace_y_source = 5
 
     particles = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
@@ -397,9 +386,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
         _context=test_context
     )
 
-    particles.x[i_source] += displace_x_source
-    particles.y[i_source] += displace_y_source
-
     particles.x[i_test] += displace_x_test
     particles.y[i_test] += displace_y_test
 
@@ -407,18 +393,18 @@ def test_direct_quadrupolar_wake_kick(test_context):
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_x],
+        source_moments=['num_particles'],
         kick='px',
-        scale_kick=scale_kick_x,
+        scale_kick='x',
     )
 
     wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_y],
+        source_moments=['num_particles'],
         kick='py',
-        scale_kick=scale_kick_y,
+        scale_kick='y',
     )
 
     zeta_range_xf = zeta_range
@@ -435,20 +421,22 @@ def test_direct_quadrupolar_wake_kick(test_context):
     )
 
     line = xt.Line(elements=[wf],
-                   element_names=['wf'])
+                    element_names=['wf'])
     line.build_tracker()
+
     line.track(particles, num_turns=1)
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    assert np.allclose(particles.px[i_test]/(displace_x_test*displace_x_source),
-                       (wfx.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[i_test],
-                       rtol=1e-4, atol=0)
-    assert np.allclose(particles.py[i_test]/(displace_y_test*displace_y_source),
-                       (wfy.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[i_test],
-                       rtol=1e-4, atol=0)
+    # The formulae below are correct because we have one macroparticle per slice
+    assert np.allclose(
+        particles.px[i_test]/(displace_x_test),
+        np.sum(wfx.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        rtol=1e-4, atol=0)
+    assert np.allclose(
+        particles.py[i_test]/(displace_y_test),
+        np.sum(wfy.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        rtol=1e-4, atol=0)
 
 
 @for_all_test_contexts(excluding=exclude_contexts)
@@ -467,19 +455,13 @@ def test_cross_quadrupolar_wake_kick(test_context):
     dz = (zeta_range[1] - zeta_range[0])/n_slices
     zeta = np.linspace(zeta_range[0] + dz/2, zeta_range[1]-dz/2,
                        n_macroparticles)
-    i_source = -10
     i_test = 10
-
-    source_moment_x = 'x'
-    source_moment_y = 'y'
 
     scale_kick_x = 'y'
     scale_kick_y = 'x'
 
     displace_x_test = 2
     displace_y_test = 3
-    displace_x_source = 4
-    displace_y_source = 5
 
     particles = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
@@ -494,9 +476,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
         _context=test_context
     )
 
-    particles.x[i_source] += displace_x_source
-    particles.y[i_source] += displace_y_source
-
     particles.x[i_test] += displace_x_test
     particles.y[i_test] += displace_y_test
 
@@ -504,7 +483,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_x],
+        source_moments=['num_particles'],
         kick='px',
         scale_kick=scale_kick_x,
     )
@@ -513,7 +492,7 @@ def test_cross_quadrupolar_wake_kick(test_context):
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_y],
+        source_moments=['num_particles'],
         kick='py',
         scale_kick=scale_kick_y,
     )
@@ -538,14 +517,14 @@ def test_cross_quadrupolar_wake_kick(test_context):
 
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
-    assert np.allclose(particles.px[i_test]/(displace_y_test*displace_x_source),
-                       (wfx.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[i_test],
-                       rtol=1e-4, atol=0)
-    assert np.allclose(particles.py[i_test]/(displace_x_test*displace_y_source),
-                       (wfy.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[i_test],
-                       rtol=1e-4, atol=0)
+    assert np.allclose(
+        particles.px[i_test]/(displace_y_test),
+        np.sum(wfx.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        rtol=1e-4, atol=0)
+    assert np.allclose(
+        particles.py[i_test]/(displace_x_test),
+        np.sum(wfy.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        rtol=1e-4, atol=0)
 
 
 @for_all_test_contexts(excluding=exclude_contexts)
