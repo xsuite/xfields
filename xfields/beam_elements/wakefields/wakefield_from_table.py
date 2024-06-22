@@ -5,15 +5,22 @@ from scipy.interpolate import interp1d
 
 from .wakefield import Wakefield, WakeComponent
 
+
+VALID_WAKE_COMPONENTS = ['constant_x', 'constant_y', 'dipole_x',
+                            'dipole_y', 'dipole_xy', 'dipole_yx',
+                            'quadrupole_x', 'quadrupole_y',
+                            'quadrupole_xy', 'quadrupole_yx',
+                            'longitudinal']
+
 class WakefieldFromTable(Wakefield):
     """
     Wakefield from a table.
 
     Parameters
     ----------
-    df : pandas.DataFrame
+    table : pandas.DataFrame
         DataFrame with the wake functions by point in time.
-    use_components : list of st   
+    use_components : list of str
         List of components to use. If None, all components are used.
     zeta_range : Tuple
         Zeta range for each bunch used in the underlying slicer.
@@ -38,42 +45,37 @@ class WakefieldFromTable(Wakefield):
     _flatten: bool
         Use flattened wakes
     """
-    def __init__(self, df, use_components, zeta_range, num_slices,
+    def __init__(self, table, use_components, zeta_range, num_slices,
                  num_turns, circumference, beta0=1,
                  bunch_spacing_zeta=None, filling_scheme=None,
                  bunch_numbers=None, log_moments=None, _flatten=False):
-        self.df = df
+        self.table = table
         self.use_components = use_components
 
-        valid_wake_components = ['constant_x', 'constant_y', 'dipole_x',
-                                 'dipole_y', 'dipole_xy', 'dipole_yx',
-                                 'quadrupole_x', 'quadrupole_y',
-                                 'quadrupole_xy', 'quadrupole_yx',
-                                 'longitudinal']
 
         for component in use_components:
-            if component not in valid_wake_components:
+            if component not in VALID_WAKE_COMPONENTS:
                 raise ValueError(
                     f'Invalid wake component: {component}. '
-                    f'Valid wake components are: {valid_wake_components}'
+                    f'Valid wake components are: {VALID_WAKE_COMPONENTS}'
                 )
 
-        if 'time' not in list(df.keys()):
+        if 'time' not in list(table.keys()):
                     raise ValueError("No wake_file_column with name 'time' has" +
                                     " been specified. \n")
 
         if use_components is not None:
             for component in use_components:
-                assert component in valid_wake_components
+                assert component in VALID_WAKE_COMPONENTS
 
-        wake_distance = df['time'] * beta0 * clight
+        wake_distance = table['time'] * beta0 * clight
         components = []
         # Loop over the components and create the WakeComponent objects
         # for the components that are used
-        for component in list(df.keys()):
+        for component in list(table.keys()):
             if component != 'time' and (use_components is None or
                                         component in use_components):
-                assert component in valid_wake_components
+                assert component in VALID_WAKE_COMPONENTS
                 scale_kick = None
                 source_moments = ['num_particles']
                 if component == 'longitudinal':
@@ -90,7 +92,7 @@ class WakefieldFromTable(Wakefield):
                         source_moments.append(coord_source)
                     elif tokens[0] == 'quadrupole':
                         scale_kick = coord_source
-                wake_strength = df[component]
+                wake_strength = table[component]
                 wakefield = WakeComponent(
                     source_moments=source_moments,
                     kick=kick,
