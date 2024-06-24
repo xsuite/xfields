@@ -21,11 +21,11 @@ def test_wakes_sum(test_context):
                         'quadrupole_x', 'quadrupole_y', 'dipole_xy',
                         'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                         'constant_x', 'constant_y']
-    wf_df = xf.Wakefield.table_from_headtail_file(
+    wf_df = xf.read_headtail_file(
         wake_file=wake_table_filename,
         wake_file_columns=wake_file_columns
     )
-    wf0 = xf.Wakefield.from_table(
+    wf0 = xf.WakefieldFromTable(
         wf_df,
         use_components=['dipole_x', 'dipole_y'],
         zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
