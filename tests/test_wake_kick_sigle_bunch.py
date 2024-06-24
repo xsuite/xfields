@@ -541,9 +541,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
                        n_macroparticles)
     i_source = -10
 
-    source_moment_x = 'x'
-    source_moment_y = 'y'
-
     displace_x_source = 4
     displace_y_source = 5
 
@@ -570,7 +567,8 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e4,
-        source_moments=['num_particles', source_moment_x],
+        source_exponents=(1, 0),
+        test_exponents=(0, 0),
         kick='px',
     )
 
@@ -578,9 +576,9 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e4,
-        source_moments=['num_particles', source_moment_y],
+        source_exponents=(0, 1),
+        test_exponents=(0, 0),
         kick='py',
-        scale_kick=scale_kick_y
     )
 
     zeta_range_xf = zeta_range
