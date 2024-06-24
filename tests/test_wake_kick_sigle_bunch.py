@@ -47,9 +47,9 @@ def test_longitudinal_wake_kick(test_context):
         r_shunt=1e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles'],
+        source_exponents=(0, 0),
+        test_exponents=(0, 0),
         kick='delta',
-        scale_kick=None
     )
 
     zeta_range_xf = zeta_range
@@ -118,18 +118,18 @@ def test_constant_wake_kick(test_context):
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles'],
+        source_exponents=(0, 0),
+        test_exponents=(0, 0),
         kick='px',
-        scale_kick=None,
     )
 
     wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles'],
+        source_exponents=(0, 0),
+        test_exponents=(0, 0),
         kick='py',
-        scale_kick=None,
     )
 
     zeta_range_xf = zeta_range
@@ -180,12 +180,6 @@ def test_direct_dipolar_wake_kick(test_context):
                        n_macroparticles)
     i_source = -10
 
-    source_moment_x = 'x'
-    source_moment_y = 'y'
-
-    scale_kick_x = None
-    scale_kick_y = None
-
     displace_x = 2
     displace_y = 3
 
@@ -212,18 +206,18 @@ def test_direct_dipolar_wake_kick(test_context):
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_x],
+        source_expontents=(1, 0),
+        test_exponents=(0, 0),
         kick='px',
-        scale_kick=scale_kick_x,
     )
 
     wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_y],
+        source_exponents=(0, 1),
+        test_exponents=(0, 0),
         kick='py',
-        scale_kick=scale_kick_y,
     )
 
     zeta_range_xf = zeta_range
@@ -276,12 +270,6 @@ def test_cross_dipolar_wake_kick(test_context):
                        n_macroparticles)
     i_source = -10
 
-    source_moment_x = 'y'
-    source_moment_y = 'x'
-
-    scale_kick_x = None
-    scale_kick_y = None
-
     displace_x = 2
     displace_y = 3
 
@@ -308,18 +296,18 @@ def test_cross_dipolar_wake_kick(test_context):
         r_shunt=2e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_x],
+        source_exponents=(0, 1),
+        test_exponents=(0, 0),
         kick='px',
-        scale_kick=scale_kick_x,
     )
 
     wfy = ResonatorWake(
         r_shunt=3e8,
         q_factor=1e7,
         frequency=1e3,
-        source_moments=['num_particles', source_moment_y],
+        source_exponents=(1, 0),
+        test_exponents=(0, 0),
         kick='py',
-        scale_kick=scale_kick_y,
     )
 
     zeta_range_xf = zeta_range
@@ -373,12 +361,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
     i_source = -10
     i_test = 10
 
-    source_moment_x = 'x'
-    source_moment_y = 'y'
-
-    scale_kick_x = 'x'
-    scale_kick_y = 'y'
-
     displace_x_test = 2
     displace_y_test = 3
     displace_x_source = 4
@@ -409,7 +391,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
         frequency=1e3,
         source_moments=['num_particles', source_moment_x],
         kick='px',
-        scale_kick=scale_kick_x,
     )
 
     wfy = ResonatorWake(
@@ -418,7 +399,6 @@ def test_direct_quadrupolar_wake_kick(test_context):
         frequency=1e3,
         source_moments=['num_particles', source_moment_y],
         kick='py',
-        scale_kick=scale_kick_y,
     )
 
     zeta_range_xf = zeta_range
@@ -473,9 +453,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
     source_moment_x = 'x'
     source_moment_y = 'y'
 
-    scale_kick_x = 'y'
-    scale_kick_y = 'x'
-
     displace_x_test = 2
     displace_y_test = 3
     displace_x_source = 4
@@ -506,7 +483,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
         frequency=1e3,
         source_moments=['num_particles', source_moment_x],
         kick='px',
-        scale_kick=scale_kick_x,
     )
 
     wfy = ResonatorWake(
@@ -515,7 +491,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
         frequency=1e3,
         source_moments=['num_particles', source_moment_y],
         kick='py',
-        scale_kick=scale_kick_y,
     )
 
     zeta_range_xf = zeta_range
@@ -569,9 +544,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
     source_moment_x = 'x'
     source_moment_y = 'y'
 
-    scale_kick_x = None
-    scale_kick_y = None
-
     displace_x_source = 4
     displace_y_source = 5
 
@@ -600,7 +572,6 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
         frequency=1e4,
         source_moments=['num_particles', source_moment_x],
         kick='px',
-        scale_kick=scale_kick_x,
     )
 
     wfy = ResonatorWake(
