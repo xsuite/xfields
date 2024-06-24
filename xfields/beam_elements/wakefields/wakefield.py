@@ -1,3 +1,5 @@
+from typing import Tuple
+
 import numpy as np
 
 from scipy.constants import c as clight
@@ -203,20 +205,26 @@ class WakeComponent:
     """
 
     def __init__(self,
-                 source_moments,
-                 kick,
-                 scale_kick,
-                 function,
+                 source_exponents: Tuple[int, int] = (-1, -1),
+                 test_exponents: Tuple[int, int] = (-1, -1),
+                 kick: str = '',
+                 function=None,
                  log_moments=None,
                  _flatten=False):
 
         self._flatten = _flatten
+        assert function is not None
 
-        assert isinstance(source_moments, (list, tuple))
         assert isinstance(log_moments, (list, tuple)) or log_moments is None
 
+        source_moments = ['num_particles']
+        if source_exponents[0] != 0:
+            source_moments.append('x')
+        if source_exponents[1] != 0:
+            source_moments.append('y')
+
         self.kick = kick
-        self.scale_kick = scale_kick
+        self.test_exponents = test_exponents
         self.source_moments = source_moments
         self.function = function
         self.moments_data = None
@@ -311,8 +319,10 @@ class WakeComponent:
         # do for them)
         scaling_constant = -particles.q0**2 * qe**2 / (particles.p0c * qe)
 
-        if self.scale_kick is not None:
-            scaling_constant *= getattr(particles, self.scale_kick)
+        if self.test_exponents[0] != 0:
+            scaling_constant *= particles.x**self.test_exponents[0]
+        if self.test_exponents[1] != 0:
+            scaling_constant *= particles.y**self.test_exponents[1]
 
         # remember to handle lost particles!!!
         getattr(particles, self.kick)[:] += (scaling_constant *

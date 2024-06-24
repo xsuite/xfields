@@ -80,23 +80,56 @@ class WakefieldFromTable(Wakefield):
                 source_moments = ['num_particles']
                 if component == 'longitudinal':
                     kick = 'delta'
+                    source_exponents = (0, 0)
+                    test_expontents = (0, 0)
+                elif component == 'constant_x':
+                    kick = 'px'
+                    source_exponents = (0, 0)
+                    test_expontents = (0, 0)
+                elif component == 'constant_y':
+                    kick = 'py'
+                    source_exponents = (0, 0)
+                    test_expontents = (0, 0)
+                elif component == 'dipole_x':
+                    kick = 'px'
+                    source_exponents = (1, 0)
+                    test_expontents = (0, 0)
+                elif component == 'dipole_y':
+                    kick = 'py'
+                    source_exponents = (0, 1)
+                    test_expontents = (0, 0)
+                elif component == 'dipole_xy':
+                    kick = 'px'
+                    source_exponents = (0, 1)
+                    test_expontents = (0, 0)
+                elif component == 'dipole_yx':
+                    kick = 'py'
+                    source_exponents = (1, 0)
+                    test_expontents = (0, 0)
+                elif component == 'quadrupole_x':
+                    kick = 'px'
+                    source_exponents = (0, 0)
+                    test_expontents = (1, 0)
+                elif component == 'quadrupole_y':
+                    kick = 'py'
+                    source_exponents = (0, 0)
+                    test_expontents = (0, 1)
+                elif component == 'quadrupole_xy':
+                    kick = 'px'
+                    source_exponents = (0, 0)
+                    test_expontents = (0, 1)
+                elif component == 'quadrupole_yx':
+                    kick = 'py'
+                    source_exponents = (0, 0)
+                    test_expontents = (1, 0)
                 else:
-                    tokens = component.split('_')
-                    coord_target = tokens[1][0]
-                    if len(tokens[1]) == 2:
-                        coord_source = tokens[1][1]
-                    else:
-                        coord_source = coord_target
-                    kick = 'p'+coord_target
-                    if tokens[0] == 'dipole':
-                        source_moments.append(coord_source)
-                    elif tokens[0] == 'quadrupole':
-                        scale_kick = coord_source
+                    raise ValueError(f'Invalid wake component: {component}')
+
                 wake_strength = table[component]
                 wakefield = WakeComponent(
-                    source_moments=source_moments,
+                    source_exponents=source_exponents,
+                    test_exponents=test_expontents,
                     kick=kick,
-                    scale_kick=scale_kick,
                     function=interp1d(wake_distance, wake_strength,
                                       bounds_error=False, fill_value=0.0)
                 )
