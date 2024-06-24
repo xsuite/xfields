@@ -298,48 +298,48 @@ def test_slicer_moments_single_bunch(test_context):
                                atol=1e-12)
             xo.assert_allclose(sl.num_particles[0, :], [0, 0, p.weight.sum()], rtol=0,
                                atol=1e-12)
-            xo.assert_allclose(sl.sum(c1_name), [0, 0, (c1 * p.weight).sum()],
+            xo.assert_allclose(sl.sum(c1_name)[0], [0, 0, (c1 * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum(c2_name), [0, 0, (c2 * p.weight).sum()],
+            xo.assert_allclose(sl.sum(c2_name)[0], [0, 0, (c2 * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum('zeta'),
+            xo.assert_allclose(sl.sum('zeta')[0],
                                [0, 0, (p.zeta * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum(c1_name + c1_name),
+            xo.assert_allclose(sl.sum(c1_name + c1_name)[0],
                                [0, 0, (c1 ** 2 * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum(c2_name + c2_name),
+            xo.assert_allclose(sl.sum(c2_name + c2_name)[0],
                                [0, 0, (c2 ** 2 * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum(c1_name + c2_name),
+            xo.assert_allclose(sl.sum(c1_name + c2_name)[0],
                                [0, 0, (c1 * c2 * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum('zetazeta'),
+            xo.assert_allclose(sl.sum('zetazeta')[0],
                                [0, 0, (p.zeta ** 2 * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.sum(c1_name + 'zeta'),
+            xo.assert_allclose(sl.sum(c1_name + 'zeta')[0],
                                [0, 0, (c1 * p.zeta * p.weight).sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.mean(c1_name),
+            xo.assert_allclose(sl.mean(c1_name)[0],
                                [0, 0, (c1 * p.weight).sum() / p.weight.sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.mean(c2_name),
+            xo.assert_allclose(sl.mean(c2_name)[0],
                                [0, 0, (c2 * p.weight).sum() / p.weight.sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.mean(c1_name + c1_name),
+            xo.assert_allclose(sl.mean(c1_name + c1_name)[0],
                                [0, 0,
                                 (c1 ** 2 * p.weight).sum() / p.weight.sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.mean(c2_name + c2_name),
+            xo.assert_allclose(sl.mean(c2_name + c2_name)[0],
                                [0, 0,
                                 (c2 ** 2 * p.weight).sum() / p.weight.sum()],
                                rtol=0, atol=1e-12)
-            xo.assert_allclose(sl.mean(c1_name + c2_name),
+            xo.assert_allclose(sl.mean(c1_name + c2_name)[0],
                                [0, 0,
                                 (c1 * c2 * p.weight).sum() / p.weight.sum()],
                                rtol=0, atol=1e-12)
             xo.assert_allclose(
-                sl.mean(c1_name + 'zeta'),
+                sl.mean(c1_name + 'zeta')[0],
                 [0, 0, (c1 * p.zeta * p.weight).sum() / p.weight.sum()],
                 rtol=0, atol=1e-12)
             xo.assert_allclose(
