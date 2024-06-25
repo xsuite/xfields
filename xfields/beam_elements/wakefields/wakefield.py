@@ -87,11 +87,7 @@ class Wakefield(ElementWithSlicer):
             num_turns=num_turns,
             circumference=circumference)
 
-        for cc in self.components:
-            cc._conv_data = WakeConvolution(cc, _flatten=_flatten)
-            cc._conv_data._initialize_conv_data(_flatten=_flatten,
-                                                moments_data=self.moments_data)
-
+        self._flatten = _flatten
         all_slicer_moments = list(set(all_slicer_moments))
 
     def init_pipeline(self, pipeline_manager, element_name, partners_names):
@@ -101,6 +97,12 @@ class Wakefield(ElementWithSlicer):
                               partners_names=partners_names)
 
     def track(self, particles):
+
+        for cc in self.components:
+            if not hasattr(cc, '_conv_data') or cc._conv_data is None:
+                cc._conv_data = WakeConvolution(cc, _flatten=self._flatten)
+                cc._conv_data._initialize_conv_data(_flatten=self._flatten,
+                                                    moments_data=self.moments_data)
 
         # Use common slicer from parent class to measure all moments
         super().track(particles)
