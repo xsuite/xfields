@@ -88,8 +88,9 @@ class Wakefield(ElementWithSlicer):
             circumference=circumference)
 
         for cc in self.components:
-            cc._initialize_conv_data(_flatten=_flatten,
-                                     moments_data=self.moments_data)
+            cc._conv_data = WakeConvolution(cc, _flatten=_flatten)
+            cc._conv_data._initialize_conv_data(_flatten=_flatten,
+                                                moments_data=self.moments_data)
 
         all_slicer_moments = list(set(all_slicer_moments))
 
@@ -105,7 +106,7 @@ class Wakefield(ElementWithSlicer):
         super().track(particles)
 
         for wf in self.components:
-            wf.track(particles,
+            wf._conv_data.track(particles,
                      i_bunch_particles=self.i_bunch_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
@@ -230,17 +231,6 @@ class WakeComponent:
         self.source_moments = source_moments
         self.function = function
         self.moments_data = None
-
-    def _initialize_conv_data(self, _flatten=False, moments_data=None):
-        self._conv_data = WakeConvolution(self, _flatten=_flatten)
-        self._conv_data._initialize_conv_data(_flatten=_flatten,
-                                                moments_data=moments_data)
-
-    def track(self, particles, i_bunch_particles, i_slice_particles,
-              moments_data):
-        self._conv_data.track(particles=particles, i_bunch_particles=i_bunch_particles,
-                              i_slice_particles=i_slice_particles,
-                              moments_data=moments_data)
 
 
 class ResonatorWake(WakeComponent):
