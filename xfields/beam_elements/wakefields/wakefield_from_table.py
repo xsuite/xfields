@@ -46,7 +46,7 @@ class WakefieldFromTable(Wakefield):
         Use flattened wakes
     """
     def __init__(self, table, use_components, zeta_range, num_slices,
-                 num_turns, circumference, beta0=1,
+                 num_turns, circumference,
                  bunch_spacing_zeta=None, filling_scheme=None,
                  bunch_numbers=None, log_moments=None, _flatten=False):
         self.table = table
@@ -68,7 +68,6 @@ class WakefieldFromTable(Wakefield):
             for component in use_components:
                 assert component in VALID_WAKE_COMPONENTS
 
-        wake_distance = table['time'] * beta0 * clight
         components = []
         # Loop over the components and create the WakeComponent objects
         # for the components that are used
@@ -76,8 +75,6 @@ class WakefieldFromTable(Wakefield):
             if component != 'time' and (use_components is None or
                                         component in use_components):
                 assert component in VALID_WAKE_COMPONENTS
-                scale_kick = None
-                source_moments = ['num_particles']
                 if component == 'longitudinal':
                     kick = 'delta'
                     source_exponents = (0, 0)
@@ -125,12 +122,11 @@ class WakefieldFromTable(Wakefield):
                 else:
                     raise ValueError(f'Invalid wake component: {component}')
 
-                wake_strength = table[component]
                 wakefield = WakeComponent(
                     source_exponents=source_exponents,
                     test_exponents=test_expontents,
                     kick=kick,
-                    function=interp1d(wake_distance, wake_strength,
+                    function_vs_t=interp1d(table['time'], table[component],
                                       bounds_error=False, fill_value=0.0)
                 )
                 components.append(wakefield)

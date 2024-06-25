@@ -23,7 +23,7 @@ class _ConvData:
             source_moments.append('y')
 
 
-    def _initialize_conv_data(self, _flatten=False, moments_data=None):
+    def _initialize_conv_data(self, _flatten=False, moments_data=None, beta0=None):
         assert moments_data is not None
         if not _flatten:
             self._N_aux = moments_data._N_aux
@@ -46,8 +46,9 @@ class _ConvData:
                                         moments_data.dz, self._AA,
                                         self._BB, self._CC, self._DD,
                                         moments_data._z_P)
+            assert beta0 is not None
 
-            self.G_aux = self.component.function(self.z_wake)
+            self.G_aux = self.component.function_vs_zeta(self.z_wake, beta0)
 
             # only positive frequencies because we are using rfft
             phase_term = np.exp(

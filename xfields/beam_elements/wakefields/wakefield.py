@@ -98,6 +98,13 @@ class Wakefield(ElementWithSlicer):
 
     def track(self, particles):
 
+        # Find first active particle to get beta0
+        if particles.state[0] > 0:
+            beta0 = particles.beta0[0]
+        else:
+            i_first = np.where(particles.state > 0)[0][0]
+            beta0 = particles.beta0[i_first]
+
         # Build _conv_data if necessary
         for cc in self.components:
             if (hasattr(cc, '_conv_data') and cc._conv_data is not None
@@ -107,7 +114,8 @@ class Wakefield(ElementWithSlicer):
             cc._conv_data = _ConvData(component=cc, wakefield=self,
                                             _flatten=self._flatten)
             cc._conv_data._initialize_conv_data(_flatten=self._flatten,
-                                                moments_data=self.moments_data)
+                                                moments_data=self.moments_data,
+                                                beta0=beta0)
 
         # Use common slicer from parent class to measure all moments
         super().track(particles)
@@ -217,12 +225,18 @@ class WakeComponent:
                  source_exponents: Tuple[int, int] = (-1, -1),
                  test_exponents: Tuple[int, int] = (-1, -1),
                  kick: str = '',
-                 function=None,
+                 function_vs_t=None,
+                 function_vs_zeta=None,
                  log_moments=None,
                  _flatten=False):
 
         self._flatten = _flatten
-        assert function is not None
+        assert function_vs_t is not None or function_vs_zeta is not None
+        assert function_vs_t is None or function_vs_zeta is None, (
+            'Only one between `function_vs_t` and `function_vs_zeta` can be '
+            'specified')
+
+
 
         assert isinstance(log_moments, (list, tuple)) or log_moments is None
 
@@ -236,8 +250,21 @@ class WakeComponent:
         self.test_exponents = test_exponents
         self.source_exponents = source_exponents
         self.source_moments = source_moments
-        self.function = function
+        self._function_vs_t = function_vs_t
+        self._function_vs_zeta = function_vs_zeta
         self.moments_data = None
+
+    def function_vs_t(self, t, beta0):
+        if self._function_vs_t is None:
+            zeta = t * beta0 * clight
+            return self._function_vs_zeta(zeta)
+        return self._function_vs_t(t)
+
+    def function_vs_zeta(self, zeta, beta0):
+        if self._function_vs_zeta is None:
+            t = zeta / beta0 / clight
+            return self._function_vs_t(t)
+        return self._function_vs_zeta(zeta)
 
 
 class ResonatorWake(WakeComponent):
