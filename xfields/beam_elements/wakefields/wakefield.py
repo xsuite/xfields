@@ -9,7 +9,7 @@ from scipy.interpolate import interp1d
 import xobjects as xo
 import xfields as xf
 from ..element_with_slicer import ElementWithSlicer
-from .convolution import WakeConvolution
+from .convolution import _ConvData
 
 
 class Wakefield(ElementWithSlicer):
@@ -98,11 +98,16 @@ class Wakefield(ElementWithSlicer):
 
     def track(self, particles):
 
+        # Build _conv_data if necessary
         for cc in self.components:
-            if not hasattr(cc, '_conv_data') or cc._conv_data is None:
-                cc._conv_data = WakeConvolution(cc, _flatten=self._flatten)
-                cc._conv_data._initialize_conv_data(_flatten=self._flatten,
-                                                    moments_data=self.moments_data)
+            if (hasattr(cc, '_conv_data') and cc._conv_data is not None
+                and cc._conv_data.wakefield is self):
+                continue
+
+            cc._conv_data = _ConvData(component=cc, wakefield=self,
+                                            _flatten=self._flatten)
+            cc._conv_data._initialize_conv_data(_flatten=self._flatten,
+                                                moments_data=self.moments_data)
 
         # Use common slicer from parent class to measure all moments
         super().track(particles)
