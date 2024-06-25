@@ -3,6 +3,7 @@ from scipy.constants import c, e
 from xfields import ResonatorWake, Wakefield
 from xobjects.test_helpers import for_all_test_contexts
 import xtrack as xt
+import xobjects as xo
 
 exclude_contexts = ['ContextPyopencl', 'ContextCupy']
 
@@ -73,8 +74,8 @@ def test_longitudinal_wake_kick(test_context):
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
     assert np.allclose((particles.delta - delta_bef)[0],
-                       (wfz.function(-particles.zeta[1] +
-                                     particles.zeta[0]) * scale[0]),
+                       (scale[0]* wfz.function_vs_zeta(-particles.zeta[1] +
+                                     particles.zeta[0], beta0=particles.beta0[0]) ),
                        rtol=1e-4, atol=0)
 
 
@@ -153,15 +154,13 @@ def test_constant_wake_kick(test_context):
     scale = -particles.q0**2 * e**2 / (particles.p0c * e)
 
     assert np.allclose((particles.px - px_bef)[0],
-                       (wfx.function(-particles.zeta[1] +
-                                     particles.zeta[0]) * scale[0]),
+                       scale[0] *wfx.function_vs_zeta(-particles.zeta[1] +
+                                     particles.zeta[0], beta0=particles.beta0[0]),
                        rtol=1e-4, atol=0)
     assert np.allclose((particles.py - py_bef)[0],
-                       (wfy.function(-particles.zeta[1] +
-                                     particles.zeta[0]) * scale[0]),
-                       rtol=1e-4, atol=0)
-
-
+                        scale[0] *wfy.function_vs_zeta(-particles.zeta[1] +
+                                    particles.zeta[0], beta0=particles.beta0[0]),
+                        rtol=1e-4, atol=0)
 @for_all_test_contexts(excluding=exclude_contexts)
 def test_direct_dipolar_wake_kick(test_context):
     n_turns_wake = 1
@@ -242,13 +241,17 @@ def test_direct_dipolar_wake_kick(test_context):
 
     mask = particles.zeta < particles.zeta[i_source]
 
-    assert np.allclose((particles.px - px_bef)[mask]/displace_x,
-                       (wfx.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[mask],
+    assert np.allclose(
+        (particles.px - px_bef)[mask]/displace_x,
+        (wfx.function_vs_zeta(-particles.zeta[i_source] +
+                              particles.zeta,
+                              beta0=particles.beta0[0]) * scale[0])[mask],
                        rtol=1e-4, atol=0)
-    assert np.allclose((particles.py - py_bef)[mask]/displace_y,
-                       (wfy.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[mask],
+    assert np.allclose(
+        (particles.py - py_bef)[mask]/displace_y,
+        (wfy.function_vs_zeta(-particles.zeta[i_source] +
+                              particles.zeta,
+                              beta0=particles.beta0[0]) * scale[0])[mask],
                        rtol=1e-4, atol=0)
 
 
@@ -332,13 +335,17 @@ def test_cross_dipolar_wake_kick(test_context):
 
     mask = particles.zeta < particles.zeta[i_source]
 
-    assert np.allclose((particles.px - px_bef)[mask]/displace_y,
-                       (wfx.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[mask],
+    assert np.allclose(
+        (particles.px - px_bef)[mask]/displace_y,
+        (wfx.function_vs_zeta(-particles.zeta[i_source] +
+                              particles.zeta,
+                              beta0=particles.beta0[0]) * scale[0])[mask],
                        rtol=1e-4, atol=0)
-    assert np.allclose((particles.py - py_bef)[mask]/displace_x,
-                       (wfy.function(-particles.zeta[i_source] +
-                                     particles.zeta) * scale[0])[mask],
+    assert np.allclose(
+        (particles.py - py_bef)[mask]/displace_x,
+        (wfy.function_vs_zeta(-particles.zeta[i_source] +
+                              particles.zeta,
+                              beta0=particles.beta0[0]) * scale[0])[mask],
                        rtol=1e-4, atol=0)
 
 
@@ -426,11 +433,13 @@ def test_direct_quadrupolar_wake_kick(test_context):
     # The formulae below are correct because we have one macroparticle per slice
     assert np.allclose(
         particles.px[i_test]/(displace_x_test),
-        np.sum(wfx.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        np.sum(wfx.function_vs_zeta(particles.zeta[i_test] - particles.zeta,
+                                    beta0=particles.beta0[0]))*scale[0],
         rtol=1e-4, atol=0)
     assert np.allclose(
         particles.py[i_test]/(displace_y_test),
-        np.sum(wfy.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        np.sum(wfy.function_vs_zeta(particles.zeta[i_test] - particles.zeta,
+                                    beta0=particles.beta0[0]))*scale[0],
         rtol=1e-4, atol=0)
 
 @for_all_test_contexts(excluding=exclude_contexts)
@@ -451,9 +460,6 @@ def test_cross_quadrupolar_wake_kick(test_context):
                        n_macroparticles)
     i_source = -10
     i_test = 10
-
-    source_moment_x = 'x'
-    source_moment_y = 'y'
 
     displace_x_test = 2
     displace_y_test = 3
@@ -519,11 +525,13 @@ def test_cross_quadrupolar_wake_kick(test_context):
 
     assert np.allclose(
         particles.px[i_test]/(displace_y_test),
-        np.sum(wfx.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        np.sum(wfx.function_vs_zeta(
+            particles.zeta[i_test] - particles.zeta, beta0=particles.beta0[0]))*scale[0],
         rtol=1e-4, atol=0)
     assert np.allclose(
         particles.py[i_test]/(displace_x_test),
-        np.sum(wfy.function(particles.zeta[i_test] - particles.zeta))*scale[0],
+        np.sum(wfy.function_vs_zeta(
+            particles.zeta[i_test] - particles.zeta, beta0=particles.beta0[0]))*scale[0],
         rtol=1e-4, atol=0)
 
 
@@ -605,20 +613,23 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
 
     scale = -particles.q0 ** 2 * e ** 2 / (particles.p0c * e)
 
-    assert np.allclose((particles.px - px_bef)/displace_x_source,
-                       wfx.function(-particles.zeta[i_source] +
-                                    particles.zeta - circumference) * scale +
-                       wfx.function(-particles.zeta[i_source] +
-                                    particles.zeta) * scale +
-                       wfx.function(-particles.zeta[i_source] +
-                                    particles.zeta) * scale,
-                       rtol=1e-4, atol=0)
-    assert np.allclose((particles.py - py_bef)/displace_y_source,
-                       wfy.function(-particles.zeta[i_source] +
-                                    particles.zeta - circumference) * scale +
-                       wfy.function(-particles.zeta[i_source] +
-                                    particles.zeta) * scale +
-                       wfy.function(-particles.zeta[i_source] +
-                                    particles.zeta) * scale,
+    # we kick twice with the current turn and once with the previous turn because
+    # we do two turns
+    xo.assert_allclose(
+        (particles.px - px_bef)/displace_x_source,
+        (wfx.function_vs_zeta(-particles.zeta[i_source] +
+                        particles.zeta - circumference, beta0=particles.beta0[0]) * scale[0]
+        + wfx.function_vs_zeta(-particles.zeta[i_source] +
+                        particles.zeta, beta0=particles.beta0[0]) * scale[0]
+        + wfx.function_vs_zeta(-particles.zeta[i_source] +
+                        particles.zeta, beta0=particles.beta0[0]) * scale[0]),
+            rtol=1e-4, atol=0)
+    xo.assert_allclose((particles.py - py_bef)/displace_y_source,
+            wfy.function_vs_zeta(-particles.zeta[i_source] +
+                        particles.zeta - circumference, beta0=particles.beta0[0]) * scale[0]
+            + wfy.function_vs_zeta(-particles.zeta[i_source] +
+                        particles.zeta, beta0=particles.beta0[0]) * scale[0]
+            + wfy.function_vs_zeta(-particles.zeta[i_source] +
+                        particles.zeta, beta0=particles.beta0[0]) * scale[0],
                        rtol=1e-4, atol=0)
 

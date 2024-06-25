@@ -283,29 +283,26 @@ class ResonatorWake(WakeComponent):
         Resonator frequency
     q_factor: float
         Resonator quality factor
-    beta: float
-        Lorentz factor of the beam
 
     Returns
     -------
     A resonator Wakefield
     """
 
-    def __init__(self, r_shunt, frequency, q_factor, beta=1, ** kwargs):
+    def __init__(self, r_shunt, frequency, q_factor, ** kwargs):
 
         assert 'function' not in kwargs
 
         self._r_shunt = r_shunt
         self._frequency = frequency
         self._q_factor = q_factor
-        self.beta = beta
 
         if kwargs['kick'] == 'delta':
             function = self._longitudinal_resonator_function
         else:
             function = self._transverse_resonator_function
 
-        super().__init__(function=function, **kwargs)
+        super().__init__(function_vs_t=function, **kwargs)
 
     @property
     def r_shunt(self):
@@ -340,30 +337,26 @@ class ResonatorWake(WakeComponent):
                                  'initialization')
         self._frequency = value
 
-    def _transverse_resonator_function(self, z):
+    def _transverse_resonator_function(self, t):
         omega_r = 2 * np.pi * self.frequency
         alpha_t = omega_r / (2 * self.q_factor)
         omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
 
-        dt = self.beta*clight
-
-        res = (z < 0) * (self.r_shunt *
+        res = (t < 0) * (self.r_shunt *
                          omega_r ** 2 / (self.q_factor * omega_bar) *
-                         np.exp(alpha_t * z / dt) *
-                         np.sin(omega_bar * z / dt))  # Wake definition
+                         np.exp(alpha_t * t) *
+                         np.sin(omega_bar * t))  # Wake definition
         return res
 
-    def _longitudinal_resonator_function(self, z):
+    def _longitudinal_resonator_function(self, t):
         omega_r = 2 * np.pi * self.frequency
         alpha_t = omega_r / (2 * self.q_factor)
         omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
 
-        dt = self.beta*clight
-
-        res = (z < 0) * (-self.r_shunt * alpha_t *
-                         np.exp(alpha_t * z / dt) *
-                         (np.cos(omega_bar * z / dt) +
-                          alpha_t / omega_bar * np.sin(omega_bar * z / dt)))
+        res = (t < 0) * (-self.r_shunt * alpha_t *
+                         np.exp(alpha_t * t) *
+                         (np.cos(omega_bar * t) +
+                          alpha_t / omega_bar * np.sin(omega_bar * t)))
 
         return res
 
