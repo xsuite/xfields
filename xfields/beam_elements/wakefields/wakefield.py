@@ -60,7 +60,7 @@ class Wakefield(ElementWithSlicer):
 
         all_slicer_moments = []
         for cc in self.components:
-            assert cc.moments_data is None
+            assert not hasattr(cc, 'moments_data') or cc.moments_data is None
             all_slicer_moments += cc.source_moments
 
         self.all_slicer_moments = list(set(all_slicer_moments))
