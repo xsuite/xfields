@@ -3,7 +3,7 @@ import numpy as np
 from scipy.constants import c as clight
 from scipy.interpolate import interp1d
 
-from .wakefield import Wakefield, WakeComponent
+# from .wakefield import WakeTracker, WakeComponent
 
 
 VALID_WAKE_COMPONENTS = ['constant_x', 'constant_y', 'dipole_x',
@@ -12,7 +12,7 @@ VALID_WAKE_COMPONENTS = ['constant_x', 'constant_y', 'dipole_x',
                             'quadrupole_xy', 'quadrupole_yx',
                             'longitudinal']
 
-class WakefieldFromTable(Wakefield):
+class WakefieldFromTable(WakeTracker):
     """
     Wakefield from a table.
 

@@ -12,7 +12,7 @@ from ..element_with_slicer import ElementWithSlicer
 from .convolution import _ConvData
 
 
-class Wakefield(ElementWithSlicer):
+class WakeTracker(ElementWithSlicer):
     """
     An object handling many WakeField instances as a single beam element.
 
@@ -164,7 +164,7 @@ class Wakefield(ElementWithSlicer):
         if other == 0:
             return self
 
-        assert isinstance(other, Wakefield)
+        assert isinstance(other, WakeTracker)
 
         new_components = self.components + other.components
 
@@ -185,7 +185,7 @@ class Wakefield(ElementWithSlicer):
         xo.assert_allclose(self.num_turns, other.num_turns, atol=0, rtol=0)
         xo.assert_allclose(self.circumference, other.circumference, atol=0, rtol=0)
 
-        return Wakefield(
+        return WakeTracker(
                  components=new_components,
                  zeta_range=self.zeta_range,
                  num_slices=self.num_slices,
@@ -198,167 +198,3 @@ class Wakefield(ElementWithSlicer):
 
     def __radd__(self, other):
         return self.__add__(other)
-
-class WakeComponent:
-    """
-    A beam element modelling a wakefield kick
-
-    Parameters
-    ----------
-    source_moments: list
-        List of moment which are used as the wake source (e.g. for an x-dipolar
-        wake it is ['num_particles', 'x'], while for a constant or
-        quadrupolar wake it is only ['num_particles']).
-    kick : str
-        Moment to which the kick is applied (e.g. it is 'px' for an x wake, it
-        is 'py' for a y wake and it is 'delta' for a longitudinal wake).
-    scale_kick:
-        Moment by which the wake kick is scaled (e.g. it is None for a constant,
-        or dipolar, while it is 'x' for a x-quadrupolar wake).
-    log_moments: list
-        List of moments logged in the slicer.
-    _flatten: bool
-        Use flattened wakes
-    """
-
-    def __init__(self,
-                 source_exponents: Tuple[int, int] = (-1, -1),
-                 test_exponents: Tuple[int, int] = (-1, -1),
-                 kick: str = '',
-                 function_vs_t=None,
-                 function_vs_zeta=None,
-                 log_moments=None,
-                 _flatten=False):
-
-        self._flatten = _flatten
-        assert function_vs_t is not None or function_vs_zeta is not None
-        assert function_vs_t is None or function_vs_zeta is None, (
-            'Only one between `function_vs_t` and `function_vs_zeta` can be '
-            'specified')
-
-
-
-        assert isinstance(log_moments, (list, tuple)) or log_moments is None
-
-        source_moments = ['num_particles']
-        if source_exponents[0] != 0:
-            source_moments.append('x')
-        if source_exponents[1] != 0:
-            source_moments.append('y')
-
-        self.kick = kick
-        self.test_exponents = test_exponents
-        self.source_exponents = source_exponents
-        self.source_moments = source_moments
-        self._function_vs_t = function_vs_t
-        self._function_vs_zeta = function_vs_zeta
-        self.moments_data = None
-
-    def function_vs_t(self, t, beta0):
-        if self._function_vs_t is None:
-            zeta = t * beta0 * clight
-            return self._function_vs_zeta(zeta)
-        return self._function_vs_t(t)
-
-    def function_vs_zeta(self, zeta, beta0):
-        if self._function_vs_zeta is None:
-            t = zeta / beta0 / clight
-            return self._function_vs_t(t)
-        return self._function_vs_zeta(zeta)
-
-
-class ResonatorWake(WakeComponent):
-    """
-    A resonator wake. On top of the following parameters it takes the same
-    parameters as WakeField.
-    Changing r_shunt, q_factor, and frequency after initialization is forbidded
-    because the wake-associated quantities are computed upon initialization and
-    changing the parameters would not update them.
-
-    Parameters
-    ----------
-    r_shunt: float
-        Resonator shunt impedance
-    frequency: float
-        Resonator frequency
-    q_factor: float
-        Resonator quality factor
-
-    Returns
-    -------
-    A resonator Wakefield
-    """
-
-    def __init__(self, r_shunt, frequency, q_factor, ** kwargs):
-
-        assert 'function' not in kwargs
-
-        self._r_shunt = r_shunt
-        self._frequency = frequency
-        self._q_factor = q_factor
-
-        if kwargs['kick'] == 'delta':
-            function = self._longitudinal_resonator_function
-        else:
-            function = self._transverse_resonator_function
-
-        super().__init__(function_vs_t=function, **kwargs)
-
-    @property
-    def r_shunt(self):
-        return self._r_shunt
-
-    @r_shunt.setter
-    def r_shunt(self, value):
-        if hasattr(self, 'r_shunt'):
-            raise AttributeError('r_shunt cannot be changed after '
-                                 'initialization')
-        self._r_shunt = value
-
-    @property
-    def q_factor(self):
-        return self._q_factor
-
-    @q_factor.setter
-    def q_factor(self, value):
-        if hasattr(self, 'q_factor'):
-            raise AttributeError('q_factor cannot be changed after '
-                                 'initialization')
-        self._q_factor = value
-
-    @property
-    def frequency(self):
-        return self._frequency
-
-    @frequency.setter
-    def frequency(self, value):
-        if hasattr(self, 'frequency'):
-            raise AttributeError('frequency cannot be changed after '
-                                 'initialization')
-        self._frequency = value
-
-    def _transverse_resonator_function(self, t):
-        omega_r = 2 * np.pi * self.frequency
-        alpha_t = omega_r / (2 * self.q_factor)
-        omega_bar = np.sqrt(omega_r ** 2 - alpha_t ** 2)
-
-        res = (t < 0) * (self.r_shunt *
-                         omega_r ** 2 / (self.q_factor * omega_bar) *
-                         np.exp(alpha_t * t) *
-                         np.sin(omega_bar * t))  # Wake definition
-        return res
-
-    def _longitudinal_resonator_function(self, t):
-        omega_r = 2 * np.pi * self.frequency
-        alpha_t = omega_r / (2 * self.q_factor)
-        omega_bar = np.sqrt(np.abs(omega_r ** 2 - alpha_t ** 2))
-
-        res = (t < 0) * (-self.r_shunt * alpha_t *
-                         np.exp(alpha_t * t) *
-                         (np.cos(omega_bar * t) +
-                          alpha_t / omega_bar * np.sin(omega_bar * t)))
-
-        return res
-
-
-
