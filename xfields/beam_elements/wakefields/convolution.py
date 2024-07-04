@@ -112,7 +112,8 @@ class _ConvData:
             out=interpolated_result)
         # interpolated result will be zero for lost particles (so nothing to
         # do for them)
-        scaling_constant = -particles.q0**2 * qe**2 / (particles.p0c * qe)
+        scaling_constant = particles.q0**2 * qe**2 / (
+                                particles.p0c * particles.beta0 * qe)
 
         if self.component.test_exponents[0] != 0:
             scaling_constant *= particles.x**self.component.test_exponents[0]
