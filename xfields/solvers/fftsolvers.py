@@ -2,6 +2,7 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
+from pathlib import Path
 
 import numpy as np
 from scipy.constants import epsilon_0
@@ -9,14 +10,14 @@ from numpy import pi
 
 from .base import Solver
 
-from xobjects import context_default
+import xobjects as xo
 
 class FFTSolver2D(Solver):
 
     def solve(self, rho):
         pass
 
-class FFTSolver3D(Solver):
+class FFTSolver3D(xo.HybridClass):
 
     '''
     Creates a Poisson solver object that solves the full 3D Poisson
@@ -35,10 +36,28 @@ class FFTSolver3D(Solver):
         (FFTSolver3D): Poisson solver object.
     '''
 
+    _xofields = {
+        '_dummy': xo.Int8,
+    }
+
+    _kernels = {
+        'broadcast_complex_product_inplace': xo.Kernel(
+            args=[
+                xo.Arg(xo.scalar.Float64, pointer=True, name='big'),
+                xo.Arg(xo.scalar.Float64, pointer=True, name='small'),
+                xo.Arg(xo.UInt64, name='n0_big'),
+                xo.Arg(xo.UInt64, name='n1_big'),
+                xo.Arg(xo.UInt64, name='n2_big'),
+            ]
+        )
+    }
+
+    _extra_c_sources = [Path(__file__).parent / 'src/broadcast_complex_product_inplace.h']
+
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
-            context = context_default
+            context = xo.context_default
 
         self.context = context
 
@@ -100,6 +119,7 @@ class FFTSolver3D(Solver):
         self._workspace_dev = workspace_dev
         self._gint_rep_transf_dev = gint_rep_dev
         self.fftplan = fftplan
+        super().__init__()
 
     #@profile
     def solve(self, rho):
@@ -124,18 +144,42 @@ class FFTSolver3D(Solver):
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
 
-        try:
-            _workspace_dev.T[:,:,:] *= (
-                        self._gint_rep_transf_dev.T) # phi_rep_hat
-        except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
-            for ii in range(self.nz):
-                _workspace_dev.T[ii,:,:] *= (
-                        self._gint_rep_transf_dev.T[0, :, :]) # phi_rep_hat
+        import ipdb; ipdb.set_trace()
+        self.compile_kernels()
+        self.context.kernels.broadcast_complex_product_inplace(
+            big=self._workspace_dev, small=self._gint_rep_transf_dev,
+            n0_big=self.nx, n1_big=self.ny, n2_big=self.nz
+        )
+        # try:
+        #     _workspace_dev.T[:,:,:] *= (
+        #                 self._gint_rep_transf_dev.T) # phi_rep_hat
+        # except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+        #     for ii in range(self.nz):
+        #         _workspace_dev.T[ii,:,:] *= (
+        #                 self._gint_rep_transf_dev.T[0, :, :]) # phi_rep_hat
 
         self.fftplan.itransform(_workspace_dev) #phi_rep
         return _workspace_dev.real[:self.nx, :self.ny, :self.nz]
 
-class FFTSolver2p5D(FFTSolver3D):
+class FFTSolver2p5D(xo.HybridClass):
+
+    _xofields = {
+        '_dummy': xo.Int8,
+    }
+
+    _kernels = {
+        'broadcast_complex_product_inplace': xo.Kernel(
+            args=[
+                xo.Arg(xo.scalar.Float64, pointer=True, name='big'),
+                xo.Arg(xo.scalar.Float64, pointer=True, name='small'),
+                xo.Arg(xo.UInt64, name='n0_big'),
+                xo.Arg(xo.UInt64, name='n1_big'),
+                xo.Arg(xo.UInt64, name='n2_big'),
+            ]
+        )
+    }
+
+    _extra_c_sources = [Path(__file__).parent / 'src/broadcast_complex_product_inplace.h']
 
     '''
     Creates a Poisson solver object that solve's Poisson equation in
@@ -157,7 +201,7 @@ class FFTSolver2p5D(FFTSolver3D):
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
-            context = context_default
+            context = xo.context_default
         self.context = context
 
         # Build grid for primitive function
@@ -207,12 +251,15 @@ class FFTSolver2p5D(FFTSolver3D):
         self._gint_rep_transf_dev = gint_rep_transf_dev
         self.fftplan = fftplan
 
+    def solve(self, *args, **kwargs):
+        FFTSolver3D.solve(self, *args, **kwargs)
+
 class FFTSolver2p5DAveraged(Solver):
 
     def __init__(self, dx, dy, dz, nx, ny, nz, context=None, fftplan=None):
 
         if context is None:
-            context = context_default
+            context = xo.context_default
         self.context = context
 
         # Build grid for primitive function
