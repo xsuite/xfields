@@ -144,10 +144,10 @@ class FFTSolver3D(xo.HybridClass):
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
 
-        import ipdb; ipdb.set_trace()
         self.compile_kernels()
         self.context.kernels.broadcast_complex_product_inplace(
-            big=self._workspace_dev, small=self._gint_rep_transf_dev,
+            big=_workspace_dev[:1, :1, :1].view(dtype=np.float64),
+            small=self._gint_rep_transf_dev[:1, :1, :1].view(dtype=np.float64),
             n0_big=self.nx, n1_big=self.ny, n2_big=self.nz
         )
         # try:
@@ -250,9 +250,10 @@ class FFTSolver2p5D(xo.HybridClass):
         self.nz = nz
         self._gint_rep_transf_dev = gint_rep_transf_dev
         self.fftplan = fftplan
+        self.xoinitialize(_context=context)
 
     def solve(self, *args, **kwargs):
-        FFTSolver3D.solve(self, *args, **kwargs)
+        return FFTSolver3D.solve(self, *args, **kwargs)
 
 class FFTSolver2p5DAveraged(Solver):
 
