@@ -124,11 +124,10 @@ class FFTSolver3D(Solver):
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
 
-        # try:
-        #     _workspace_dev.T[:,:,:] *= (
-        #                 self._gint_rep_transf_dev.T) # phi_rep_hat
-        # except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
-        if True:
+        try:
+            _workspace_dev.T[:,:,:] *= (
+                        self._gint_rep_transf_dev.T) # phi_rep_hat
+        except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
             # Check F-contiguity
             assert _workspace_dev.strides[0] == 16
             assert self._gint_rep_transf_dev.strides[0] == 16
