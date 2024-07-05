@@ -151,6 +151,7 @@ class FFTSolver3D(xo.HybridClass):
 
         print('a:' , _workspace_dev[120, 121, 15])
         print('b:' , self._gint_rep_transf_dev[120, 121, 0])
+        import pdb; pdb.set_trace()
 
         if False:
             _workspace_dev.T[:,:,:] *= (
@@ -217,6 +218,7 @@ class FFTSolver2p5D(xo.HybridClass):
         F_temp = primitive_func_2p5d(XX_F, YY_F)
 
         # Integrated Green Function (I will transform inplace)
+        import pdb; pdb.set_trace()
         gint_rep= np.zeros((2*nx, 2*ny), dtype=np.complex128, order='F')
         gint_rep[:nx+1, :ny+1] = (F_temp[ 1:,  1:]
                                 - F_temp[:-1,  1:]
@@ -240,7 +242,9 @@ class FFTSolver2p5D(xo.HybridClass):
             del(temp_dev)
 
         # Transform the green function
-        gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
+        gint_rep_transf = np.zeros((2*nx, 2*ny),
+                                    dtype=np.complex128, order='F')
+        gint_rep_transf[:, :] = np.fft.fftn(gint_rep, axes=(0,1))
 
         # Transfer to GPU (if needed)
         gint_rep_transf_dev = context.nparray_to_context_array(
@@ -299,7 +303,9 @@ class FFTSolver2p5DAveraged(Solver):
             del(temp_dev)
 
         # Transform the green function
-        gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
+        gint_rep_transf = np.zeros((2*nx, 2*ny),
+                                    dtype=np.complex128, order='F')
+        gint_rep_transf[:, :] = np.fft.fftn(gint_rep, axes=(0,1))
 
         # Transfer to GPU (if needed)
         gint_rep_transf_dev = context.nparray_to_context_array(
