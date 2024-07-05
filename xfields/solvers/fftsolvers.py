@@ -148,7 +148,9 @@ class FFTSolver3D(xo.HybridClass):
         self.context.kernels.broadcast_complex_product_inplace(
             big=_workspace_dev[:1, :1, :1].view(dtype=np.float64),
             small=self._gint_rep_transf_dev[:1, :1, :1].view(dtype=np.float64),
-            n0_big=self.nx, n1_big=self.ny, n2_big=self.nz
+            n0_big=_workspace_dev.shape[0],
+            n1_big=_workspace_dev.shape[1],
+            n2_big=_workspace_dev.shape[2],
         )
         # try:
         #     _workspace_dev.T[:,:,:] *= (
