@@ -123,7 +123,8 @@ class FFTSolver3D(xo.HybridClass):
         self._workspace_dev = workspace_dev
         self._gint_rep_transf_dev = gint_rep_dev
         self.fftplan = fftplan
-        super().__init__()
+
+        self.xoinitialize(_context=context)
 
     #@profile
     def solve(self, rho):
@@ -148,10 +149,11 @@ class FFTSolver3D(xo.HybridClass):
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
 
-        try:
-            _workspace_dev.T[:,:,:] *= (
-                        self._gint_rep_transf_dev.T) # phi_rep_hat
-        except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+        # try:
+        #     _workspace_dev.T[:,:,:] *= (
+        #                 self._gint_rep_transf_dev.T) # phi_rep_hat
+        # except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+        if True:
             self.compile_kernels()
             self.context.kernels.broadcast_complex_product_inplace(
                 big=_workspace_dev[:1, :1, :1].view(dtype=np.float64),
