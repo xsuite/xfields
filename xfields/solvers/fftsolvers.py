@@ -12,6 +12,20 @@ from .base import Solver
 
 import xobjects as xo
 
+_kernels_complex_prod = {
+    'broadcast_complex_product_inplace': xo.Kernel(
+        args=[
+            xo.Arg(xo.scalar.Float64, pointer=True, name='big'),
+            xo.Arg(xo.scalar.Float64, pointer=True, name='small'),
+            xo.Arg(xo.UInt64, name='n0_big'),
+            xo.Arg(xo.UInt64, name='n1_big'),
+            xo.Arg(xo.UInt64, name='n2_big'),
+            xo.Arg(xo.UInt64, name='nn'),
+        ],
+        n_threads='nn',
+    )
+}
+
 class FFTSolver2D(Solver):
 
     def solve(self, rho):
@@ -40,17 +54,7 @@ class FFTSolver3D(xo.HybridClass):
         '_dummy': xo.Int8,
     }
 
-    _kernels = {
-        'broadcast_complex_product_inplace': xo.Kernel(
-            args=[
-                xo.Arg(xo.scalar.Float64, pointer=True, name='big'),
-                xo.Arg(xo.scalar.Float64, pointer=True, name='small'),
-                xo.Arg(xo.UInt64, name='n0_big'),
-                xo.Arg(xo.UInt64, name='n1_big'),
-                xo.Arg(xo.UInt64, name='n2_big'),
-            ]
-        )
-    }
+    _kernels = _kernels_complex_prod
 
     _extra_c_sources = [Path(__file__).parent / 'src/broadcast_complex_product_inplace.h']
 
@@ -144,21 +148,21 @@ class FFTSolver3D(xo.HybridClass):
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
 
-        self.compile_kernels()
-        self.context.kernels.broadcast_complex_product_inplace(
-            big=_workspace_dev[:1, :1, :1].view(dtype=np.float64),
-            small=self._gint_rep_transf_dev[:1, :1, :1].view(dtype=np.float64),
-            n0_big=_workspace_dev.shape[0],
-            n1_big=_workspace_dev.shape[1],
-            n2_big=_workspace_dev.shape[2],
-        )
-        # try:
-        #     _workspace_dev.T[:,:,:] *= (
-        #                 self._gint_rep_transf_dev.T) # phi_rep_hat
-        # except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
-        #     for ii in range(self.nz):
-        #         _workspace_dev.T[ii,:,:] *= (
-        #                 self._gint_rep_transf_dev.T[0, :, :]) # phi_rep_hat
+        try:
+            _workspace_dev.T[:,:,:] *= (
+                        self._gint_rep_transf_dev.T) # phi_rep_hat
+        except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+            self.compile_kernels()
+            self.context.kernels.broadcast_complex_product_inplace(
+                big=_workspace_dev[:1, :1, :1].view(dtype=np.float64),
+                small=self._gint_rep_transf_dev[:1, :1, :1].view(dtype=np.float64),
+                n0_big=_workspace_dev.shape[0],
+                n1_big=_workspace_dev.shape[1],
+                n2_big=_workspace_dev.shape[2],
+                nn=(_workspace_dev.shape[0]
+                    * _workspace_dev.shape[1]
+                    * _workspace_dev.shape[2])
+            )
 
         self.fftplan.itransform(_workspace_dev) #phi_rep
         return _workspace_dev.real[:self.nx, :self.ny, :self.nz]
@@ -169,17 +173,7 @@ class FFTSolver2p5D(xo.HybridClass):
         '_dummy': xo.Int8,
     }
 
-    _kernels = {
-        'broadcast_complex_product_inplace': xo.Kernel(
-            args=[
-                xo.Arg(xo.scalar.Float64, pointer=True, name='big'),
-                xo.Arg(xo.scalar.Float64, pointer=True, name='small'),
-                xo.Arg(xo.UInt64, name='n0_big'),
-                xo.Arg(xo.UInt64, name='n1_big'),
-                xo.Arg(xo.UInt64, name='n2_big'),
-            ]
-        )
-    }
+    _kernels = _kernels_complex_prod
 
     _extra_c_sources = [Path(__file__).parent / 'src/broadcast_complex_product_inplace.h']
 

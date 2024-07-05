@@ -20,9 +20,9 @@
     /*gpuglmem*/ double *small,
     uint64_t n0_big,
     uint64_t n1_big,
-    uint64_t n2_big
+    uint64_t n2_big,
+    uint64_t nn
 ) {
-    uint64_t nn = n0_big * n1_big * n2_big;
     for (uint64_t ii = 0; ii < nn; ii++){ //vectorize_over ii nn
        uint64_t i2 = ii / (n0_big * n1_big);
        uint64_t i1 = (ii - i2 * n0_big * n1_big) / n0_big;
