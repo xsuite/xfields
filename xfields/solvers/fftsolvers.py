@@ -149,9 +149,12 @@ class FFTSolver3D(xo.HybridClass):
         _workspace_dev.T[:self.nz, :self.ny, :self.nx] = rho.T
         self.fftplan.transform(_workspace_dev) # rho_rep_hat
 
-        # try:
-        #     _workspace_dev.T[:,:,:] *= (
-        #                 self._gint_rep_transf_dev.T) # phi_rep_hat
+        print('a:' , _workspace_dev[120, 121, 15])
+        print('b:' , self._gint_rep_transf_dev[120, 121, 0])
+
+        if False:
+            _workspace_dev.T[:,:,:] *= (
+                        self._gint_rep_transf_dev.T) # phi_rep_hat
         # except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
         if True:
             self.compile_kernels()
@@ -165,6 +168,9 @@ class FFTSolver3D(xo.HybridClass):
                     * _workspace_dev.shape[1]
                     * _workspace_dev.shape[2])
             )
+
+        print('Check number:', _workspace_dev[120, 121, 15])
+
 
         self.fftplan.itransform(_workspace_dev) #phi_rep
         return _workspace_dev.real[:self.nx, :self.ny, :self.nz]

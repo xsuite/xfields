@@ -20,6 +20,7 @@ def generate_particles_object(
                             z_probes,
                             theta_probes):
 
+    np.random.seed(0)
     x_part = sigma_x * np.random.normal(size=(n_macroparticles,))
     y_part = sigma_y * np.random.normal(size=(n_macroparticles,))
     z_part = sigma_z * np.random.normal(size=(n_macroparticles,))
