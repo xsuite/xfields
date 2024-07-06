@@ -120,6 +120,10 @@ class _ConvData:
         if self.component.test_exponents[1] != 0:
             scaling_constant *= particles.y**self.component.test_exponents[1]
 
+        if self.component.kick == 'delta':
+            scaling_constant *= -1 # definition (positive wake corresponds to
+                                   # energy loss)
+
         # remember to handle lost particles!!!
         getattr(particles, self.component.kick)[:] += (scaling_constant *
                                              interpolated_result)
