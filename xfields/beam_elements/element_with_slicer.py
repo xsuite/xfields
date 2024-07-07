@@ -47,7 +47,6 @@ class ElementWithSlicer:
                  bunch_numbers=None,
                  num_turns=1,
                  circumference=None,
-                 _flatten=False,
                  with_compressed_profile=False):
 
         self.with_compressed_profile = with_compressed_profile
