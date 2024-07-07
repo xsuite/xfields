@@ -19,9 +19,12 @@ class _ConvData:
         source_moments = ['num_particles']
         if source_exponents[0] != 0:
             source_moments.append('x')
+            if source_exponents[0] > 1:
+                raise NotImplementedError('Higher order moments not implemented yet')
         if source_exponents[1] != 0:
             source_moments.append('y')
-
+            if source_exponents[1] > 1:
+                raise NotImplementedError('Higher order moments not implemented yet')
 
     def _initialize_conv_data(self, _flatten=False, moments_data=None, beta0=None):
         assert moments_data is not None
