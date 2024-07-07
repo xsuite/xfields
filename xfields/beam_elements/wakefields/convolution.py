@@ -127,7 +127,6 @@ class _ConvData:
             scaling_constant *= -1 # definition (positive wake corresponds to
                                    # energy loss)
 
-        # remember to handle lost particles!!!
         getattr(particles, self.component.kick)[:] += (scaling_constant *
                                              interpolated_result)
 
