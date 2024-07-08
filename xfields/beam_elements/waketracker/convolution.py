@@ -65,7 +65,8 @@ class _ConvData:
                                         moments_data._z_P)
             assert beta0 is not None
 
-            self.G_aux = self.component.function_vs_zeta(self.z_wake, beta0)
+            self.G_aux = self.component.function_vs_zeta(
+                zeta=self.z_wake, beta0=beta0, dzeta=moments_data.dz)
 
             # only positive frequencies because we are using rfft
             phase_term = np.exp(
