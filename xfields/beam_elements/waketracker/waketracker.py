@@ -75,7 +75,6 @@ class WakeTracker(ElementWithSlicer):
             bunch_numbers=bunch_numbers,
             num_turns=num_turns,
             circumference=circumference,
-            _flatten=False,
             with_compressed_profile=True
         )
 
