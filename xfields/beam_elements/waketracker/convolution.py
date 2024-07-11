@@ -14,12 +14,6 @@ class _ConvData:
 
         source_exponents = component.source_exponents
 
-        if ((component.plane == 'x' and component.source_exponents[1] != 0)
-         or (component.plane == 'y' and component.source_exponents[0] != 0)
-         or (component.plane == 'x' and component.test_exponents[1] != 0)
-         or (component.plane == 'y' and component.test_exponents[0] != 0)):
-            raise NotImplementedError('xy coupled wakefields not yet tested')
-
         if (component.plane == 'z'
             and (component.source_exponents[0] != 0
                  or component.source_exponents[1] != 0

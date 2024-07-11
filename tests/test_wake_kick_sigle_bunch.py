@@ -161,6 +161,7 @@ def test_constant_wake_kick(test_context):
                         scale[0] *wfy.function_vs_zeta(-particles.zeta[1] +
                                     particles.zeta[0], beta0=particles.beta0[0]),
                         rtol=1e-4, atol=0)
+
 @for_all_test_contexts(excluding=exclude_contexts)
 def test_direct_dipolar_wake_kick(test_context):
     n_turns_wake = 1
