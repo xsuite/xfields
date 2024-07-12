@@ -343,8 +343,8 @@ class IBSAnalyticalKick(IBSKick):
         # Normalized: for momentum we have to multiply with 1/sqrt(gamma) = sqrt(beta) / sqrt(1 + alpha^2), and the
         # sqrt(beta) is included in the std of p[xy]. If bunch is rotated, the std takes from the "other plane" so
         # we take the normalized momenta to compensate.
-        sigma_px_normalized: float = _sigma_px(particles) / np.sqrt(1 + self._twiss["alfx", self._name] ** 2)
-        sigma_py_normalized: float = _sigma_py(particles) / np.sqrt(1 + self._twiss["alfy", self._name] ** 2)
+        sigma_px_normalized: float = _sigma_px(particles, self._twiss["dpx", self._name]) / np.sqrt(1 + self._twiss["alfx", self._name] ** 2)
+        sigma_py_normalized: float = _sigma_py(particles, self._twiss["dpy", self._name]) / np.sqrt(1 + self._twiss["alfy", self._name] ** 2)
         # ----------------------------------------------------------------------------------------------
         # Determine the "scaling factor", corresponding to 2 * sigma_t * sqrt(pi) in Eq (8) of reference
         scaling_factor: float = float(2 * np.sqrt(np.pi) * bunch_length)
@@ -680,8 +680,8 @@ class IBSKineticKick(IBSKick):
         # sqrt(beta) / sqrt(1 + alpha^2), and the sqrt(beta) is included in the std of p[xy]. If the bunch
         # is rotated, the stdev takes from the "other plane" so we take the normalized momenta to compensate.
         sigma_delta: float = _sigma_delta(particles)                                                               # on context
-        sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)  # on context
-        sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)  # on context
+        sigma_px_normalized: float = _sigma_px(particles, self._twiss["dpx", self._name]) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)  # on context
+        sigma_py_normalized: float = _sigma_py(particles, self._twiss["dpy", self._name]) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)  # on context
         # ----------------------------------------------------------------------------------------------
         # Determining the Friction kicks (momenta change from friction forces)
         # Friction term is in absolute value and depends on the momentum. If we have a distribution
