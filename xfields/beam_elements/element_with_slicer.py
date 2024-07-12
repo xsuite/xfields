@@ -99,13 +99,17 @@ class ElementWithSlicer:
             num_turns=1,
             circumference=None):
 
+        if filling_scheme is not None:
+            i_last_bunch = np.where(filling_scheme)[0][-1]
+            num_periods = i_last_bunch + 1
+        else:
+            num_periods = 1
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=(len(filling_scheme) if filling_scheme is not None
-                                                 else 1),
+                num_periods=num_periods,
                 num_turns=num_turns,
                 circumference=circumference)
 

@@ -633,4 +633,3 @@ def test_direct_dipolar_wake_kick_multiturn(test_context):
             + wfy.function_vs_zeta(-particles.zeta[i_source] +
                         particles.zeta, beta0=particles.beta0[0]) * scale[0],
                        rtol=1e-4, atol=0)
-

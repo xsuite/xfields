@@ -101,7 +101,10 @@ class WakeTracker(ElementWithSlicer):
         if particles.state[0] > 0:
             beta0 = particles.beta0[0]
         else:
-            i_first = np.where(particles.state > 0)[0][0]
+            i_alive = np.where(particles.state > 0)[0]
+            if len(i_alive) == 0:
+                return
+            i_first = i_alive[0]
             beta0 = particles.beta0[i_first]
 
         # Build _conv_data if necessary

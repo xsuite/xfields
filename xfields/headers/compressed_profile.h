@@ -27,15 +27,19 @@ void CompressedProfile_interp_result(
         const int64_t i_bunch = i_bunch_particles[ipart];
         const int64_t i_slice = i_slice_particles[ipart];
 
-        const int64_t i_start_in_moments_data = (_N_S - i_bunch - 1) * _N_aux;
+        if (i_slice >= 0){
 
-        double rr = 0;
-        for(int i_turn=0; i_turn<num_turns; i_turn++){
-            rr = rr + data[
-                i_start_in_moments_data + i_slice +
-                data_shape_2 * (i_turn + data_shape_1*(data_shape_0-1))];
+            const int64_t i_start_in_moments_data = (_N_S - i_bunch - 1) * _N_aux;
+
+            double rr = 0;
+            for(int i_turn=0; i_turn<num_turns; i_turn++){
+                rr = rr + data[
+                    i_start_in_moments_data + i_slice +
+                    data_shape_2 * (i_turn + data_shape_1*(data_shape_0-1))];
+            }
+            out[ipart] = rr;
+
         }
-        out[ipart] = rr;
 
     //end_per_particle_block
 
