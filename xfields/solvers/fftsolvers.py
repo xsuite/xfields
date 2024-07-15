@@ -128,6 +128,10 @@ class FFTSolver3D(Solver):
             _workspace_dev.T[:,:,:] *= (
                         self._gint_rep_transf_dev.T) # phi_rep_hat
         except Exception: # pyopencl does not support array broadcasting (used in 2.5D)
+            # Check F-contiguity
+            assert _workspace_dev.strides[0] == 16
+            assert self._gint_rep_transf_dev.strides[0] == 16
+
             for ii in range(self.nz):
                 _workspace_dev.T[ii,:,:] *= (
                         self._gint_rep_transf_dev.T[0, :, :]) # phi_rep_hat
@@ -192,7 +196,9 @@ class FFTSolver2p5D(FFTSolver3D):
             del(temp_dev)
 
         # Transform the green function
-        gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
+        gint_rep_transf = np.zeros((2*nx, 2*ny),
+                           dtype=np.complex128, order='F')
+        gint_rep_transf[:, :] = np.fft.fftn(gint_rep, axes=(0,1))
 
         # Transfer to GPU (if needed)
         gint_rep_transf_dev = context.nparray_to_context_array(
@@ -247,7 +253,9 @@ class FFTSolver2p5DAveraged(Solver):
             del(temp_dev)
 
         # Transform the green function
-        gint_rep_transf = np.fft.fftn(gint_rep, axes=(0,1))
+        gint_rep_transf = np.zeros((2*nx, 2*ny),
+                           dtype=np.complex128, order='F')
+        gint_rep_transf[:, :] = np.fft.fftn(gint_rep, axes=(0,1))
 
         # Transfer to GPU (if needed)
         gint_rep_transf_dev = context.nparray_to_context_array(
