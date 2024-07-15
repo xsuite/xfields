@@ -36,6 +36,12 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
                         xo.Arg(xo.Int64, name='n'),
                         xo.Arg(xo.Float64, pointer=True, name='z'),
                         xo.Arg(xo.Float64, pointer=True, name='res')],
+                  n_threads='n'),
+                  'line_derivative_qgauss':
+        xo.Kernel(args=[xo.Arg(xo.ThisClass, name='prof'),
+                        xo.Arg(xo.Int64, name='n'),
+                        xo.Arg(xo.Float64, pointer=True, name='z'),
+                        xo.Arg(xo.Float64, pointer=True, name='res')],
                   n_threads='n')}
 
     @staticmethod
@@ -175,6 +181,17 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
             self.compile_kernels()
 
         context.kernels.line_density_qgauss(prof=self._xobject, n=len(z), z=z, res=res)
+
+        return res
+    
+    def line_derivative(self, z):
+        context = self._buffer.context
+        res = context.zeros(len(z), dtype=np.float64)
+
+        if 'line_derivative_qgauss' not in context.kernels.keys():
+            self.compile_kernels()
+
+        context.kernels.line_derivative_qgauss(prof=self._xobject, n=len(z), z=z, res=res)
 
         return res
 
