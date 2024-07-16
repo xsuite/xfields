@@ -228,6 +228,12 @@ class ElementWithSlicer:
                         internal_tag=1)
 
             for i_partner, partner_name in enumerate(self.partners_names):
+                if isinstance(self.pipeline_manager._communicator, xt.pipeline.core.PipelineCommunicator):
+                    if not self.pipeline_manager.is_ready_to_recieve(
+                        self.name, partner_name,
+                        particles.name, internal_tag=0):
+                        return xt.PipelineStatus(on_hold=True)
+
                 while not self.pipeline_manager.is_ready_to_recieve(
                         element_name=self.name, sender_name=partner_name,
                         reciever_name=particles.name, internal_tag=0):
