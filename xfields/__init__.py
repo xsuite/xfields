@@ -24,8 +24,6 @@ from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
-from .beam_elements.wakefield import WakeComponent, ResonatorWake
-from .beam_elements.wakefield import Wakefield
 from .beam_elements.transverse_damper import TransverseDamper
 from .beam_elements.collective_monitor import CollectiveMonitor
 

@@ -47,7 +47,6 @@ class ElementWithSlicer:
                  bunch_numbers=None,
                  num_turns=1,
                  circumference=None,
-                 _flatten=False,
                  with_compressed_profile=False):
 
         self.with_compressed_profile = with_compressed_profile
@@ -113,13 +112,17 @@ class ElementWithSlicer:
             num_turns=1,
             circumference=None):
 
+        if filling_scheme is not None:
+            i_last_bunch = np.where(filling_scheme)[0][-1]
+            num_periods = i_last_bunch + 1
+        else:
+            num_periods = 1
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=(len(filling_scheme) if filling_scheme is not None
-                                                 else 1),
+                num_periods=num_periods,
                 num_turns=num_turns,
                 circumference=circumference)
 
@@ -238,10 +241,21 @@ class ElementWithSlicer:
                         internal_tag=1)
 
             for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_recieve(
+                if isinstance(self.pipeline_manager._communicator, xt.pipeline.core.PipelineCommunicator):
+                    if not self.pipeline_manager.is_ready_to_recieve(
                         self.name, partner_name,
                         particles.name, internal_tag=0):
-                    return xt.PipelineStatus(on_hold=True)
+                        return xt.PipelineStatus(on_hold=True)
+
+                while not self.pipeline_manager.is_ready_to_recieve(
+                        element_name=self.name, sender_name=partner_name,
+                        reciever_name=particles.name, internal_tag=0):
+                    pass
+
+                while not self.pipeline_manager.is_ready_to_recieve(
+                        element_name=self.name, sender_name=partner_name,
+                        reciever_name=particles.name, internal_tag=1):
+                    pass
 
         if self.pipeline_manager is not None:
             for i_partner, partner_name in enumerate(self.partners_names):

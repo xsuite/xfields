@@ -12,10 +12,7 @@ import xfields as xf
 longitudinal_mode = 'nonlinear'
 
 # Simulation settings
-n_turns = 10_000
-n_turns_wake = 1
-n_macroparticles = int(1e5)
-num_slices = 100
+n_turns = 3_000
 
 circumference = 26658.8832
 bucket_length_m = circumference / 35640
@@ -26,14 +23,20 @@ wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
                      'quadrupole_x', 'quadrupole_y', 'dipole_xy',
                      'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
                      'constant_x', 'constant_y']
-wf = xf.Wakefield.from_table(
-    wake_table_filename, wake_file_columns,
+wf_df = xf.read_headtail_file(
+    wake_file=wake_table_filename,
+    wake_file_columns=wake_file_columns
+)
+wf0 = xf.WakefieldFromTable(
+    wf_df,
     use_components=['dipole_x', 'dipole_y'],
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
-    num_slices=100,
+    num_slices=20,
     num_turns=1.,
     circumference=circumference
-)
+    )
+
+wf = wf0 + wf0
 
 one_turn_map = xt.LineSegmentMap(
     length=circumference, betx=70., bety=80.,
@@ -96,8 +99,8 @@ for i_turn in range(n_turns):
         print(f'Turn: {i_turn}')
 
     if i_turn % 50 == 0 and i_turn > 1:
-        i_fit_end = np.argmax(mean_x_xt)  # i_turn
-        i_fit_start = int(i_fit_end * 0.9)
+        i_fit_end = i_turn #np.argmax(mean_x_xt)  # i_turn
+        i_fit_start = np.max((i_turn - 2000, 0)) #int(i_fit_end * 0.9)
 
         # compute x instability growth rate
         ampls_x_xt = np.abs(hilbert(mean_x_xt))

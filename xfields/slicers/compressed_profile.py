@@ -190,12 +190,13 @@ class CompressedProfile(xt.BeamElement):
         z_out = np.zeros(self._N_S * self._N_1)
         moment_out = np.zeros(self._N_S * self._N_1)
         i_moment = self.moments_names.index(moment_name)
+        _z_P = self._z_P or 0
         for i_source in range(self._N_S):
             i_start_out = (self._N_S - (i_source + 1)) * self._N_1
             i_end_out = i_start_out + self._N_1
             z_out[i_start_out:i_end_out] = (
                 self._z_a + self.dz / 2
-                - i_source * self._z_P + self.dz * np.arange(self._N_1))
+                - i_source * _z_P + self.dz * np.arange(self._N_1))
 
             i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
             i_end_in_moments_data = i_start_in_moments_data + self._N_1
