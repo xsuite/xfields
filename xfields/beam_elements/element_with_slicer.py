@@ -74,6 +74,19 @@ class ElementWithSlicer:
                 num_turns=num_turns,
                 circumference=circumference)
 
+    @staticmethod
+    def _check_filling_scheme_info(filling_scheme, bunch_numbers, num_slots):
+        if filling_scheme is None and bunch_numbers is None:
+            if num_slots is None:
+                num_slots = 1
+            filling_scheme = np.ones(num_slots, dtype=np.int64)
+            bunch_numbers = np.arange(num_slots, dtype=np.int64)
+        else:
+            assert (num_slots is None and filling_scheme is not None and
+                    bunch_numbers is not None)
+
+        return filling_scheme, bunch_numbers
+
     def init_slicer(self, zeta_range, num_slices, filling_scheme,
                     bunch_numbers, bunch_spacing_zeta, slicer_moments):
         if zeta_range is not None:
