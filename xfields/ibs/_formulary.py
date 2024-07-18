@@ -65,24 +65,50 @@ def _sigma_delta(particles: xt.Particles) -> float:
     return float(nplike.std(particles.delta[particles.state > 0]))
 
 
-def _sigma_x(particles: xt.Particles) -> float:
+def _sigma_x(particles: xt.Particles, dx: float = 0) -> float:
     """
     Get the horizontal coordinate standard deviation
-    from the particles.
+    from the particles. The dispersion can be provided
+    to be taken out of the calculation (as we use the 
+    stdev of x, calling this function at a location with
+    high dx would artificially skew the result).
+
+    Parameters
+    ----------
+    particles : xt.Particles
+        The particles object.
+    dx : float, optional
+        Horizontal  dispersion function at the location
+        where the sigma_x is computed. Defaults to 0.
     """
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return float(nplike.std(particles.x[particles.state > 0]))
+    x: ArrayLike = particles.x[particles.state > 0]
+    delta: ArrayLike = particles.delta[particles.state > 0]
+    return float(nplike.std(x - dx * delta))
 
 
-def _sigma_y(particles: xt.Particles) -> float:
+def _sigma_y(particles: xt.Particles, dy: float = 0) -> float:
     """
     Get the vertical coordinate standard deviation
-    from the particles.
+    from the particles. The dispersion can be provided
+    to be taken out of the calculation (as we use the 
+    stdev of y, calling this function at a location with
+    high dy would artificially skew the result).
+
+    Parameters
+    ----------
+    particles : xt.Particles
+        The particles object.
+    dy : float, optional
+        Vertical  dispersion function at the location
+        where the sigma_y is computed. Defaults to 0.
     """
     _assert_accepted_context(particles._context)
     nplike = particles._context.nplike_lib
-    return float(nplike.std(particles.y[particles.state > 0]))
+    y: ArrayLike = particles.y[particles.state > 0]
+    delta: ArrayLike = particles.delta[particles.state > 0]
+    return float(nplike.std(y - dy * delta))
 
 
 def _gemitt_x(particles: xt.Particles, betx: float, dx: float) -> float:
@@ -91,7 +117,7 @@ def _gemitt_x(particles: xt.Particles, betx: float, dx: float) -> float:
     for the beta and dispersion functions at this location.
     """
     # Context check is performed in the called functions
-    sigma_x = _sigma_x(particles)
+    sigma_x = _sigma_x(particles, dx)
     sig_delta = _sigma_delta(particles)
     return float((sigma_x**2 - (dx * sig_delta) ** 2) / betx)
 
@@ -102,7 +128,7 @@ def _gemitt_y(particles: xt.Particles, bety: float, dy: float) -> float:
     for the beta and dispersion functions at this location.
     """
     # Context check is performed in the called functions
-    sigma_y = _sigma_y(particles)
+    sigma_y = _sigma_y(particles, dy)
     sig_delta = _sigma_delta(particles)
     return float((sigma_y**2 - (dy * sig_delta) ** 2) / bety)
 
@@ -122,7 +148,7 @@ def _sigma_px(particles: xt.Particles, dpx: float = 0) -> float:
     the particles. The momentum dispersion can be provided
     to be taken out of the calculation (as we use the stdev
     of px, calling this function at a location with high dpx
-    would skew the result).
+    would artificially skew the result).
 
     Parameters
     ----------
@@ -150,7 +176,7 @@ def _sigma_py(particles: xt.Particles, dpy: float = 0) -> float:
     the particles. The momentum dispersion can be provided
     to be taken out of the calculation (as we use the stdev
     of py, calling this function at a location with high dpy
-    would skew the result).
+    would artificially skew the result).
 
     Parameters
     ----------
@@ -198,6 +224,7 @@ def _mean_px(particles: xt.Particles, dpx: float = 0) -> float:
     px: ArrayLike = particles.px[particles.state > 0]
     delta: ArrayLike = particles.delta[particles.state > 0]
     return float(nplike.mean(px - dpx * delta))
+
 
 def _mean_py(particles: xt.Particles, dpy: float = 0) -> float:
     """
