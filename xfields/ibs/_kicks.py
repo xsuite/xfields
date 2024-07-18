@@ -554,13 +554,13 @@ class IBSKineticKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Compute (geometric) emittances, momentum spread, bunch length and sigmas from the Particles
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
+        sigma_delta: float = _sigma_delta(particles)
+        bunch_length: float = _bunch_length(particles)
+        total_beam_intensity: float = _beam_intensity(particles)
+        sigma_x: float = _sigma_x(particles, self._twiss["dx", self._name])
+        sigma_y: float = _sigma_y(particles, self._twiss["dy", self._name])
         gemitt_x: float = _gemitt_x(particles, self._twiss["betx", self._name], self._twiss["dx", self._name])
         gemitt_y: float = _gemitt_y(particles, self._twiss["bety", self._name], self._twiss["dy", self._name])
-        total_beam_intensity: float = _beam_intensity(particles)
-        bunch_length: float = _bunch_length(particles)
-        sigma_delta: float = _sigma_delta(particles)
-        sigma_x: float = _sigma_x(particles)
-        sigma_y: float = _sigma_y(particles)
         # ----------------------------------------------------------------------------------------------
         # Allocating some properties to simple variables for readability
         beta0: float = self._twiss.beta0
