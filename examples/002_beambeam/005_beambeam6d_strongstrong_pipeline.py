@@ -172,7 +172,8 @@ multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2], verbose=T
 print('Tracking...')
 time0 = time.time()
 nTurn = 1024
-multitracker.track(num_turns=nTurn,turn_by_turn_monitor=True)
+multitracker.track(num_turns=nTurn,
+                   log=xt.Log(x_mean=lambda l, p: p.x[p.state>0].mean()))
 print('Done with tracking.',(time.time()-time0)/1024,'[s/turn]')
 
 #################################################################
