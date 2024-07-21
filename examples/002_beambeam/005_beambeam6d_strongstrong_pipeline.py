@@ -171,9 +171,10 @@ multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2], verbose=T
 #################################################################
 print('Tracking...')
 time0 = time.time()
-nTurn = 20 #1024
+nTurn = 1024
 multitracker.track(num_turns=nTurn,
-                   log=xt.Log(x_mean=lambda l, p: p.x[p.state>0].mean()))
+                   log=xt.Log(x_mean=lambda l, p: p.x[p.state>0].mean(),
+                              y_mean=lambda l, p: p.y[p.state>0].mean()))
 print('Done with tracking.',(time.time()-time0)/1024,'[s/turn]')
 
 #################################################################
@@ -185,8 +186,8 @@ if False:
         plt.figure(1000+i)
         plt.plot(line_b1.record_last_track.x[i,:],line_b1.record_last_track.px[i,:],'x')
 
-positions_x_b1 = np.average(line_b1.record_last_track.x,axis=0)
-positions_y_b1 = np.average(line_b1.record_last_track.y,axis=0)
+positions_x_b1 = np.array(line_b1.log_last_track['x_mean'])
+positions_y_b1 = np.array(line_b1.log_last_track['y_mean'])
 plt.figure(0)
 plt.plot(np.arange(nTurn),positions_x_b1/np.sqrt(physemit_x*beta_x_IP1),'x')
 plt.plot(np.arange(nTurn),positions_y_b1/np.sqrt(physemit_y*beta_y_IP1),'x')
@@ -198,6 +199,3 @@ plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
 myFFT = np.fft.fftshift(np.fft.fft(positions_y_b1))
 plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
 plt.show()
-
-
-
