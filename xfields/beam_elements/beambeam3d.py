@@ -700,7 +700,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert self.config_for_update._working_on_bunch == particles.name
 
             # Beam beam interaction in the boosted frame
-            ret = self._apply_bb_kicks_in_boosted_frame(particles)
+            ret = self._sync_with_partner_and_apply_bb_kicks_in_boosted_frame(particles)
 
             if ret is not None:
                 return ret # PipelineStatus
@@ -743,7 +743,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 return xt.PipelineStatus(on_hold=True)
 
             # Beam beam interaction in the boosted frame
-            ret = self._apply_bb_kicks_in_boosted_frame(particles)
+            ret = self._sync_with_partner_and_apply_bb_kicks_in_boosted_frame(particles)
 
             if ret is not None:
                 return ret # PipelineStatus
@@ -752,48 +752,20 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 self.change_back_ref_frame_and_subtract_dipolar(particles)
                 return None
 
-    def _apply_bb_kicks_in_boosted_frame(self, particles):
+    def _sync_with_partner_and_apply_bb_kicks_in_boosted_frame(self, particles):
 
         n_slices_self_beam = self.config_for_update.slicer.num_slices
 
-        while True:
+        while True: # loop over slices
 
             # recompute and communicate slice moments; if QSS only update before first step
             if (self.config_for_update._do_update and (not self.config_for_update.quasistrongstrong
                 or self.config_for_update._i_step == 0)):
 
-                ii = 0
-                while particles.state[ii] != 1:
-                    ii += 1
-                at_turn = int(particles.at_turn[ii])
+                status = self.sync_with_partner(particles)
 
-                if self.config_for_update.pipeline_manager.is_ready_to_send(self.config_for_update.element_name,
-                                                     particles.name,
-                                                     self.config_for_update.partner_particles_name,
-                                                     at_turn,
-                                                     internal_tag=self.config_for_update._i_step):
-                    # Compute moments
-                    self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
-                    self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
-
-                    self.config_for_update.pipeline_manager.send_message(self.moments,
-                                                     self.config_for_update.element_name,
-                                                     particles.name,
-                                                     self.config_for_update.partner_particles_name,
-                                                     at_turn,
-                                                     internal_tag=self.config_for_update._i_step)
-                if self.config_for_update.pipeline_manager.is_ready_to_recieve(self.config_for_update.element_name,
-                                        self.config_for_update.partner_particles_name,
-                                        particles.name,
-                                        internal_tag=self.config_for_update._i_step):
-                    self.config_for_update.pipeline_manager.recieve_message(self.partner_moments,
-                                        self.config_for_update.element_name,
-                                        self.config_for_update.partner_particles_name,
-                                        particles.name,
-                                        internal_tag=self.config_for_update._i_step)
-                    self.update_from_received_moments()
-                else:
-                    return xt.PipelineStatus(on_hold=True)
+                if status is not None:
+                    return status # pipeline hold
 
             # compute interacting other beam slice ID
             self.config_for_update._other_beam_slice_index_for_particles[:] =(
@@ -810,6 +782,44 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                 break
 
         return None
+
+    def sync_with_partner(self, particles):
+
+        # Find at_turn from the first active particle
+        ii = 0
+        while particles.state[ii] != 1:
+            ii += 1
+        at_turn = int(particles.at_turn[ii])
+
+        pipeline_manager = self.config_for_update.pipeline_manager
+
+        if pipeline_manager.is_ready_to_send(self.config_for_update.element_name,
+                                                particles.name,
+                                                self.config_for_update.partner_particles_name,
+                                                at_turn,
+                                                internal_tag=self.config_for_update._i_step):
+            # Compute moments
+            self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
+            self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
+
+            pipeline_manager.send_message(self.moments,
+                                                self.config_for_update.element_name,
+                                                particles.name,
+                                                self.config_for_update.partner_particles_name,
+                                                at_turn,
+                                                internal_tag=self.config_for_update._i_step)
+        if pipeline_manager.is_ready_to_recieve(self.config_for_update.element_name,
+                                self.config_for_update.partner_particles_name,
+                                particles.name,
+                                internal_tag=self.config_for_update._i_step):
+            pipeline_manager.recieve_message(self.partner_moments,
+                                self.config_for_update.element_name,
+                                self.config_for_update.partner_particles_name,
+                                particles.name,
+                                internal_tag=self.config_for_update._i_step)
+            self.update_from_received_moments()
+        else:
+            return xt.PipelineStatus(on_hold=True)
 
     @property
     def sin_phi(self):
