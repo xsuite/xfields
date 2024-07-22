@@ -3,20 +3,43 @@ import numpy as np
 import xfields as xf
 import xtrack as xt
 
+
+# LHC-like parameter
+mass0 = xt.PROTON_MASS_EV
+p0c = 7e12
+phi = 200e-6
+betx = 0.15
+bety = 0.1
+sigma_z = 0.1
+nemitt_x = 2e-6
+nemitt_y = 1e-6
+bunch_intensity = 2e11
+num_slices = 11
+
+# # FCC-like parameters
+# mass0 = xt.ELECTRON_MASS_EV
+# p0c = 50e9
+# phi = 15e-3
+# betx = 0.15
+# bety = 0.001
+# sigma_z = 0.01
+# nemitt_x = 270e-12
+# nemitt_y = 1e-12
+# bunch_intensity = 2e11
+# num_slices = 100001 #???????
+
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
 
 lntwiss = xt.Line(elements=[xt.Marker()])
-lntwiss.particle_ref = xt.Particles(p0c=7e12, mass0=xt.PROTON_MASS_EV)
-twip = lntwiss.twiss(betx=0.018, bety=0.001)
-cov = twip.get_beam_covariance(nemitt_x=2e-6, nemitt_y=1e-6)
+lntwiss.particle_ref = xt.Particles(p0c=p0c, mass0=mass0)
+twip = lntwiss.twiss(betx=betx, bety=bety)
+cov = twip.get_beam_covariance(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
 
 sigma_x = cov.sigma_x[0]
 sigma_y = cov.sigma_y[0]
 
-sigma_z = 0.08
-bunch_intensity = 2e11
-num_slices = 11
+
 
 sigma_z_limi = sigma_z / 2
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
@@ -24,7 +47,7 @@ z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
 z_centroids_from_tail = z_centroids[::-1]
 
 bbg = xf.BeamBeamBiGaussian3D(
-    phi=0.015,
+    phi=phi,
     alpha=0,
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice,
@@ -47,5 +70,8 @@ import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(1)
 plt.plot(particles.zeta, particles.px)
+plt.grid()
+# for zz in z_centroids:
+#     plt.axvline(zz)
 
 plt.show()
