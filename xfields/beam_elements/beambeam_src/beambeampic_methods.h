@@ -118,12 +118,12 @@ void BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle(
 
 }
 
+
 /*gpufun*/
 void BeamBeamPIC3D_track_local_particle(BeamBeamPIC3DData el, LocalParticle* part0){
 
+// Dummy, to avoid error con compilation
 
 }
-
-
 
 #endif
