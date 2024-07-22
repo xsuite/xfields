@@ -63,7 +63,7 @@ bbg = xf.BeamBeamBiGaussian3D(
 particles = lntwiss.build_particles(x=1.2 * sigma_x, y=1.3 * sigma_y,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, 10000))
 
-bbg.track(particles)
+bbg._track_non_collective(particles)
 
 import matplotlib.pyplot as plt
 
