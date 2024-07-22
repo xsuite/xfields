@@ -4,11 +4,9 @@
 # ########################################### #
 
 import numpy as np
-import time
 
 import xobjects as xo
 import xtrack as xt
-import xpart as xp
 
 from ..general import _pkg_root
 
@@ -340,25 +338,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             self.partner_moments = self._buffer.context.nplike_lib.zeros(
                 self.config_for_update.slicer.num_slices*(1+6+10), dtype=float)
 
-        if phi is None and _sin_phi is not None:
-            self._sin_phi = _sin_phi
-            self._cos_phi = _cos_phi
-            self._tan_phi = _tan_phi
-        else:
-            if phi is None:
-                phi = 0
-            self._sin_phi = np.sin(phi)
-            self._cos_phi = np.cos(phi)
-            self._tan_phi = np.tan(phi)
-
-        if alpha is None and _sin_alpha is not None:
-            self._sin_alpha = _sin_alpha
-            self._cos_alpha = _cos_alpha
-        else:
-            if alpha is None:
-                alpha = 0
-            self._sin_alpha = np.sin(alpha)
-            self._cos_alpha = np.cos(alpha)
+        _init_alpha_phi(self, phi=phi, alpha=alpha,
+                    _sin_phi=_sin_phi, _cos_phi=_cos_phi, _tan_phi=_tan_phi,
+                    _sin_alpha=_sin_alpha, _cos_alpha=_cos_alpha)
 
         self.num_slices_other_beam = n_slices
         self.slices_other_beam_num_particles = self._arr2ctx(np.array(
@@ -1496,3 +1478,26 @@ class ConfigForUpdateBeamBeamBiGaussian3D:
         self._working_on_bunch = None
         self._particles_slice_index = None
 
+def _init_alpha_phi(bb, phi=None, alpha=None,
+                    _sin_phi=None, _cos_phi=None, _tan_phi=None,
+                    _sin_alpha=None, _cos_alpha=None):
+
+    if phi is None and _sin_phi is not None:
+        bb._sin_phi = _sin_phi
+        bb._cos_phi = _cos_phi
+        bb._tan_phi = _tan_phi
+    else:
+        if phi is None:
+            phi = 0
+        bb._sin_phi = np.sin(phi)
+        bb._cos_phi = np.cos(phi)
+        bb._tan_phi = np.tan(phi)
+
+    if alpha is None and _sin_alpha is not None:
+        bb._sin_alpha = _sin_alpha
+        bb._cos_alpha = _cos_alpha
+    else:
+        if alpha is None:
+            alpha = 0
+        bb._sin_alpha = np.sin(alpha)
+        bb._cos_alpha = np.cos(alpha)
