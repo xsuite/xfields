@@ -6,7 +6,6 @@ import xtrack as xt
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
 
-
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
