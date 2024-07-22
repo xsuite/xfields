@@ -16,17 +16,17 @@ nemitt_y = 1e-6
 bunch_intensity = 2e11
 num_slices = 11
 
-# # FCC-like parameters
-# mass0 = xt.ELECTRON_MASS_EV
-# p0c = 50e9
-# phi = 15e-3
-# betx = 0.15
-# bety = 0.001
-# sigma_z = 0.01
-# nemitt_x = 270e-12
-# nemitt_y = 1e-12
-# bunch_intensity = 2e11
-# num_slices = 100001 #???????
+# FCC-like parameters
+mass0 = xt.ELECTRON_MASS_EV
+p0c = 50e9
+phi = 15e-3
+betx = 0.15
+bety = 0.001
+sigma_z = 0.01
+nemitt_x = 270e-12
+nemitt_y = 1e-12
+bunch_intensity = 2e11
+num_slices = 11 #???????
 
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
@@ -61,7 +61,7 @@ bbg = xf.BeamBeamBiGaussian3D(
 )
 
 particles = lntwiss.build_particles(x=1.2 * sigma_x, y=1.3 * sigma_y,
-                zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, 1000))
+                zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, 10000))
 
 bbg.track(particles)
 
@@ -71,7 +71,7 @@ plt.close('all')
 plt.figure(1)
 plt.plot(particles.zeta, particles.px)
 plt.grid()
-# for zz in z_centroids:
-#     plt.axvline(zz)
+for zz in z_centroids:
+    plt.axvline(zz, color='r', alpha=0.1)
 
 plt.show()
