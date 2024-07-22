@@ -762,7 +762,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             if (self.config_for_update._do_update and (not self.config_for_update.quasistrongstrong
                 or self.config_for_update._i_step == 0)):
 
-                status = self.sync_with_partner(particles)
+                status = self._compute_moments_and_sync_with_partner(particles)
 
                 if status is not None:
                     return status # pipeline hold
@@ -783,7 +783,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         return None
 
-    def sync_with_partner(self, particles):
+    def _compute_moments_and_sync_with_partner(self, particles):
 
         # Find at_turn from the first active particle
         ii = 0
