@@ -90,4 +90,9 @@ plt.colorbar()
 plt.xlabel('z [m]')
 plt.ylabel('x [m]')
 
+plt.figure(3)
+plt.pcolormesh(bbpic_b1.fieldmap_other.z_grid,
+               bbpic_b1.fieldmap_other.x_grid,
+               bbpic_b1.fieldmap_other.dphi_dx[:, 30, :])
+
 plt.show()
