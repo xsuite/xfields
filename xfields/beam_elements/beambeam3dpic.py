@@ -53,18 +53,17 @@ class BeamBeamPIC3D(xt.BeamElement):
         _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
 
         # beamstrahlung
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
         _pkg_root.joinpath(
-            'beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
+            'beam_elements/beambeam_src/beambeampic_methods.h'),
 
    ]
 
     _per_particle_kernels={
         'change_ref_frame': xo.Kernel(
-            c_name='BeamBeamBiGaussian3D_change_ref_frame_local_particle',
+            c_name='BeamBeamPIC3D_change_ref_frame_local_particle',
             args=[]),
         'change_back_ref_frame_and_subtract_dipolar': xo.Kernel(
-            c_name='BeamBeamBiGaussian3D_change_back_ref_frame_and_subtract_dipolar_local_particle',
+            c_name='BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle',
             args=[]),
     }
 
