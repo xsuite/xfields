@@ -11,6 +11,7 @@ import xtrack as xt
 
 from ..general import _pkg_root
 from .beambeam3d import _init_alpha_phi
+from xfields import TriLinearInterpolatedFieldMap
 
 class BeamBeamPIC3D(xt.BeamElement):
 
@@ -43,6 +44,9 @@ class BeamBeamPIC3D(xt.BeamElement):
         'post_subtract_zeta': xo.Float64,
         'post_subtract_pzeta': xo.Float64,
 
+        'fieldmap_self': xo.Ref(TriLinearInterpolatedFieldMap),
+        'fieldmap_other': xo.Ref(TriLinearInterpolatedFieldMap),
+
     }
     iscollective = True
 
@@ -67,13 +71,46 @@ class BeamBeamPIC3D(xt.BeamElement):
             args=[]),
     }
 
-    def __init__(self, phi, alpha, **kwargs):
+    def __init__(self, phi=None, alpha=None,
+                 x_range=None, y_range=None, z_range=None,
+                 nx=None, ny=None, nz=None,
+                 dx=None, dy=None, dz=None,
+                 x_grid=None, y_grid=None, z_grid=None,
+                 solver=None,
+                 _context=None, _buffer=None,
+                 **kwargs):
 
         if '_xobject' in kwargs.keys():
             self.xoinitialize(**kwargs)
             return
 
-        self.xoinitialize(**kwargs)
+        if _buffer is None:
+            if _context is None:
+                _context = xo.context_default
+            _buffer = _context.new_buffer(capacity=64)
+
+        fieldmap_self = TriLinearInterpolatedFieldMap(
+            _buffer=_buffer,
+            x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
+            x_range=x_range, y_range=y_range, z_range=z_range,
+            dx=dx, dy=dy, dz=dz,
+            nx=nx, ny=ny, nz=nz,
+            solver='FFTSolver2p5D',
+            scale_coordinates_in_solver=(1,1,1))
+
+        fieldmap_other = TriLinearInterpolatedFieldMap(
+            _buffer=_buffer,
+            x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
+            x_range=x_range, y_range=y_range, z_range=z_range,
+            dx=dx, dy=dy, dz=dz,
+            nx=nx, ny=ny, nz=nz,
+            solver='FFTSolver2p5D',
+            scale_coordinates_in_solver=(1,1,1))
+
+        self.xoinitialize(_buffer=_buffer,
+                          fieldmap_self=fieldmap_self,
+                          fieldmap_other=fieldmap_other,
+                          **kwargs)
 
         _init_alpha_phi(self, phi=phi, alpha=alpha,
                 _sin_phi=kwargs.get('sin_phi', None),
