@@ -63,13 +63,21 @@ bbg = xf.BeamBeamBiGaussian3D(
 particles = lntwiss.build_particles(x=1.2 * sigma_x, y=1.3 * sigma_y,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, 10000))
 
+p1 = particles.copy()
 bbg._track_non_collective(particles)
+bbg.track(p1)
+
+p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.3 * sigma_y,
+                zeta=[0.00553, 0.00557])
+bbg._track_non_collective(p_test, i_slices=[1])
 
 import matplotlib.pyplot as plt
 
 plt.close('all')
 plt.figure(1)
 plt.plot(particles.zeta, particles.px)
+plt.plot(particles.zeta, p1.px)
+
 plt.grid()
 for zz in z_centroids:
     plt.axvline(zz, color='r', alpha=0.1)

@@ -693,13 +693,17 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         self.slices_other_beam_Sigma_34_star = self._arr2ctx(self.partner_moments[15*self.num_slices_other_beam:16*self.num_slices_other_beam]) * (-1.0)
         self.slices_other_beam_Sigma_44_star = self._arr2ctx(self.partner_moments[16*self.num_slices_other_beam:17*self.num_slices_other_beam])
 
-    def _track_non_collective(self, particles):
+    def _track_non_collective(self, particles, i_slices=None):
 
             # Change reference frame
             self.change_ref_frame(particles)
 
+            self._debug_part_after_boost = particles.copy()
+
+            i_slices = i_slices or range(len(self.slices_other_beam_zeta_center_star))
+
             # Beam beam interaction in the boosted frame
-            for ii, zz in enumerate(self.slices_other_beam_zeta_center_star):
+            for ii in i_slices:
                 self.synchro_beam_kick(particles=particles,
                     i_slice_for_particles=ii + 0 * particles.particle_id)
 
