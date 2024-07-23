@@ -15,7 +15,7 @@ mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
 betx = 0.15
-bety = 0.1
+bety = 0.2
 sigma_z = 0.1
 nemitt_x = 2e-6
 nemitt_y = 1e-6
@@ -46,14 +46,14 @@ particles_b1 = lntwiss.build_particles(
 )
 particles_b2 = particles_b1.copy()
 
-x_lim_grid = phi * 2.5 * sigma_z + 2.5 * sigma_x
+x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x
 
 pics = []
 for ii in range(2):
     pics.append(xf.BeamBeamPIC3D(phi=+200e-6, alpha=0,
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
-        y_range=(-5*sigma_y, 5*sigma_y), dy=0.1*sigma_y,
-        z_range=(-3*sigma_z, 3*sigma_z), dz=0.1*sigma_z))
+        y_range=(-7*sigma_y, 7*sigma_y), dy=0.1*sigma_y,
+        z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.15*sigma_z))
 
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
