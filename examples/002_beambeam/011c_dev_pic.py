@@ -68,14 +68,21 @@ z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1] # earlier time first
 i_step = 5
 z_step_b1 = z_grid_b1[i_step]
 z_step_b2 = z_grid_b2[i_step]
-xo.assert_allclose(z_step_b1, z_step_b2, rtol=0, atol=1e-15)
+xo.assert_allclose(z_step_b1, z_step_b2, rtol=0, atol=1e-15) # we consider only this case
+                                                             # that is tested, although
+                                                             # the implementation should be
+                                                             # more general
 
 # Propagate transverse coordinates to the position at the time step
-for pp in [particles_b1, particles_b2]:
+for pp, z_step_other in zip([particles_b1, particles_b2],
+                            [z_step_b2, z_step_b1]):
     mask_alive = pp.state > 0
     gamma_gamma0 = (
         particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
-    pp.x[mask_alive] += pp.px[mask_alive] / gamma_gamma0  * z_step_b1
+    pp.x[mask_alive] += (pp.px[mask_alive] / gamma_gamma0
+                         * (pp.zeta[mask_alive] - z_step_other))
+    pp.y[mask_alive] += (pp.py[mask_alive] / gamma_gamma0
+                         * (pp.zeta[mask_alive] - z_step_other))
 
 # Compute charge density
 bbpic_b1.fieldmap_self.update_from_particles(particles=particles_b1,
@@ -91,11 +98,12 @@ bbpic_b2.fieldmap_other.update_rho(bbpic_b1.fieldmap_self.rho, reset=True)
 bbpic_b1.fieldmap_other.update_phi_from_rho()
 bbpic_b2.fieldmap_other.update_phi_from_rho()
 
+
+# Compute and apply kick from the other beam
 mask_alive = pp.state > 0
 beta0_b1 = particles_b1.beta0[mask_alive][0]
 beta0_b2 = particles_b2.beta0[mask_alive][0]
 
-# Compute kick from the other beam
 for pp, bbpic, z_step_self, z_step_other, beta0_other in zip(
                                                 [particles_b1, particles_b2],
                                                 [bbpic_b1, bbpic_b2],
@@ -146,11 +154,16 @@ for pp, bbpic, z_step_self, z_step_other, beta0_other in zip(
     pp.px[mask_alive] += dpx
     pp.py[mask_alive] += dpy
 
-
-
-
-
-
+# Propagate transverse coordinates back to IP
+for pp, z_step_other in zip([particles_b1, particles_b2],
+                            [z_step_b2, z_step_b1]):
+    mask_alive = pp.state > 0
+    gamma_gamma0 = (
+        particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
+    pp.x[mask_alive] -= (pp.px[mask_alive] / gamma_gamma0
+                         * (pp.zeta[mask_alive] - z_step_other))
+    pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
+                         * (pp.zeta[mask_alive] - z_step_other))
 
 import matplotlib.pyplot as plt
 plt.close('all')
