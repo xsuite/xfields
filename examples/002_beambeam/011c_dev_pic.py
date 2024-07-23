@@ -42,6 +42,7 @@ particles_b1 = lntwiss.build_particles(
     py_norm=np.random.normal(size=num_particles),
     W_matrix=twip.W_matrix[0],
     particle_on_co=twip.particle_on_co,
+    weight = bunch_intensity / num_particles
 )
 particles_b2 = particles_b1.copy()
 
