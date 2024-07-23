@@ -2,6 +2,7 @@ import numpy as np
 
 import xfields as xf
 import xtrack as xt
+import xobjects as xo
 
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
@@ -57,6 +58,22 @@ bbpic_b2 = pics[1]
 bbpic_b1.change_ref_frame(particles_b1)
 bbpic_b2.change_ref_frame(particles_b2)
 
+# Choose the time step to simulate
+z_grid_b1 = bbpic_b1.fieldmap_self.z_grid[::-1] # earlier time first
+z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1] # earlier time first
+
+i_step = 5
+z_step_b1 = z_grid_b1[i_step]
+z_step_b2 = z_grid_b2[i_step]
+xo.assert_allclose(z_step_b1, z_step_b2, rtol=0, atol=1e-15)
+
+# Propagate transverse coordinates to the position at the time step
+for pp in [particles_b1, particles_b2]:
+    mask_alive = pp.state > 0
+    gamma_gamma0 = (
+        particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
+    pp.x[mask_alive] += pp.px[mask_alive] / gamma_gamma0  * z_step_b1
+
 # Compute charge density
 bbpic_b1.fieldmap_self.update_from_particles(particles=particles_b1,
                                              update_phi=False)
@@ -70,6 +87,22 @@ bbpic_b2.fieldmap_other.update_rho(bbpic_b1.fieldmap_self.rho, reset=True)
 # Compute potential
 bbpic_b1.fieldmap_other.update_phi_from_rho()
 bbpic_b2.fieldmap_other.update_phi_from_rho()
+
+
+# Compute kick from the other beam
+for pp, bbpic, z_step_self, z_step_other in zip([particles_b1, particles_b2],
+                                                [bbpic_b1, bbpic_b2],
+                                                [z_step_b1, z_step_b2],
+                                                [z_step_b2, z_step_b1]
+                                               ):
+    beta_over_beta_other = 1 # Could be generalized with
+                             # (beta_particle/beta_slice_other)
+                             # One could for example store the beta of the
+                             # closed orbit
+    mask_alive = pp.state > 0
+    z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
+               + z_step_other
+               + beta_over_beta_other * z_step_self)
 
 
 import matplotlib.pyplot as plt
