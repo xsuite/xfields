@@ -12,7 +12,7 @@ constant_charge_slicing_gaussian = \
 
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
-p0c = 7e12
+p0c = 0.2e9
 phi = 0# 200e-6
 betx = 0.15
 bety = 0.2
@@ -58,7 +58,7 @@ for ii in range(2):
     pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=0,
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
         y_range=(-7*sigma_y, 7*sigma_y), dy=0.1*sigma_y,
-        z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.1*sigma_z))
+        z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
