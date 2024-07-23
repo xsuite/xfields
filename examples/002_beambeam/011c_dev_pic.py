@@ -177,9 +177,8 @@ bbpic_b1.change_back_ref_frame_and_subtract_dipolar(particles_b1)
 bbpic_b2.change_back_ref_frame_and_subtract_dipolar(particles_b2)
 
 # Compare against hirata
-sigma_z_limi = sigma_z / 2
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
-                                bunch_intensity, sigma_z_limi, num_slices)
+                                bunch_intensity, sigma_z, num_slices)
 z_centroids_from_tail = z_centroids[::-1]
 bbg = xf.BeamBeamBiGaussian3D(
     phi=phi,
