@@ -95,6 +95,7 @@ for pp, bbpic, z_step_self, z_step_other in zip([particles_b1, particles_b2],
                                                 [z_step_b1, z_step_b2],
                                                 [z_step_b2, z_step_b1]
                                                ):
+    # Compute coordinates in the reference system of the other beam
     beta_over_beta_other = 1 # Could be generalized with
                              # (beta_particle/beta_slice_other)
                              # One could for example store the beta of the
@@ -103,6 +104,25 @@ for pp, bbpic, z_step_self, z_step_other in zip([particles_b1, particles_b2],
     z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
                + z_step_other
                + beta_over_beta_other * z_step_self)
+    x_other = -pp.x[mask_alive]
+    y_other = pp.y[mask_alive]
+
+    # Get fields in the reference system of the other beam
+    dphi_dx, dphi_dy, dphi_dz= bbpic_b1.fieldmap_other.get_values_at_points(
+        x=x_other, y=y_other, z=z_other,
+        return_rho=False,
+        return_phi=False,
+        return_dphi_dx=True,
+        return_dphi_dy=True,
+        return_dphi_dz=True,
+    )
+
+    # Transform fields to self reference frame (dphi_dy is unchanged)
+    dphi_dx *= -1
+    dphi_dz *= -1
+
+
+
 
 
 import matplotlib.pyplot as plt
