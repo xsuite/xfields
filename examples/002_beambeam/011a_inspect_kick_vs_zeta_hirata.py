@@ -9,13 +9,13 @@ constant_charge_slicing_gaussian = \
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
-phi = 200e-6
+phi = 0#200e-6
 betx = 0.15
-bety = 0.1
+bety = 0.2
 sigma_z = 0.1
 nemitt_x = 2e-6
 nemitt_y = 1e-6
-bunch_intensity = 2e11
+bunch_intensity = 2e10
 num_slices = 11
 slice_mode = 'constant_charge'
 
