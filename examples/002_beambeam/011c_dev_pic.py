@@ -45,14 +45,14 @@ particles_b1 = lntwiss.build_particles(
 )
 particles_b2 = particles_b1.copy()
 
-x_lim_grid = phi * 3 * sigma_z + 3 * sigma_x
+x_lim_grid = phi * 2.5 * sigma_z + 2.5 * sigma_x
 
 pics = []
 for ii in range(2):
     pics.append(xf.BeamBeamPIC3D(phi=+200e-6, alpha=0,
-        x_range=(-x_lim_grid, x_lim_grid), dx=0.05*sigma_x,
-        y_range=(-5*sigma_y, 5*sigma_y), dy=0.05*sigma_y,
-        z_range=(-3*sigma_z, 3*sigma_z), dz=0.05*sigma_z))
+        x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
+        y_range=(-5*sigma_y, 5*sigma_y), dy=0.1*sigma_y,
+        z_range=(-3*sigma_z, 3*sigma_z), dz=0.1*sigma_z))
 
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
@@ -61,109 +61,113 @@ bbpic_b2 = pics[1]
 bbpic_b1.change_ref_frame(particles_b1)
 bbpic_b2.change_ref_frame(particles_b2)
 
-# Choose the time step to simulate
 z_grid_b1 = bbpic_b1.fieldmap_self.z_grid[::-1] # earlier time first
 z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1] # earlier time first
+assert len(z_grid_b1) == len(z_grid_b2)
 
-i_step = 5
-z_step_b1 = z_grid_b1[i_step]
-z_step_b2 = z_grid_b2[i_step]
-xo.assert_allclose(z_step_b1, z_step_b2, rtol=0, atol=1e-15) # we consider only this case
-                                                             # that is tested, although
-                                                             # the implementation should be
-                                                             # more general
+progress = xt.progress_indicator.progress
+for i_step in progress(range(len(z_grid_b1))):
+    z_step_b1 = z_grid_b1[i_step]
+    z_step_b2 = z_grid_b2[i_step]
+    xo.assert_allclose(z_step_b1, z_step_b2, rtol=0, atol=1e-15) # we consider only this case
+                                                                # that is tested, although
+                                                                # the implementation should be
+                                                                # more general
 
-# Propagate transverse coordinates to the position at the time step
-for pp, z_step_other in zip([particles_b1, particles_b2],
-                            [z_step_b2, z_step_b1]):
+    # Propagate transverse coordinates to the position at the time step
+    for pp, z_step_other in zip([particles_b1, particles_b2],
+                                [z_step_b2, z_step_b1]):
+        mask_alive = pp.state > 0
+        gamma_gamma0 = (
+            particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
+        pp.x[mask_alive] += (pp.px[mask_alive] / gamma_gamma0
+                            * (pp.zeta[mask_alive] - z_step_other))
+        pp.y[mask_alive] += (pp.py[mask_alive] / gamma_gamma0
+                            * (pp.zeta[mask_alive] - z_step_other))
+
+    # Compute charge density
+    bbpic_b1.fieldmap_self.update_from_particles(particles=particles_b1,
+                                                update_phi=False)
+    bbpic_b2.fieldmap_self.update_from_particles(particles=particles_b2,
+                                                update_phi=False)
+
+    # Exchange charge densities
+    bbpic_b1.fieldmap_other.update_rho(bbpic_b2.fieldmap_self.rho, reset=True)
+    bbpic_b2.fieldmap_other.update_rho(bbpic_b1.fieldmap_self.rho, reset=True)
+
+    # Compute potential
+    bbpic_b1.fieldmap_other.update_phi_from_rho()
+    bbpic_b2.fieldmap_other.update_phi_from_rho()
+
+    # Compute and apply kick from the other beam
     mask_alive = pp.state > 0
-    gamma_gamma0 = (
-        particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
-    pp.x[mask_alive] += (pp.px[mask_alive] / gamma_gamma0
-                         * (pp.zeta[mask_alive] - z_step_other))
-    pp.y[mask_alive] += (pp.py[mask_alive] / gamma_gamma0
-                         * (pp.zeta[mask_alive] - z_step_other))
+    beta0_b1 = particles_b1.beta0[mask_alive][0]
+    beta0_b2 = particles_b2.beta0[mask_alive][0]
 
-# Compute charge density
-bbpic_b1.fieldmap_self.update_from_particles(particles=particles_b1,
-                                             update_phi=False)
-bbpic_b2.fieldmap_self.update_from_particles(particles=particles_b2,
-                                             update_phi=False)
+    for pp, bbpic, z_step_self, z_step_other, beta0_other in zip(
+                                                    [particles_b1, particles_b2],
+                                                    [bbpic_b1, bbpic_b2],
+                                                    [z_step_b1, z_step_b2],
+                                                    [z_step_b2, z_step_b1],
+                                                    [beta0_b2, beta0_b1]
+                                                ):
+        # Compute coordinates in the reference system of the other beam
+        beta_over_beta_other = 1 # Could be generalized with
+                                # (beta_particle/beta_slice_other)
+                                # One could for example store the beta of the
+                                # closed orbit
+        mask_alive = pp.state > 0
+        z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
+                + z_step_other
+                + beta_over_beta_other * z_step_self)
+        x_other = -pp.x[mask_alive]
+        y_other = pp.y[mask_alive]
 
-# Exchange charge densities
-bbpic_b1.fieldmap_other.update_rho(bbpic_b2.fieldmap_self.rho, reset=True)
-bbpic_b2.fieldmap_other.update_rho(bbpic_b1.fieldmap_self.rho, reset=True)
+        # Get fields in the reference system of the other beam
+        dphi_dx, dphi_dy, dphi_dz= bbpic_b1.fieldmap_other.get_values_at_points(
+            x=x_other, y=y_other, z=z_other,
+            return_rho=False,
+            return_phi=False,
+            return_dphi_dx=True,
+            return_dphi_dy=True,
+            return_dphi_dz=True,
+        )
 
-# Compute potential
-bbpic_b1.fieldmap_other.update_phi_from_rho()
-bbpic_b2.fieldmap_other.update_phi_from_rho()
+        # Transform fields to self reference frame (dphi_dy is unchanged)
+        dphi_dx *= -1
+        dphi_dz *= -1
 
+        # Compute factor for the kick (see bb4d)
+        charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
+                            / (pp.mass0 * qe /(clight * clight)))
+        pp_beta0 = pp.beta0[mask_alive]
+        factor = (charge_mass_ratio
+                / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
+                * (1 + beta0_other * pp_beta0)
+                / (beta0_other + pp_beta0))
 
-# Compute and apply kick from the other beam
-mask_alive = pp.state > 0
-beta0_b1 = particles_b1.beta0[mask_alive][0]
-beta0_b2 = particles_b2.beta0[mask_alive][0]
+        # Compute kick
+        dpx = factor * dphi_dx
+        dpy = factor * dphi_dy
 
-for pp, bbpic, z_step_self, z_step_other, beta0_other in zip(
-                                                [particles_b1, particles_b2],
-                                                [bbpic_b1, bbpic_b2],
-                                                [z_step_b1, z_step_b2],
-                                                [z_step_b2, z_step_b1],
-                                                [beta0_b2, beta0_b1]
-                                               ):
-    # Compute coordinates in the reference system of the other beam
-    beta_over_beta_other = 1 # Could be generalized with
-                             # (beta_particle/beta_slice_other)
-                             # One could for example store the beta of the
-                             # closed orbit
-    mask_alive = pp.state > 0
-    z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
-               + z_step_other
-               + beta_over_beta_other * z_step_self)
-    x_other = -pp.x[mask_alive]
-    y_other = pp.y[mask_alive]
+        # Apply kick
+        pp.px[mask_alive] += dpx
+        pp.py[mask_alive] += dpy
 
-    # Get fields in the reference system of the other beam
-    dphi_dx, dphi_dy, dphi_dz= bbpic_b1.fieldmap_other.get_values_at_points(
-        x=x_other, y=y_other, z=z_other,
-        return_rho=False,
-        return_phi=False,
-        return_dphi_dx=True,
-        return_dphi_dy=True,
-        return_dphi_dz=True,
-    )
+    # Propagate transverse coordinates back to IP
+    for pp, z_step_other in zip([particles_b1, particles_b2],
+                                [z_step_b2, z_step_b1]):
+        mask_alive = pp.state > 0
+        gamma_gamma0 = (
+            particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
+        pp.x[mask_alive] -= (pp.px[mask_alive] / gamma_gamma0
+                            * (pp.zeta[mask_alive] - z_step_other))
+        pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
+                            * (pp.zeta[mask_alive] - z_step_other))
 
-    # Transform fields to self reference frame (dphi_dy is unchanged)
-    dphi_dx *= -1
-    dphi_dz *= -1
-
-    # Compute factor for the kick (see bb4d)
-    charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
-                         / (pp.mass0 * qe /(clight * clight)))
-    pp_beta0 = pp.beta0[mask_alive]
-    factor = (charge_mass_ratio
-            / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
-            * (1 + beta0_other * pp_beta0)
-            / (beta0_other + pp_beta0))
-
-    # Compute kick
-    dpx = factor * dphi_dx
-    dpy = factor * dphi_dy
-
-    # Apply kick
-    pp.px[mask_alive] += dpx
-    pp.py[mask_alive] += dpy
-
-# Propagate transverse coordinates back to IP
-for pp, z_step_other in zip([particles_b1, particles_b2],
-                            [z_step_b2, z_step_b1]):
-    mask_alive = pp.state > 0
-    gamma_gamma0 = (
-        particles_b1.ptau[mask_alive] * particles_b1.beta0[mask_alive] + 1)
-    pp.x[mask_alive] -= (pp.px[mask_alive] / gamma_gamma0
-                         * (pp.zeta[mask_alive] - z_step_other))
-    pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
-                         * (pp.zeta[mask_alive] - z_step_other))
+# Back to lab frame
+bbpic_b1.change_back_ref_frame_and_subtract_dipolar(particles_b1)
+bbpic_b2.change_back_ref_frame_and_subtract_dipolar(particles_b2)
 
 import matplotlib.pyplot as plt
 plt.close('all')
