@@ -133,6 +133,7 @@ for i_step in progress(range(len(z_grid_b1))):
             return_dphi_dy=True,
             return_dphi_dz=True,
         )
+        dz = bbpic_b1.fieldmap_other.dz
 
         # Transform fields to self reference frame (dphi_dy is unchanged)
         dphi_dx *= -1
@@ -145,7 +146,7 @@ for i_step in progress(range(len(z_grid_b1))):
         factor = (charge_mass_ratio
                 / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
                 * (1 + beta0_other * pp_beta0)
-                / (beta0_other + pp_beta0))
+                / (beta0_other + pp_beta0) * dz)
 
         # Compute kick
         dpx = factor * dphi_dx
