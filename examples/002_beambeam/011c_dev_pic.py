@@ -196,6 +196,14 @@ bbg = xf.BeamBeamBiGaussian3D(
 p_bbg = p_test.copy()
 bbg.track(p_bbg)
 
+bb2d = xf.BeamBeamBiGaussian2D(
+    other_beam_q0=1,
+    other_beam_beta0=1,
+    other_beam_num_particles=bunch_intensity,
+    other_beam_Sigma_11=sigma_x**2,
+    other_beam_Sigma_33=sigma_y**2)
+p_bb2d = p_test.copy()
+bb2d.track(p_bb2d)
 
 import matplotlib.pyplot as plt
 plt.close('all')
@@ -222,8 +230,9 @@ plt.pcolormesh(bbpic_b1.fieldmap_other.z_grid,
 plt.colorbar()
 
 plt.figure(4)
-plt.plot(p_bbg.zeta, p_bbg.px)
-plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test])
+plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
+plt.plot(p_bb2d.zeta, p_bb2d.px, label='bb2d')
 plt.ylim(bottom=0)
 
 plt.show()
