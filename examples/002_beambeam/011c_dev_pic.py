@@ -20,6 +20,7 @@ sigma_z = 0.001
 nemitt_x = 2e-6
 nemitt_y = 1e-6
 bunch_intensity = 2e10
+num_slices = 11
 slice_mode = 'constant_charge'
 
 lntwiss = xt.Line(elements=[xt.Marker()])
@@ -57,7 +58,7 @@ for ii in range(2):
     pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=0,
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
         y_range=(-7*sigma_y, 7*sigma_y), dy=0.1*sigma_y,
-        z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.05*sigma_z))
+        z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.1*sigma_z))
 
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
@@ -175,6 +176,28 @@ for i_step in progress(range(len(z_grid_b1))):
 bbpic_b1.change_back_ref_frame_and_subtract_dipolar(particles_b1)
 bbpic_b2.change_back_ref_frame_and_subtract_dipolar(particles_b2)
 
+# Compare against hirata
+sigma_z_limi = sigma_z / 2
+z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
+                                bunch_intensity, sigma_z_limi, num_slices)
+z_centroids_from_tail = z_centroids[::-1]
+bbg = xf.BeamBeamBiGaussian3D(
+    phi=phi,
+    alpha=0,
+    other_beam_q0=1.,
+    slices_other_beam_num_particles=num_part_per_slice,
+    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_Sigma_11=cov.Sigma11[0],
+    slices_other_beam_Sigma_12=cov.Sigma12[0],
+    slices_other_beam_Sigma_22=cov.Sigma22[0],
+    slices_other_beam_Sigma_33=cov.Sigma33[0],
+    slices_other_beam_Sigma_34=cov.Sigma34[0],
+    slices_other_beam_Sigma_44=cov.Sigma44[0],
+)
+p_bbg = p_test.copy()
+bbg.track(p_bbg)
+
+
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(1)
@@ -197,5 +220,11 @@ plt.figure(3)
 plt.pcolormesh(bbpic_b1.fieldmap_other.z_grid,
                bbpic_b1.fieldmap_other.x_grid,
                bbpic_b1.fieldmap_other.dphi_dx[:, 30, :])
+plt.colorbar()
+
+plt.figure(4)
+plt.plot(p_bbg.zeta, p_bbg.px)
+plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test])
+plt.ylim(bottom=0)
 
 plt.show()
