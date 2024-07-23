@@ -4,6 +4,9 @@ import xfields as xf
 import xtrack as xt
 import xobjects as xo
 
+from scipy.constants import e as qe
+from scipy.constants import c as clight
+
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
 
@@ -88,12 +91,17 @@ bbpic_b2.fieldmap_other.update_rho(bbpic_b1.fieldmap_self.rho, reset=True)
 bbpic_b1.fieldmap_other.update_phi_from_rho()
 bbpic_b2.fieldmap_other.update_phi_from_rho()
 
+mask_alive = pp.state > 0
+beta0_b1 = particles_b1.beta0[mask_alive][0]
+beta0_b2 = particles_b2.beta0[mask_alive][0]
 
 # Compute kick from the other beam
-for pp, bbpic, z_step_self, z_step_other in zip([particles_b1, particles_b2],
+for pp, bbpic, z_step_self, z_step_other, beta0_other in zip(
+                                                [particles_b1, particles_b2],
                                                 [bbpic_b1, bbpic_b2],
                                                 [z_step_b1, z_step_b2],
-                                                [z_step_b2, z_step_b1]
+                                                [z_step_b2, z_step_b1],
+                                                [beta0_b2, beta0_b1]
                                                ):
     # Compute coordinates in the reference system of the other beam
     beta_over_beta_other = 1 # Could be generalized with
@@ -120,6 +128,25 @@ for pp, bbpic, z_step_self, z_step_other in zip([particles_b1, particles_b2],
     # Transform fields to self reference frame (dphi_dy is unchanged)
     dphi_dx *= -1
     dphi_dz *= -1
+
+    # Compute factor for the kick (see bb4d)
+    charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
+                         / (pp.mass0 * qe /(clight * clight)))
+    pp_beta0 = pp.beta0[mask_alive]
+    factor = (charge_mass_ratio
+            / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
+            * (1 + beta0_other * pp_beta0)
+            / (beta0_other + pp_beta0))
+
+    # Compute kick
+    dpx = factor * dphi_dx
+    dpy = factor * dphi_dy
+
+    # Apply kick
+    pp.px[mask_alive] += dpx
+    pp.py[mask_alive] += dpy
+
+
 
 
 
