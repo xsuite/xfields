@@ -160,7 +160,8 @@ class BeamBeamPIC3D(xt.BeamElement):
                                                     update_phi=False)
 
             # Pass charge density to partner
-            self.partner_element.update_rho(self.fieldmap_self.rho, reset=True)
+            self.partner_element.fieldmap_other.update_rho(
+                self.fieldmap_self.rho, reset=True)
             self.partner_element._i_step_partner = self._i_step
             self._sent_rho_to_partner = True
 
@@ -183,6 +184,7 @@ class BeamBeamPIC3D(xt.BeamElement):
                                     # closed orbit
             z_step_self = self._z_steps_self[self._i_step]
             mask_alive = pp.state > 0
+            z_step_other = self._z_steps_other[self._i_step]
             z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
                     + z_step_other
                     + beta_over_beta_other * z_step_self)

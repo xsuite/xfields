@@ -64,6 +64,9 @@ for ii in range(2):
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
 
+bbpic_b1.partner_element = bbpic_b2
+bbpic_b2.partner_element = bbpic_b1
+
 line_b1 = xt.Line(elements=[bbpic_b1])
 line_b2 = xt.Line(elements=[bbpic_b2])
 
@@ -76,3 +79,32 @@ multitracker = xt.PipelineMultiTracker(
     enable_debug_log=True, verbose=True)
 
 multitracker.track(num_turns=1)
+
+# Compare against hirata
+z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
+                                bunch_intensity, sigma_z, num_slices)
+z_centroids_from_tail = z_centroids[::-1]
+bbg = xf.BeamBeamBiGaussian3D(
+    phi=phi,
+    alpha=0,
+    other_beam_q0=1.,
+    slices_other_beam_num_particles=num_part_per_slice,
+    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_Sigma_11=cov.Sigma11[0],
+    slices_other_beam_Sigma_12=cov.Sigma12[0],
+    slices_other_beam_Sigma_22=cov.Sigma22[0],
+    slices_other_beam_Sigma_33=cov.Sigma33[0],
+    slices_other_beam_Sigma_34=cov.Sigma34[0],
+    slices_other_beam_Sigma_44=cov.Sigma44[0],
+)
+p_bbg = p_test.copy()
+bbg.track(p_bbg)
+
+import matplotlib.pyplot as plt
+plt.close('all')
+plt.figure(4)
+plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
+plt.legend()
+
+plt.show()
