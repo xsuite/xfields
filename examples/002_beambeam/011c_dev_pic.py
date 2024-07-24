@@ -13,10 +13,10 @@ constant_charge_slicing_gaussian = \
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
-phi = 0# 200e-6
+phi = 200e-6
 betx = 0.15
 bety = 0.2
-sigma_z = 0.001
+sigma_z = 0.1
 nemitt_x = 2e-6
 nemitt_y = 1e-6
 bunch_intensity = 2e10
@@ -269,9 +269,9 @@ plt.colorbar()
 plt.figure(4)
 plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
-plt.plot(p_bb2d.zeta, p_bb2d.px, '--', label='bb2d')
-plt.plot(p_fstn.zeta, dpx_fm, label='frankenstein')
-plt.ylim(bottom=0)
+if phi == 0:
+    plt.plot(p_bb2d.zeta, p_bb2d.px, '--', label='bb2d')
+    plt.plot(p_fstn.zeta, dpx_fm, label='frankenstein')
 plt.legend()
 
 plt.show()
