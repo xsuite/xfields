@@ -66,8 +66,19 @@ for ii in range(2):
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
 
-bbpic_b1.partner_element = bbpic_b2
-bbpic_b2.partner_element = bbpic_b1
+# Pipeline configuration (some rationalization needed here!)
+pipeline_manager = xt.PipelineManager()
+pipeline_manager.add_particles('p_b1', rank=0)
+pipeline_manager.add_particles('p_b2', rank=0)
+pipeline_manager.add_element('IP1') # needs to be the same for the two lines (I guess...)
+bbpic_b1.name = 'IP1'
+bbpic_b2.name = 'IP1'
+particles_b1.init_pipeline('p_b1')
+particles_b2.init_pipeline('p_b2')
+bbpic_b1.partner_name = 'p_b2'
+bbpic_b2.partner_name = 'p_b1'
+bbpic_b1.pipeline_manager = pipeline_manager
+bbpic_b2.pipeline_manager = pipeline_manager
 
 line_b1 = xt.Line(elements=[bbpic_b1])
 line_b2 = xt.Line(elements=[bbpic_b2])

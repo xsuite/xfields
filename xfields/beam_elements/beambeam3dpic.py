@@ -125,6 +125,8 @@ class BeamBeamPIC3D(xt.BeamElement):
     def track(self, particles):
 
         pp = particles
+        mask_alive = pp.state > 0
+        at_turn = pp.at_turn[mask_alive][0]
 
         if self._working_on_bunch is None:
             # Starting a new interaction
@@ -148,7 +150,7 @@ class BeamBeamPIC3D(xt.BeamElement):
                 sender_name=pp.name,
                 reciever_name=self.partner_name,
                 turn=at_turn,
-                internal_tag=self.config_for_update._i_step)
+                internal_tag=self._i_step)
 
         if not self._sent_rho_to_partner:
             z_step_other = self._z_steps_other[self._i_step]
@@ -176,13 +178,17 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         # Try to receive rho from partner
         communication_id_data.pop('turn')
-        if self.is_ready_to_receive(**communication_id_data):
-            self.receive_message(
-                self.fieldmap_other.rho[:],
+        if self.pipeline_manager.is_ready_to_recieve(**communication_id_data):
+            buffer_receive = np.zeros(np.prod(self.fieldmap_other.rho.shape),
+                                      dtype=float)
+            self.pipeline_manager.recieve_message(
+                buffer_receive,
                 **communication_id_data)
+            rho = buffer_receive.reshape(self.fieldmap_other.rho.shape)
+            self.fieldmap_other.update_rho(rho, reset=True)
         else:
             return xt.PipelineStatus(on_hold=True,
-                        info=f'witing for rho for step {self._i_step}')
+                        info=f'waiting for rho for step {self._i_step}')
 
         # Restarting after receiving rho
         self._sent_rho_to_partner = False # Clear flag
