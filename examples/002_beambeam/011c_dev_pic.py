@@ -20,7 +20,7 @@ sigma_z = 0.1
 nemitt_x = 2e-6
 nemitt_y = 1e-6
 bunch_intensity = 2e10
-num_slices = 11
+num_slices = 101
 slice_mode = 'constant_charge'
 
 lntwiss = xt.Line(elements=[xt.Marker()])
