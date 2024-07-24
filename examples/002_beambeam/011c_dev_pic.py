@@ -152,7 +152,7 @@ for i_step in progress(range(len(z_grid_b1))):
         if pp is particles_b1:
             dphi_dx_test_log.append(dphi_dx[:n_test])
 
-        # Compute factor for the kick (see bb4d)
+        # Compute factor for the kick
         charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
                             / (pp.mass0 * qe /(clight * clight)))
         pp_beta0 = pp.beta0[mask_alive]
