@@ -120,7 +120,6 @@ class BeamBeamPIC3D(xt.BeamElement):
                 _sin_alpha=kwargs.get('sin_alpha', None),
                 _cos_alpha=kwargs.get('cos_alpha', None))
 
-        self.partner_element = None
         self._working_on_bunch = None
 
     def track(self, particles):
@@ -143,11 +142,20 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         assert self._working_on_bunch is pp
 
+        # Build data for communication identifier
+        communication_id_data = dict(
+                element_name=self.name,
+                sender_name=pp.name,
+                reciever_name=self.partner_name,
+                turn=at_turn,
+                internal_tag=self.config_for_update._i_step)
+
         if not self._sent_rho_to_partner:
             z_step_other = self._z_steps_other[self._i_step]
 
             # Propagate transverse coordinates to the position at the time step
             mask_alive = pp.state > 0
+            at_turn = pp.at_turn[mask_alive][0]
             gamma_gamma0 = (
                 pp.ptau[mask_alive] * pp.beta0[mask_alive] + 1)
             pp.x[mask_alive] += (pp.px[mask_alive] / gamma_gamma0
@@ -160,86 +168,91 @@ class BeamBeamPIC3D(xt.BeamElement):
                                                     update_phi=False)
 
             # Pass charge density to partner
-            self.partner_element.fieldmap_other.update_rho(
-                self.fieldmap_self.rho, reset=True)
-            self.partner_element._i_step_partner = self._i_step
+            if self.pipeline_manager.is_ready_to_send(**communication_id_data):
+                self.pipeline_manager.send_message(
+                    self.fieldmap_self.rho.flatten(),
+                    **communication_id_data)
             self._sent_rho_to_partner = True
 
-            return xt.PipelineStatus(on_hold=True,
-                        info=f'sent rho for step {self._i_step}')
-
+        # Try to receive rho from partner
+        communication_id_data.pop('turn')
+        if self.is_ready_to_receive(**communication_id_data):
+            self.receive_message(
+                self.fieldmap_other.rho[:],
+                **communication_id_data)
         else:
-            # Restarting after receiving rho
-            assert self.partner_element._i_step_partner == self._i_step
+            return xt.PipelineStatus(on_hold=True,
+                        info=f'witing for rho for step {self._i_step}')
 
-            self._sent_rho_to_partner = False # Clear flag
+        # Restarting after receiving rho
+        self._sent_rho_to_partner = False # Clear flag
 
-            # Compute potential
-            self.fieldmap_other.update_phi_from_rho()
+        # Compute potential
+        self.fieldmap_other.update_phi_from_rho()
 
-            # Compute particles coordinates in the reference system of the other beam
-            beta_over_beta_other = 1 # Could be generalized with
-                                    # (beta_particle/beta_slice_other)
-                                    # One could for example store the beta of the
-                                    # closed orbit
-            z_step_self = self._z_steps_self[self._i_step]
-            mask_alive = pp.state > 0
-            z_step_other = self._z_steps_other[self._i_step]
-            z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
-                    + z_step_other
-                    + beta_over_beta_other * z_step_self)
-            x_other = -pp.x[mask_alive]
-            y_other = pp.y[mask_alive]
+        # Compute particles coordinates in the reference system of the other beam
+        beta_over_beta_other = 1 # Could be generalized with
+                                # (beta_particle/beta_slice_other)
+                                # One could for example store the beta of the
+                                # closed orbit
+        z_step_self = self._z_steps_self[self._i_step]
+        mask_alive = pp.state > 0
+        z_step_other = self._z_steps_other[self._i_step]
+        z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
+                + z_step_other
+                + beta_over_beta_other * z_step_self)
+        x_other = -pp.x[mask_alive]
+        y_other = pp.y[mask_alive]
 
-            # Get fields in the reference system of the other beam
-            dphi_dx, dphi_dy, dphi_dz= self.fieldmap_other.get_values_at_points(
-                x=x_other, y=y_other, z=z_other,
-                return_rho=False,
-                return_phi=False,
-                return_dphi_dx=True,
-                return_dphi_dy=True,
-                return_dphi_dz=True,
-            )
+        # Get fields in the reference system of the other beam
+        dphi_dx, dphi_dy, dphi_dz= self.fieldmap_other.get_values_at_points(
+            x=x_other, y=y_other, z=z_other,
+            return_rho=False,
+            return_phi=False,
+            return_dphi_dx=True,
+            return_dphi_dy=True,
+            return_dphi_dz=True,
+        )
 
-            # Transform fields to self reference frame (dphi_dy is unchanged)
-            dphi_dx *= -1
-            dphi_dz *= -1
+        # Transform fields to self reference frame (dphi_dy is unchanged)
+        dphi_dx *= -1
+        dphi_dz *= -1
 
-            # Compute factor for the kick
-            charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
-                                / (pp.mass0 * qe /(clight * clight)))
-            # pp_beta0 = pp.beta0[mask_alive] # Assume ultrarelativistic for now
-            pp_beta0 = 1.
-            beta0_other = 1.
-            factor = -(charge_mass_ratio
-                    / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
-                    * (1 + beta0_other * pp_beta0))
+        # Compute factor for the kick
+        charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
+                            / (pp.mass0 * qe /(clight * clight)))
+        # pp_beta0 = pp.beta0[mask_alive] # Assume ultrarelativistic for now
+        pp_beta0 = 1.
+        beta0_other = 1.
+        factor = -(charge_mass_ratio
+                / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
+                * (1 + beta0_other * pp_beta0))
 
-            # Compute kick
-            dz = self.fieldmap_self.dz
-            dpx = factor * dphi_dx * dz
-            dpy = factor * dphi_dy * dz
+        # Compute kick
+        dz = self.fieldmap_self.dz
+        dpx = factor * dphi_dx * dz
+        dpy = factor * dphi_dy * dz
 
-            # Apply kick
-            pp.px[mask_alive] += dpx
-            pp.py[mask_alive] += dpy
+        # Apply kick
+        pp.px[mask_alive] += dpx
+        pp.py[mask_alive] += dpy
 
-            # Propagate transverse coordinates back to IP
-            mask_alive = pp.state > 0
-            gamma_gamma0 = (
-                pp.ptau[mask_alive] * pp.beta0[mask_alive] + 1)
-            pp.x[mask_alive] -= (pp.px[mask_alive] / gamma_gamma0
-                                * (pp.zeta[mask_alive] - z_step_other))
-            pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
-                                * (pp.zeta[mask_alive] - z_step_other))
+        # Propagate transverse coordinates back to IP
+        mask_alive = pp.state > 0
+        gamma_gamma0 = (
+            pp.ptau[mask_alive] * pp.beta0[mask_alive] + 1)
+        pp.x[mask_alive] -= (pp.px[mask_alive] / gamma_gamma0
+                            * (pp.zeta[mask_alive] - z_step_other))
+        pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
+                            * (pp.zeta[mask_alive] - z_step_other))
 
-            self._i_step += 1
-            if self._i_step < len(self._z_steps_other):
-                return xt.PipelineStatus(on_hold=True,
-                        info=f'sent rho for step {self._i_step}')
-            else:
-                self.change_back_ref_frame_and_subtract_dipolar_bbpic(pp)
-                return None # Interaction done!
+        self._i_step += 1
+        if self._i_step < len(self._z_steps_other):
+            return xt.PipelineStatus(on_hold=True,
+                    info=f'ready to start step {self._i_step}')
+        else:
+            self.change_back_ref_frame_and_subtract_dipolar_bbpic(pp)
+            return None # Interaction done!
 
     @property
     def sin_phi(self):
