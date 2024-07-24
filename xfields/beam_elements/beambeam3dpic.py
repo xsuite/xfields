@@ -44,8 +44,8 @@ class BeamBeamPIC3D(xt.BeamElement):
         'post_subtract_zeta': xo.Float64,
         'post_subtract_pzeta': xo.Float64,
 
-        'fieldmap_self': xo.Ref(TriLinearInterpolatedFieldMap),
-        'fieldmap_other': xo.Ref(TriLinearInterpolatedFieldMap),
+        'fieldmap_self': TriLinearInterpolatedFieldMap,
+        'fieldmap_other': TriLinearInterpolatedFieldMap,
 
     }
     iscollective = True
