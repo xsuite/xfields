@@ -12,7 +12,7 @@ constant_charge_slicing_gaussian = \
 
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
-p0c = 0.2e9
+p0c = 7e12
 phi = 0# 200e-6
 betx = 0.15
 bety = 0.2
@@ -72,6 +72,7 @@ z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1] # earlier time first
 assert len(z_grid_b1) == len(z_grid_b2)
 
 progress = xt.progress_indicator.progress
+dphi_dx_test_log = []
 for i_step in progress(range(len(z_grid_b1))):
     z_step_b1 = z_grid_b1[i_step]
     z_step_b2 = z_grid_b2[i_step]
@@ -96,6 +97,9 @@ for i_step in progress(range(len(z_grid_b1))):
                                                 update_phi=False)
     bbpic_b2.fieldmap_self.update_from_particles(particles=particles_b2,
                                                 update_phi=False)
+
+    if np.isnan(bbpic_b1.fieldmap_self.rho).any():
+        breakpoint()
 
     # Exchange charge densities
     bbpic_b1.fieldmap_other.update_rho(bbpic_b2.fieldmap_self.rho, reset=True)
@@ -144,18 +148,21 @@ for i_step in progress(range(len(z_grid_b1))):
         dphi_dx *= -1
         dphi_dz *= -1
 
+        if pp is particles_b1:
+            dphi_dx_test_log.append(dphi_dx[:n_test])
+
         # Compute factor for the kick (see bb4d)
         charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
                             / (pp.mass0 * qe /(clight * clight)))
         pp_beta0 = pp.beta0[mask_alive]
         factor = -(charge_mass_ratio
                 / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
-                * (1 + beta0_other * pp_beta0)
-                / (beta0_other + pp_beta0) * dz)
+                * (1 + beta0_other * pp_beta0))
+                # / (beta0_other + pp_beta0))
 
         # Compute kick
-        dpx = factor * dphi_dx
-        dpy = factor * dphi_dy
+        dpx = factor * dphi_dx * dz
+        dpy = factor * dphi_dy * dz
 
         # Apply kick
         pp.px[mask_alive] += dpx
@@ -171,6 +178,8 @@ for i_step in progress(range(len(z_grid_b1))):
                             * (pp.zeta[mask_alive] - z_step_other))
         pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
                             * (pp.zeta[mask_alive] - z_step_other))
+
+dphi_dx_test_log = np.array(dphi_dx_test_log)
 
 # Back to lab frame
 bbpic_b1.change_back_ref_frame_and_subtract_dipolar(particles_b1)
@@ -205,6 +214,34 @@ bb2d = xf.BeamBeamBiGaussian2D(
 p_bb2d = p_test.copy()
 bb2d.track(p_bb2d)
 
+# Build a test python implementation (frankenstein)
+p_fstn = p_test.copy()
+
+import ducktrack as dtk
+mathlib = dtk.mathlibs.MathlibDefault
+gf = dtk.be_beamfields.gaussian_fields
+
+ex, ey = gf.get_Ex_Ey_Gx_Gy_gauss(p_fstn.x, p_fstn.y,
+                                 sigma_x=sigma_x, sigma_y=sigma_y,
+                                 min_sigma_diff=1e-12, skip_Gs=True,
+                                 mathlib=mathlib)
+
+additional_factor = bunch_intensity * qe / (beta0_other + pp_beta0)[:n_test]
+fm_factor = additional_factor * factor[:n_test]
+
+dpx_fm = fm_factor * -ex
+dpy_fm = fm_factor * -ey
+
+dx = bbpic_b1.fieldmap_other.dx
+dy = bbpic_b1.fieldmap_other.dy
+z = bbpic_b1.fieldmap_other.z_grid
+lam = bbpic_b1.fieldmap_other.rho.sum(axis=0).sum(axis=0) * dx * dy
+
+ex_vs_z = lam * ex[0]
+
+
+
+
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(1)
@@ -232,7 +269,9 @@ plt.colorbar()
 plt.figure(4)
 plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
-plt.plot(p_bb2d.zeta, p_bb2d.px, label='bb2d')
+plt.plot(p_bb2d.zeta, p_bb2d.px, '--', label='bb2d')
+plt.plot(p_fstn.zeta, dpx_fm, label='frankenstein')
 plt.ylim(bottom=0)
+plt.legend()
 
 plt.show()
