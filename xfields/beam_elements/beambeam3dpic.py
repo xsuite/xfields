@@ -63,10 +63,10 @@ class BeamBeamPIC3D(xt.BeamElement):
    ]
 
     _per_particle_kernels={
-        'change_ref_frame': xo.Kernel(
+        'change_ref_frame_bbpic': xo.Kernel(
             c_name='BeamBeamPIC3D_change_ref_frame_local_particle',
             args=[]),
-        'change_back_ref_frame_and_subtract_dipolar': xo.Kernel(
+        'change_back_ref_frame_and_subtract_dipolar_bbpic': xo.Kernel(
             c_name='BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle',
             args=[]),
     }

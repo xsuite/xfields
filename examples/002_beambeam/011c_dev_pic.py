@@ -3,6 +3,7 @@ import numpy as np
 import xfields as xf
 import xtrack as xt
 import xobjects as xo
+# xo.context_default._kernels.clear()
 
 from scipy.constants import e as qe
 from scipy.constants import c as clight
@@ -64,8 +65,8 @@ bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
 
 # Move particles to computation reference frame
-bbpic_b1.change_ref_frame(particles_b1)
-bbpic_b2.change_ref_frame(particles_b2)
+bbpic_b1.change_ref_frame_bbpic(particles_b1)
+bbpic_b2.change_ref_frame_bbpic(particles_b2)
 
 z_grid_b1 = bbpic_b1.fieldmap_self.z_grid[::-1] # earlier time first
 z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1] # earlier time first
@@ -182,8 +183,8 @@ for i_step in progress(range(len(z_grid_b1))):
 dphi_dx_test_log = np.array(dphi_dx_test_log)
 
 # Back to lab frame
-bbpic_b1.change_back_ref_frame_and_subtract_dipolar(particles_b1)
-bbpic_b2.change_back_ref_frame_and_subtract_dipolar(particles_b2)
+bbpic_b1.change_back_ref_frame_and_subtract_dipolar_bbpic(particles_b1)
+bbpic_b2.change_back_ref_frame_and_subtract_dipolar_bbpic(particles_b2)
 
 # Compare against hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(

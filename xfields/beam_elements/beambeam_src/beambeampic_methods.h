@@ -31,7 +31,6 @@ void BeamBeamPIC3D_change_ref_frame_local_particle(
     const double shift_pzeta = BeamBeamPIC3DData_get_ref_shift_pzeta(el)
                             + BeamBeamPIC3DData_get_other_beam_shift_pzeta(el);
 
-
     //start_per_particle_block (part0->part)
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
@@ -113,6 +112,7 @@ void BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle(
         LocalParticle_set_py(part, py);
         LocalParticle_set_zeta(part, zeta);
         LocalParticle_update_pzeta(part, pzeta);
+
 
     //end_per_particle_block
 
