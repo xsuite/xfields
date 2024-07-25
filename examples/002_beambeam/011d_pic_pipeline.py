@@ -15,9 +15,9 @@ constant_charge_slicing_gaussian = \
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
-alpha = np.pi/2
+alpha = np.pi/4
 betx = 0.15
-bety = 0.2
+bety = 0.15 #2
 sigma_z = 0.1
 nemitt_x = 2e-6
 nemitt_y = 1e-6
@@ -47,7 +47,7 @@ bunch_b1 = lntwiss.build_particles(
     weight = bunch_intensity / num_particles
 )
 n_test = 1000
-p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.3 * sigma_y,
+p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
 particles_b1 = xt.Particles.merge([p_test, bunch_b1])
