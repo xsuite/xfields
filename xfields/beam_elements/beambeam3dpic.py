@@ -136,8 +136,8 @@ class BeamBeamPIC3D(xt.BeamElement):
             self.change_ref_frame_bbpic(pp)
 
             self._i_step = 0
-            self._z_steps_self = self.fieldmap_self.z_grid[::-1] # earlier time first
-            self._z_steps_other = self.fieldmap_other.z_grid[::-1] # earlier time first
+            self._z_steps_self = self.fieldmap_self.z_grid[::-1].copy() # earlier time first
+            self._z_steps_other = self.fieldmap_other.z_grid[::-1].copy() # earlier time first
             self._sent_rho_to_partner = False
 
             assert len(self._z_steps_other) == len(self._z_steps_self)
@@ -219,6 +219,10 @@ class BeamBeamPIC3D(xt.BeamElement):
             return_dphi_dy=True,
             return_dphi_dz=True,
         )
+
+        print(f'pp.name: {pp.name}, self._i_step: {self._i_step}')
+        if pp.name == 'p_b1' and self._i_step == 0:
+            breakpoint()
 
         # Transform fields to self reference frame (dphi_dy is unchanged)
         dphi_dx *= -1

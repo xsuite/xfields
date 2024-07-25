@@ -61,6 +61,9 @@ p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
 particles_b1 = xt.Particles.merge([p_test, bunch_b1])
 particles_b2 = particles_b1.copy()
 
+particles_b1.name = 'p_b1'
+particles_b2.name = 'p_b2'
+
 x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x
 y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y
 
@@ -112,9 +115,6 @@ for i_step in progress(range(len(z_grid_b1))):
     bbpic_b2.fieldmap_self.update_from_particles(particles=particles_b2,
                                                 update_phi=False)
 
-    if np.isnan(bbpic_b1.fieldmap_self.rho).any():
-        breakpoint()
-
     # Exchange charge densities
     bbpic_b1.fieldmap_other.update_rho(bbpic_b2.fieldmap_self.rho, reset=True)
     bbpic_b2.fieldmap_other.update_rho(bbpic_b1.fieldmap_self.rho, reset=True)
@@ -148,7 +148,7 @@ for i_step in progress(range(len(z_grid_b1))):
         y_other = pp.y[mask_alive]
 
         # Get fields in the reference system of the other beam
-        dphi_dx, dphi_dy, dphi_dz= bbpic_b1.fieldmap_other.get_values_at_points(
+        dphi_dx, dphi_dy, dphi_dz= bbpic.fieldmap_other.get_values_at_points(
             x=x_other, y=y_other, z=z_other,
             return_rho=False,
             return_phi=False,
@@ -156,7 +156,10 @@ for i_step in progress(range(len(z_grid_b1))):
             return_dphi_dy=True,
             return_dphi_dz=True,
         )
-        dz = bbpic_b1.fieldmap_other.dz
+        dz = bbpic.fieldmap_other.dz
+
+        if pp.name == 'p_b1' and i_step == 0:
+            breakpoint()
 
         # Transform fields to self reference frame (dphi_dy is unchanged)
         dphi_dx *= -1
