@@ -66,7 +66,9 @@ y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y
 
 pics = []
 for ii in range(2):
-    pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=alpha,
+    pics.append(xf.BeamBeamPIC3D(
+        phi={0: phi, 1: -phi}[ii],
+        alpha={0: alpha, 1: -alpha}[ii],
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
         y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
@@ -85,9 +87,6 @@ assert len(z_grid_b1) == len(z_grid_b2)
 progress = xt.progress_indicator.progress
 dphi_dx_test_log = []
 for i_step in progress(range(len(z_grid_b1))):
-
-    if i_step !=20:
-        continue
 
     z_step_b1 = z_grid_b1[i_step]
     z_step_b2 = z_grid_b2[i_step]
@@ -205,8 +204,8 @@ z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
                                 bunch_intensity, sigma_z, num_slices)
 z_centroids_from_tail = z_centroids[::-1]
 bbg = xf.BeamBeamBiGaussian3D(
-    phi=phi,
-    alpha=alpha,
+    phi={0: phi, 1: -phi}[ii],
+    alpha={0: alpha, 1: -alpha}[ii],
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice,
     slices_other_beam_zeta_center=z_centroids_from_tail,
@@ -282,14 +281,14 @@ plt.pcolormesh(bbpic_b1.fieldmap_other.z_grid,
 plt.colorbar()
 
 plt.figure(4)
-# plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
+plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_x$')
 plt.legend()
 
 plt.figure(5)
-# plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
+plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_y$')
