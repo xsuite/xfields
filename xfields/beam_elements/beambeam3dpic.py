@@ -163,9 +163,6 @@ class BeamBeamPIC3D(xt.BeamElement):
             self.fieldmap_self.update_from_particles(particles=pp,
                                                     update_phi=False)
 
-            if pp.name == 'p_b2' and self._i_step == 0:
-                breakpoint()
-
             # Pass charge density to partner
             communication_send_id_data = dict(
                     element_name=self.name,
@@ -178,9 +175,6 @@ class BeamBeamPIC3D(xt.BeamElement):
                     self.fieldmap_self.rho.flatten().copy(),
                     **communication_send_id_data)
             self._sent_rho_to_partner = True
-
-        if pp.name == 'p_b1' and self._i_step == 0:
-            breakpoint()
 
         # Try to receive rho from partner
         communication_recv_id_data = dict(
@@ -229,10 +223,6 @@ class BeamBeamPIC3D(xt.BeamElement):
             return_dphi_dy=True,
             return_dphi_dz=True,
         )
-
-        print(f'pp.name: {pp.name}, self._i_step: {self._i_step}')
-        if pp.name == 'p_b1' and self._i_step == 0:
-            breakpoint()
 
         # Transform fields to self reference frame (dphi_dy is unchanged)
         dphi_dx *= -1

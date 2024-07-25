@@ -158,9 +158,6 @@ for i_step in progress(range(len(z_grid_b1))):
         )
         dz = bbpic.fieldmap_other.dz
 
-        if pp.name == 'p_b1' and i_step == 0:
-            breakpoint()
-
         # Transform fields to self reference frame (dphi_dy is unchanged)
         dphi_dx *= -1
         dphi_dz *= -1

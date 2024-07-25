@@ -15,11 +15,11 @@ constant_charge_slicing_gaussian = \
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
-alpha = np.pi / 4
+alpha = np.deg2rad(30)
 betx = 0.15
-bety = 0.15 #2
+bety = 0.2
 sigma_z = 0.1
-nemitt_x = 2e-6
+nemitt_x = 1.5e-6
 nemitt_y = 2e-6
 bunch_intensity = 2e10
 num_slices = 101
@@ -47,7 +47,7 @@ bunch_b1 = lntwiss.build_particles(
     weight = bunch_intensity / num_particles
 )
 n_test = 1000
-p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
+p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.5 * sigma_y,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
 particles_b1 = xt.Particles.merge([p_test, bunch_b1])
@@ -132,6 +132,13 @@ plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_y$')
+plt.legend()
+
+plt.figure(6)
+plt.plot(p_bbg.zeta, p_bbg.ptau, label='hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.ptau[:n_test], label='pic')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_\tau$')
 plt.legend()
 
 plt.show()
