@@ -15,7 +15,7 @@ constant_charge_slicing_gaussian = \
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
-alpha = np.pi/4
+alpha = 0 *np.pi/2
 betx = 0.15
 bety = 0.15 #2
 sigma_z = 0.1
@@ -60,7 +60,7 @@ pics = []
 for ii in range(2):
     pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=alpha,
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
-       y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y,
+        y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_b1 = pics[0]
