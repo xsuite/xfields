@@ -144,13 +144,7 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         assert self._working_on_bunch is pp
 
-        # Build data for communication identifier
-        communication_id_data = dict(
-                element_name=self.name,
-                sender_name=pp.name,
-                reciever_name=self.partner_name,
-                turn=at_turn,
-                internal_tag=self._i_step)
+
 
         if not self._sent_rho_to_partner:
             z_step_other = self._z_steps_other[self._i_step]
@@ -169,21 +163,37 @@ class BeamBeamPIC3D(xt.BeamElement):
             self.fieldmap_self.update_from_particles(particles=pp,
                                                     update_phi=False)
 
+            if pp.name == 'p_b2' and self._i_step == 0:
+                breakpoint()
+
             # Pass charge density to partner
-            if self.pipeline_manager.is_ready_to_send(**communication_id_data):
+            communication_send_id_data = dict(
+                    element_name=self.name,
+                    sender_name=pp.name,
+                    reciever_name=self.partner_name,
+                    turn=at_turn,
+                    internal_tag=self._i_step)
+            if self.pipeline_manager.is_ready_to_send(**communication_send_id_data):
                 self.pipeline_manager.send_message(
-                    self.fieldmap_self.rho.flatten(),
-                    **communication_id_data)
+                    self.fieldmap_self.rho.flatten().copy(),
+                    **communication_send_id_data)
             self._sent_rho_to_partner = True
 
+        if pp.name == 'p_b1' and self._i_step == 0:
+            breakpoint()
+
         # Try to receive rho from partner
-        communication_id_data.pop('turn')
-        if self.pipeline_manager.is_ready_to_recieve(**communication_id_data):
+        communication_recv_id_data = dict(
+                element_name=self.name,
+                sender_name=self.partner_name,
+                reciever_name=pp.name,
+                internal_tag=self._i_step)
+        if self.pipeline_manager.is_ready_to_recieve(**communication_recv_id_data):
             buffer_receive = np.zeros(np.prod(self.fieldmap_other.rho.shape),
                                       dtype=float)
             self.pipeline_manager.recieve_message(
                 buffer_receive,
-                **communication_id_data)
+                **communication_recv_id_data)
             rho = buffer_receive.reshape(self.fieldmap_other.rho.shape)
             self.fieldmap_other.update_rho(rho, reset=True)
         else:

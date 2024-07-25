@@ -82,6 +82,9 @@ bbpic_b2.partner_name = 'p_b1'
 bbpic_b1.pipeline_manager = pipeline_manager
 bbpic_b2.pipeline_manager = pipeline_manager
 
+bbpic_b1._partner = bbpic_b2
+bbpic_b2._partner = bbpic_b1
+
 line_b1 = xt.Line(elements=[bbpic_b1])
 line_b2 = xt.Line(elements=[bbpic_b2])
 
