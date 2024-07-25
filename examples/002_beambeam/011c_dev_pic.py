@@ -11,11 +11,19 @@ from scipy.constants import c as clight
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
 
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument("plane", type=str)
+args = parser.parse_args()
+
+plane = args.plane
+assert plane in ['x', 'y']
+
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
-alpha = 0 *np.pi/2
+alpha = {'x': 0.0, 'y': np.pi/2}[plane]
 betx = 0.15
 bety = 0.15 #2
 sigma_z = 0.1
@@ -77,6 +85,10 @@ assert len(z_grid_b1) == len(z_grid_b2)
 progress = xt.progress_indicator.progress
 dphi_dx_test_log = []
 for i_step in progress(range(len(z_grid_b1))):
+
+    if i_step !=20:
+        continue
+
     z_step_b1 = z_grid_b1[i_step]
     z_step_b2 = z_grid_b2[i_step]
     xo.assert_allclose(z_step_b1, z_step_b2, rtol=0, atol=1e-15) # we consider only this case
@@ -126,9 +138,9 @@ for i_step in progress(range(len(z_grid_b1))):
                                                 ):
         # Compute coordinates in the reference system of the other beam
         beta_over_beta_other = 1 # Could be generalized with
-                                # (beta_particle/beta_slice_other)
-                                # One could for example store the beta of the
-                                # closed orbit
+                                 # (beta_particle/beta_slice_other)
+                                 # One could for example store the beta of the
+                                 # closed orbit
         mask_alive = pp.state > 0
         z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
                 + z_step_other
@@ -270,14 +282,14 @@ plt.pcolormesh(bbpic_b1.fieldmap_other.z_grid,
 plt.colorbar()
 
 plt.figure(4)
-plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
+# plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_x$')
 plt.legend()
 
 plt.figure(5)
-plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
+# plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_y$')
