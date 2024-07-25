@@ -17,13 +17,13 @@ parser.add_argument("plane", type=str)
 args = parser.parse_args()
 
 plane = args.plane
-assert plane in ['x', 'y']
+assert plane in ['x', 'y', '45']
 
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
-alpha = {'x': 0.0, 'y': np.pi/2}[plane]
+alpha = {'x': 0.0, 'y': np.pi/2, '45': np.pi/4}[plane]
 betx = 0.15
 bety = 0.15 #2
 sigma_z = 0.1
@@ -80,8 +80,8 @@ bbpic_b2 = pics[1]
 bbpic_b1.change_ref_frame_bbpic(particles_b1)
 bbpic_b2.change_ref_frame_bbpic(particles_b2)
 
-z_grid_b1 = bbpic_b1.fieldmap_self.z_grid[::-1] # earlier time first
-z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1] # earlier time first
+z_grid_b1 = bbpic_b1.fieldmap_self.z_grid[::-1].copy() # earlier time first
+z_grid_b2 = bbpic_b2.fieldmap_self.z_grid[::-1].copy() # earlier time first
 assert len(z_grid_b1) == len(z_grid_b2)
 
 progress = xt.progress_indicator.progress
@@ -204,8 +204,8 @@ z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
                                 bunch_intensity, sigma_z, num_slices)
 z_centroids_from_tail = z_centroids[::-1]
 bbg = xf.BeamBeamBiGaussian3D(
-    phi={0: phi, 1: -phi}[ii],
-    alpha={0: alpha, 1: -alpha}[ii],
+    phi=phi,
+    alpha=alpha,
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice,
     slices_other_beam_zeta_center=z_centroids_from_tail,

@@ -58,7 +58,9 @@ y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y
 
 pics = []
 for ii in range(2):
-    pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=alpha,
+    pics.append(xf.BeamBeamPIC3D(
+        phi={0: phi, 1: -phi}[ii],
+        alpha={0: alpha, 1: -alpha}[ii],
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
         y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
