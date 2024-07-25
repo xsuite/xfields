@@ -177,10 +177,12 @@ for i_step in progress(range(len(z_grid_b1))):
         # Compute kick
         dpx = factor * dphi_dx * dz
         dpy = factor * dphi_dy * dz
+        dpz = factor * dphi_dz * dz
 
         # Apply kick
         pp.px[mask_alive] += dpx
         pp.py[mask_alive] += dpy
+        pp.delta[mask_alive] += dpz
 
     # Propagate transverse coordinates back to IP
     for pp, z_step_other in zip([particles_b1, particles_b2],
@@ -292,6 +294,13 @@ plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_y$')
+plt.legend()
+
+plt.figure(6)
+plt.plot(p_bbg.zeta, p_bbg.ptau, label='hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.ptau[:n_test], label='pic')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_\tau$')
 plt.legend()
 
 plt.show()
