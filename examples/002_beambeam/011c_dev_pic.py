@@ -15,11 +15,12 @@ constant_charge_slicing_gaussian = \
 mass0 = xt.PROTON_MASS_EV
 p0c = 7e12
 phi = 200e-6
+alpha = np.pi/4
 betx = 0.15
-bety = 0.2
+bety = 0.15 #2
 sigma_z = 0.1
 nemitt_x = 2e-6
-nemitt_y = 1e-6
+nemitt_y = 2e-6
 bunch_intensity = 2e10
 num_slices = 101
 slice_mode = 'constant_charge'
@@ -46,19 +47,20 @@ bunch_b1 = lntwiss.build_particles(
     weight = bunch_intensity / num_particles
 )
 n_test = 1000
-p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.3 * sigma_y,
+p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
 particles_b1 = xt.Particles.merge([p_test, bunch_b1])
 particles_b2 = particles_b1.copy()
 
 x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x
+y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y
 
 pics = []
 for ii in range(2):
-    pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=0,
+    pics.append(xf.BeamBeamPIC3D(phi=phi, alpha=alpha,
         x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
-        y_range=(-7*sigma_y, 7*sigma_y), dy=0.1*sigma_y,
+       y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_b1 = pics[0]
@@ -192,7 +194,7 @@ z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
 z_centroids_from_tail = z_centroids[::-1]
 bbg = xf.BeamBeamBiGaussian3D(
     phi=phi,
-    alpha=0,
+    alpha=alpha,
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice,
     slices_other_beam_zeta_center=z_centroids_from_tail,
@@ -270,9 +272,15 @@ plt.colorbar()
 plt.figure(4)
 plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
-if phi == 0:
-    plt.plot(p_bb2d.zeta, p_bb2d.px, '--', label='bb2d')
-    plt.plot(p_fstn.zeta, dpx_fm, label='frankenstein')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_x$')
+plt.legend()
+
+plt.figure(5)
+plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_y$')
 plt.legend()
 
 plt.show()
