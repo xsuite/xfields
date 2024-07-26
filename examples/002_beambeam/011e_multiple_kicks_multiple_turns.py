@@ -15,9 +15,9 @@ alpha = np.deg2rad(30)
 betx = 0.15
 bety = 0.2
 sigma_z = 0.1
-nemitt_x_b1 = 1.5e-6
+nemitt_x_b1 = 1e-6
 nemitt_y_b1 = 2e-6
-nemitt_x_b2 = 1.5e-6
+nemitt_x_b2 = 1.e-6
 nemitt_y_b2 = 2e-6
 bunch_intensity = 2e10
 num_slices = 101
@@ -61,11 +61,11 @@ bunch_b2 = lntwiss.build_particles(
 )
 
 n_test = 1000
-p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b2,
+p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b1,
                                  px=50e-6, py=50e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
-p_test_b2 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b2,
+p_test_b2 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b1,
                                  px=50e-6, py=50e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
@@ -81,8 +81,8 @@ for ii in range(4):
     pics.append(xf.BeamBeamPIC3D(
         phi={0: phi, 1: -phi, 2: -1.2*phi, 3: 1.2*phi}[ii],
         alpha={0: alpha, 1: -alpha, 2: 1.3*alpha, 3: -1.3*alpha}[ii],
-        x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x_b1,
-        y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y_b1,
+        x_range=(-x_lim_grid, x_lim_grid), dx=0.07*sigma_x_b1,
+        y_range=(-y_lim_grid, y_lim_grid), dy=0.07*sigma_y_b1,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_ip1_b1 = pics[0]
@@ -135,22 +135,22 @@ common_hirata_kwargs_b1 = dict(
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice,
     slices_other_beam_zeta_center=z_centroids_from_tail,
-    slices_other_beam_Sigma_11=cov_b1.Sigma11[0],
-    slices_other_beam_Sigma_12=cov_b1.Sigma12[0],
-    slices_other_beam_Sigma_22=cov_b1.Sigma22[0],
-    slices_other_beam_Sigma_33=cov_b1.Sigma33[0],
-    slices_other_beam_Sigma_34=cov_b1.Sigma34[0],
-    slices_other_beam_Sigma_44=cov_b1.Sigma44[0])
-common_hirata_kwargs_b2 = dict(
-    other_beam_q0=1.,
-    slices_other_beam_num_particles=num_part_per_slice,
-    slices_other_beam_zeta_center=z_centroids_from_tail,
     slices_other_beam_Sigma_11=cov_b2.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b2.Sigma12[0],
     slices_other_beam_Sigma_22=cov_b2.Sigma22[0],
     slices_other_beam_Sigma_33=cov_b2.Sigma33[0],
     slices_other_beam_Sigma_34=cov_b2.Sigma34[0],
     slices_other_beam_Sigma_44=cov_b2.Sigma44[0])
+common_hirata_kwargs_b2 = dict(
+    other_beam_q0=1.,
+    slices_other_beam_num_particles=num_part_per_slice,
+    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_Sigma_11=cov_b1.Sigma11[0],
+    slices_other_beam_Sigma_12=cov_b1.Sigma12[0],
+    slices_other_beam_Sigma_22=cov_b1.Sigma22[0],
+    slices_other_beam_Sigma_33=cov_b1.Sigma33[0],
+    slices_other_beam_Sigma_34=cov_b1.Sigma34[0],
+    slices_other_beam_Sigma_44=cov_b1.Sigma44[0])
 
 bbg_b1_ip1 = xf.BeamBeamBiGaussian3D(phi=phi, alpha=alpha,
                                     **common_hirata_kwargs_b1)
