@@ -61,11 +61,11 @@ bunch_b2 = lntwiss.build_particles(
 )
 
 n_test = 1000
-p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b1,
+p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=-1.1 * sigma_y_b1,
                                  px=50e-6, py=100e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
-p_test_b2 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b1,
+p_test_b2 = lntwiss.build_particles(x=-1.4 * sigma_x_b1, y=1.2 * sigma_y_b1,
                                  px=30e-6, py=-80e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
