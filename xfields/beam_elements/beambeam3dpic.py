@@ -267,6 +267,7 @@ class BeamBeamPIC3D(xt.BeamElement):
                     info=f'ready to start step {self._i_step}')
         else:
             self.change_back_ref_frame_and_subtract_dipolar_bbpic(pp)
+            self._working_on_bunch = None
             return None # Interaction done!
 
     @property

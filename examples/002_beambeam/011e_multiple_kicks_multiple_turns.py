@@ -93,7 +93,7 @@ bbpic_ip2_b2.pipeline_manager = pipeline_manager
 bbpic_ip1_b2.pipeline_manager = pipeline_manager
 bbpic_ip2_b1.pipeline_manager = pipeline_manager
 
-
+# Build lines and multitracker
 line_b1 = xt.Line(elements=[bbpic_ip1_b1, bbpic_ip2_b1])
 line_b2 = xt.Line(elements=[bbpic_ip1_b2, bbpic_ip2_b2])
 
@@ -105,9 +105,10 @@ multitracker = xt.PipelineMultiTracker(
               xt.PipelineBranch(line=line_b2, particles=particles_b2)],
     enable_debug_log=True, verbose=True)
 
-multitracker.track(num_turns=1)
+# Tracker
+multitracker.track(num_turns=2)
 
-# Compare against hirata
+# Compare against Hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
                                 bunch_intensity, sigma_z, num_slices)
 z_centroids_from_tail = z_centroids[::-1]
@@ -124,8 +125,6 @@ bbg_b1_ip1 = xf.BeamBeamBiGaussian3D(
     slices_other_beam_Sigma_34=cov.Sigma34[0],
     slices_other_beam_Sigma_44=cov.Sigma44[0],
 )
-p_bbg = p_test.copy()
-bbg_b1_ip1.track(p_bbg)
 
 bbg_b1_ip2 = xf.BeamBeamBiGaussian3D(
     phi=-1.2*phi,
@@ -140,6 +139,11 @@ bbg_b1_ip2 = xf.BeamBeamBiGaussian3D(
     slices_other_beam_Sigma_34=cov.Sigma34[0],
     slices_other_beam_Sigma_44=cov.Sigma44[0],
 )
+
+p_bbg = p_test.copy()
+bbg_b1_ip1.track(p_bbg)
+bbg_b1_ip2.track(p_bbg)
+bbg_b1_ip1.track(p_bbg)
 bbg_b1_ip2.track(p_bbg)
 
 import matplotlib.pyplot as plt
