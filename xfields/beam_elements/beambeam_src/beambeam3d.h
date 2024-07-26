@@ -306,7 +306,7 @@ void synchrobeam_kick(
     printf("dpzeta_star: %.6e\n", dpzeta_star);
 
     // Apply the kicks (Hirata's synchro-beam)
-    *pzeta_star = *pzeta_star + dpzeta_star;
+    *pzeta_star = *pzeta_star;// + dpzeta_star;
     *x_star = *x_star - S*Fx_star;
     *px_star = *px_star + Fx_star;
     *y_star = *y_star - S*Fy_star;
