@@ -15,10 +15,10 @@ alpha = np.deg2rad(30)
 betx = 0.15
 bety = 0.2
 sigma_z = 0.1
-nemitt_x_b1 = 1e-6
-nemitt_y_b1 = 2e-6
-nemitt_x_b2 = 1.e-6
-nemitt_y_b2 = 2e-6
+nemitt_x_b1 = 2e-6
+nemitt_y_b1 = 2.5e-6
+nemitt_x_b2 = 1.5e-6
+nemitt_y_b2 = 1.3e-6
 bunch_intensity = 2e10
 num_slices = 101
 slice_mode = 'constant_charge'
@@ -81,8 +81,8 @@ for ii in range(4):
     pics.append(xf.BeamBeamPIC3D(
         phi={0: phi, 1: -phi, 2: -1.2*phi, 3: 1.2*phi}[ii],
         alpha={0: alpha, 1: -alpha, 2: 1.3*alpha, 3: -1.3*alpha}[ii],
-        x_range=(-x_lim_grid, x_lim_grid), dx=0.07*sigma_x_b1,
-        y_range=(-y_lim_grid, y_lim_grid), dy=0.07*sigma_y_b1,
+        x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x_b1,
+        y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y_b1,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_ip1_b1 = pics[0]
