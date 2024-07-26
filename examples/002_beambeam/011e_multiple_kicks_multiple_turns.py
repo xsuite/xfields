@@ -14,7 +14,9 @@ phi = 200e-6
 alpha = np.deg2rad(30)
 betx = 0.15
 bety = 0.2
-sigma_z = 0.1
+sigma_z = 0.1 # used for grids
+sigma_z_b1 = 0.08
+sigma_z_b2 = 0.07
 nemitt_x_b1 = 2e-6
 nemitt_y_b1 = 2.5e-6
 nemitt_x_b2 = 1.5e-6
@@ -39,7 +41,7 @@ num_particles = 1_000_000
 bunch_b1 = lntwiss.build_particles(
     num_particles=num_particles,
     nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1,
-    zeta=np.random.normal(size=num_particles) * sigma_z,
+    zeta=np.random.normal(size=num_particles) * sigma_z_b1,
     x_norm=np.random.normal(size=num_particles),
     px_norm=np.random.normal(size=num_particles),
     y_norm=np.random.normal(size=num_particles),
@@ -48,10 +50,11 @@ bunch_b1 = lntwiss.build_particles(
     particle_on_co=twip.particle_on_co,
     weight = bunch_intensity_b1 / num_particles
 )
+
 bunch_b2 = lntwiss.build_particles(
     num_particles=num_particles,
     nemitt_x=nemitt_x_b2, nemitt_y=nemitt_y_b2,
-    zeta=np.random.normal(size=num_particles) * sigma_z,
+    zeta=np.random.normal(size=num_particles) * sigma_z_b2,
     x_norm=np.random.normal(size=num_particles),
     px_norm=np.random.normal(size=num_particles),
     y_norm=np.random.normal(size=num_particles),
@@ -130,12 +133,12 @@ multitracker.track(num_turns=1)
 
 # Compare against Hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
-                                1., sigma_z, num_slices)
+                                1., 1., num_slices)
 z_centroids_from_tail = z_centroids[::-1]
 common_hirata_kwargs_b1 = dict(
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice * bunch_intensity_b2,
-    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_zeta_center=z_centroids_from_tail * sigma_z_b2,
     slices_other_beam_Sigma_11=cov_b2.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b2.Sigma12[0],
     slices_other_beam_Sigma_22=cov_b2.Sigma22[0],
@@ -145,7 +148,7 @@ common_hirata_kwargs_b1 = dict(
 common_hirata_kwargs_b2 = dict(
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice * bunch_intensity_b1,
-    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_zeta_center=z_centroids_from_tail * sigma_z_b1,
     slices_other_beam_Sigma_11=cov_b1.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b1.Sigma12[0],
     slices_other_beam_Sigma_22=cov_b1.Sigma22[0],
