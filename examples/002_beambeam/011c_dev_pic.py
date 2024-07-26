@@ -183,14 +183,18 @@ for i_step in progress(range(len(z_grid_b1))):
         # Compute kick
         dpx = factor * dphi_dx * dz
         dpy = factor * dphi_dy * dz
-        dpz = factor * dphi_dz * dz
+
+        dpz = 0.5 *(
+            dpx * (pp.px[mask_alive] + 0.5 * dpx)
+          + dpy * (pp.py[mask_alive] + 0.5 * dpy))
+        # dpz = factor * dphi_dz * dz
 
         dpz_test_tot += dpz[:n_test]
 
         # Apply kick
         pp.px[mask_alive] += dpx
         pp.py[mask_alive] += dpy
-        # pp.delta[mask_alive] += dpz
+        pp.delta[mask_alive] += dpz
 
     # Propagate transverse coordinates back to IP
     for pp, z_step_other in zip([particles_b1, particles_b2],
