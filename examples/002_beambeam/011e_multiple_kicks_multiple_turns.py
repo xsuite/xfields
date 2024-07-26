@@ -17,6 +17,8 @@ bety = 0.2
 sigma_z = 0.1 # used for grids
 sigma_z_b1 = 0.08
 sigma_z_b2 = 0.07
+z_offset_b1 = 0.02
+z_offset_b2 = -0.015
 nemitt_x_b1 = 2e-6
 nemitt_y_b1 = 2.5e-6
 nemitt_x_b2 = 1.5e-6
@@ -41,7 +43,7 @@ num_particles = 1_000_000
 bunch_b1 = lntwiss.build_particles(
     num_particles=num_particles,
     nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1,
-    zeta=np.random.normal(size=num_particles) * sigma_z_b1,
+    zeta=np.random.normal(size=num_particles) * sigma_z_b1 + z_offset_b1,
     x_norm=np.random.normal(size=num_particles),
     px_norm=np.random.normal(size=num_particles),
     y_norm=np.random.normal(size=num_particles),
@@ -54,7 +56,7 @@ bunch_b1 = lntwiss.build_particles(
 bunch_b2 = lntwiss.build_particles(
     num_particles=num_particles,
     nemitt_x=nemitt_x_b2, nemitt_y=nemitt_y_b2,
-    zeta=np.random.normal(size=num_particles) * sigma_z_b2,
+    zeta=np.random.normal(size=num_particles) * sigma_z_b2 + z_offset_b2,
     x_norm=np.random.normal(size=num_particles),
     px_norm=np.random.normal(size=num_particles),
     y_norm=np.random.normal(size=num_particles),
@@ -138,7 +140,7 @@ z_centroids_from_tail = z_centroids[::-1]
 common_hirata_kwargs_b1 = dict(
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice * bunch_intensity_b2,
-    slices_other_beam_zeta_center=z_centroids_from_tail * sigma_z_b2,
+    slices_other_beam_zeta_center=z_centroids_from_tail * sigma_z_b2 + z_offset_b2,
     slices_other_beam_Sigma_11=cov_b2.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b2.Sigma12[0],
     slices_other_beam_Sigma_22=cov_b2.Sigma22[0],
@@ -148,7 +150,7 @@ common_hirata_kwargs_b1 = dict(
 common_hirata_kwargs_b2 = dict(
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice * bunch_intensity_b1,
-    slices_other_beam_zeta_center=z_centroids_from_tail * sigma_z_b1,
+    slices_other_beam_zeta_center=z_centroids_from_tail * sigma_z_b1 + z_offset_b1,
     slices_other_beam_Sigma_11=cov_b1.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b1.Sigma12[0],
     slices_other_beam_Sigma_22=cov_b1.Sigma22[0],
