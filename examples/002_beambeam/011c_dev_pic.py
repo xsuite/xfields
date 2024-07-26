@@ -271,9 +271,6 @@ lam = bbpic_b1.fieldmap_other.rho.sum(axis=0).sum(axis=0) * dx * dy
 
 ex_vs_z = lam * ex[0]
 
-
-
-
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(1)

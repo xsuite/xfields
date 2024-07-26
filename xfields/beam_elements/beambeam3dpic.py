@@ -105,7 +105,6 @@ class BeamBeamPIC3D(xt.BeamElement):
             dx=dx, dy=dy, dz=dz,
             nx=nx, ny=ny, nz=nz,
             solver='FFTSolver2p5D',
-            # solver='FFTSolver3D',
             scale_coordinates_in_solver=(1,1,1))
 
         self.xoinitialize(_buffer=_buffer,
