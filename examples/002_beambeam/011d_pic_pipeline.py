@@ -47,7 +47,8 @@ bunch_b1 = lntwiss.build_particles(
     weight = bunch_intensity / num_particles
 )
 n_test = 1000
-p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.5 * sigma_y,
+p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
+                                 px=50e-6, py=50e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
 particles_b1 = xt.Particles.merge([p_test, bunch_b1])

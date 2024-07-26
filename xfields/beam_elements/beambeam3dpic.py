@@ -242,9 +242,15 @@ class BeamBeamPIC3D(xt.BeamElement):
         dpx = factor * dphi_dx * dz
         dpy = factor * dphi_dy * dz
 
+        # Effect of the particle angle as in Hirata
+        dpz = 0.5 *(
+            dpx * (pp.px[mask_alive] + 0.5 * dpx)
+          + dpy * (pp.py[mask_alive] + 0.5 * dpy))
+
         # Apply kick
         pp.px[mask_alive] += dpx
         pp.py[mask_alive] += dpy
+        pp.delta[mask_alive] += dpz
 
         # Propagate transverse coordinates back to IP
         mask_alive = pp.state > 0
