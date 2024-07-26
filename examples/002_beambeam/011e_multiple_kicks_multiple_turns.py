@@ -3,10 +3,6 @@ import numpy as np
 import xfields as xf
 import xtrack as xt
 import xobjects as xo
-# xo.context_default._kernels.clear()
-
-from scipy.constants import e as qe
-from scipy.constants import c as clight
 
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
@@ -19,8 +15,8 @@ alpha = np.deg2rad(30)
 betx = 0.15
 bety = 0.2
 sigma_z = 0.1
-nemitt_x = 1.5e-6
-nemitt_y = 2e-6
+nemitt_x_b1 = 1.5e-6
+nemitt_y_b1 = 2e-6
 bunch_intensity = 2e10
 num_slices = 101
 slice_mode = 'constant_charge'
@@ -29,14 +25,14 @@ lntwiss = xt.Line(elements=[xt.Marker()])
 lntwiss.particle_ref = xt.Particles(p0c=p0c, mass0=mass0)
 twip = lntwiss.twiss(betx=betx, bety=bety)
 
-cov = twip.get_beam_covariance(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+cov = twip.get_beam_covariance(nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1)
 sigma_x = cov.sigma_x[0]
 sigma_y = cov.sigma_y[0]
 
 num_particles = 1_000_000
 bunch_b1 = lntwiss.build_particles(
     num_particles=num_particles,
-    nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+    nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1,
     zeta=np.random.normal(size=num_particles) * sigma_z,
     x_norm=np.random.normal(size=num_particles),
     px_norm=np.random.normal(size=num_particles),
@@ -46,13 +42,17 @@ bunch_b1 = lntwiss.build_particles(
     particle_on_co=twip.particle_on_co,
     weight = bunch_intensity / num_particles
 )
+bunch_b2 = bunch_b1.copy()
+
 n_test = 1000
-p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
+p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
                                  px=50e-6, py=50e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
-particles_b1 = xt.Particles.merge([p_test, bunch_b1])
-particles_b2 = particles_b1.copy()
+p_test_b2 = p_test_b1.copy()
+
+particles_b1 = xt.Particles.merge([p_test_b1, bunch_b1])
+particles_b2 = xt.Particles.merge([p_test_b2, bunch_b2])
 
 x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x
 y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y
@@ -124,36 +124,69 @@ common_hirata_kwargs_b1 = dict(
     slices_other_beam_Sigma_44=cov.Sigma44[0])
 
 bbg_b1_ip1 = xf.BeamBeamBiGaussian3D(phi=phi, alpha=alpha,
-                                     **common_hirata_kwargs_b1)
-
+                                    **common_hirata_kwargs_b1)
 bbg_b1_ip2 = xf.BeamBeamBiGaussian3D(phi=-1.2*phi, alpha=1.3*alpha,
-                                     **common_hirata_kwargs_b1)
+                                    **common_hirata_kwargs_b1)
+bbg_b2_ip1 = xf.BeamBeamBiGaussian3D(phi=-phi, alpha=-alpha,
+                                    **common_hirata_kwargs_b1)
+bbg_b2_ip2 = xf.BeamBeamBiGaussian3D(phi=1.2*phi, alpha=-1.3*alpha,
+                                    **common_hirata_kwargs_b1)
 
-p_bbg = p_test.copy()
-bbg_b1_ip1.track(p_bbg)
-bbg_b1_ip2.track(p_bbg)
-bbg_b1_ip1.track(p_bbg)
-bbg_b1_ip2.track(p_bbg)
+p_bbg_b1 = p_test_b1.copy()
+bbg_b1_ip1.track(p_bbg_b1)
+bbg_b1_ip2.track(p_bbg_b1)
+bbg_b1_ip1.track(p_bbg_b1)
+bbg_b1_ip2.track(p_bbg_b1)
+
+p_bbg_b2 = p_test_b2.copy()
+bbg_b2_ip1.track(p_bbg_b2)
+bbg_b2_ip2.track(p_bbg_b2)
+bbg_b2_ip1.track(p_bbg_b2)
+bbg_b2_ip2.track(p_bbg_b2)
+
+
 
 import matplotlib.pyplot as plt
 plt.close('all')
 plt.figure(4)
-plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
+plt.plot(p_bbg_b1.zeta, p_bbg_b1.px, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_x$')
 plt.legend()
 
 plt.figure(5)
-plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
+plt.plot(p_bbg_b1.zeta, p_bbg_b1.py, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_y$')
 plt.legend()
 
 plt.figure(6)
-plt.plot(p_bbg.zeta, p_bbg.ptau, label='hirata')
+plt.plot(p_bbg_b1.zeta, p_bbg_b1.ptau, label='hirata')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.ptau[:n_test], label='pic')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_\tau$')
+plt.legend()
+
+# Same for b2
+plt.figure(7)
+plt.plot(p_bbg_b2.zeta, p_bbg_b2.px, label='hirata')
+plt.plot(particles_b2.zeta[:n_test], particles_b2.px[:n_test], label='pic')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_x$')
+plt.legend()
+
+plt.figure(8)
+plt.plot(p_bbg_b2.zeta, p_bbg_b2.py, label='hirata')
+plt.plot(particles_b2.zeta[:n_test], particles_b2.py[:n_test], label='pic')
+plt.xlabel(r'$\zeta$ [m]')
+plt.ylabel(r'$\Delta p_y$')
+plt.legend()
+
+plt.figure(9)
+plt.plot(p_bbg_b2.zeta, p_bbg_b2.ptau, label='hirata')
+plt.plot(particles_b2.zeta[:n_test], particles_b2.ptau[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_\tau$')
 plt.legend()
