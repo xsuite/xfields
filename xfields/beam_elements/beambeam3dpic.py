@@ -96,7 +96,6 @@ class BeamBeamPIC3D(xt.BeamElement):
             x_range=x_range, y_range=y_range, z_range=z_range,
             dx=dx, dy=dy, dz=dz,
             nx=nx, ny=ny, nz=nz,
-            solver='FFTSolver2p5D',
             scale_coordinates_in_solver=(1,1,1))
 
         fieldmap_other = TriLinearInterpolatedFieldMap(
@@ -106,6 +105,7 @@ class BeamBeamPIC3D(xt.BeamElement):
             dx=dx, dy=dy, dz=dz,
             nx=nx, ny=ny, nz=nz,
             solver='FFTSolver2p5D',
+            # solver='FFTSolver3D',
             scale_coordinates_in_solver=(1,1,1))
 
         self.xoinitialize(_buffer=_buffer,

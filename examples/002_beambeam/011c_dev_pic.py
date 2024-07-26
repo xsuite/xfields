@@ -56,10 +56,13 @@ bunch_b1 = lntwiss.build_particles(
 )
 n_test = 1000
 p_test = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
+                                 px=50e-6, py=50e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
 particles_b1 = xt.Particles.merge([p_test, bunch_b1])
 particles_b2 = particles_b1.copy()
+
+particles_b1_init = particles_b1.copy()
 
 particles_b1.name = 'p_b1'
 particles_b2.name = 'p_b2'
@@ -89,6 +92,8 @@ assert len(z_grid_b1) == len(z_grid_b2)
 
 progress = xt.progress_indicator.progress
 dphi_dx_test_log = []
+dphi_dz_test_log = []
+dpz_test_tot = 0
 for i_step in progress(range(len(z_grid_b1))):
 
     z_step_b1 = z_grid_b1[i_step]
@@ -164,6 +169,7 @@ for i_step in progress(range(len(z_grid_b1))):
 
         if pp is particles_b1:
             dphi_dx_test_log.append(dphi_dx[:n_test])
+            dphi_dz_test_log.append(dphi_dz[:n_test])
 
         # Compute factor for the kick
         charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
@@ -179,10 +185,12 @@ for i_step in progress(range(len(z_grid_b1))):
         dpy = factor * dphi_dy * dz
         dpz = factor * dphi_dz * dz
 
+        dpz_test_tot += dpz[:n_test]
+
         # Apply kick
         pp.px[mask_alive] += dpx
         pp.py[mask_alive] += dpy
-        pp.delta[mask_alive] += dpz
+        # pp.delta[mask_alive] += dpz
 
     # Propagate transverse coordinates back to IP
     for pp, z_step_other in zip([particles_b1, particles_b2],
@@ -196,6 +204,7 @@ for i_step in progress(range(len(z_grid_b1))):
                             * (pp.zeta[mask_alive] - z_step_other))
 
 dphi_dx_test_log = np.array(dphi_dx_test_log)
+dphi_dz_test_log = np.array(dphi_dz_test_log)
 
 # Back to lab frame
 bbpic_b1.change_back_ref_frame_and_subtract_dipolar_bbpic(particles_b1)
@@ -219,7 +228,10 @@ bbg = xf.BeamBeamBiGaussian3D(
     slices_other_beam_Sigma_44=cov.Sigma44[0],
 )
 p_bbg = p_test.copy()
+p_bbg2 = p_test.copy()
+
 bbg.track(p_bbg)
+bbg._track_non_collective(p_bbg2)
 
 bb2d = xf.BeamBeamBiGaussian2D(
     other_beam_q0=1,
@@ -298,6 +310,7 @@ plt.legend()
 
 plt.figure(6)
 plt.plot(p_bbg.zeta, p_bbg.ptau, label='hirata')
+plt.plot(p_bbg2.zeta, p_bbg2.ptau, label='hirata 2')
 plt.plot(particles_b1.zeta[:n_test], particles_b1.ptau[:n_test], label='pic')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_\tau$')
