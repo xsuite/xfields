@@ -26,6 +26,7 @@ nemitt_y_b2 = 1.3e-6
 bunch_intensity_b1 = 2e10
 bunch_intensity_b2 = 3e10
 num_slices = 101
+n_turns = 2
 slice_mode = 'constant_charge'
 
 lntwiss = xt.Line(elements=[xt.Marker()])
@@ -87,8 +88,8 @@ for ii in range(4):
     pics.append(xf.BeamBeamPIC3D(
         phi={0: phi, 1: -phi, 2: -1.2*phi, 3: 1.2*phi}[ii],
         alpha={0: alpha, 1: -alpha, 2: 1.3*alpha, 3: -1.3*alpha}[ii],
-        x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x_b1,
-        y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y_b1,
+        x_range=(-x_lim_grid, x_lim_grid), dx=0.2*sigma_x_b1,
+        y_range=(-y_lim_grid, y_lim_grid), dy=0.2*sigma_y_b1,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_ip1_b1 = pics[0]
@@ -131,7 +132,7 @@ multitracker = xt.PipelineMultiTracker(
     enable_debug_log=True, verbose=True)
 
 # Tracker
-multitracker.track(num_turns=1)
+multitracker.track(num_turns=n_turns)
 
 # Compare against Hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
@@ -168,16 +169,13 @@ bbg_b2_ip2 = xf.BeamBeamBiGaussian3D(phi=1.2*phi, alpha=-1.3*alpha,
                                     **common_hirata_kwargs_b2)
 
 p_bbg_b1 = p_test_b1.copy()
-bbg_b1_ip1.track(p_bbg_b1)
-bbg_b1_ip2.track(p_bbg_b1)
-# bbg_b1_ip1.track(p_bbg_b1)
-# bbg_b1_ip2.track(p_bbg_b1)
-
 p_bbg_b2 = p_test_b2.copy()
-bbg_b2_ip1.track(p_bbg_b2)
-bbg_b2_ip2.track(p_bbg_b2)
-# bbg_b2_ip1.track(p_bbg_b2)
-# bbg_b2_ip2.track(p_bbg_b2)
+
+for ii in range(n_turns):
+    bbg_b1_ip1.track(p_bbg_b1)
+    bbg_b1_ip2.track(p_bbg_b1)
+    bbg_b2_ip1.track(p_bbg_b2)
+    bbg_b2_ip2.track(p_bbg_b2)
 
 import matplotlib.pyplot as plt
 plt.close('all')
