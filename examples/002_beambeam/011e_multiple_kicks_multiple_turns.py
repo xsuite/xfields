@@ -17,6 +17,8 @@ bety = 0.2
 sigma_z = 0.1
 nemitt_x_b1 = 1.5e-6
 nemitt_y_b1 = 2e-6
+nemitt_x_b2 = 1.5e-6
+nemitt_y_b2 = 2e-6
 bunch_intensity = 2e10
 num_slices = 101
 slice_mode = 'constant_charge'
@@ -25,9 +27,12 @@ lntwiss = xt.Line(elements=[xt.Marker()])
 lntwiss.particle_ref = xt.Particles(p0c=p0c, mass0=mass0)
 twip = lntwiss.twiss(betx=betx, bety=bety)
 
-cov = twip.get_beam_covariance(nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1)
-sigma_x = cov.sigma_x[0]
-sigma_y = cov.sigma_y[0]
+cov_b1 = twip.get_beam_covariance(nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1)
+cov_b2 = twip.get_beam_covariance(nemitt_x=nemitt_x_b2, nemitt_y=nemitt_y_b2)
+sigma_x_b1 = cov_b1.sigma_x[0]
+sigma_y_b1 = cov_b1.sigma_y[0]
+sigma_x_b2 = cov_b2.sigma_x[0]
+sigma_y_b2 = cov_b2.sigma_y[0]
 
 num_particles = 1_000_000
 bunch_b1 = lntwiss.build_particles(
@@ -42,28 +47,42 @@ bunch_b1 = lntwiss.build_particles(
     particle_on_co=twip.particle_on_co,
     weight = bunch_intensity / num_particles
 )
-bunch_b2 = bunch_b1.copy()
+bunch_b2 = lntwiss.build_particles(
+    num_particles=num_particles,
+    nemitt_x=nemitt_x_b2, nemitt_y=nemitt_y_b2,
+    zeta=np.random.normal(size=num_particles) * sigma_z,
+    x_norm=np.random.normal(size=num_particles),
+    px_norm=np.random.normal(size=num_particles),
+    y_norm=np.random.normal(size=num_particles),
+    py_norm=np.random.normal(size=num_particles),
+    W_matrix=twip.W_matrix[0],
+    particle_on_co=twip.particle_on_co,
+    weight = bunch_intensity / num_particles
+)
 
 n_test = 1000
-p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x, y=1.2 * sigma_y,
+p_test_b1 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b2,
                                  px=50e-6, py=50e-6,
                 zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
                 weight=0)
-p_test_b2 = p_test_b1.copy()
+p_test_b2 = lntwiss.build_particles(x=1.2 * sigma_x_b1, y=1.2 * sigma_y_b2,
+                                 px=50e-6, py=50e-6,
+                zeta=np.linspace(-2 * sigma_z, 2 * sigma_z, n_test),
+                weight=0)
 
 particles_b1 = xt.Particles.merge([p_test_b1, bunch_b1])
 particles_b2 = xt.Particles.merge([p_test_b2, bunch_b2])
 
-x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x
-y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y
+x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x_b1
+y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y_b1
 
 pics = []
 for ii in range(4):
     pics.append(xf.BeamBeamPIC3D(
         phi={0: phi, 1: -phi, 2: -1.2*phi, 3: 1.2*phi}[ii],
         alpha={0: alpha, 1: -alpha, 2: 1.3*alpha, 3: -1.3*alpha}[ii],
-        x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x,
-        y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y,
+        x_range=(-x_lim_grid, x_lim_grid), dx=0.1*sigma_x_b1,
+        y_range=(-y_lim_grid, y_lim_grid), dy=0.1*sigma_y_b1,
         z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
 
 bbpic_ip1_b1 = pics[0]
@@ -106,7 +125,7 @@ multitracker = xt.PipelineMultiTracker(
     enable_debug_log=True, verbose=True)
 
 # Tracker
-multitracker.track(num_turns=2)
+multitracker.track(num_turns=1)
 
 # Compare against Hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
@@ -116,35 +135,43 @@ common_hirata_kwargs_b1 = dict(
     other_beam_q0=1.,
     slices_other_beam_num_particles=num_part_per_slice,
     slices_other_beam_zeta_center=z_centroids_from_tail,
-    slices_other_beam_Sigma_11=cov.Sigma11[0],
-    slices_other_beam_Sigma_12=cov.Sigma12[0],
-    slices_other_beam_Sigma_22=cov.Sigma22[0],
-    slices_other_beam_Sigma_33=cov.Sigma33[0],
-    slices_other_beam_Sigma_34=cov.Sigma34[0],
-    slices_other_beam_Sigma_44=cov.Sigma44[0])
+    slices_other_beam_Sigma_11=cov_b1.Sigma11[0],
+    slices_other_beam_Sigma_12=cov_b1.Sigma12[0],
+    slices_other_beam_Sigma_22=cov_b1.Sigma22[0],
+    slices_other_beam_Sigma_33=cov_b1.Sigma33[0],
+    slices_other_beam_Sigma_34=cov_b1.Sigma34[0],
+    slices_other_beam_Sigma_44=cov_b1.Sigma44[0])
+common_hirata_kwargs_b2 = dict(
+    other_beam_q0=1.,
+    slices_other_beam_num_particles=num_part_per_slice,
+    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_Sigma_11=cov_b2.Sigma11[0],
+    slices_other_beam_Sigma_12=cov_b2.Sigma12[0],
+    slices_other_beam_Sigma_22=cov_b2.Sigma22[0],
+    slices_other_beam_Sigma_33=cov_b2.Sigma33[0],
+    slices_other_beam_Sigma_34=cov_b2.Sigma34[0],
+    slices_other_beam_Sigma_44=cov_b2.Sigma44[0])
 
 bbg_b1_ip1 = xf.BeamBeamBiGaussian3D(phi=phi, alpha=alpha,
                                     **common_hirata_kwargs_b1)
 bbg_b1_ip2 = xf.BeamBeamBiGaussian3D(phi=-1.2*phi, alpha=1.3*alpha,
                                     **common_hirata_kwargs_b1)
 bbg_b2_ip1 = xf.BeamBeamBiGaussian3D(phi=-phi, alpha=-alpha,
-                                    **common_hirata_kwargs_b1)
+                                    **common_hirata_kwargs_b2)
 bbg_b2_ip2 = xf.BeamBeamBiGaussian3D(phi=1.2*phi, alpha=-1.3*alpha,
-                                    **common_hirata_kwargs_b1)
+                                    **common_hirata_kwargs_b2)
 
 p_bbg_b1 = p_test_b1.copy()
 bbg_b1_ip1.track(p_bbg_b1)
 bbg_b1_ip2.track(p_bbg_b1)
-bbg_b1_ip1.track(p_bbg_b1)
-bbg_b1_ip2.track(p_bbg_b1)
+# bbg_b1_ip1.track(p_bbg_b1)
+# bbg_b1_ip2.track(p_bbg_b1)
 
 p_bbg_b2 = p_test_b2.copy()
 bbg_b2_ip1.track(p_bbg_b2)
 bbg_b2_ip2.track(p_bbg_b2)
-bbg_b2_ip1.track(p_bbg_b2)
-bbg_b2_ip2.track(p_bbg_b2)
-
-
+# bbg_b2_ip1.track(p_bbg_b2)
+# bbg_b2_ip2.track(p_bbg_b2)
 
 import matplotlib.pyplot as plt
 plt.close('all')
