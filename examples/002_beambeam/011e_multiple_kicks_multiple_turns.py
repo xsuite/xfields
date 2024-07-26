@@ -19,7 +19,8 @@ nemitt_x_b1 = 2e-6
 nemitt_y_b1 = 2.5e-6
 nemitt_x_b2 = 1.5e-6
 nemitt_y_b2 = 1.3e-6
-bunch_intensity = 2e10
+bunch_intensity_b1 = 2e10
+bunch_intensity_b2 = 3e10
 num_slices = 101
 slice_mode = 'constant_charge'
 
@@ -45,7 +46,7 @@ bunch_b1 = lntwiss.build_particles(
     py_norm=np.random.normal(size=num_particles),
     W_matrix=twip.W_matrix[0],
     particle_on_co=twip.particle_on_co,
-    weight = bunch_intensity / num_particles
+    weight = bunch_intensity_b1 / num_particles
 )
 bunch_b2 = lntwiss.build_particles(
     num_particles=num_particles,
@@ -57,7 +58,7 @@ bunch_b2 = lntwiss.build_particles(
     py_norm=np.random.normal(size=num_particles),
     W_matrix=twip.W_matrix[0],
     particle_on_co=twip.particle_on_co,
-    weight = bunch_intensity / num_particles
+    weight = bunch_intensity_b2 / num_particles
 )
 
 n_test = 1000
@@ -129,11 +130,11 @@ multitracker.track(num_turns=1)
 
 # Compare against Hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
-                                bunch_intensity, sigma_z, num_slices)
+                                1., sigma_z, num_slices)
 z_centroids_from_tail = z_centroids[::-1]
 common_hirata_kwargs_b1 = dict(
     other_beam_q0=1.,
-    slices_other_beam_num_particles=num_part_per_slice,
+    slices_other_beam_num_particles=num_part_per_slice * bunch_intensity_b2,
     slices_other_beam_zeta_center=z_centroids_from_tail,
     slices_other_beam_Sigma_11=cov_b2.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b2.Sigma12[0],
@@ -143,7 +144,7 @@ common_hirata_kwargs_b1 = dict(
     slices_other_beam_Sigma_44=cov_b2.Sigma44[0])
 common_hirata_kwargs_b2 = dict(
     other_beam_q0=1.,
-    slices_other_beam_num_particles=num_part_per_slice,
+    slices_other_beam_num_particles=num_part_per_slice * bunch_intensity_b1,
     slices_other_beam_zeta_center=z_centroids_from_tail,
     slices_other_beam_Sigma_11=cov_b1.Sigma11[0],
     slices_other_beam_Sigma_12=cov_b1.Sigma12[0],
