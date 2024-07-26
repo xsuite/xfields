@@ -223,3 +223,10 @@ plt.ylabel(r'$\Delta p_\tau$')
 plt.legend()
 
 plt.show()
+
+xo.assert_allclose(p_bbg_b1.px, particles_b1.px[:n_test], rtol=0, atol=3e-8)
+xo.assert_allclose(p_bbg_b1.py, particles_b1.py[:n_test], rtol=0, atol=5e-8)
+xo.assert_allclose(p_bbg_b1.ptau, particles_b1.ptau[:n_test], rtol=0, atol=3e-12)
+xo.assert_allclose(p_bbg_b2.px, particles_b2.px[:n_test], rtol=0, atol=3e-8)
+xo.assert_allclose(p_bbg_b2.py, particles_b2.py[:n_test], rtol=0, atol=5e-8)
+xo.assert_allclose(p_bbg_b2.ptau, particles_b2.ptau[:n_test], rtol=0, atol=1e-11)
