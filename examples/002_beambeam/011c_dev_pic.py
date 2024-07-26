@@ -187,7 +187,7 @@ for i_step in progress(range(len(z_grid_b1))):
         dpz = 0.5 *(
             dpx * (pp.px[mask_alive] + 0.5 * dpx)
           + dpy * (pp.py[mask_alive] + 0.5 * dpy))
-        # dpz = factor * dphi_dz * dz
+        # dpz += factor * dphi_dz * dz
 
         dpz_test_tot += dpz[:n_test]
 
