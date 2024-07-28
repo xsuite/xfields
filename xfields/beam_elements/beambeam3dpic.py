@@ -200,16 +200,11 @@ class BeamBeamPIC3D(xt.BeamElement):
         self.fieldmap_other.update_phi_from_rho()
 
         # Compute particles coordinates in the reference system of the other beam
-        beta_over_beta_other = 1 # Could be generalized with
-                                # (beta_particle/beta_slice_other)
-                                # One could for example store the beta of the
-                                # closed orbit
         z_step_self = self._z_steps_self[self._i_step]
         mask_alive = pp.state > 0
         z_step_other = self._z_steps_other[self._i_step]
-        z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
-                + z_step_other
-                + beta_over_beta_other * z_step_self)
+        # For now assuming symmetric ultra-relativistic beams
+        z_other = (-pp.zeta[mask_alive] + z_step_other + z_step_self)
         x_other = -pp.x[mask_alive]
         y_other = pp.y[mask_alive]
 
