@@ -140,15 +140,9 @@ for i_step in progress(range(len(z_grid_b1))):
                                                     [z_step_b2, z_step_b1],
                                                     [beta0_b2, beta0_b1]
                                                 ):
-        # Compute coordinates in the reference system of the other beam
-        beta_over_beta_other = 1 # Could be generalized with
-                                 # (beta_particle/beta_slice_other)
-                                 # One could for example store the beta of the
-                                 # closed orbit
         mask_alive = pp.state > 0
-        z_other = (-beta_over_beta_other * pp.zeta[mask_alive]
-                + z_step_other
-                + beta_over_beta_other * z_step_self)
+        # Assuming beta=1 for all particles for now
+        z_other = (-pp.zeta[mask_alive] + z_step_other + z_step_self)
         x_other = -pp.x[mask_alive]
         y_other = pp.y[mask_alive]
 
