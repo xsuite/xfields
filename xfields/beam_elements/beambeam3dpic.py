@@ -229,7 +229,7 @@ class BeamBeamPIC3D(xt.BeamElement):
         pp_beta0 = 1.
         beta0_other = 1.
         factor = -(charge_mass_ratio
-                / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
+                / (pp.gamma0[mask_alive] * pp_beta0 * pp_beta0 * clight * clight)
                 * (1 + beta0_other * pp_beta0))
 
         # Compute kick

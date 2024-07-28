@@ -170,9 +170,8 @@ for i_step in progress(range(len(z_grid_b1))):
                             / (pp.mass0 * qe /(clight * clight)))
         pp_beta0 = pp.beta0[mask_alive]
         factor = -(charge_mass_ratio
-                / (pp.gamma0[mask_alive] * pp_beta0 * clight*clight)
+                / (pp.gamma0[mask_alive] * pp_beta0 * pp_beta0 * clight * clight)
                 * (1 + beta0_other * pp_beta0))
-                # / (beta0_other + pp_beta0))
 
         # Compute kick
         dpx = factor * dphi_dx * dz
