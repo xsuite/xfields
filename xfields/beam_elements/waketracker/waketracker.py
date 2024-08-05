@@ -143,11 +143,7 @@ class WakeTracker(ElementWithSlicer):
 
     @property
     def filling_scheme(self):
-        assert len(self.slicer.filled_slots) == 1, (
-            'Only single bunch mode is supported for now')
-        assert self.slicer.filled_slots[0] == 0, (
-            'Only single bunch mode is supported for now')
-        return None
+        return self.slicer.filling_scheme
 
     @property
     def bunch_numbers(self):
