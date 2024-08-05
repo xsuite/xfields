@@ -25,9 +25,10 @@ class CompressedProfile(xt.BeamElement):
         Number of turns for which the moments are recorded.
     num_targets: int
         Number of target bunches. If it is not specified it is just the same
-        as `num_bunches`.
+        as `num_periods`.
     num_slices_target: int
-        Number of slices per target bunch.
+        Number of slices per target bunch. If it is not specified it is just
+        the same as `num_bunches`.
     circumference: float
         Machine length in meters.
     """
