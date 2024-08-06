@@ -6,6 +6,7 @@ from scipy.stats import linregress
 import xtrack as xt
 import xpart as xp
 import xfields as xf
+import xwakes as xw
 
 # Simulation settings
 n_turns = 10_000
@@ -15,22 +16,24 @@ bucket_length_m = circumference / 35640
 
 wake_table_filename = xf.general._pkg_root.joinpath(
     '../test_data/HLLHC_wake.dat')
-wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
-                     'quadrupole_x', 'quadrupole_y', 'dipole_xy',
-                     'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
+wake_file_columns = ['time', 'longitudinal', 'dipolar_x', 'dipolar_y',
+                     'quadrupolar_x', 'quadrupolar_y', 'dipolar_xy',
+                     'quadrupolar_xy', 'dipolar_yx', 'quadrupolar_yx',
                      'constant_x', 'constant_y']
-mytable = xf.read_headtail_file(
+mytable = xw.read_headtail_file(
     wake_file=wake_table_filename,
     wake_file_columns=wake_file_columns
 )
-wf = xf.WakefieldFromTable(
+wf = xw.WakeFromTable(
     table=mytable,
-    use_components=['dipole_x', 'dipole_y'],
+    columns=['dipolar_x', 'dipolar_y'],
+)
+
+wf.configure_for_tracking(
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
     num_slices=20,
     num_turns=1.,
-    circumference=circumference
-)
+    circumference=circumference)
 
 one_turn_map = xt.LineSegmentMap(
     length=circumference, betx=70., bety=80.,
