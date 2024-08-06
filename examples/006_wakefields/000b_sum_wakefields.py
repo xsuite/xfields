@@ -5,7 +5,7 @@ from scipy.signal import hilbert
 from scipy.stats import linregress
 
 import xtrack as xt
-import xobjects as xo
+import xwakes as xw
 import xpart as xp
 import xfields as xf
 
@@ -19,24 +19,27 @@ bucket_length_m = circumference / 35640
 
 wake_table_filename = xf.general._pkg_root.joinpath(
     '../test_data/HLLHC_wake.dat')
-wake_file_columns = ['time', 'longitudinal', 'dipole_x', 'dipole_y',
-                     'quadrupole_x', 'quadrupole_y', 'dipole_xy',
-                     'quadrupole_xy', 'dipole_yx', 'quadrupole_yx',
+wake_file_columns = ['time', 'longitudinal', 'dipolar_x', 'dipolar_y',
+                     'quadrupolar_x', 'quadrupolar_y', 'dipolar_xy',
+                     'quadrupolar_xy', 'dipolar_yx', 'quadrupolar_yx',
                      'constant_x', 'constant_y']
-wf_df = xf.read_headtail_file(
+wf_df = xw.read_headtail_file(
     wake_file=wake_table_filename,
     wake_file_columns=wake_file_columns
 )
-wf0 = xf.WakefieldFromTable(
+wf0 = xw.WakeFromTable(
     wf_df,
-    use_components=['dipole_x', 'dipole_y'],
+    columns=['dipolar_x', 'dipolar_y']
+)
+
+wf = wf0 + wf0
+
+wf.configure_for_tracking(
     zeta_range=(-0.5*bucket_length_m, 0.5*bucket_length_m),
     num_slices=20,
     num_turns=1.,
     circumference=circumference
-    )
-
-wf = wf0 + wf0
+)
 
 one_turn_map = xt.LineSegmentMap(
     length=circumference, betx=70., bety=80.,
