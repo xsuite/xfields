@@ -7,7 +7,7 @@ from scipy.constants import e as qe
 from scipy.interpolate import interp1d
 
 import xobjects as xo
-import xfields as xf
+import xtrack as xt
 from ..element_with_slicer import ElementWithSlicer
 from .convolution import _ConvData
 
@@ -120,13 +120,18 @@ class WakeTracker(ElementWithSlicer):
                                                 beta0=beta0)
 
         # Use common slicer from parent class to measure all moments
-        super().track(particles)
+        status = super().track(particles)
+
+        if status.on_hold == True:
+            return xt.PipelineStatus(on_hold=True)
 
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_bunch_particles=self.i_bunch_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
+
+        return xt.PipelineStatus(on_hold=False)
 
     @property
     def zeta_range(self):
@@ -143,11 +148,7 @@ class WakeTracker(ElementWithSlicer):
 
     @property
     def filling_scheme(self):
-        assert len(self.slicer.filled_slots) == 1, (
-            'Only single bunch mode is supported for now')
-        assert self.slicer.filled_slots[0] == 0, (
-            'Only single bunch mode is supported for now')
-        return None
+        return self.slicer.filling_scheme
 
     @property
     def bunch_numbers(self):
