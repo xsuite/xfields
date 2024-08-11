@@ -252,7 +252,7 @@ class UniformBinSlicer(xt.BeamElement):
         Filled slots
         """
         return self._filled_slots
-        
+
     @property
     def bunch_numbers(self):
         """

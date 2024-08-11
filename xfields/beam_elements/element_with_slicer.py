@@ -231,7 +231,7 @@ class ElementWithSlicer:
                 if not self.pipeline_manager.is_ready_to_recieve(
                                         self.name, partner_name,
                                         particles.name, internal_tag=0):
-                                    return xt.PipelineStatus(on_hold=True)
+                    return xt.PipelineStatus(on_hold=True)
 
         if self.pipeline_manager is not None:
             for partner_name in self.partners_names:
@@ -263,5 +263,3 @@ class ElementWithSlicer:
             self._slice_result = {'i_slice_particles': self.i_slice_particles,
                                   'i_bunch_particles': self.i_bunch_particles,
                                   'slicer': self.slicer}
-
-        return xt.PipelineStatus(on_hold=False)

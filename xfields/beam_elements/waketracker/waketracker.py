@@ -122,16 +122,14 @@ class WakeTracker(ElementWithSlicer):
         # Use common slicer from parent class to measure all moments
         status = super().track(particles)
 
-        if status.on_hold == True:
-            return xt.PipelineStatus(on_hold=True)
+        if status and status.on_hold == True:
+            return status
 
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_bunch_particles=self.i_bunch_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
-
-        return xt.PipelineStatus(on_hold=False)
 
     @property
     def zeta_range(self):
