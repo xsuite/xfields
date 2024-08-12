@@ -143,8 +143,6 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         assert self._working_on_bunch is pp
 
-
-
         if not self._sent_rho_to_partner:
             z_step_other = self._z_steps_other[self._i_step]
 
