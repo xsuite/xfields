@@ -122,16 +122,18 @@ class UniformBinSlicer(xt.BeamElement):
         _zeta_slice_centers = _zeta_slice_edges[:-1] + (_zeta_slice_edges[1] -
                                                         _zeta_slice_edges[0])/2
 
-        if filling_scheme is None and bunch_numbers is None:
-            if num_bunches is None:
-                num_bunches = 1
-            filled_slots = np.arange(num_bunches, dtype=int)
-            bunch_numbers = np.arange(num_bunches, dtype=int)
+
+        if filling_scheme is None and num_bunches is None:
+            num_bunches = 1
+
+        if filling_scheme is None:
+            filled_slots = np.arange(num_bunches, dtype=np.int64)
         else:
-            assert (num_bunches is None and filling_scheme is not None and
-                    bunch_numbers is not None)
+            filling_scheme = np.array(filling_scheme, dtype=np.int64)
             filled_slots = filling_scheme.nonzero()[0]
-            num_bunches = len(bunch_numbers)
+
+        if bunch_numbers is None:
+            bunch_numbers = np.where(filled_slots)[0]
 
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
@@ -171,7 +173,8 @@ class UniformBinSlicer(xt.BeamElement):
             z_min_edge=_zeta_slice_edges[0],
             num_slices=len(_zeta_slice_centers),
             dzeta=_zeta_slice_edges[1] - _zeta_slice_edges[0],
-            num_bunches=num_bunches, filled_slots=filled_slots,
+            num_bunches=len(bunch_numbers),
+            filled_slots=filled_slots,
             bunch_numbers=bunch_numbers,
             bunch_spacing_zeta=bunch_spacing_zeta,
             num_particles=(num_bunches or 1) * len(_zeta_slice_centers),
