@@ -145,10 +145,6 @@ class WakeTracker(ElementWithSlicer):
         return self.slicer.bunch_spacing_zeta
 
     @property
-    def filling_scheme(self):
-        return self.slicer.filling_scheme
-
-    @property
     def bunch_numbers(self):
         return self.slicer.bunch_numbers
 
