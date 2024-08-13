@@ -106,6 +106,12 @@ class UniformBinSlicer(xt.BeamElement):
             self.xoinitialize(_xobject=kwargs['_xobject'])
             return
 
+        # for now we require that the first slot of the filling scheme is filled
+        # needs to be tested otherwise (especially computation of _z_a, _z_b in
+        # in compressed profile)
+        if filling_scheme is not None:
+            assert filling_scheme[0] == 1, 'First slot must be filled'
+
         num_edges = None
         if num_slices is not None:
             num_edges = num_slices + 1
