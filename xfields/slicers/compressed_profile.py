@@ -76,9 +76,11 @@ class CompressedProfile(xt.BeamElement):
 
         self.circumference = circumference
 
-        self.dz = (zeta_range[1] - zeta_range[0]) / num_slices  # h in the paper
-        self._z_a = zeta_range[0]
-        self._z_b = zeta_range[1]
+        # the following needs to be generalized when the first bucket is not filled
+        self.dz = (np.atleast_2d(zeta_range)[0, 1] -
+                   np.atleast_2d(zeta_range)[0, 0]) / num_slices  # h in the paper
+        self._z_a = np.atleast_2d(zeta_range)[0, 0]
+        self._z_b = np.atleast_2d(zeta_range)[0, -1]
 
         self._N_1 = num_slices  # N_1 in the
         self._z_P = bunch_spacing_zeta  # P in the paper
