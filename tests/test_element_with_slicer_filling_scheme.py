@@ -2,13 +2,14 @@ import xfields as xf
 import xtrack as xt
 import numpy as np
 import xobjects as xo
+import pytest
 
-buffer_round_trip = True
-num_turns = 3
 
 from xfields.beam_elements.element_with_slicer import ElementWithSlicer
 
-def test_element_with_slicer_filling_scheme():
+@pytest.mark.parametrize('buffer_round_trip', [True, False])
+@pytest.mark.parametrize('num_turns', [1, 2, 3])
+def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
     ele = ElementWithSlicer(
         zeta_range=(-1, 1),
         num_slices=10,
