@@ -66,7 +66,7 @@ class WakeTracker(ElementWithSlicer):
         self.all_slicer_moments = list(set(all_slicer_moments))
 
         super().__init__(
-            slicer_moments=all_slicer_moments,
+            slicer_moments=self.all_slicer_moments,
             log_moments=log_moments,
             zeta_range=zeta_range,  # These are [a, b] in the paper
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
