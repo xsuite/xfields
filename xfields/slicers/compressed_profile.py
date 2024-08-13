@@ -11,7 +11,7 @@ class CompressedProfile(xt.BeamElement):
     Parameters
     ----------.
     moments: List
-        Stored momemts
+        Stored moments
     zeta_range : Tuple
         Zeta range for each bunch.
     num_slices : int

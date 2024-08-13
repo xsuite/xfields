@@ -224,9 +224,9 @@ class UniformBinSlicer(xt.BeamElement):
             return self._zeta_slice_centers
         else:
             out = np.zeros((self.num_bunches, self.num_slices))
-            for bunch_num in self.bunch_numbers:
+            for ii, bunch_num in enumerate(self.bunch_numbers):
                 z_offs = self._filled_slots[bunch_num] * self.bunch_spacing_zeta
-                out[bunch_num, :] = (self._zeta_slice_centers - z_offs)
+                out[ii, :] = (self._zeta_slice_centers - z_offs)
             return out
 
     @property
@@ -248,7 +248,13 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Number of bunches
         """
+        if self._num_bunches == 0:
+            return 1
         return self._num_bunches
+
+    @property
+    def zeta_range(self):
+        return (self._z_min_edge, self._z_min_edge + self._dzeta * self._num_slices)
 
     @property
     def filled_slots(self):

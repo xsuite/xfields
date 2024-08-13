@@ -133,8 +133,7 @@ class WakeTracker(ElementWithSlicer):
 
     @property
     def zeta_range(self):
-        return (self.slicer.zeta_centers[0] - self.slicer.dzeta / 2,
-                self.slicer.zeta_centers[-1] + self.slicer.dzeta / 2)
+        return self.slicer.zeta_range
 
     @property
     def num_slices(self):
