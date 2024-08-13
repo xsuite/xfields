@@ -50,6 +50,10 @@ class ElementWithSlicer:
                  with_compressed_profile=False):
 
         self.with_compressed_profile = with_compressed_profile
+        self.pipeline_manager = None
+
+        if slicer_moments is None:
+            slicer_moments = ['num_particles']
 
         self.source_moments = slicer_moments.copy()
 
