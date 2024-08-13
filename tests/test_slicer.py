@@ -33,7 +33,7 @@ def test_slicer_zeta(test_context):
 def test_slice_attribution_single_bunch(test_context):
     slicer = xf.UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
                                  _context=test_context)
-    assert slicer.num_bunches == 1  # Single-bunch mode
+    assert slicer.num_bunches == 0  # Single-bunch mode
 
     p0 = xt.Particles(
         zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51,
@@ -62,7 +62,7 @@ def test_slice_attribution_single_bunch(test_context):
     xo.assert_allclose(i_bunch_particles, i_bunch_expected,  atol=0, rtol=0)
 
     expected_num_particles = np.array([40, 20, 50])
-    xo.assert_allclose(slicer.num_particles[0, :], expected_num_particles,
+    xo.assert_allclose(slicer.num_particles, expected_num_particles,
                        atol=1e-12, rtol=0)
 
 
@@ -104,6 +104,7 @@ def test_slice_attribution_multi_bunch(test_context):
                                  num_bunches=4,
                                  bunch_spacing_zeta=bunch_spacing_zeta,
                                  _context=test_context)
+    breakpoint()
     slicer.slice(particles=p,
                  i_slice_particles=i_slice_particles,
                  i_bunch_particles=i_bunch_particles)
@@ -128,8 +129,8 @@ def test_slice_attribution_multi_bunch(test_context):
         [40000, 20000, 50000],
     ])
 
-    xo.assert_allclose(i_slice_particles, i_slice_expected_mb, rtol=0, atol=0)
     xo.assert_allclose(i_bunch_particles, i_bunch_expected_mb, rtol=0, atol=0)
+    xo.assert_allclose(i_slice_particles, i_slice_expected_mb, rtol=0, atol=0)
     xo.assert_allclose(slicer.num_particles, expected_num_particles_mb,
                        atol=1e-12, rtol=0)
 

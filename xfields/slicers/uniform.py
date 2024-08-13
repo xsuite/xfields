@@ -93,14 +93,6 @@ class UniformBinSlicer(xt.BeamElement):
                     xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
                     xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles')
                 ]),
-            '_slice_kernel_x_only': xo.Kernel(
-                c_name='UniformBinSlicer_slice_x_only',
-                args=[
-                    xo.Arg(xo.Int64, name='use_bunch_index_array'),
-                    xo.Arg(xo.Int64, name='use_slice_index_array'),
-                    xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
-                    xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles')
-                ]),
         }
 
     def __init__(self, zeta_range=None, num_slices=None, dzeta=None,
@@ -124,16 +116,15 @@ class UniformBinSlicer(xt.BeamElement):
 
 
         if filling_scheme is None and num_bunches is None:
-            num_bunches = 1
-
-        if filling_scheme is None:
+            filled_slots = np.zeros(1, dtype=np.int64)
+        elif filling_scheme is None:
             filled_slots = np.arange(num_bunches, dtype=np.int64)
         else:
             filling_scheme = np.array(filling_scheme, dtype=np.int64)
             filled_slots = filling_scheme.nonzero()[0]
 
         if bunch_numbers is None:
-            bunch_numbers = np.where(filled_slots)[0]
+            bunch_numbers = np.arange(len(filled_slots), dtype=np.int64)
 
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
@@ -162,8 +153,7 @@ class UniformBinSlicer(xt.BeamElement):
         allocated_sizes = {}
         for mm in all_moments:
             if mm in selected_moments:
-
-                allocated_sizes['sum_' + mm] = ((num_bunches or 1) *
+                allocated_sizes['sum_' + mm] = ((len(bunch_numbers) or 1) *
                                                 len(_zeta_slice_centers))
             else:
                 allocated_sizes['sum_' + mm] = 0
@@ -177,7 +167,7 @@ class UniformBinSlicer(xt.BeamElement):
             filled_slots=filled_slots,
             bunch_numbers=bunch_numbers,
             bunch_spacing_zeta=bunch_spacing_zeta,
-            num_particles=(num_bunches or 1) * len(_zeta_slice_centers),
+            num_particles=(len(bunch_numbers) or 1) * len(_zeta_slice_centers),
             **allocated_sizes, **kwargs
         )
 
