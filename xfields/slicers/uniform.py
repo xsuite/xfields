@@ -158,16 +158,21 @@ class UniformBinSlicer(xt.BeamElement):
             else:
                 allocated_sizes['sum_' + mm] = 0
 
+        assert len(bunch_numbers) > 0
+        num_bunches = len(bunch_numbers)
+        if num_bunches == 1 and bunch_numbers[0] == 0:
+            num_bunches = 0
+
         self.xoinitialize(
             zeta_slice_centers=_zeta_slice_centers,
             z_min_edge=_zeta_slice_edges[0],
             num_slices=len(_zeta_slice_centers),
             dzeta=_zeta_slice_edges[1] - _zeta_slice_edges[0],
-            num_bunches=len(bunch_numbers),
+            num_bunches=num_bunches,
             filled_slots=filled_slots,
             bunch_numbers=bunch_numbers,
             bunch_spacing_zeta=bunch_spacing_zeta,
-            num_particles=(len(bunch_numbers) or 1) * len(_zeta_slice_centers),
+            num_particles=len(bunch_numbers) * len(_zeta_slice_centers),
             **allocated_sizes, **kwargs
         )
 
@@ -237,7 +242,7 @@ class UniformBinSlicer(xt.BeamElement):
         """
         Number of bunches
         """
-        return len(self._bunch_numbers)
+        return self._num_bunches
 
     @property
     def filled_slots(self):

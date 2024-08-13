@@ -102,10 +102,6 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
             }
         }
 
-        printf("this_i_slot_part %lld\n", this_i_slot_part);
-        printf("i_bunch_in_slicer %lld\n", i_bunch_in_slicer);
-        printf("bunch_is_in_slicer %d\n", bunch_is_in_slicer);
-
         // Write to memory i_bunch_part
         if (use_bunch_index_array){
             if (bunch_is_in_slicer == 1){
