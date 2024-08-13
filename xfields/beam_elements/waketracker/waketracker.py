@@ -126,9 +126,6 @@ class WakeTracker(ElementWithSlicer):
             return status
 
         for wf in self.components:
-            assert (self.i_bunch_particles == 0).all()
-            assert (self.i_slice_particles >= -1).all()
-            assert (self.i_slice_particles < self.num_slices).all()
             wf._conv_data.track(particles,
                      i_bunch_particles=self.i_bunch_particles,
                      i_slice_particles=self.i_slice_particles,
