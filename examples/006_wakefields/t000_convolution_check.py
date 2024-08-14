@@ -260,9 +260,9 @@ for i_turn in range(n_turns):
     # Measure slice moments and get slice indeces
     t0 = time.perf_counter()
     i_slice_particles = xt_part_temp.particle_id * 0 + -999
-    i_bunch_particles = xt_part_temp.particle_id * 0 + -9999
+    i_slot_particles = xt_part_temp.particle_id * 0 + -9999
     xf_slicer.slice(xt_part_temp, i_slice_particles=i_slice_particles,
-                    i_bunch_particles=i_bunch_particles)
+                    i_slot_particles=i_slot_particles)
     t1 = time.perf_counter()
     print(f'T xfields slice {(t1 - t0)*1e3:.2f} ms')
 
@@ -313,7 +313,7 @@ for i_turn in range(n_turns):
         data_shape_1=md.data.shape[1],
         data_shape_2=md.data.shape[2],
         data=md.data,
-        i_bunch_particles=i_bunch_particles,
+        i_slot_particles=i_slot_particles,
         i_slice_particles=i_slice_particles,
         out=interpolated_result)
 

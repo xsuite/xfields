@@ -103,7 +103,7 @@ class _ConvData:
         self._G_hat_dephased = phase_term * np.fft.rfft(self.G_aux, axis=1)
         self._G_aux_shifted = np.fft.irfft(self._G_hat_dephased, axis=1)
 
-    def track(self, particles, i_bunch_particles, i_slice_particles,
+    def track(self, particles, i_slot_particles, i_slice_particles,
               moments_data):
 
         # Compute convolution
@@ -119,7 +119,7 @@ class _ConvData:
             data_shape_1=md.data.shape[1],
             data_shape_2=md.data.shape[2],
             data=md.data,
-            i_bunch_particles=i_bunch_particles,
+            i_slot_particles=i_slot_particles,
             i_slice_particles=i_slice_particles,
             out=interpolated_result)
         # interpolated result will be zero for lost particles (so nothing to

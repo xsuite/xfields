@@ -127,7 +127,7 @@ class WakeTracker(ElementWithSlicer):
 
         for wf in self.components:
             wf._conv_data.track(particles,
-                     i_bunch_particles=self.i_bunch_particles,
+                     i_slot_particles=self.i_slot_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
 

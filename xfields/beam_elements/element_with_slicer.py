@@ -144,15 +144,15 @@ class ElementWithSlicer:
     def _slice_and_store(self, particles, _slice_result=None):
         if _slice_result is not None:
             self.i_slice_particles = _slice_result['i_slice_particles']
-            self.i_bunch_particles = _slice_result['i_bunch_particles']
+            self.i_slot_particles = _slice_result['i_slot_particles']
             self.slicer = _slice_result['slicer']
         else:
             # Measure slice moments and get slice indeces
             self.i_slice_particles = particles.particle_id * 0 + -999
-            self.i_bunch_particles = particles.particle_id * 0 + -9999
+            self.i_slot_particles = particles.particle_id * 0 + -9999
             self.slicer.slice(particles,
                               i_slice_particles=self.i_slice_particles,
-                              i_bunch_particles=self.i_bunch_particles)
+                              i_slot_particles=self.i_slot_particles)
 
     def _add_slicer_moments_to_moments_data(self, slicer):
         if not self.with_compressed_profile:
@@ -266,5 +266,5 @@ class ElementWithSlicer:
 
         if not self.with_compressed_profile:
             self._slice_result = {'i_slice_particles': self.i_slice_particles,
-                                  'i_bunch_particles': self.i_bunch_particles,
+                                  'i_slot_particles': self.i_slot_particles,
                                   'slicer': self.slicer}

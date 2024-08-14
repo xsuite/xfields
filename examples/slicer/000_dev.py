@@ -32,12 +32,12 @@ i_bunch_expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -9999]
 ss = 0 * p.x
 ctx = xo.ContextCpu()
 i_slice_particles = p.particle_id * 0 - 999
-i_bunch_particles = p.particle_id * 0 - 9999
-slicer.slice(particles=p, i_bunch_particles=i_bunch_particles,
+i_slot_particles = p.particle_id * 0 - 9999
+slicer.slice(particles=p, i_slot_particles=i_slot_particles,
              i_slice_particles=i_slice_particles)
 
 assert np.all(np.array(i_slice_expected) == i_slice_particles)
-assert np.all(i_bunch_particles == i_bunch_expected)
+assert np.all(i_slot_particles == i_bunch_expected)
 
 
 expected_num_particles = np.array([40, 20, 50])
@@ -63,14 +63,14 @@ p4.weight *= 1000
 
 p = xt.Particles.merge([p1, p2, p3, p4])
 
-i_bunch_particles = p.particle_id * 0 - 999
+i_slot_particles = p.particle_id * 0 - 999
 i_slice_particles = p.particle_id * 0 - 999
 
 slicer = UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
                           num_bunches=4, bunch_spacing_zeta=bunch_spacing_zeta)
 slicer.slice(particles=p,
              i_slice_particles=i_slice_particles,
-             i_bunch_particles=i_bunch_particles)
+             i_slot_particles=i_slot_particles)
 
 # when we merge the particles the ones with state zero end up at the end so
 # the -999 are now at the end of the array
@@ -92,7 +92,7 @@ expected_num_particles_mb = np.array([
 ])
 
 assert np.all(i_slice_particles == i_slice_expected_mb)
-assert np.all(i_bunch_particles == i_bunch_expected_mb)
+assert np.all(i_slot_particles == i_bunch_expected_mb)
 assert np.allclose(slicer.num_particles, expected_num_particles_mb,
                    atol=1e-12, rtol=0)
 
