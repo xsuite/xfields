@@ -105,7 +105,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         // Write to memory i_bunch_part
         if (use_bunch_index_array){
             if (bunch_is_in_slicer == 1){
-                i_bunch_part[ipart] = i_bunch_in_slicer;
+                i_bunch_part[ipart] = this_i_slot_part;
             } else {
                 i_bunch_part[ipart] = -1;
             }

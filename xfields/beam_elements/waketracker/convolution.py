@@ -106,10 +106,11 @@ class _ConvData:
     def track(self, particles, i_bunch_particles, i_slice_particles,
               moments_data):
 
-        i_bunch_particles_in_mom_data = 0 * i_bunch_particles - 1
-        i_bunch_particles_in_mom_data[i_bunch_particles >= 0] = np.take(
-            self.waketracker.slicer.filled_slots[self.waketracker.slicer.bunch_numbers],
-            i_bunch_particles[i_bunch_particles>=0])
+        i_bunch_particles_in_mom_data = i_bunch_particles
+        # i_bunch_particles_in_mom_data = 0 * i_bunch_particles - 1
+        # i_bunch_particles_in_mom_data[i_bunch_particles >= 0] = np.take(
+        #     self.waketracker.slicer.filled_slots[self.waketracker.slicer.bunch_numbers],
+        #     i_bunch_particles[i_bunch_particles>=0])
 
         # Compute convolution
         self._compute_convolution(moment_names=self.component.source_moments,
