@@ -113,7 +113,7 @@ class WakeTracker(ElementWithSlicer):
                 and cc._conv_data.waketracker is self):
                 continue
 
-            cc._conv_data = _ConvData(component=cc, wakefield=self,
+            cc._conv_data = _ConvData(component=cc, waketracker=self,
                                             _flatten=self._flatten)
             cc._conv_data._initialize_conv_data(_flatten=self._flatten,
                                                 moments_data=self.moments_data,
