@@ -118,7 +118,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
             }
         } else {
             double z_min_edge_bunch;
-            if (num_bunches <= 1){
+            if (num_bunches == 0){
                 z_min_edge_bunch = z_min_edge;
             }
             else{

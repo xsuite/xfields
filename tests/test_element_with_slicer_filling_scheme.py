@@ -42,11 +42,6 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
         with_compressed_profile=True)
     slicer2 = ele2.slicer
 
-    if buffer_round_trip:
-        slicer = xf.UniformBinSlicer._from_npbuffer(slicer._to_npbuffer())
-        slicer1 = xf.UniformBinSlicer._from_npbuffer(slicer1._to_npbuffer())
-        slicer2 = xf.UniformBinSlicer._from_npbuffer(slicer2._to_npbuffer())
-
     zeta = np.linspace(-20, 20, 1000000)
     particles = xt.Particles(p0c=7000e9,
                             zeta=zeta)
@@ -69,6 +64,11 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
     ele.track(particles)
     ele1.track(particles)
     ele2.track(particles)
+
+    if buffer_round_trip:
+        slicer = xf.UniformBinSlicer._from_npbuffer(slicer._to_npbuffer())
+        slicer1 = xf.UniformBinSlicer._from_npbuffer(slicer1._to_npbuffer())
+        slicer2 = xf.UniformBinSlicer._from_npbuffer(slicer2._to_npbuffer())
 
     assert (slicer.filled_slots == np.array([0, 2, 3])).all()
     assert (slicer1.filled_slots == np.array([0, 2, 3])).all()
