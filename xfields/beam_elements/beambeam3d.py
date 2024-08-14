@@ -782,11 +782,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                                      self.config_for_update.partner_particles_name,
                                                      at_turn,
                                                      internal_tag=self.config_for_update._i_step)
-                if self.config_for_update.pipeline_manager.is_ready_to_recieve(self.config_for_update.element_name,
+                if self.config_for_update.pipeline_manager.is_ready_to_receive(self.config_for_update.element_name,
                                         self.config_for_update.partner_particles_name,
                                         particles.name,
                                         internal_tag=self.config_for_update._i_step):
-                    self.config_for_update.pipeline_manager.recieve_message(self.partner_moments,
+                    self.config_for_update.pipeline_manager.receive_message(self.partner_moments,
                                         self.config_for_update.element_name,
                                         self.config_for_update.partner_particles_name,
                                         particles.name,
