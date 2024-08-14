@@ -6,11 +6,11 @@ from typing import Tuple
 
 class _ConvData:
 
-    def __init__(self, component, wakefield=None, _flatten=False, log_moments=None):
+    def __init__(self, component, waketracker=None, _flatten=False, log_moments=None):
 
         self._flatten = _flatten
         self.component = component
-        self.wakefield = wakefield
+        self.waketracker = waketracker
 
         source_exponents = component.source_exponents
 

@@ -110,7 +110,7 @@ class WakeTracker(ElementWithSlicer):
         # Build _conv_data if necessary
         for cc in self.components:
             if (hasattr(cc, '_conv_data') and cc._conv_data is not None
-                and cc._conv_data.wakefield is self):
+                and cc._conv_data.waketracker is self):
                 continue
 
             cc._conv_data = _ConvData(component=cc, wakefield=self,
