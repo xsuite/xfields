@@ -33,7 +33,7 @@ def test_slicer_zeta(test_context):
 def test_slice_attribution_single_bunch(test_context):
     slicer = xf.UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
                                  _context=test_context)
-    assert slicer.num_bunches == 0  # Single-bunch mode
+    assert slicer.num_bunches == 1
 
     p0 = xt.Particles(
         zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51,
