@@ -13,7 +13,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
                 int64_t const use_bunch_index_array,
                 int64_t const use_slice_index_array,
                 /*gpuglmem*/ int64_t* i_slice_part,
-                /*gpuglmem*/ int64_t* i_bunch_part){
+                /*gpuglmem*/ int64_t* i_slot_part){
 
     int64_t const num_slices = UniformBinSlicerData_get_num_slices(el);
     double const z_min_edge = UniformBinSlicerData_get_z_min_edge(el);
@@ -80,34 +80,36 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
         const int64_t ipart = part->ipart;
 
         int64_t i_bunch_in_slicer = -1;
+        int64_t i_slot_in_slicer;
         uint8_t bunch_is_in_slicer = 0;
-        int64_t this_i_slot_part;
 
 
         // identify i_bunch_in_slicer and absolute slot number
         if (num_bunches == 0){
             i_bunch_in_slicer = 0;
+            i_slot_in_slicer = 0;
             bunch_is_in_slicer = 1;
-            this_i_slot_part = 0;
         }
         else {
-            this_i_slot_part = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
+            i_slot_in_slicer = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
             for(int ii = 0; ii < num_bunches; ii++){
                 if(UniformBinSlicerData_get_filled_slots(el,
-                    UniformBinSlicerData_get_bunch_numbers(el,ii)) == this_i_slot_part) {
+                    UniformBinSlicerData_get_bunch_numbers(el,ii)) == i_slot_in_slicer) {
                     bunch_is_in_slicer = 1;
+                    i_slot_in_slicer = UniformBinSlicerData_get_filled_slots(el,
+                    UniformBinSlicerData_get_bunch_numbers(el,ii));
                     i_bunch_in_slicer = ii;
                     break;
                 }
             }
         }
 
-        // Write to memory i_bunch_part
+        // Write to memory i_slot_part
         if (use_bunch_index_array){
             if (bunch_is_in_slicer == 1){
-                i_bunch_part[ipart] = i_bunch_in_slicer;
+                i_slot_part[ipart] = i_slot_in_slicer;
             } else {
-                i_bunch_part[ipart] = -1;
+                i_slot_part[ipart] = -1;
             }
         }
 
@@ -122,7 +124,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
                 z_min_edge_bunch = z_min_edge;
             }
             else{
-                z_min_edge_bunch = z_min_edge - this_i_slot_part * bunch_spacing_zeta;
+                z_min_edge_bunch = z_min_edge - i_slot_in_slicer * bunch_spacing_zeta;
             }
 
             int64_t i_slice = floor((zeta - z_min_edge_bunch) / dzeta);

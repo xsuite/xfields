@@ -50,7 +50,7 @@ class CompressedProfile(xt.BeamElement):
                 xo.Arg(xo.Int64, name='data_shape_1'),
                 xo.Arg(xo.Int64, name='data_shape_2'),
                 xo.Arg(xo.Float64, pointer=True, name='data'),
-                xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles'),
+                xo.Arg(xo.Int64, pointer=True, name='i_slot_particles'),
                 xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
                 xo.Arg(xo.Float64, pointer=True, name='out'),
             ]),

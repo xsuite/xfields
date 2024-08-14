@@ -59,10 +59,10 @@ class TransverseDamper:
 
     def track(self, particles, i_turn=0):
         i_slice_particles = particles.particle_id * 0 + -999
-        i_bunch_particles = particles.particle_id * 0 + -9999
+        i_slot_particles = particles.particle_id * 0 + -9999
 
         self.slicer.slice(particles, i_slice_particles=i_slice_particles,
-                          i_bunch_particles=i_bunch_particles)
+                          i_slot_particles=i_slot_particles)
 
         for moment in ['px', 'py']:
 
@@ -92,7 +92,7 @@ class TransverseDamper:
                 data_shape_1=md.data.shape[1],
                 data_shape_2=md.data.shape[2],
                 data=md.data,
-                i_bunch_particles=i_bunch_particles,
+                i_slot_particles=i_slot_particles,
                 i_slice_particles=i_slice_particles,
                 out=interpolated_result
             )

@@ -91,7 +91,7 @@ class UniformBinSlicer(xt.BeamElement):
                     xo.Arg(xo.Int64, name='use_bunch_index_array'),
                     xo.Arg(xo.Int64, name='use_slice_index_array'),
                     xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
-                    xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles')
+                    xo.Arg(xo.Int64, pointer=True, name='i_slot_particles')
                 ]),
         }
 
@@ -182,15 +182,15 @@ class UniformBinSlicer(xt.BeamElement):
             **allocated_sizes, **kwargs
         )
 
-    def slice(self, particles, i_slice_particles=None, i_bunch_particles=None):
+    def slice(self, particles, i_slice_particles=None, i_slot_particles=None):
 
         self.clear()
 
-        if i_bunch_particles is not None:
+        if i_slot_particles is not None:
             use_bunch_index_array = 1
         else:
             use_bunch_index_array = 0
-            i_bunch_particles = particles.particle_id[:1]  # Dummy
+            i_slot_particles = particles.particle_id[:1]  # Dummy
         if i_slice_particles is not None:
             use_slice_index_array = 1
         else:
@@ -202,7 +202,7 @@ class UniformBinSlicer(xt.BeamElement):
             use_bunch_index_array=use_bunch_index_array,
             use_slice_index_array=use_slice_index_array,
             i_slice_particles=i_slice_particles,
-            i_bunch_particles=i_bunch_particles
+            i_slot_particles=i_slot_particles
         )
 
     def track(self, particles):

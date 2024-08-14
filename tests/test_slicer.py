@@ -33,7 +33,7 @@ def test_slicer_zeta(test_context):
 def test_slice_attribution_single_bunch(test_context):
     slicer = xf.UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
                                  _context=test_context)
-    assert slicer.num_bunches == 0  # Single-bunch mode
+    assert slicer._num_bunches == 0  # Single-bunch mode
 
     p0 = xt.Particles(
         zeta=[-2, -1.51, -1.49, -1, -0.51, -0.49, 0, 0.49, 0.51, 1, 1.49, 1.51,
@@ -54,12 +54,12 @@ def test_slice_attribution_single_bunch(test_context):
     i_slice_expected = [-1, -1, -1, 0, 0, 0, 1, 2, 2, -1, -1, -1, -1, -999]
     i_bunch_expected = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, -9999]
     i_slice_particles = p.particle_id * 0 - 999
-    i_bunch_particles = p.particle_id * 0 - 9999
-    slicer.slice(particles=p, i_bunch_particles=i_bunch_particles,
+    i_slot_particles = p.particle_id * 0 - 9999
+    slicer.slice(particles=p, i_slot_particles=i_slot_particles,
                  i_slice_particles=i_slice_particles)
 
     xo.assert_allclose(np.array(i_slice_expected), i_slice_particles, atol=0, rtol=0)
-    xo.assert_allclose(i_bunch_particles, i_bunch_expected,  atol=0, rtol=0)
+    xo.assert_allclose(i_slot_particles, i_bunch_expected,  atol=0, rtol=0)
 
     expected_num_particles = np.array([40, 20, 50])
     xo.assert_allclose(slicer.num_particles, expected_num_particles,
@@ -97,7 +97,7 @@ def test_slice_attribution_multi_bunch(test_context):
 
     p = xt.Particles.merge([p1, p2, p3, p4])
 
-    i_bunch_particles = p.particle_id * 0 - 999
+    i_slot_particles = p.particle_id * 0 - 999
     i_slice_particles = p.particle_id * 0 - 999
 
     slicer = xf.UniformBinSlicer(zeta_range=(-1, 1), num_slices=3,
@@ -106,7 +106,7 @@ def test_slice_attribution_multi_bunch(test_context):
                                  _context=test_context)
     slicer.slice(particles=p,
                  i_slice_particles=i_slice_particles,
-                 i_bunch_particles=i_bunch_particles)
+                 i_slot_particles=i_slot_particles)
 
     # when we merge the particles the ones with state zero end up at the end so
     # the -999 are now at the end of the array
@@ -128,7 +128,7 @@ def test_slice_attribution_multi_bunch(test_context):
         [40000, 20000, 50000],
     ])
 
-    xo.assert_allclose(i_bunch_particles, i_bunch_expected_mb, rtol=0, atol=0)
+    xo.assert_allclose(i_slot_particles, i_bunch_expected_mb, rtol=0, atol=0)
     xo.assert_allclose(i_slice_particles, i_slice_expected_mb, rtol=0, atol=0)
     xo.assert_allclose(slicer.num_particles, expected_num_particles_mb,
                        atol=1e-12, rtol=0)
