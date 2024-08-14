@@ -76,7 +76,7 @@ def test_multiwake_transverse_dipole_coupling(test_context):
                                  num_turns=n_turns_wake,
                                  circumference=circumference)
     wf_0.init_pipeline(pipeline_manager=pipeline_manager, element_name='wake',
-                       partners_names=['b1'])
+                       partner_names=['b1'])
     wf_1 = xf.WakefieldFromTable(wake_df,
                                  use_components=components,
                                  zeta_range=zeta_range,
@@ -88,7 +88,7 @@ def test_multiwake_transverse_dipole_coupling(test_context):
                                  circumference=circumference)
     wf_1.init_pipeline(pipeline_manager=pipeline_manager,
                        element_name='wake',
-                       partners_names=['b0'])
+                       partner_names=['b0'])
 
     print('Initialising lines')
     line_0 = xt.Line(elements=[wf_0])

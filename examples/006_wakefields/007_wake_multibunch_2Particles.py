@@ -93,7 +93,7 @@ wfx_0 = xf.WakeComponent(
     circumference=circumference,
 )
 wfx_0.init_pipeline(pipeline_manager=pipeline_manager,
-                    element_name='wake', partners_names=['b1'])
+                    element_name='wake', partner_names=['b1'])
 wfx_1 = xf.WakeComponent(
     source_moments=['num_particles', 'x'],
     kick='px',
@@ -108,7 +108,7 @@ wfx_1 = xf.WakeComponent(
     circumference=circumference,
 )
 wfx_1.init_pipeline(pipeline_manager=pipeline_manager, element_name='wake',
-                    partners_names=['b0'])
+                    partner_names=['b0'])
 
 
 print('Initialising lines')

@@ -89,11 +89,11 @@ class WakeTracker(ElementWithSlicer):
         self._flatten = _flatten
         all_slicer_moments = list(set(all_slicer_moments))
 
-    def init_pipeline(self, pipeline_manager, element_name, partners_names):
+    def init_pipeline(self, pipeline_manager, element_name, partner_names):
 
         super().init_pipeline(pipeline_manager=pipeline_manager,
                               element_name=element_name,
-                              partners_names=partners_names)
+                              partner_names=partner_names)
 
     def track(self, particles):
 
