@@ -96,8 +96,8 @@ def test_transverse_damper(test_context):
     particles = xp.generate_matched_gaussian_multibunch_beam(
         _context=test_context,
         filling_scheme=filling_scheme,
-        num_particles=n_macroparticles,
-        total_intensity_particles=intensity,
+        bunch_num_particles=n_macroparticles,
+        bunch_intensity_particles=intensity,
         nemitt_x=epsn_x, nemitt_y=epsn_y, sigma_z=sigma_z,
         line=line, bunch_spacing_buckets=bunch_spacing_buckets,
         bunch_numbers=filled_slots,

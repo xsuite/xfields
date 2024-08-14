@@ -117,9 +117,9 @@ class ElementWithSlicer:
                 num_turns=num_turns,
                 circumference=circumference)
 
-    def init_pipeline(self, pipeline_manager, element_name, partners_names):
+    def init_pipeline(self, pipeline_manager, element_name, partner_names):
         self.pipeline_manager = pipeline_manager
-        self.partners_names = partners_names
+        self.partner_names = partner_names
         self.name = element_name
 
         self._send_buffer = self.slicer._to_npbuffer()
@@ -200,7 +200,7 @@ class ElementWithSlicer:
             self.other_bunch_slicers = []
             is_ready_to_send = True
 
-            for partner_name in self.partners_names:
+            for partner_name in self.partner_names:
                 if not self.pipeline_manager.is_ready_to_send(
                         self.name,
                         particles.name,
@@ -215,12 +215,12 @@ class ElementWithSlicer:
                 self._update_moments_for_new_turn(particles,
                                                   _slice_result=_slice_result)
                 self._slicer_to_buffer(self.slicer)
-                for partner_name in self.partners_names:
+                for partner_name in self.partner_names:
                     self.pipeline_manager.send_message(
                         self._send_buffer_length,
                         element_name=self.name,
                         sender_name=particles.name,
-                        reciever_name=partner_name,
+                        receiver_name=partner_name,
                         turn=particles.at_turn[0],
                         internal_tag=0
                     )
@@ -228,19 +228,19 @@ class ElementWithSlicer:
                         self._send_buffer,
                         element_name=self.name,
                         sender_name=particles.name,
-                        reciever_name=partner_name,
+                        receiver_name=partner_name,
                         turn=particles.at_turn[0],
                         internal_tag=1)
 
-            for partner_name in self.partners_names:
-                if not self.pipeline_manager.is_ready_to_recieve(
+            for partner_name in self.partner_names:
+                if not self.pipeline_manager.is_ready_to_receive(
                                         self.name, partner_name,
                                         particles.name, internal_tag=0):
                     return xt.PipelineStatus(on_hold=True)
 
         if self.pipeline_manager is not None:
-            for partner_name in self.partners_names:
-                self.pipeline_manager.recieve_message(
+            for partner_name in self.partner_names:
+                self.pipeline_manager.receive_message(
                     self._recv_buffer_length_buffer,
                     self.name,
                     partner_name,
@@ -248,7 +248,7 @@ class ElementWithSlicer:
                     internal_tag=0)
 
                 self._ensure_recv_buffer_size()
-                self.pipeline_manager.recieve_message(self._recv_buffer,
+                self.pipeline_manager.receive_message(self._recv_buffer,
                                                       self.name,
                                                       partner_name,
                                                       particles.name,
