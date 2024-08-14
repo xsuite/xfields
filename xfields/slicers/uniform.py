@@ -343,7 +343,7 @@ class UniformBinSlicer(xt.BeamElement):
         return np.sqrt(self.var(mom_name))
 
     def _reshape_for_multibunch(self, data):
-        if self.num_bunches <= 0:
+        if self.num_bunches <= 1:
             return data
         else:
             return data.reshape(self.num_bunches, self.num_slices)
