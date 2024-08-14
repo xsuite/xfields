@@ -106,12 +106,6 @@ class _ConvData:
     def track(self, particles, i_bunch_particles, i_slice_particles,
               moments_data):
 
-        i_bunch_particles_in_mom_data = i_bunch_particles
-        # i_bunch_particles_in_mom_data = 0 * i_bunch_particles - 1
-        # i_bunch_particles_in_mom_data[i_bunch_particles >= 0] = np.take(
-        #     self.waketracker.slicer.filled_slots[self.waketracker.slicer.bunch_numbers],
-        #     i_bunch_particles[i_bunch_particles>=0])
-
         # Compute convolution
         self._compute_convolution(moment_names=self.component.source_moments,
                                   moments_data=moments_data)
@@ -125,7 +119,7 @@ class _ConvData:
             data_shape_1=md.data.shape[1],
             data_shape_2=md.data.shape[2],
             data=md.data,
-            i_bunch_particles=i_bunch_particles_in_mom_data,
+            i_bunch_particles=i_bunch_particles,
             i_slice_particles=i_slice_particles,
             out=interpolated_result)
         # interpolated result will be zero for lost particles (so nothing to
