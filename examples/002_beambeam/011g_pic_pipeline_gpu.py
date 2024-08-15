@@ -1,5 +1,6 @@
 import numpy as np
 
+import time
 import xfields as xf
 import xtrack as xt
 import xobjects as xo
@@ -33,7 +34,7 @@ cov = twip.get_beam_covariance(nemitt_x=nemitt_x, nemitt_y=nemitt_y)
 sigma_x = cov.sigma_x[0]
 sigma_y = cov.sigma_y[0]
 
-num_particles = 1_000_000
+num_particles = 10_000_000
 bunch_b1 = lntwiss.build_particles(
     num_particles=num_particles,
     nemitt_x=nemitt_x, nemitt_y=nemitt_y,
@@ -74,6 +75,8 @@ for ii in range(2):
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
 
+print("==> Pipeline configuration")
+
 # Pipeline configuration (some rationalization needed here!)
 pipeline_manager = xt.PipelineManager()
 pipeline_manager.add_particles('p_b1', rank=0)
@@ -94,15 +97,24 @@ bbpic_b2._partner = bbpic_b1
 line_b1 = xt.Line(elements=[bbpic_b1])
 line_b2 = xt.Line(elements=[bbpic_b2])
 
+print("==> Build GPU trackers")
+
 line_b1.build_tracker(_context=context_gpu)
 line_b2.build_tracker(_context=context_gpu)
+
+time_start = time.time()
 
 multitracker = xt.PipelineMultiTracker(
     branches=[xt.PipelineBranch(line=line_b1, particles=particles_b1),
               xt.PipelineBranch(line=line_b2, particles=particles_b2)],
     enable_debug_log=True, verbose=True)
 
+print("==> Multitracker track")
+
 multitracker.track(num_turns=1)
+
+print(f"@@@ Multitracker on GPU took {time.time() - time_start} s")
+print("==> GPU tracking complete. Compare against hirata.")
 
 # Compare against hirata
 z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
@@ -123,6 +135,8 @@ bbg = xf.BeamBeamBiGaussian3D(
 )
 p_bbg = p_test.copy()
 bbg.track(p_bbg)
+
+particles_b1.move(_context=xo.ContextCpu())
 
 import matplotlib.pyplot as plt
 plt.close('all')
@@ -147,4 +161,4 @@ plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_\tau$')
 plt.legend()
 
-plt.show()
+plt.savefig('gpu.png')
