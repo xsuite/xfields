@@ -232,17 +232,10 @@ class ElementWithSlicer:
 
         if self.pipeline_manager is not None:
             for i_partner, partner_name in enumerate(self.partners_names):
-                self.pipeline_manager.recieve_message(
-                    self._recv_buffer_length_buffer,
-                    self.name,
-                    partner_name,
-                    particles.name,
-                    internal_tag=0)
+                self.pipeline_manager.receive_message(self._recv_buffer_length_buffer, self.name, partner_name,
+                                                      particles.name, internal_tag=0)
                 self._ensure_recv_buffer_size()
-                self.pipeline_manager.recieve_message(self._recv_buffer,
-                                                      self.name,
-                                                      partner_name,
-                                                      particles.name,
+                self.pipeline_manager.receive_message(self._recv_buffer, self.name, partner_name, particles.name,
                                                       internal_tag=1)
                 other_bunch_slicer = self._slice_set_from_buffer()
                 if not self.with_compressed_profile:

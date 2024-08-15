@@ -168,9 +168,11 @@ class BeamBeamPIC3D(xt.BeamElement):
                     turn=at_turn,
                     internal_tag=self._i_step)
             if self.pipeline_manager.is_ready_to_send(**communication_send_id_data):
-                self.pipeline_manager.send_message(
-                    self.fieldmap_self.rho.flatten().copy(),
-                    **communication_send_id_data)
+                if isinstance(self._context, xo.ContextCpu):
+                    buffer = self.fieldmap_self.rho.flatten().copy()
+                else:
+                    buffer = self._context.nparray_from_context_array(self.fieldmap_self.rho.flatten())
+                self.pipeline_manager.send_message(buffer, **communication_send_id_data)
             self._sent_rho_to_partner = True
 
         # Try to receive rho from partner
@@ -182,9 +184,8 @@ class BeamBeamPIC3D(xt.BeamElement):
         if self.pipeline_manager.is_ready_to_recieve(**communication_recv_id_data):
             buffer_receive = np.zeros(np.prod(self.fieldmap_other.rho.shape),
                                       dtype=float)
-            self.pipeline_manager.recieve_message(
-                buffer_receive,
-                **communication_recv_id_data)
+            self.pipeline_manager.receive_message(buffer_receive, **communication_recv_id_data)
+            buffer_receive = self._context.nparray_to_context_array(buffer_receive)
             rho = buffer_receive.reshape(self.fieldmap_other.rho.shape)
             self.fieldmap_other.update_rho(rho, reset=True)
         else:
