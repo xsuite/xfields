@@ -27,7 +27,7 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
         bunch_spacing_zeta=5,
         num_turns=num_turns,
         circumference=100,
-        bunch_numbers=[1, 2],
+        bunch_selection=[1, 2],
         with_compressed_profile=True)
     slicer1 = ele1.slicer
 
@@ -38,7 +38,7 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
         bunch_spacing_zeta=5,
         num_turns=num_turns,
         circumference=100,
-        bunch_numbers=[0],
+        bunch_selection=[0],
         with_compressed_profile=True)
     slicer2 = ele2.slicer
 
@@ -73,9 +73,9 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
     assert (slicer.filled_slots == np.array([0, 2, 3])).all()
     assert (slicer1.filled_slots == np.array([0, 2, 3])).all()
     assert (slicer2.filled_slots == np.array([0, 2, 3])).all()
-    assert (slicer.bunch_numbers == np.array([0, 1, 2])).all()
-    assert (slicer1.bunch_numbers == np.array([1, 2])).all()
-    assert (slicer2.bunch_numbers == np.array([0])).all()
+    assert (slicer.bunch_selection == np.array([0, 1, 2])).all()
+    assert (slicer1.bunch_selection == np.array([1, 2])).all()
+    assert (slicer2.bunch_selection == np.array([0])).all()
     assert slicer.num_bunches == 3
     assert slicer1.num_bunches == 2
     assert slicer2.num_bunches == 1

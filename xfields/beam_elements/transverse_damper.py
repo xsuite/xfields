@@ -36,7 +36,7 @@ class TransverseDamper:
 
         self.slicer = xf.UniformBinSlicer(
             filling_scheme=filling_scheme,
-            bunch_numbers=filled_slots,
+            bunch_selection=filled_slots,
             zeta_range=zeta_range,
             num_slices=num_slices,
             bunch_spacing_zeta=bunch_spacing_zeta,
@@ -69,7 +69,7 @@ class TransverseDamper:
             slice_means = self.slicer.mean(moment)
 
             for i_bunch, bunch_number in enumerate(
-                    self.slicer.bunch_numbers):
+                    self.slicer.bunch_selection):
 
                 nnz_slices = self.slicer.num_particles[i_bunch, :] > 0
                 moments_bunch = {

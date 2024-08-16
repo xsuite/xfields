@@ -23,7 +23,7 @@ _xof = {
     'dzeta': xo.Float64,
     'num_bunches': xo.Int64,
     'filled_slots': xo.Int64[:],
-    'bunch_numbers': xo.Int64[:],
+    'bunch_selection': xo.Int64[:],
     'bunch_spacing_zeta': xo.Float64,
     'num_particles': xo.Float64[:],
 }
@@ -64,7 +64,7 @@ class UniformBinSlicer(xt.BeamElement):
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
-    bunch_numbers: np.ndarray
+    bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
     bunch_spacing_zeta : float
@@ -97,7 +97,7 @@ class UniformBinSlicer(xt.BeamElement):
 
     def __init__(self, zeta_range=None, num_slices=None, dzeta=None,
                  zeta_slice_edges=None, num_bunches=None, filling_scheme=None,
-                 bunch_numbers=None, bunch_spacing_zeta=None,
+                 bunch_selection=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
 
         self._slice_kernel = self._slice_kernel_all
@@ -129,8 +129,8 @@ class UniformBinSlicer(xt.BeamElement):
             filling_scheme = np.array(filling_scheme, dtype=np.int64)
             filled_slots = filling_scheme.nonzero()[0]
 
-        if bunch_numbers is None:
-            bunch_numbers = np.arange(len(filled_slots), dtype=np.int64)
+        if bunch_selection is None:
+            bunch_selection = np.arange(len(filled_slots), dtype=np.int64)
 
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
@@ -159,14 +159,14 @@ class UniformBinSlicer(xt.BeamElement):
         allocated_sizes = {}
         for mm in all_moments:
             if mm in selected_moments:
-                allocated_sizes['sum_' + mm] = ((len(bunch_numbers) or 1) *
+                allocated_sizes['sum_' + mm] = ((len(bunch_selection) or 1) *
                                                 len(_zeta_slice_centers))
             else:
                 allocated_sizes['sum_' + mm] = 0
 
-        assert len(bunch_numbers) > 0
-        num_bunches = len(bunch_numbers)
-        if num_bunches == 1 and bunch_numbers[0] == 0:
+        assert len(bunch_selection) > 0
+        num_bunches = len(bunch_selection)
+        if num_bunches == 1 and bunch_selection[0] == 0:
             num_bunches = 0
 
         self.xoinitialize(
@@ -176,9 +176,9 @@ class UniformBinSlicer(xt.BeamElement):
             dzeta=_zeta_slice_edges[1] - _zeta_slice_edges[0],
             num_bunches=num_bunches,
             filled_slots=filled_slots,
-            bunch_numbers=bunch_numbers,
+            bunch_selection=bunch_selection,
             bunch_spacing_zeta=bunch_spacing_zeta,
-            num_particles=len(bunch_numbers) * len(_zeta_slice_centers),
+            num_particles=len(bunch_selection) * len(_zeta_slice_centers),
             **allocated_sizes, **kwargs
         )
 
@@ -222,7 +222,7 @@ class UniformBinSlicer(xt.BeamElement):
         """
 
         out = np.zeros((self.num_bunches, self.num_slices))
-        for ii, bunch_num in enumerate(self.bunch_numbers):
+        for ii, bunch_num in enumerate(self.bunch_selection):
             z_offs = self._filled_slots[bunch_num] * self.bunch_spacing_zeta
             out[ii, :] = (self._zeta_slice_centers - z_offs)
         return np.atleast_1d(np.squeeze(out))
@@ -262,11 +262,11 @@ class UniformBinSlicer(xt.BeamElement):
         return self._filled_slots
 
     @property
-    def bunch_numbers(self):
+    def bunch_selection(self):
         """
         Number of bunches
         """
-        return self._bunch_numbers
+        return self._bunch_selection
 
     @property
     def bunch_spacing_zeta(self):
@@ -372,7 +372,7 @@ class UniformBinSlicer(xt.BeamElement):
         assert self.num_slices == other.num_slices
         assert self.dzeta == other.dzeta
         assert (self.filled_slots == other.filled_slots).all()
-        assert (self.bunch_numbers == other.bunch_numbers).all()
+        assert (self.bunch_selection == other.bunch_selection).all()
 
         for cc in COORDS:
             if len(getattr(self, '_sum_' + cc)) > 0:

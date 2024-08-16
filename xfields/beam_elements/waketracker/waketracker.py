@@ -31,7 +31,7 @@ class WakeTracker(ElementWithSlicer):
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
-    bunch_numbers: np.ndarray
+    bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
     num_turns : int
@@ -49,7 +49,7 @@ class WakeTracker(ElementWithSlicer):
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
                  filling_scheme=None,
-                 bunch_numbers=None,
+                 bunch_selection=None,
                  num_turns=1,
                  circumference=None,
                  log_moments=None,
@@ -72,7 +72,7 @@ class WakeTracker(ElementWithSlicer):
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
             filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
+            bunch_selection=bunch_selection,
             num_turns=num_turns,
             circumference=circumference,
             with_compressed_profile=True
@@ -144,8 +144,8 @@ class WakeTracker(ElementWithSlicer):
         return self.slicer.bunch_spacing_zeta
 
     @property
-    def bunch_numbers(self):
-        return self.slicer.bunch_numbers
+    def bunch_selection(self):
+        return self.slicer.bunch_selection
 
     @property
     def num_turns(self):
@@ -177,7 +177,7 @@ class WakeTracker(ElementWithSlicer):
                 'Filling scheme is not consistent')
         else:
             xo.assert_allclose(self.filling_scheme, other.filling_scheme, atol=0, rtol=0)
-        xo.assert_allclose(self.bunch_numbers, other.bunch_numbers, atol=0, rtol=0)
+        xo.assert_allclose(self.bunch_selection, other.bunch_selection, atol=0, rtol=0)
         xo.assert_allclose(self.num_turns, other.num_turns, atol=0, rtol=0)
         xo.assert_allclose(self.circumference, other.circumference, atol=0, rtol=0)
 
@@ -187,7 +187,7 @@ class WakeTracker(ElementWithSlicer):
                  num_slices=self.num_slices,
                  bunch_spacing_zeta=self.bunch_spacing_zeta,
                  filling_scheme=self.filling_scheme,
-                 bunch_numbers=(self.bunch_numbers if self.filling_scheme else None),
+                 bunch_selection=(self.bunch_selection if self.filling_scheme else None),
                  num_turns=self.num_turns,
                  circumference=self.circumference
         )

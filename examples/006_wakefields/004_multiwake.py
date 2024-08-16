@@ -165,7 +165,7 @@ n_bunches_wake = 120  # Can be longer than filling scheme
 
 num_slots = n_bunches
 filling_scheme = np.ones(num_slots, dtype=np.int64)
-bunch_numbers = np.arange(num_slots, dtype=np.int64)
+bunch_selection = np.arange(num_slots, dtype=np.int64)
 
 # The kick is scaled by position of the particle for quadrupolar,
 # it would be None for dipolar
@@ -177,7 +177,7 @@ wfx = xf.ResonatorWake(
     kick='px',
     scale_kick=None,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers,
+    bunch_selection=bunch_selection,
 )
 
 wfy = xf.ResonatorWake(
@@ -188,7 +188,7 @@ wfy = xf.ResonatorWake(
     kick='py',
     scale_kick=None,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers,
+    bunch_selection=bunch_selection,
 )
 
 wf = Wakefield(
@@ -198,7 +198,7 @@ wf = Wakefield(
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
     num_turns=n_turns_wake,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers,
+    bunch_selection=bunch_selection,
     circumference=circumference,
     log_moments=['px'],
     _flatten=flatten
@@ -208,7 +208,7 @@ slicer_after_wf = xf.UniformBinSlicer(
     zeta_range=(-0.5*bucket_length, 0.5*bucket_length),
     num_slices=n_slices,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers,
+    bunch_selection=bunch_selection,
     bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
     moments=['x', 'px'])
 

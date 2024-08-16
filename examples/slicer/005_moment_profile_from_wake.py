@@ -21,7 +21,7 @@ particles = xt.Particles(
 
 # dummy filling scheme
 filling_scheme = np.ones(num_bunches, dtype=int)
-bunch_numbers = np.arange(num_bunches, dtype=int)
+bunch_selection = np.arange(num_bunches, dtype=int)
 
 # wake from which the compressed profile is taken
 wf = xw.WakeResonator(
@@ -36,7 +36,7 @@ wf.configure_for_tracking(
     num_slices=20,
     bunch_spacing_zeta=bunch_spacing_zeta,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers,
+    bunch_selection=bunch_selection,
     num_turns=1,
     circumference=bunch_spacing_zeta*len(filling_scheme),
 )

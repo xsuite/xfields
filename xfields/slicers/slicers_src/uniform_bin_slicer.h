@@ -94,7 +94,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
             this_i_slot_part = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
             for(int ii = 0; ii < num_bunches; ii++){
                 if(UniformBinSlicerData_get_filled_slots(el,
-                    UniformBinSlicerData_get_bunch_numbers(el,ii)) == this_i_slot_part) {
+                    UniformBinSlicerData_get_bunch_selection(el,ii)) == this_i_slot_part) {
                     bunch_is_in_slicer = 1;
                     i_bunch_in_slicer = ii;
                     break;

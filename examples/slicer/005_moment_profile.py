@@ -22,7 +22,7 @@ particles = xt.Particles(
 
 # dummy filling scheme
 filling_scheme = np.ones(num_bunches, dtype=int)
-bunch_numbers = np.arange(num_bunches, dtype=int)
+bunch_selection = np.arange(num_bunches, dtype=int)
 
 zeta_range = (-1, 1)
 
@@ -45,7 +45,7 @@ slicer = xf.UniformBinSlicer(
     zeta_range=zeta_range,
     num_slices=compressed_profile.num_slices,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers,
+    bunch_selection=bunch_selection,
     bunch_spacing_zeta=bunch_spacing_zeta,
     moments='all'
 )
@@ -62,7 +62,7 @@ for i_bunch in range(num_bunches):
             continue
         dict_moments[moment] = slicer.mean(moment)[i_bunch, :]
 
-    compressed_profile.set_moments(i_turn=0, i_source=bunch_numbers[i_bunch],
+    compressed_profile.set_moments(i_turn=0, i_source=bunch_selection[i_bunch],
                                    moments=dict_moments)
 
 long_profile = compressed_profile.get_moment_profile(
