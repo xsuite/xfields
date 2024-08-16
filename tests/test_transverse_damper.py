@@ -100,7 +100,7 @@ def test_transverse_damper(test_context):
         bunch_intensity_particles=intensity,
         nemitt_x=epsn_x, nemitt_y=epsn_y, sigma_z=sigma_z,
         line=line, bunch_spacing_buckets=bunch_spacing_buckets,
-        bunch_numbers=filled_slots,
+        bunch_selection=filled_slots,
         rf_harmonic=[h_rf], rf_voltage=[v_rf],
         particle_ref=line.particle_ref,
 

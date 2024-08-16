@@ -24,7 +24,7 @@ class ElementWithSlicer:
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
-    bunch_numbers: np.ndarray
+    bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
     num_turns : int
@@ -44,7 +44,7 @@ class ElementWithSlicer:
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
                  filling_scheme=None,
-                 bunch_numbers=None,
+                 bunch_selection=None,
                  num_turns=1,
                  circumference=None,
                  with_compressed_profile=False):
@@ -64,7 +64,7 @@ class ElementWithSlicer:
         self.init_slicer(zeta_range=zeta_range,
                          num_slices=num_slices,
                          filling_scheme=filling_scheme,
-                         bunch_numbers=bunch_numbers,
+                         bunch_selection=bunch_selection,
                          bunch_spacing_zeta=bunch_spacing_zeta,
                          slicer_moments=slicer_moments)
 
@@ -78,7 +78,7 @@ class ElementWithSlicer:
                 circumference=circumference)
 
     def init_slicer(self, zeta_range, num_slices, filling_scheme,
-                    bunch_numbers, bunch_spacing_zeta, slicer_moments):
+                    bunch_selection, bunch_spacing_zeta, slicer_moments):
         if zeta_range is not None:
             if 'num_particles' in slicer_moments:
                 slicer_moments.remove('num_particles')
@@ -86,7 +86,7 @@ class ElementWithSlicer:
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 filling_scheme=filling_scheme,
-                bunch_numbers=bunch_numbers,
+                bunch_selection=bunch_selection,
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 moments=slicer_moments
             )
@@ -165,7 +165,7 @@ class ElementWithSlicer:
                 continue
             means[mm] = slicer.mean(mm)
 
-        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_numbers):
+        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_selection):
             moments_bunch = {}
             for nn in means.keys():
                 moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]

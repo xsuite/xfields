@@ -23,8 +23,8 @@ filling_scheme[0] = 1
 filling_scheme[4] = 1
 filling_scheme[-1] = 1
 filled_slots = np.nonzero(filling_scheme)[0]
-bunch_numbers_0 = np.array([0, 1], dtype=int)
-bunch_numbers_1 = np.array([2], dtype=int)
+bunch_selection_0 = np.array([0, 1], dtype=int)
+bunch_selection_1 = np.array([2], dtype=int)
 
 print('initialising pipeline')
 use_mpi_communicator = True
@@ -54,7 +54,7 @@ bunch_spacing = 25E-9*c
 sigma_zeta = bunch_spacing/20
 
 zeta_0 = []
-for bunch_number in bunch_numbers_0:
+for bunch_number in bunch_selection_0:
     zeta_0.append(np.linspace(-sigma_zeta, sigma_zeta, 1000) -
                   filled_slots[bunch_number]*bunch_spacing)
 zeta_0 = np.hstack(zeta_0)
@@ -68,7 +68,7 @@ particles_0.x[ioffset] += 1.0
 particles_0.y[ioffset] += 1.0
 
 zeta_1 = []
-for bunch_number in bunch_numbers_1:
+for bunch_number in bunch_selection_1:
     zeta_1.append(np.linspace(-sigma_zeta, sigma_zeta, 1000) -
                   filled_slots[bunch_number]*bunch_spacing)
 zeta_1 = np.hstack(zeta_1)
@@ -88,7 +88,7 @@ wfx_0 = xf.WakeComponent(
     num_slices=n_slices,
     bunch_spacing_zeta=bunch_spacing,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers_0,
+    bunch_selection=bunch_selection_0,
     num_turns=n_turns_wake,
     circumference=circumference,
 )
@@ -103,7 +103,7 @@ wfx_1 = xf.WakeComponent(
     num_slices=n_slices,  # per bunch
     bunch_spacing_zeta=bunch_spacing,
     filling_scheme=filling_scheme,
-    bunch_numbers=bunch_numbers_1,
+    bunch_selection=bunch_selection_1,
     num_turns=n_turns_wake,
     circumference=circumference,
 )

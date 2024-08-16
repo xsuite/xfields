@@ -61,7 +61,7 @@ wf = xf.Wakefield(
     num_slices=n_slices,  # per bunch
     bunch_spacing_zeta=bunch_spacing,
     filling_scheme=filling_scheme,
-    bunch_numbers=np.arange(len(filled_slots)),
+    bunch_selection=np.arange(len(filled_slots)),
     num_turns=n_turns_wake,
     circumference=circumference,
 )
