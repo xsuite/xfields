@@ -221,10 +221,12 @@ class UniformBinSlicer(xt.BeamElement):
         Array with the grid points (bin centers).
         """
 
+        ctx2np = self._context.nparray_from_context_array
+
         out = np.zeros((self.num_bunches, self.num_slices))
-        for ii, bunch_num in enumerate(self.bunch_selection):
-            z_offs = self._filled_slots[bunch_num] * self.bunch_spacing_zeta
-            out[ii, :] = (self._zeta_slice_centers - z_offs)
+        for ii, bunch_num in enumerate(ctx2np(self.bunch_selection)):
+            z_offs = ctx2np(self._filled_slots[bunch_num]) * self.bunch_spacing_zeta
+            out[ii, :] = (ctx2np(self._zeta_slice_centers) - z_offs)
         return np.atleast_1d(np.squeeze(out))
 
     @property
