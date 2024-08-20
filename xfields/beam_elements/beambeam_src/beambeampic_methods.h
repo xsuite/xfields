@@ -120,9 +120,93 @@ void BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle(
 
 
 /*gpufun*/
+void BeamBeamPIC3D_propagate_transverse_coords_at_step(
+        BeamBeamPIC3DData el, LocalParticle* part0, double z_step_other)
+{
+    //start_per_particle_block (part0->part)
+        if (LocalParticle_get_state(part) <= 0) return;
+
+        double x = LocalParticle_get_x(part);
+        double y = LocalParticle_get_y(part);
+        double px = LocalParticle_get_px(part);
+        double py = LocalParticle_get_py(part);
+        double ptau = LocalParticle_get_ptau(part);
+        double zeta = LocalParticle_get_zeta(part);
+        double beta0 = LocalParticle_get_beta0(part);
+
+        double gamma_gamma0 = ptau * beta0 + 1;
+        x += px / gamma_gamma0 * (zeta - z_step_other);
+        y += py / gamma_gamma0 * (zeta - z_step_other);
+
+        LocalParticle_set_x(part, x);
+        LocalParticle_set_y(part, y);
+    //end_per_particle_block
+}
+
+
+/*gpufun*/
+void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
+        BeamBeamPIC3DData el, LocalParticle* part0,
+        const double* dphi_dx, const double* dphi_dy, const double* dphi_dz,
+        const double z_step_other)
+{
+    const double q0 = LocalParticle_get_q0(part0);
+    const double mass0 = LocalParticle_get_mass0(part0);
+    const double dz = BeamBeamPIC3DData_get_fieldmap_self_dz(el);
+
+    //start_per_particle_block (part0->part)
+        if (LocalParticle_get_state(part) <= 0) return;
+
+        double x = LocalParticle_get_x(part);
+        double y = LocalParticle_get_y(part);
+        double px = LocalParticle_get_px(part);
+        double py = LocalParticle_get_py(part);
+        double delta = LocalParticle_get_delta(part);
+        double zeta = LocalParticle_get_zeta(part);
+        double beta0 = LocalParticle_get_beta0(part);
+        double gamma0 = LocalParticle_get_gamma0(part);
+        double chi = LocalParticle_get_chi(part);
+
+        // Compute factor for the kick, assume Assume ultrarelativistic for now
+        double pp_beta0 = 1.;
+        double beta0_other = 1.;
+        // double charge_mass_ratio = chi * QELEM * q0 / (mass0 * QELEM / (C_LIGHT * C_LIGHT));
+        // double factor = -(charge_mass_ratio
+        //         / (gamma0 * pp_beta0 * pp_beta0 * C_LIGHT * C_LIGHT)
+        //         * (1 + beta0_other * pp_beta0));
+        // Simplified:
+        double factor = - (chi * q0 * (1 + beta0_other * pp_beta0)) / (gamma0 * pp_beta0 * pp_beta0 * mass0);
+
+        // Compute kick
+        double dpx = factor * dphi_dx[part->ipart] * dz;
+        double dpy = factor * dphi_dy[part->ipart] * dz;
+
+        // Effect of the particle angle as in Hirata
+        double dpz = 0.5 * (dpx * (px + 0.5 * dpx) + dpy * (py + 0.5 * dpy));
+
+        // Apply kick
+        px += dpx;
+        py += dpy;
+        LocalParticle_set_px(part, px);
+        LocalParticle_set_py(part, py);
+        LocalParticle_update_delta(part, delta + dpz);
+
+        // Propagate transverse coordinates back to IP
+        double ptau = LocalParticle_get_ptau(part);
+        double gamma_gamma0 = ptau * beta0 + 1;
+        x -= px / gamma_gamma0 * (zeta - z_step_other);
+        y -= py / gamma_gamma0 * (zeta - z_step_other);
+
+        LocalParticle_set_x(part, x);
+        LocalParticle_set_y(part, y);
+    //end_per_particle_block
+}
+
+
+/*gpufun*/
 void BeamBeamPIC3D_track_local_particle(BeamBeamPIC3DData el, LocalParticle* part0){
 
-// Dummy, to avoid error con compilation
+// Dummy, to avoid error    on compilation
 
 }
 
