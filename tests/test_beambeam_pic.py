@@ -4,10 +4,14 @@ import xfields as xf
 import xtrack as xt
 import xobjects as xo
 
+from xobjects.test_helpers import for_all_test_contexts
+
 constant_charge_slicing_gaussian = \
     xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
 
-def test_beambeam_pic():
+
+@for_all_test_contexts(excluding=('ContextPyopencl',))
+def test_beambeam_pic(test_context):
     # LHC-like parameter
     mass0 = xt.PROTON_MASS_EV
     p0c = 7e12
@@ -31,7 +35,7 @@ def test_beambeam_pic():
     slice_mode = 'constant_charge'
 
     lntwiss = xt.Line(elements=[xt.Marker()])
-    lntwiss.particle_ref = xt.Particles(p0c=p0c, mass0=mass0)
+    lntwiss.particle_ref = xt.Particles(p0c=p0c, mass0=mass0, _context=test_context)
     twip = lntwiss.twiss(betx=betx, bety=bety)
 
     cov_b1 = twip.get_beam_covariance(nemitt_x=nemitt_x_b1, nemitt_y=nemitt_y_b1)
@@ -52,7 +56,8 @@ def test_beambeam_pic():
         py_norm=np.random.normal(size=num_particles),
         W_matrix=twip.W_matrix[0],
         particle_on_co=twip.particle_on_co,
-        weight = bunch_intensity_b1 / num_particles
+        weight = bunch_intensity_b1 / num_particles,
+        _context=test_context,
     )
 
     bunch_b2 = lntwiss.build_particles(
@@ -65,7 +70,8 @@ def test_beambeam_pic():
         py_norm=np.random.normal(size=num_particles),
         W_matrix=twip.W_matrix[0],
         particle_on_co=twip.particle_on_co,
-        weight = bunch_intensity_b2 / num_particles
+        weight = bunch_intensity_b2 / num_particles,
+        _context=test_context,
     )
 
     n_test = 1000
@@ -81,6 +87,9 @@ def test_beambeam_pic():
     particles_b1 = xt.Particles.merge([p_test_b1, bunch_b1])
     particles_b2 = xt.Particles.merge([p_test_b2, bunch_b2])
 
+    particles_b1.move(_context=test_context)
+    particles_b2.move(_context=test_context)
+
     x_lim_grid = phi * 3 * sigma_z + 5 * sigma_x_b1
     y_lim_grid = phi * 3 * sigma_z + 5 * sigma_y_b1
 
@@ -91,7 +100,9 @@ def test_beambeam_pic():
             alpha={0: alpha, 1: -alpha, 2: 1.3*alpha, 3: -1.3*alpha}[ii],
             x_range=(-x_lim_grid, x_lim_grid), dx=0.2*sigma_x_b1,
             y_range=(-y_lim_grid, y_lim_grid), dy=0.2*sigma_y_b1,
-            z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z))
+            z_range=(-2.5*sigma_z, 2.5*sigma_z), dz=0.2*sigma_z,
+            _context=test_context)
+        )
 
     bbpic_ip1_b1 = pics[0]
     bbpic_ip1_b2 = pics[1]
@@ -124,8 +135,8 @@ def test_beambeam_pic():
     line_b1 = xt.Line(elements=[bbpic_ip1_b1, bbpic_ip2_b1])
     line_b2 = xt.Line(elements=[bbpic_ip1_b2, bbpic_ip2_b2])
 
-    line_b1.build_tracker()
-    line_b2.build_tracker()
+    line_b1.build_tracker(_context=test_context)
+    line_b2.build_tracker(_context=test_context)
 
     multitracker = xt.PipelineMultiTracker(
         branches=[xt.PipelineBranch(line=line_b1, particles=particles_b1),
@@ -177,6 +188,9 @@ def test_beambeam_pic():
         bbg_b1_ip2.track(p_bbg_b1)
         bbg_b2_ip1.track(p_bbg_b2)
         bbg_b2_ip2.track(p_bbg_b2)
+
+    particles_b1.move(_context=xo.context_default)
+    particles_b1.move(_context=xo.context_default)
 
     xo.assert_allclose(p_bbg_b1.px, particles_b1.px[:n_test], rtol=0, atol=3e-8)
     xo.assert_allclose(p_bbg_b1.py, particles_b1.py[:n_test], rtol=0, atol=5e-8)
