@@ -11,7 +11,7 @@ class CompressedProfile(xt.BeamElement):
     Parameters
     ----------.
     moments: List
-        Stored momemts
+        Stored moments
     zeta_range : Tuple
         Zeta range for each bunch.
     num_slices : int
@@ -25,9 +25,10 @@ class CompressedProfile(xt.BeamElement):
         Number of turns for which the moments are recorded.
     num_targets: int
         Number of target bunches. If it is not specified it is just the same
-        as `num_bunches`.
+        as `num_periods`.
     num_slices_target: int
-        Number of slices per target bunch.
+        Number of slices per target bunch. If it is not specified it is just
+        the same as `num_bunches`.
     circumference: float
         Machine length in meters.
     """
@@ -49,7 +50,7 @@ class CompressedProfile(xt.BeamElement):
                 xo.Arg(xo.Int64, name='data_shape_1'),
                 xo.Arg(xo.Int64, name='data_shape_2'),
                 xo.Arg(xo.Float64, pointer=True, name='data'),
-                xo.Arg(xo.Int64, pointer=True, name='i_bunch_particles'),
+                xo.Arg(xo.Int64, pointer=True, name='i_slot_particles'),
                 xo.Arg(xo.Int64, pointer=True, name='i_slice_particles'),
                 xo.Arg(xo.Float64, pointer=True, name='out'),
             ]),
@@ -75,9 +76,11 @@ class CompressedProfile(xt.BeamElement):
 
         self.circumference = circumference
 
-        self.dz = (zeta_range[1] - zeta_range[0]) / num_slices  # h in the paper
-        self._z_a = zeta_range[0]
-        self._z_b = zeta_range[1]
+        # the following needs to be generalized when the first bucket is not filled
+        self.dz = (np.atleast_2d(zeta_range)[0, 1] -
+                   np.atleast_2d(zeta_range)[0, 0]) / num_slices  # h in the paper
+        self._z_a = np.atleast_2d(zeta_range)[0, 0]
+        self._z_b = np.atleast_2d(zeta_range)[0, -1]
 
         self._N_1 = num_slices  # N_1 in the
         self._z_P = bunch_spacing_zeta  # P in the paper
@@ -190,12 +193,13 @@ class CompressedProfile(xt.BeamElement):
         z_out = np.zeros(self._N_S * self._N_1)
         moment_out = np.zeros(self._N_S * self._N_1)
         i_moment = self.moments_names.index(moment_name)
+        _z_P = self._z_P or 0
         for i_source in range(self._N_S):
             i_start_out = (self._N_S - (i_source + 1)) * self._N_1
             i_end_out = i_start_out + self._N_1
             z_out[i_start_out:i_end_out] = (
                 self._z_a + self.dz / 2
-                - i_source * self._z_P + self.dz * np.arange(self._N_1))
+                - i_source * _z_P + self.dz * np.arange(self._N_1))
 
             i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
             i_end_in_moments_data = i_start_in_moments_data + self._N_1

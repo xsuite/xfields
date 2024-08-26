@@ -13,7 +13,7 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
                 int64_t const use_bunch_index_array,
                 int64_t const use_slice_index_array,
                 /*gpuglmem*/ int64_t* i_slice_part,
-                /*gpuglmem*/ int64_t* i_slot_part){
+                /*gpuglmem*/ int64_t* i_bunch_part){
 
     int64_t const num_slices = UniformBinSlicerData_get_num_slices(el);
     double const z_min_edge = UniformBinSlicerData_get_z_min_edge(el);
@@ -81,30 +81,49 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
 
         int64_t i_bunch_in_slicer = -1;
         uint8_t bunch_is_in_slicer = 0;
+        int64_t this_i_slot_part;
 
-        if (num_bunches <= 1){
+
+        // identify i_bunch_in_slicer and absolute slot number
+        if (num_bunches == 0){
             i_bunch_in_slicer = 0;
             bunch_is_in_slicer = 1;
+            this_i_slot_part = 0;
         }
-        else{
-            double i_slot = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
-            for(i_bunch_in_slicer=0;i_bunch_in_slicer<num_bunches;++i_bunch_in_slicer){
-                if(UniformBinSlicerData_get_filled_slots(el,UniformBinSlicerData_get_bunch_numbers(el,i_bunch_in_slicer)) == i_slot) {
+        else {
+            this_i_slot_part = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
+            for(int ii = 0; ii < num_bunches; ii++){
+                if(UniformBinSlicerData_get_filled_slots(el,
+                    UniformBinSlicerData_get_bunch_selection(el,ii)) == this_i_slot_part) {
                     bunch_is_in_slicer = 1;
+                    i_bunch_in_slicer = ii;
                     break;
                 }
             }
         }
-        if (bunch_is_in_slicer != 1){
-            if (use_bunch_index_array){
-                i_slot_part[ipart] = -1;
+
+        // Write to memory i_bunch_part
+        if (use_bunch_index_array){
+            if (bunch_is_in_slicer == 1){
+                i_bunch_part[ipart] = this_i_slot_part;
+            } else {
+                i_bunch_part[ipart] = -1;
             }
+        }
+
+        // handle the slices
+        if (bunch_is_in_slicer != 1){
             if (use_slice_index_array){
                 i_slice_part[ipart] = -1;
             }
         } else {
-            i_slot_part[ipart] = UniformBinSlicerData_get_filled_slots(el,UniformBinSlicerData_get_bunch_numbers(el,i_bunch_in_slicer));
-            double z_min_edge_bunch = z_min_edge - i_slot_part[ipart] * bunch_spacing_zeta;
+            double z_min_edge_bunch;
+            if (num_bunches == 0){
+                z_min_edge_bunch = z_min_edge;
+            }
+            else{
+                z_min_edge_bunch = z_min_edge - this_i_slot_part * bunch_spacing_zeta;
+            }
 
             int64_t i_slice = floor((zeta - z_min_edge_bunch) / dzeta);
             if (i_slice >= 0 && i_slice < num_slices){
@@ -178,101 +197,13 @@ void UniformBinSlicer_slice(UniformBinSlicerData el,
 
 }
 
+// Dummy, not to upset the metaclass
+
 /*gpufun*/
 void UniformBinSlicer_track_local_particle(UniformBinSlicerData el,
                 LocalParticle* part0){
 
 }
-
-// For performance check
-
-/*gpufun*/
-void UniformBinSlicer_slice_x_only(UniformBinSlicerData el,
-                LocalParticle* part0,
-                int64_t const use_bunch_index_array,
-                int64_t const use_slice_index_array,
-                /*gpuglmem*/ int64_t* i_slice_part,
-                /*gpuglmem*/ int64_t* i_slot_part){
-
-    int64_t const num_slices = UniformBinSlicerData_get_num_slices(el);
-    double const z_min_edge = UniformBinSlicerData_get_z_min_edge(el);
-    double const dzeta = UniformBinSlicerData_get_dzeta(el);
-
-    int64_t const num_bunches = UniformBinSlicerData_get_num_bunches(el);
-    double const bunch_spacing_zeta = UniformBinSlicerData_get_bunch_spacing_zeta(el);
-    /*gpuglmem*/ double* num_particles = UniformBinSlicerData_getp1_num_particles(el, 0);
-
-    /*gpuglmem*/ double* sum_x = (UniformBinSlicerData_len_sum_x(el) > 0) ?  UniformBinSlicerData_getp1_sum_x(el, 0) : NULL ;
-    // double* sum_px = (UniformBinSlicerData_len_sum_px(el) > 0) ?  UniformBinSlicerData_getp1_sum_px(el, 0) : NULL ;
-    // double* sum_y = (UniformBinSlicerData_len_sum_y(el) > 0) ?  UniformBinSlicerData_getp1_sum_y(el, 0) : NULL ;
-    // double* sum_py = (UniformBinSlicerData_len_sum_py(el) > 0) ?  UniformBinSlicerData_getp1_sum_py(el, 0) : NULL ;
-    // double* sum_zeta = (UniformBinSlicerData_len_sum_zeta(el) > 0) ?  UniformBinSlicerData_getp1_sum_zeta(el, 0) : NULL ;
-    // double* sum_delta = (UniformBinSlicerData_len_sum_delta(el) > 0) ?  UniformBinSlicerData_getp1_sum_delta(el, 0) : NULL ;
-    /*gpuglmem*/ double* sum_x_x = (UniformBinSlicerData_len_sum_x_x(el) > 0) ?  UniformBinSlicerData_getp1_sum_x_x(el, 0) : NULL ;
-
-    //start_per_particle_block (part0->part)
-        double zeta = LocalParticle_get_zeta(part);
-        double weight = LocalParticle_get_weight(part);
-        const int64_t ipart = part->ipart;
-
-        int64_t i_bunch_in_slicer = -1;
-        uint8_t bunch_is_in_slicer = 0;
-
-        if (num_bunches <= 1){
-            i_bunch_in_slicer = 0;
-            bunch_is_in_slicer = 1;
-        }
-        else{
-            double i_slot = -floor((zeta - z_min_edge) / bunch_spacing_zeta);
-            for(i_bunch_in_slicer=0;i_bunch_in_slicer<num_bunches;++i_bunch_in_slicer){
-                if(UniformBinSlicerData_get_filled_slots(el,UniformBinSlicerData_get_bunch_numbers(el,i_bunch_in_slicer)) == i_slot) {
-                    bunch_is_in_slicer = 1;
-                    break;
-                }
-            }
-        }
-        if (bunch_is_in_slicer != 1){
-            if (use_bunch_index_array){
-                i_slot_part[ipart] = -1;
-            }
-            if (use_slice_index_array){
-                i_slice_part[ipart] = -1;
-            }
-        } else {
-            i_slot_part[ipart] = UniformBinSlicerData_get_filled_slots(el,UniformBinSlicerData_get_bunch_numbers(el,i_bunch_in_slicer));
-            double z_min_edge_bunch = z_min_edge - i_slot_part[ipart] * bunch_spacing_zeta;
-
-            int64_t i_slice = floor((zeta - z_min_edge_bunch) / dzeta);
-            if (i_slice >= 0 && i_slice < num_slices){
-
-                if (use_slice_index_array){
-                    i_slice_part[ipart] = i_slice;
-                }
-
-                atomicAdd(&num_particles[i_slice + i_bunch_in_slicer * num_slices], weight);
-
-                atomicAdd(&sum_x[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_x(part));
-                atomicAdd(&sum_x_x[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_x(part) * LocalParticle_get_x(part));
-                // if (sum_px) atomicAdd(&sum_px[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_px(part));
-                // if (sum_y) atomicAdd(&sum_y[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_y(part));
-                // if (sum_py) atomicAdd(&sum_py[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_py(part));
-                // if (sum_zeta) atomicAdd(&sum_zeta[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_zeta(part));
-                // if (sum_delta) atomicAdd(&sum_delta[i_slice + i_bunch_in_slicer * num_slices], weight * LocalParticle_get_delta(part));
-
-            } else {
-                if (use_slice_index_array){
-                    i_slice_part[ipart] = -1;
-                }
-            }
-        }
-
-
-    //end_per_particle_block
-
-}
-
-
-
 
 
 #endif
