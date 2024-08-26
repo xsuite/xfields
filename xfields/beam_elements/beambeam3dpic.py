@@ -71,6 +71,17 @@ class BeamBeamPIC3D(xt.BeamElement):
         'change_back_ref_frame_and_subtract_dipolar_bbpic': xo.Kernel(
             c_name='BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle',
             args=[]),
+        'propagate_transverse_coords_at_step': xo.Kernel(
+            c_name='BeamBeamPIC3D_propagate_transverse_coords_at_step',
+            args=[xo.Arg(xo.Float64, name='z_step_other')]),
+        'kick_and_propagate_transverse_coords_back': xo.Kernel(
+            c_name='BeamBeamPIC3D_kick_and_propagate_transverse_coords_back',
+            args=[
+                xo.Arg(xo.Float64, name='dphi_dx', pointer=True),
+                xo.Arg(xo.Float64, name='dphi_dy', pointer=True),
+                xo.Arg(xo.Float64, name='dphi_dz', pointer=True),
+                xo.Arg(xo.Float64, name='z_step_other'),
+            ]),
     }
 
     def __init__(self, phi=None, alpha=None,
@@ -125,7 +136,6 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         pp = particles
         mask_alive = pp.state > 0
-        at_turn = pp.at_turn[mask_alive][0]
 
         if self._working_on_bunch is None:
             # Starting a new interaction
@@ -144,21 +154,15 @@ class BeamBeamPIC3D(xt.BeamElement):
         assert self._working_on_bunch is pp
 
         if not self._sent_rho_to_partner:
-            z_step_other = self._z_steps_other[self._i_step]
-
             # Propagate transverse coordinates to the position at the time step
-            mask_alive = pp.state > 0
-            at_turn = pp.at_turn[mask_alive][0]
-            gamma_gamma0 = (
-                pp.ptau[mask_alive] * pp.beta0[mask_alive] + 1)
-            pp.x[mask_alive] += (pp.px[mask_alive] / gamma_gamma0
-                                * (pp.zeta[mask_alive] - z_step_other))
-            pp.y[mask_alive] += (pp.py[mask_alive] / gamma_gamma0
-                                * (pp.zeta[mask_alive] - z_step_other))
+            z_step_other = self._z_steps_other[self._i_step]
+            self.propagate_transverse_coords_at_step(pp, z_step_other=z_step_other)
 
             # Compute charge density
             self.fieldmap_self.update_from_particles(particles=pp,
                                                     update_phi=False)
+
+            at_turn = pp.at_turn[mask_alive][0]
 
             # Pass charge density to partner
             communication_send_id_data = dict(
@@ -168,9 +172,11 @@ class BeamBeamPIC3D(xt.BeamElement):
                     turn=at_turn,
                     internal_tag=self._i_step)
             if self.pipeline_manager.is_ready_to_send(**communication_send_id_data):
-                self.pipeline_manager.send_message(
-                    self.fieldmap_self.rho.flatten().copy(),
-                    **communication_send_id_data)
+                if isinstance(self._context, xo.ContextCpu):
+                    buffer = self.fieldmap_self.rho.flatten().copy()
+                else:
+                    buffer = self._context.nparray_from_context_array(self.fieldmap_self.rho.flatten())
+                self.pipeline_manager.send_message(buffer, **communication_send_id_data)
             self._sent_rho_to_partner = True
 
         # Try to receive rho from partner
@@ -182,9 +188,9 @@ class BeamBeamPIC3D(xt.BeamElement):
         if self.pipeline_manager.is_ready_to_receive(**communication_recv_id_data):
             buffer_receive = np.zeros(np.prod(self.fieldmap_other.rho.shape),
                                       dtype=float)
-            self.pipeline_manager.receive_message(
-                buffer_receive,
-                **communication_recv_id_data)
+
+            self.pipeline_manager.receive_message(buffer_receive, **communication_recv_id_data)
+            buffer_receive = self._context.nparray_to_context_array(buffer_receive)
             rho = buffer_receive.reshape(self.fieldmap_other.rho.shape)
             self.fieldmap_other.update_rho(rho, reset=True)
         else:
@@ -207,7 +213,7 @@ class BeamBeamPIC3D(xt.BeamElement):
         y_other = pp.y[mask_alive]
 
         # Get fields in the reference system of the other beam
-        dphi_dx, dphi_dy, dphi_dz= self.fieldmap_other.get_values_at_points(
+        dphi_dx, dphi_dy, dphi_dz = self.fieldmap_other.get_values_at_points(
             x=x_other, y=y_other, z=z_other,
             return_rho=False,
             return_phi=False,
@@ -220,39 +226,12 @@ class BeamBeamPIC3D(xt.BeamElement):
         dphi_dx *= -1
         dphi_dz *= -1
 
-        # Compute factor for the kick
-        charge_mass_ratio = (pp.chi[mask_alive] * qe * pp.q0
-                            / (pp.mass0 * qe /(clight * clight)))
-        # pp_beta0 = pp.beta0[mask_alive] # Assume ultrarelativistic for now
-        pp_beta0 = 1.
-        beta0_other = 1.
-        factor = -(charge_mass_ratio
-                / (pp.gamma0[mask_alive] * pp_beta0 * pp_beta0 * clight * clight)
-                * (1 + beta0_other * pp_beta0))
-
-        # Compute kick
-        dz = self.fieldmap_self.dz
-        dpx = factor * dphi_dx * dz
-        dpy = factor * dphi_dy * dz
-
-        # Effect of the particle angle as in Hirata
-        dpz = 0.5 *(
-            dpx * (pp.px[mask_alive] + 0.5 * dpx)
-          + dpy * (pp.py[mask_alive] + 0.5 * dpy))
-
-        # Apply kick
-        pp.px[mask_alive] += dpx
-        pp.py[mask_alive] += dpy
-        pp.delta[mask_alive] += dpz
-
-        # Propagate transverse coordinates back to IP
-        mask_alive = pp.state > 0
-        gamma_gamma0 = (
-            pp.ptau[mask_alive] * pp.beta0[mask_alive] + 1)
-        pp.x[mask_alive] -= (pp.px[mask_alive] / gamma_gamma0
-                            * (pp.zeta[mask_alive] - z_step_other))
-        pp.y[mask_alive] -= (pp.py[mask_alive] / gamma_gamma0
-                            * (pp.zeta[mask_alive] - z_step_other))
+        # The kernel relies on the contiguity of pp for element-wise multiplying
+        # with dphi_d{x,y,z}
+        pp.reorganize()
+        self.kick_and_propagate_transverse_coords_back(
+            pp, dphi_dx=dphi_dx, dphi_dy=dphi_dy, dphi_dz=dphi_dz,
+            z_step_other=z_step_other)
 
         self._i_step += 1
         if self._i_step < len(self._z_steps_other):
