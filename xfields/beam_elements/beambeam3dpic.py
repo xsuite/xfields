@@ -179,10 +179,10 @@ class BeamBeamPIC3D(xt.BeamElement):
                 sender_name=self.partner_name,
                 receiver_name=pp.name,
                 internal_tag=self._i_step)
-        if self.pipeline_manager.is_ready_to_recieve(**communication_recv_id_data):
+        if self.pipeline_manager.is_ready_to_receive(**communication_recv_id_data):
             buffer_receive = np.zeros(np.prod(self.fieldmap_other.rho.shape),
                                       dtype=float)
-            self.pipeline_manager.recieve_message(
+            self.pipeline_manager.receive_message(
                 buffer_receive,
                 **communication_recv_id_data)
             rho = buffer_receive.reshape(self.fieldmap_other.rho.shape)
