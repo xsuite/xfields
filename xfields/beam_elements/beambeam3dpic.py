@@ -164,7 +164,7 @@ class BeamBeamPIC3D(xt.BeamElement):
             communication_send_id_data = dict(
                     element_name=self.name,
                     sender_name=pp.name,
-                    reciever_name=self.partner_name,
+                    receiver_name=self.partner_name,
                     turn=at_turn,
                     internal_tag=self._i_step)
             if self.pipeline_manager.is_ready_to_send(**communication_send_id_data):
@@ -177,7 +177,7 @@ class BeamBeamPIC3D(xt.BeamElement):
         communication_recv_id_data = dict(
                 element_name=self.name,
                 sender_name=self.partner_name,
-                reciever_name=pp.name,
+                receiver_name=pp.name,
                 internal_tag=self._i_step)
         if self.pipeline_manager.is_ready_to_recieve(**communication_recv_id_data):
             buffer_receive = np.zeros(np.prod(self.fieldmap_other.rho.shape),
