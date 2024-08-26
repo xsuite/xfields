@@ -85,7 +85,7 @@ particles_b2.init_pipeline('B2b1')
 #############
 # Beam-beam #
 #############
-slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=2)
+slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=5)
 config_for_update_b1_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
    pipeline_manager=pipeline_manager,
    element_name='IP1',
@@ -142,19 +142,15 @@ bbeamIP2_b2 = xf.BeamBeamBiGaussian3D(
 # arcs (here they are all the same with half the phase advance) #
 #################################################################
 
-arc12 = xt.LinearTransferMatrix(
-        alpha_x_0=0.0, beta_x_0=beta_x_IP1, disp_x_0=0.0,
-        alpha_x_1=0.0, beta_x_1=beta_x_IP2, disp_x_1=0.0,
-        alpha_y_0=0.0, beta_y_0=beta_y_IP1, disp_y_0=0.0,
-        alpha_y_1=0.0, beta_y_1=beta_y_IP2, disp_y_1=0.0,
-        Q_x=Qx/2, Q_y=Qy/2,beta_s=beta_s, Q_s=Qs/2)
+arc12 = xt.LineSegmentMap(
+        betx=[beta_x_IP1, beta_x_IP2],
+        bety=[beta_y_IP1, beta_y_IP2],
+        qx=Qx/2, qy=Qy/2, bets=beta_s, qs=Qs/2)
 
-arc21 = xt.LinearTransferMatrix(
-        alpha_x_0=0.0, beta_x_0=beta_x_IP2, disp_x_0=0.0,
-        alpha_x_1=0.0, beta_x_1=beta_x_IP1, disp_x_1=0.0,
-        alpha_y_0=0.0, beta_y_0=beta_y_IP2, disp_y_0=0.0,
-        alpha_y_1=0.0, beta_y_1=beta_y_IP1, disp_y_1=0.0,
-        Q_x=Qx/2, Q_y=Qy/2,beta_s=beta_s, Q_s=Qs/2)
+arc21 = xt.LineSegmentMap(
+        betx=[beta_x_IP2, beta_x_IP1],
+        bety=[beta_y_IP2, beta_y_IP1],
+        qx=Qx/2, qy=Qy/2, bets=beta_s, qs=Qs/2)
 
 #################################################################
 # Tracker                                                       #
@@ -168,7 +164,7 @@ line_b1.build_tracker()
 line_b2.build_tracker()
 branch_b1 = xt.PipelineBranch(line_b1,particles_b1)
 branch_b2 = xt.PipelineBranch(line_b2,particles_b2)
-multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2])
+multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2], verbose=True)
 
 #################################################################
 # Tracking                                                      #
@@ -176,7 +172,9 @@ multitracker = xt.PipelineMultiTracker(branches=[branch_b1,branch_b2])
 print('Tracking...')
 time0 = time.time()
 nTurn = 1024
-multitracker.track(num_turns=nTurn,turn_by_turn_monitor=True)
+multitracker.track(num_turns=nTurn,
+                   log=xt.Log(x_mean=lambda l, p: p.x[p.state>0].mean(),
+                              y_mean=lambda l, p: p.y[p.state>0].mean()))
 print('Done with tracking.',(time.time()-time0)/1024,'[s/turn]')
 
 #################################################################
@@ -188,8 +186,8 @@ if False:
         plt.figure(1000+i)
         plt.plot(line_b1.record_last_track.x[i,:],line_b1.record_last_track.px[i,:],'x')
 
-positions_x_b1 = np.average(line_b1.record_last_track.x,axis=0)
-positions_y_b1 = np.average(line_b1.record_last_track.y,axis=0)
+positions_x_b1 = np.array(line_b1.log_last_track['x_mean'])
+positions_y_b1 = np.array(line_b1.log_last_track['y_mean'])
 plt.figure(0)
 plt.plot(np.arange(nTurn),positions_x_b1/np.sqrt(physemit_x*beta_x_IP1),'x')
 plt.plot(np.arange(nTurn),positions_y_b1/np.sqrt(physemit_y*beta_y_IP1),'x')
@@ -201,6 +199,3 @@ plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
 myFFT = np.fft.fftshift(np.fft.fft(positions_y_b1))
 plt.semilogy(freqs[mask], (np.abs(myFFT[mask])))
 plt.show()
-
-
-

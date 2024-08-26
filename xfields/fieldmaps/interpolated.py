@@ -420,7 +420,7 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
         updated.
 
         Args:
-            rho (float64 array): Potential at the grid points.
+            phi (float64 array): Potential at the grid points.
             reset (bool): If ``True`` the stored potential is overwritten
                 with the provided one. If ``False`` the provided potential
                 is added to the stored one. The default is ``True``.
