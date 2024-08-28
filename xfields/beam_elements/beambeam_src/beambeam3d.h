@@ -24,11 +24,11 @@ void do_luminosity(BeamBeamBiGaussian3DData el, LocalParticle *part,
     // init record table
     BeamBeamBiGaussian3DRecordData lumi_record = NULL;
     LumiTableData lumi_table                   = NULL;
-    RecordIndex lumi_table_index               = NULL;
+    // RecordIndex lumi_table_index               = NULL;
     lumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
     if (lumi_record){
         lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
-        lumi_table_index =                      LumiTableData_getp__index(lumi_table);
+        // lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
     const int at_turn = LocalParticle_get_at_turn(part);
     /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
@@ -194,7 +194,6 @@ void synchrobeam_kick(
     const double px_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_px_center_star(el, i_slice);
     const double py_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_py_center_star(el, i_slice);
     const double zeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_center_star(el, i_slice);
-    const double pzeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_pzeta_center_star(el, i_slice);
 
     const double P0 = p0c/C_LIGHT*QELEM;
 
@@ -284,6 +283,7 @@ void synchrobeam_kick(
     #ifndef XFIELDS_BB3D_NO_BHABHA
     const int64_t flag_bhabha = BeamBeamBiGaussian3DData_get_flag_bhabha(el);
     if (flag_bhabha == 1) {
+        const double pzeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_pzeta_center_star(el, i_slice);
         do_bhabha(el, part, &rho, &wgt, flag_luminosity, q0,
             x_bar_hat_star, y_bar_hat_star, Sig_11_hat_star, Sig_33_hat_star,
             num_part_slice, S, px_star, py_star, pzeta_star,
