@@ -850,7 +850,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     
                     # NEW lumigrid my beam is computed here for all slices
                     #self.lumigrid_my_beam = particles.q0*self._buffer.context.nplike_lib.array(range(self.config_for_update.n_lumigrid_cells**2*self.num_slices_other_beam)) #delete this and call the grid filling function here  # call C function to compute my beams lumigrid here, e.g. 2 slices, 3 by 3 grid for each slice
-                    self.lumigrid_my_beam = self.config_for_update.compute_distribution_histogram(particles, number_of_particles)
+                    self.lumigrid_my_beam = self.config_for_update.fillHistogram(particles, number_of_particles)
                     exchange_buffer = self._buffer.context.nplike_lib.hstack([self.moments, self.lumigrid_my_beam])
                     print("buffer to send: ", exchange_buffer, len(exchange_buffer), " moments: ", self.moments, " lumigrid my beam:", self.lumigrid_my_beam, " n_lumigrid_cells: ", self.config_for_update.n_lumigrid_cells)
 

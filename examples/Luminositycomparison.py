@@ -1,17 +1,12 @@
-
-
-#L0 with combi formula
-
-import time
-
 import numpy as np
 from matplotlib import pyplot as plt
 import xobjects as xo
 import xtrack as xt
 import xfields as xf
-print(xf.__path__)
-print(dir(xf))
 import xpart as xp
+import time
+import logging
+import pickle
 
 lumi_qss_b1 = []
 lumi_averages_b1 = []
@@ -20,23 +15,23 @@ lumi_qss_b1_nobeambeam = []
 lumi_averages_b1_nobeambeam = []
 
 
-context = xo.ContextCpu(omp_num_threads=0)
+context = xo.ContextCpu()
 
 p0c = 7e12
-n_macroparticles = int(1.2e4)
-bunch_intensity = 2.5e11 #7.8e10
-physemit_x = (2E-6*xp.PROTON_MASS_EV)/p0c #(2.95E-6*xp.PROTON_MASS_EV)/p0c
-physemit_y = (2E-6*xp.PROTON_MASS_EV)/p0c #(2.95E-6*xp.PROTON_MASS_EV)/p0c
-beta_x_IP1 = 19.2
-beta_y_IP1 = 19.2
+n_macroparticles = int(1e4)
+bunch_intensity = 1.15e11
+physemit_x = (3.75E-6*xp.PROTON_MASS_EV)/p0c 
+physemit_y = (3.75E-6*xp.PROTON_MASS_EV)/p0c 
+beta_x = 0.55
+beta_y = 0.55
 sigma_z = 0.08
 sigma_delta = 1E-4
 beta_s = sigma_z/sigma_delta
-Qx = 63.31
+Qx = 62.31
 Qy = 60.32
 Qs = 2.1E-3
 frev = 11245.5 
-nTurn = 100
+nTurn = 32768
 
 
 colors = ['b', 'g', 'r', 'c', 'm', 'k', 'y']
@@ -44,30 +39,28 @@ xshift = [0, 1, 2, 3, 4, 5, 6]
 yshift = [0, 1, 2, 3, 4, 5, 6]
 
 for shift in xshift:
-    #context = xo.ContextCpu(omp_num_threads=0)
-
     pipeline_manager = xt.PipelineManager()
     pipeline_manager.add_particles('b1',0)
     pipeline_manager.add_particles('b2',0)
     pipeline_manager.add_element('IP1')
 
-    particles_b1 = xp.Particles(#_context=context,
+    particles_b1 = xp.Particles(_context=context,
         p0c=p0c,
-        x=np.sqrt(physemit_x*beta_x_IP1)*(np.random.randn(n_macroparticles)),
-        px=np.sqrt(physemit_x/beta_x_IP1)*np.random.randn(n_macroparticles),
-        y=np.sqrt(physemit_y*beta_y_IP1)*(np.random.randn(n_macroparticles)),
-        py=np.sqrt(physemit_y/beta_y_IP1)*np.random.randn(n_macroparticles),
+        x=np.sqrt(physemit_x*beta_x)*(np.random.randn(n_macroparticles)),
+        px=np.sqrt(physemit_x/beta_x)*np.random.randn(n_macroparticles),
+        y=np.sqrt(physemit_y*beta_y)*(np.random.randn(n_macroparticles)),
+        py=np.sqrt(physemit_y/beta_y)*np.random.randn(n_macroparticles),
         zeta=sigma_z*np.random.randn(n_macroparticles),
         delta=sigma_delta*np.random.randn(n_macroparticles),
         weight=bunch_intensity/n_macroparticles
     )
     particles_b1.init_pipeline('b1')
-    particles_b2 = xp.Particles(#_context=context,
+    particles_b2 = xp.Particles(_context=context,
         p0c=p0c,
-        x=np.sqrt(physemit_x*beta_x_IP1)*(np.random.randn(n_macroparticles)),
-        px=np.sqrt(physemit_x/beta_x_IP1)*np.random.randn(n_macroparticles),
-        y=np.sqrt(physemit_y*beta_y_IP1)*(np.random.randn(n_macroparticles)),
-        py=np.sqrt(physemit_y/beta_y_IP1)*np.random.randn(n_macroparticles),
+        x=np.sqrt(physemit_x*beta_x)*(np.random.randn(n_macroparticles)),
+        px=np.sqrt(physemit_x/beta_x)*np.random.randn(n_macroparticles),
+        y=np.sqrt(physemit_y*beta_y)*(np.random.randn(n_macroparticles)),
+        py=np.sqrt(physemit_y/beta_y)*np.random.randn(n_macroparticles),
         zeta=sigma_z*np.random.randn(n_macroparticles),
         delta=sigma_delta*np.random.randn(n_macroparticles),
         weight=bunch_intensity/n_macroparticles
@@ -78,40 +71,35 @@ for shift in xshift:
     # Beam-beam #
     #############
     slicer = xf.TempSlicer(sigma_z=sigma_z, n_slices=1, mode = 'shatilov')
-    config_for_update_b1_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
+    config_for_update_b1 = xf.ConfigForUpdateBeamBeamBiGaussian3D(
     pipeline_manager=pipeline_manager,
     element_name='IP1',
     partner_particles_name = 'b2',
     slicer=slicer,
     update_every=1,
-    #n_lumigrid_cells = 24*24
     )
-    config_for_update_b2_IP1=xf.ConfigForUpdateBeamBeamBiGaussian3D(
+    config_for_update_b2 = xf.ConfigForUpdateBeamBeamBiGaussian3D(
     pipeline_manager=pipeline_manager,
     element_name='IP1',
     partner_particles_name = 'b1',
     slicer=slicer,
     update_every=1,
-    #n_lumigrid_cells=24*24
     )
 
     print('build bb elements...')
-    bbeamIP1_b1 = xf.BeamBeamBiGaussian3D(
+    bbeam_b1 = xf.BeamBeamBiGaussian3D(
                 #_context=context,
                 other_beam_q0 = particles_b2.q0,
                 phi = 0,alpha=0,
-                config_for_update = config_for_update_b1_IP1,
-                ref_shift_x = shift*np.sqrt(physemit_x*beta_x_IP1)/2,
-                flag_luminosity=1)#,
-                #flag_combilumi=1,
-                #beam_intensity=bunch_intensity,
-                #other_beam_intensity=bunch_intensity)
-    bbeamIP1_b2 = xf.BeamBeamBiGaussian3D(
+                config_for_update = config_for_update_b1,
+                ref_shift_x = shift*np.sqrt(physemit_x*beta_x)/2,
+                flag_luminosity=1)
+    bbeam_b2 = xf.BeamBeamBiGaussian3D(
                 #_context=context,
                 other_beam_q0 = particles_b1.q0,
                 phi = 0,alpha=0,
-                config_for_update = config_for_update_b2_IP1,
-                ref_shift_x = shift*np.sqrt(physemit_x*beta_x_IP1)/2)
+                config_for_update = config_for_update_b2,
+                ref_shift_x = shift*np.sqrt(physemit_x*beta_x)/2)
 
 
 
@@ -120,15 +108,15 @@ for shift in xshift:
     #################################################################
 
     arc = xt.LineSegmentMap(
-            betx = beta_x_IP1,bety = beta_y_IP1,
+            betx = beta_x,bety = beta_y,
             qx = Qx, qy = Qy,bets = beta_s, qs=Qs)
 
     #################################################################
     # Tracker                                                       #
     #################################################################
 
-    elements_b1 = [bbeamIP1_b1,arc]
-    elements_b2 = [bbeamIP1_b2,arc]
+    elements_b1 = [bbeam_b1,arc]
+    elements_b2 = [bbeam_b2,arc]
     line_b1 = xt.Line(elements=elements_b1)
     line_b2 = xt.Line(elements=elements_b2)
     line_b1.build_tracker()
@@ -146,7 +134,6 @@ for shift in xshift:
                                                                 "beamstrahlungtable": int(0),
                                                                 "bhabhatable": int(0),
                                                                 "lumitable": nTurn,
-                                                                #"combilumitable": nTurn
                                                             })
 
 
@@ -174,7 +161,7 @@ def Lumi_analytical(Nb, N1, N2, frev, Delta_i, sig_i, sig_x, sig_y):
     return ((Nb * N1 * N2 * frev * W)/(4 * np.pi * 100 * sig_x * 100 * sig_y))
 
 for i in range(len(separation)):
-    lumis.append(Lumi_analytical(n_macroparticles, bunch_intensity, bunch_intensity, frev, separation[i]*np.sqrt(physemit_x*beta_x_IP1),np.sqrt(physemit_x*beta_x_IP1), np.sqrt(physemit_x*beta_x_IP1), np.sqrt(physemit_y*beta_x_IP1)))
+    lumis.append(Lumi_analytical(n_macroparticles, bunch_intensity, bunch_intensity, frev, separation[i]*np.sqrt(physemit_x*beta_x),np.sqrt(physemit_x*beta_x), np.sqrt(physemit_x*beta_x), np.sqrt(physemit_y*beta_x)))
 
 fig0, ax1 = plt.subplots()
 fig1, ax2 = plt.subplots()
