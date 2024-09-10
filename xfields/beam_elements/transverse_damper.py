@@ -1,10 +1,12 @@
 import numpy as np
 
+import xpart as xp
 import xfields as xf
+import xtrack as xt
 from xfields.slicers.compressed_profile import CompressedProfile
 
 
-class TransverseDamper:
+class TransverseDamper(xt.BeamElement):
     """
     A simple bunch-by-bunch transverse Damper implementation.
 
@@ -26,9 +28,11 @@ class TransverseDamper:
     Returns:
         (TransverseDamper): A transverse damper beam element.
     """
-    def __init__(self, gain_x, gain_y, num_bunches, filling_scheme,
-                 filled_slots, zeta_range, num_slices, bunch_spacing_zeta,
-                 circumference):
+
+    iscollective = True
+
+    def __init__(self, gain_x, gain_y, filling_scheme, zeta_range, num_slices, bunch_spacing_zeta,
+                 circumference, bunch_selection=None, **kwargs):
         self.gains = {
             'px': gain_x,
             'py': gain_y,
@@ -36,14 +40,18 @@ class TransverseDamper:
 
         self.slicer = xf.UniformBinSlicer(
             filling_scheme=filling_scheme,
-            bunch_selection=filled_slots,
+            bunch_selection=bunch_selection,
             zeta_range=zeta_range,
             num_slices=num_slices,
             bunch_spacing_zeta=bunch_spacing_zeta,
             moments=['px', 'py']
         )
 
-        self.num_bunches = num_bunches
+        if filling_scheme is not None:
+            i_last_bunch = np.where(filling_scheme)[0][-1]
+            num_periods = i_last_bunch + 1
+        else:
+            num_periods = 1
 
         self.moments_data = {}
         for moment in self.gains.keys():
@@ -52,10 +60,29 @@ class TransverseDamper:
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=num_bunches,
+                num_periods=num_periods,
                 num_turns=1,
                 circumference=circumference
             )
+
+    def _reconfigure_for_parallel(self, n_procs, my_rank):
+        filled_slots = self.slicer.filled_slots
+        scheme = np.zeros(np.max(filled_slots) + 1,
+                        dtype=np.int64)
+        scheme[filled_slots] = 1
+
+        split_scheme = xp.matched_gaussian.split_scheme
+        bunch_selection_rank = split_scheme(filling_scheme=scheme,
+                                             n_chunk=int(n_procs))
+
+        self.slicer = xf.UniformBinSlicer(
+            filling_scheme=scheme,
+            bunch_selection=bunch_selection_rank[my_rank],
+            zeta_range=self.slicer.zeta_range,
+            num_slices=self.slicer.num_slices,
+            bunch_spacing_zeta=self.slicer.bunch_spacing_zeta,
+            moments=['px', 'py']
+        )
 
     def track(self, particles, i_turn=0):
         i_slice_particles = particles.particle_id * 0 + -999
