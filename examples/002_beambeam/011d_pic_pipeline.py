@@ -93,12 +93,13 @@ line_b2 = xt.Line(elements=[bbpic_b2])
 line_b1.build_tracker()
 line_b2.build_tracker()
 
-time_start = time.time()
 
 multitracker = xt.PipelineMultiTracker(
     branches=[xt.PipelineBranch(line=line_b1, particles=particles_b1),
               xt.PipelineBranch(line=line_b2, particles=particles_b2)],
     enable_debug_log=True, verbose=True)
+
+time_start = time.time()
 
 multitracker.track(num_turns=1)
 
@@ -126,25 +127,26 @@ bbg.track(p_bbg)
 
 import matplotlib.pyplot as plt
 plt.close('all')
-plt.figure(4)
-plt.plot(p_bbg.zeta, p_bbg.px, label='hirata')
-plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='pic')
+fig4 = plt.figure(4, figsize=(6.4*0.9, 4.8*0.8))
+plt.plot(p_bbg.zeta, p_bbg.px, label='Hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.px[:n_test], label='PIC')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_x$')
+plt.subplots_adjust(left=.15, bottom=.15)
 plt.legend()
 
-plt.figure(5)
-plt.plot(p_bbg.zeta, p_bbg.py, label='hirata')
-plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='pic')
+fig5 = plt.figure(5, figsize=(6.4*0.9, 4.8*0.8))
+plt.plot(p_bbg.zeta, p_bbg.py, label='Hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.py[:n_test], label='PIC')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_y$')
+plt.subplots_adjust(left=.15, bottom=.15)
 plt.legend()
 
-plt.figure(6)
-plt.plot(p_bbg.zeta, p_bbg.ptau, label='hirata')
-plt.plot(particles_b1.zeta[:n_test], particles_b1.ptau[:n_test], label='pic')
+fig6 = plt.figure(6, figsize=(6.4*0.9, 4.8*0.8))
+plt.plot(p_bbg.zeta, p_bbg.ptau, label='Hirata')
+plt.plot(particles_b1.zeta[:n_test], particles_b1.ptau[:n_test], label='PIC')
 plt.xlabel(r'$\zeta$ [m]')
 plt.ylabel(r'$\Delta p_\tau$')
+plt.subplots_adjust(left=.15, bottom=.15)
 plt.legend()
-
-plt.savefig('cpu.png')
