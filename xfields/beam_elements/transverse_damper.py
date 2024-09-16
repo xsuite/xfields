@@ -24,6 +24,11 @@ class TransverseDamper(xt.BeamElement):
         num_slices (int): the number of slices used by the underlying slicer,
         bunch_spacing_zeta (float): the bunch spacing in meters
         circumference (float): the machine circumference
+        mode (str): the mode of operation of the damper. Either 'bunch-by-bunch'
+            (default) or 'slice-by-slice'. In 'bunch-by-bunch' mode, the damper
+            acts on the average of the particles in each bunch. In
+            'slice-by-slice' mode, the damper acts on the average of the
+            particles in each slice.
 
     Returns:
         (TransverseDamper): A transverse damper beam element.
@@ -92,37 +97,20 @@ class TransverseDamper(xt.BeamElement):
                           i_slot_particles=i_slot_particles)
 
         for moment in ['px', 'py']:
-
+            particles_moment = getattr(particles, moment)[:]
             slice_means = self.slicer.mean(moment)
 
             for i_bunch, bunch_number in enumerate(
-                    self.slicer.bunch_selection):
+                                self.slicer.bunch_selection):
+                slot_mask = i_slot_particles == bunch_number
+                slot_slices = np.unique(i_slice_particles[slot_mask])
 
-                nnz_slices = self.slicer.num_particles[i_bunch, :] > 0
-                moments_bunch = {
-                    moment: (np.ones_like(slice_means[i_bunch, :]) *
-                             np.mean(slice_means[i_bunch, nnz_slices]))
-                }
+                if len(self.slicer.bunch_selection) == 1:
+                    slot_mean = np.mean(slice_means[slot_slices])
+                else:
+                    slot_mean = np.mean(slice_means[i_bunch, slot_slices])
 
-                self.moments_data[moment].set_moments(
-                    moments=moments_bunch,
-                    i_turn=0,
-                    i_source=self.slicer.filled_slots[bunch_number])
+                slot_mean = np.mean(particles_moment[slot_mask])
 
-            interpolated_result = particles.zeta * 0
-
-            md = self.moments_data[moment]
-
-            self.moments_data[moment]._interp_result(
-                particles=particles,
-                data_shape_0=md.data.shape[0],
-                data_shape_1=md.data.shape[1],
-                data_shape_2=md.data.shape[2],
-                data=md.data,
-                i_slot_particles=i_slot_particles,
-                i_slice_particles=i_slice_particles,
-                out=interpolated_result
-            )
-
-            getattr(particles, moment)[:] -= (self.gains[moment] *
-                                              interpolated_result)
+                particles_moment[slot_mask] -= (self.gains[moment] *
+                                                slot_mean)
