@@ -24,9 +24,8 @@ def test_transverse_damper(test_context):
     alpha = 53.86**-2
 
     e0 = physical_constants['proton mass energy equivalent in MeV'][0]*1e6
-    en = 450e9
-    p0 = en * en / c
-    gamma = en/e0
+    p0c = 450e9
+    gamma = p0c/e0
     beta = np.sqrt(1-1/gamma**2)
 
     h_rf = 35640
@@ -71,13 +70,14 @@ def test_transverse_damper(test_context):
         zeta_range=zeta_range,
         num_slices=n_slices,
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
-        circumference=circumference
+        circumference=circumference,
+        mode='bunch-by-bunch'
     )
 
     line = xt.Line(elements=[[one_turn_map, transverse_damper][0]],
                    element_names=[['one_turn_map', 'transverse_damper'][0]])
 
-    line.particle_ref = xt.Particles(p0c=450e9)
+    line.particle_ref = xt.Particles(p0c=p0c)
     line.build_tracker(_context=test_context)
 
     particles = xp.generate_matched_gaussian_multibunch_beam(
