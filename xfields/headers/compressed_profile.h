@@ -12,7 +12,7 @@ void CompressedProfile_interp_result(
     int64_t data_shape_1,
     int64_t data_shape_2,
     /*gpuglmem*/ double* data,
-    /*gpuglmem*/ int64_t* i_bunch_particles,
+    /*gpuglmem*/ int64_t* i_slot_particles,
     /*gpuglmem*/ int64_t* i_slice_particles,
     /*gpuglmem*/ double* out
     ){
@@ -24,7 +24,7 @@ void CompressedProfile_interp_result(
     //start_per_particle_block (part0->part)
 
         const int64_t ipart = part->ipart;
-        const int64_t i_bunch = i_bunch_particles[ipart];
+        const int64_t i_bunch = i_slot_particles[ipart];
         const int64_t i_slice = i_slice_particles[ipart];
 
         if (i_slice >= 0){
