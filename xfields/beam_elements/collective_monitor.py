@@ -4,6 +4,8 @@ from .element_with_slicer import ElementWithSlicer
 import h5py
 import json
 import os
+import xfields as xf
+import xpart as xp
 
 COORDS = ['x', 'px', 'y', 'py', 'zeta', 'delta']
 SECOND_MOMENTS = {}
@@ -56,7 +58,7 @@ class CollectiveMonitor(ElementWithSlicer):
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
-    bunch_numbers: np.ndarray
+    bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
     _flatten: bool
@@ -105,7 +107,7 @@ class CollectiveMonitor(ElementWithSlicer):
                  num_slices=None,
                  bunch_spacing_zeta=None,
                  filling_scheme=None,
-                 bunch_numbers=None,
+                 bunch_selection=None,
                  stats_to_store=None,
                  stats_to_store_particles=None,
                  backend='hdf5',
@@ -180,8 +182,27 @@ class CollectiveMonitor(ElementWithSlicer):
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
             filling_scheme=filling_scheme,
-            bunch_numbers=bunch_numbers,
+            bunch_selection=bunch_selection,
             with_compressed_profile=False
+        )
+
+    def _reconfigure_for_parallel(self, n_procs, my_rank):
+        filled_slots = self.slicer.filled_slots
+        scheme = np.zeros(np.max(filled_slots) + 1,
+                          dtype=np.int64)
+        scheme[filled_slots] = 1
+
+        split_scheme = xp.matched_gaussian.split_scheme
+        bunch_selection_rank = split_scheme(filling_scheme=scheme,
+                                            n_chunk=int(n_procs))
+
+        self.slicer = xf.UniformBinSlicer(
+            filling_scheme=scheme,
+            bunch_selection=bunch_selection_rank[my_rank],
+            zeta_range=self.slicer.zeta_range,
+            num_slices=self.slicer.num_slices,
+            bunch_spacing_zeta=self.slicer.bunch_spacing_zeta,
+            moments=self.slicer.moments
         )
 
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
@@ -227,7 +248,7 @@ class CollectiveMonitor(ElementWithSlicer):
 
     def _init_bunch_buffer(self):
         buf = {}
-        for bid in self.slicer.bunch_numbers:
+        for bid in self.slicer.bunch_selection:
             # Convert to int to avoid json serialization issues
             buf[int(bid)] = {}
             for stats in self.stats_to_store:
@@ -237,7 +258,7 @@ class CollectiveMonitor(ElementWithSlicer):
 
     def _init_slice_buffer(self):
         buf = {}
-        for bid in self.slicer.bunch_numbers:
+        for bid in self.slicer.bunch_selection:
             # Convert to int to avoid json serialization issues
             buf[int(bid)] = {}
             for stats in self.stats_to_store:
@@ -256,16 +277,19 @@ class CollectiveMonitor(ElementWithSlicer):
         return buf
 
     def _update_bunch_buffer(self, particles):
-        i_bunch_particles = self._slice_result['i_bunch_particles']
+        i_bunch_particles = self._slice_result['i_slot_particles']
 
-        for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
+        for i_bunch, bid in enumerate(self.slicer.bunch_selection):
             bunch_mask = (i_bunch_particles == bid)
             beta = np.mean(particles.beta0[bunch_mask])
             gamma = 1 / np.sqrt(1 - beta**2)
             beta_gamma = beta * gamma
             for stat in self.stats_to_store:
                 if stat == 'num_particles':
-                    val = np.sum(self.slicer.num_particles[i_bunch, :])
+                    if len(self.slicer.bunch_selection) > 1:
+                        val = np.sum(self.slicer.num_particles[i_bunch, :])
+                    else:
+                        val = np.sum(self.slicer.num_particles)
                 else:
                     mom = getattr(particles, stat.split('_')[-1])
                     if stat.startswith('mean'):
@@ -290,9 +314,9 @@ class CollectiveMonitor(ElementWithSlicer):
                                              self.flush_data_every] = val
 
     def _update_slice_buffer(self, particles):
-        i_bunch_particles = self._slice_result['i_bunch_particles']
+        i_bunch_particles = self._slice_result['i_slot_particles']
 
-        for i_bunch, bid in enumerate(self.slicer.bunch_numbers):
+        for i_bunch, bid in enumerate(self.slicer.bunch_selection):
             bunch_mask = (i_bunch_particles == bid)
             # we use the bunch beta_gamma to calculate the emittance, while
             # we should use the slice beta_gamma
@@ -302,22 +326,37 @@ class CollectiveMonitor(ElementWithSlicer):
             for stat in self.stats_to_store:
                 mom_str = stat.split('_')[-1]
                 if stat.startswith('mean'):
-                    val = self.slicer.mean(mom_str)[i_bunch, :]
+                    if len(self.slicer.bunch_selection) > 1:
+                        val = self.slicer.mean(mom_str)[i_bunch, :]
+                    else:
+                        val = self.slicer.mean(mom_str)
                 elif stat.startswith('sigma'):
-                    val = self.slicer.std(mom_str)[i_bunch, :]
+                    if len(self.slicer.bunch_selection) > 1:
+                        val = self.slicer.std(mom_str)[i_bunch, :]
+                    else:
+                        val = self.slicer.std(mom_str)
                 elif stat.startswith('epsn'):
                     if mom_str != 'zeta':
                         mom_p_str = 'p' + stat.split('_')[-1]
                     else:
                         mom_p_str = 'delta'
 
-                    val = (np.sqrt(self.slicer.var(mom_str)[i_bunch, :] *
-                                   self.slicer.var(mom_p_str)[i_bunch, :] -
-                                   self.slicer.cov(mom_str, mom_p_str)[i_bunch,
-                                   :]) *
-                           beta_gamma)
+                    if len(self.slicer.bunch_selection) > 1:
+                        val = (np.sqrt(self.slicer.var(mom_str)[i_bunch, :] *
+                                    self.slicer.var(mom_p_str)[i_bunch, :] -
+                                    self.slicer.cov(mom_str, mom_p_str)[i_bunch,
+                                    :]) *
+                            beta_gamma)
+                    else:
+                        val = (np.sqrt(self.slicer.var(mom_str) *
+                                    self.slicer.var(mom_p_str) -
+                                    self.slicer.cov(mom_str, mom_p_str)) *
+                            beta_gamma)
                 elif stat == 'num_particles':
-                    val = self.slicer.num_particles[i_bunch, :]
+                    if len(self.slicer.bunch_selection) > 1:
+                        val = self.slicer.num_particles[i_bunch, :]
+                    else:
+                        val = self.slicer.num_particles
                 else:
                     raise ValueError('Unknown statistics f{stat}')
 
