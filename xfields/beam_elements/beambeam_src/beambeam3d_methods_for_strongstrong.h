@@ -125,8 +125,6 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
                 /*gpuglmem*/ int64_t* i_slice_for_particles){
 
 
-
-
     //start_per_particle_block (part0->part)
 
         const int64_t i_slice = i_slice_for_particles[part->ipart];
@@ -143,9 +141,6 @@ void BeamBeam3D_selective_apply_synchrobeam_kick_local_particle(BeamBeamBiGaussi
 
             const double q0 = LocalParticle_get_q0(part);
             const double p0c = LocalParticle_get_p0c(part); // eV
-
-
-
 
             synchrobeam_kick(
                 el, part,

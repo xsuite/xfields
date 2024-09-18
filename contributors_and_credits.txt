@@ -4,6 +4,7 @@ CERN contributors:
  - H. Bartosik
  - X. Buffat
  - R. De Maria
+ - L. Giacomel
  - G. Iadarola
  - P. Kicsiny
  - S. Lopaciuk

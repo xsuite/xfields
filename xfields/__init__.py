@@ -21,6 +21,7 @@ from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
 from .beam_elements.beambeam2d import ConfigForUpdateBeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
+from .beam_elements.beambeam3dpic import BeamBeamPIC3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
