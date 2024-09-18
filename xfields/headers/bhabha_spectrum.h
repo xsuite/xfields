@@ -285,10 +285,10 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     int n, i;                        // [1]
     double tmp, scal, s, x, y;       // [m^2, m^2, GeV^2, 1, 1]
     double theta_g, theta_e, phi_e;  // [rad] scattering angles
-    double e_e_prime, px_e_prime, py_e_prime, pzeta_e_prime, ps_e_prime, pt_e_prime;  // [GeV, 1, 1, 1, 1, 1] scattered primary
+    double e_e_prime, px_e_prime, py_e_prime, pzeta_e_prime, pt_e_prime; //ps_e_prime;  // [GeV, 1, 1, 1, 1, 1] scattered primary
     double e_photon_prime, px_photon_prime, py_photon_prime, pzeta_photon_prime;      // [GeV, 1, 1, 1] scattered (real) Compton photon
     double e_loss_primary;            // [GeV] energy lost from one emission
-    double e_loss_primary_tot = 0.0;  // [GeV] total energy lost by the macroparticle
+    // double e_loss_primary_tot = 0.0;  // [GeV] total energy lost by the macroparticle
 
     double eps = 0.0;                 // 1e-5 in guinea
     const double compt_scale = 1;       // [1]
@@ -334,7 +334,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
           phi_e = 2.0 * PI * RandomUniform_generate(part);
           px_e_prime  += pt_e_prime * sin(phi_e);
           py_e_prime  += pt_e_prime * cos(phi_e);
-          ps_e_prime   = sqrt(e_e_prime*e_e_prime - px_e_prime*px_e_prime - py_e_prime*py_e_prime - MELECTRON_GEV*MELECTRON_GEV);  // [1] longitudinal momentum
+          // ps_e_prime   = sqrt(e_e_prime*e_e_prime - px_e_prime*px_e_prime - py_e_prime*py_e_prime - MELECTRON_GEV*MELECTRON_GEV);  // [1] longitudinal momentum
 
           pzeta_e_prime = (e_e_prime - e_ref) / (beta_ref * beta_ref * e_ref);
 

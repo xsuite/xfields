@@ -152,7 +152,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
     const double m0       = LocalParticle_get_mass0(part); // particle mass [eV/c]
     double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
     double energy         = initial_energy;  // [eV]
-    double gamma          = energy / m0;     // [1]
+    // double gamma          = energy / m0;     // [1]
 
     // single macroparticle trajectory 
     double rho_inv  = Fr / dz;  // [1/m] macropart inverse bending radius
@@ -188,7 +188,7 @@ double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstr
             // update bending radius, primary macropart energy and gamma
             rho_inv *= energy/(energy - e_photon*1e9);
             energy  -= e_photon*1e9;
-            gamma   *= (energy - e_photon*1e9)/energy;
+            // gamma   *= (energy - e_photon*1e9)/energy;
 
             // some error handling
             if (e_photon_array[j]<=0.0){
