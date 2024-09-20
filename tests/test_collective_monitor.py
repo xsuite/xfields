@@ -74,7 +74,6 @@ def test_bunch_monitor_hdf5(test_context):
         zeta_range=zeta_range,
         num_slices=num_slices,
         filling_scheme=filling_scheme,
-        bunch_numbers=bunch_numbers,
         bunch_spacing_zeta=bunch_spacing_zeta,
     )
 
@@ -196,7 +195,6 @@ def test_bunch_monitor_json(test_context):
         zeta_range=zeta_range,
         num_slices=num_slices,
         filling_scheme=filling_scheme,
-        bunch_numbers=bunch_numbers,
         bunch_spacing_zeta=bunch_spacing_zeta,
     )
 
@@ -290,7 +288,6 @@ def test_slice_monitor_hdf5(test_context):
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
         filling_scheme=filling_scheme,
-        bunch_numbers=bunch_numbers
     )
 
     particles = xt.Particles(
@@ -448,7 +445,6 @@ def test_slice_monitor_json(test_context):
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
         filling_scheme=filling_scheme,
-        bunch_numbers=bunch_numbers
     )
 
     particles = xt.Particles(
