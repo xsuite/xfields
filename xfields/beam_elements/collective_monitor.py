@@ -381,7 +381,7 @@ def flush_buffer_to_file_hdf5(buffer, filename):
     if not os.path.exists(filename):
         with h5py.File(filename, 'w') as f:
             for key in buffer:
-                if not type(buffer[key]) == dict:
+                if type(buffer[key]) is not dict:
                     if len(buffer[key].shape) == 1:
                         f.create_dataset(str(key),
                                          data=buffer[key],
@@ -415,7 +415,7 @@ def flush_buffer_to_file_hdf5(buffer, filename):
     else:
         with h5py.File(filename, 'a') as f:
             for key in buffer:
-                if not type(buffer[key]) == dict:
+                if type(buffer[key]) is not dict:
                     # this is for the particle buffer
                     f[str(key)].resize((f[str(key)].shape[0] +
                                         buffer[key].shape[0]), axis=0)
@@ -436,7 +436,7 @@ def flush_buffer_to_file_json(buffer, filename):
     # lists
     buffer_lists = {}
     for key in buffer:
-        if not type(buffer[key]) == dict:
+        if type(buffer[key]) is not dict:
             # this is for the particle buffer
             buffer_lists[str(key)] = buffer[key].tolist()
         else:
@@ -453,7 +453,7 @@ def flush_buffer_to_file_json(buffer, filename):
         with open(filename, 'r') as f:
             old_buffer = json.load(f)
         for key in buffer_lists:
-            if not type(buffer_lists[key]) == dict:
+            if not type(buffer_lists[key]) is not dict:
                 # this is for the particle buffer
                 old_buffer[key] = np.concatenate(
                     (old_buffer[key], buffer_lists[key]), axis=0).tolist()
