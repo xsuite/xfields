@@ -10,34 +10,36 @@ class TransverseDamper(xt.BeamElement):
     """
     A simple bunch-by-bunch transverse Damper implementation.
 
-    Args:
-        gain_x (float): the horizontal damper gain in 1/turns (corresponding to
-        a damping rate of gain_x/2)
-        gain_y (float): the vertical damper gain in 1/turns (corresponding to
-        a damping rate of gain_x/2)
-        num_bunches (float): the number of bunches in the beam
-        filling_scheme (np.ndarray): an array of zeros and ones representing
-            the filling scheme
-        filled_slots (np.ndarray): an array indicating which slot each bunch
-            occupies
-        zeta_range (tuple): the range of zetas covered by the underlying slicer
-        num_slices (int): the number of slices used by the underlying slicer,
-        bunch_spacing_zeta (float): the bunch spacing in meters
-        circumference (float): the machine circumference
-        mode (str): the mode of operation of the damper. Either 'bunch-by-bunch'
-            (default) or 'slice-by-slice'. In 'bunch-by-bunch' mode, the damper
-            acts on the average of the particles in each bunch. In
-            'slice-by-slice' mode, the damper acts on the average of the
-            particles in each slice.
+    Parameters
+    ----------
+    gain_x : float
+        the horizontal damper gain in 1/turns (corresponding to a damping
+        rate of gain_x/2).
+    gain_y : float
+        the vertical damper gain in 1/turns (corresponding to a damping rate
+        of gain_x/2).
+    zeta_range : tuple
+        the range of zetas covered by the underlying slicer.
+    num_slices : int
+        the number of slices per bunch used by the underlying slicer.
+    filling_scheme : np.ndarray, optional
+        an array of zeros and ones representing the filling scheme. Only
+        needed for multi-bunch tracking.
+    bunch_selection : np.ndarray, optional
+        an array indicating which slot each bunch occupies in the filling
+        scheme. Only needed for multi-bunch tracking
+    bunch_spacing_zeta : float, optional
+        the bunch spacing in meters. Only needed for multi-bunch tracking
+    circumference : float, optional
+        the machine circumference. Only needed for multi-bunch tracking.
 
-    Returns:
-        (TransverseDamper): A transverse damper beam element.
     """
 
     iscollective = True
 
-    def __init__(self, gain_x, gain_y, filling_scheme, zeta_range, num_slices, bunch_spacing_zeta,
-                 circumference, bunch_selection=None, **kwargs):
+    def __init__(self, gain_x, gain_y, zeta_range, num_slices,
+                 circumference=None, bunch_spacing_zeta=None, filling_scheme=None,
+                 bunch_selection=None, **kwargs):
         self.gains = {
             'px': gain_x,
             'py': gain_y,
