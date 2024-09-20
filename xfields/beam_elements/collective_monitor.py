@@ -36,7 +36,9 @@ class CollectiveMonitor(ElementWithSlicer):
     monitor_particles : Bool
         If True, the particle-by-particle data is monitored
     particle_monitor_mask : np.ndarray
-        Mask identifying the particles to be monitored
+        Mask identifying the particles to be monitored. If later on we try to
+        monitor a number of particles different than the length of the mask, an
+        error will be raised.
     flush_data_every: int
         Number of turns after which the data is saved to disk
     stats_to_store : list
@@ -365,7 +367,7 @@ class CollectiveMonitor(ElementWithSlicer):
 
     def _update_particle_buffer(self, particles):
         for stat in self.stats_to_store_particles:
-            val = getattr(particles, stat)
+            val = getattr(particles, stat)[self.particle_monitor_mask]
             self.particle_buffer[stat][self.i_turn %
                                        self.flush_data_every, :] = val
 
