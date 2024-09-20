@@ -367,6 +367,10 @@ class CollectiveMonitor(ElementWithSlicer):
 
     def _update_particle_buffer(self, particles):
         for stat in self.stats_to_store_particles:
+            if (self.particle_monitor_mask is not None
+                and len(self.particle_monitor_mask) != len(particles.x)):
+                raise ValueError('The length of the particle monitor mask is '
+                                 'different from the number of particles being tracked')
             val = getattr(particles, stat)[self.particle_monitor_mask]
             self.particle_buffer[stat][self.i_turn %
                                        self.flush_data_every, :] = val
