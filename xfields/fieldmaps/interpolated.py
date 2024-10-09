@@ -6,7 +6,6 @@
 import numpy as np
 
 import xobjects as xo
-import xpart as xp
 import xtrack as xt
 
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D, FFTSolver2p5DAveraged
@@ -29,7 +28,7 @@ _TriLinearInterpolatedFielmap_kernels = {
     'p2m_rectmesh3d_xparticles': xo.Kernel(
         args=[
             xo.Arg(xo.Int32,   pointer=False, name='nparticles'),
-            xo.Arg(xp.Particles, pointer=False, name='particles'),
+            xo.Arg(xt.Particles, pointer=False, name='particles'),
             xo.Arg(xo.Float64, pointer=False, name='x0'),
             xo.Arg(xo.Float64, pointer=False, name='y0'),
             xo.Arg(xo.Float64, pointer=False, name='z0'),
@@ -164,7 +163,7 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
         _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
         ]
 
-    _depends_on = [xp.Particles]
+    _depends_on = [xt.Particles]
 
     _kernels = _TriLinearInterpolatedFielmap_kernels
 
@@ -420,7 +419,7 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
         updated.
 
         Args:
-            rho (float64 array): Potential at the grid points.
+            phi (float64 array): Potential at the grid points.
             reset (bool): If ``True`` the stored potential is overwritten
                 with the provided one. If ``False`` the provided potential
                 is added to the stored one. The default is ``True``.

@@ -39,11 +39,61 @@ S = xt.linear_normal_form.S
 
 eival, eivec = np.linalg.eig(Sig @ S)
 
-nex = eival[0].imag * tw.gamma0 * tw.beta0
-ney = eival[2].imag * tw.gamma0 * tw.beta0
-nez = eival[4].imag * tw.gamma0 * tw.beta0
+# Keep only one from each complex conjugate pair
+eival_list = []
+eivec_list = []
+import pdb; pdb.set_trace()
+for ii in range(6):
+    if ii == 0:
+        eival_list.append(eival[ii])
+        eivec_list.append(eivec[:, ii])
+        continue
+    found_conj = False
+    for jj in range(len(eival_list)):
+        if np.allclose(eival[ii], np.conj(eival_list[jj]), rtol=0, atol=1e-14):
+            found_conj = True
+            break
+    if not found_conj:
+        eival_list.append(eival[ii])
+        eivec_list.append(eivec[:, ii])
 
-print(f'{nex=} {ney=} {nez=}')
+assert len(eival_list) == 3
+
+# Find longitudinal mode
+norm = np.linalg.norm
+i_long = 0
+if norm(eivec_list[1][5:6]) > norm(eivec_list[i_long][5:6]):
+    i_long = 1
+if norm(eivec_list[2][5:6]) > norm(eivec_list[i_long][5:6]):
+    i_long = 2
+
+eival_zeta = eival_list[i_long]
+eivec_zeta = eivec_list[i_long]
+
+# Find vertical mode
+eival_list.pop(i_long)
+eivec_list.pop(i_long)
+if norm(eivec_list[0][3:4]) > norm(eivec_list[1][3:4]):
+    i_vert = 0
+else:
+    i_vert = 1
+
+eival_y = eival_list[i_vert]
+eivec_y = eivec_list[i_vert]
+
+# Find horizontal mode
+eival_list.pop(i_vert)
+eivec_list.pop(i_vert)
+eival_x = eival_list[0]
+eivec_x = eivec_list[0]
+
+nemitt_x = eival_x.imag * tw.gamma0 * tw.beta0
+nemitt_y = eival_y.imag * tw.gamma0 * tw.beta0
+nemitt_zeta = eival_zeta.imag * tw.gamma0 * tw.beta0
+
+
+print(f'{nemitt_x=} {nemitt_y=} {nemitt_zeta=}')
+print('\n')
 
 dummy_lam = np.diag([
     np.exp(-1j*np.pi/3), np.exp(+1j*np.pi/3),

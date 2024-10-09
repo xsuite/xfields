@@ -24,7 +24,7 @@ class ElementWithSlicer:
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
-    bunch_numbers: np.ndarray
+    bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
     num_turns : int
@@ -44,13 +44,16 @@ class ElementWithSlicer:
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
                  filling_scheme=None,
-                 bunch_numbers=None,
+                 bunch_selection=None,
                  num_turns=1,
                  circumference=None,
-                 _flatten=False,
                  with_compressed_profile=False):
 
         self.with_compressed_profile = with_compressed_profile
+        self.pipeline_manager = None
+
+        if slicer_moments is None:
+            slicer_moments = ['num_particles']
 
         self.source_moments = slicer_moments.copy()
 
@@ -61,7 +64,7 @@ class ElementWithSlicer:
         self.init_slicer(zeta_range=zeta_range,
                          num_slices=num_slices,
                          filling_scheme=filling_scheme,
-                         bunch_numbers=bunch_numbers,
+                         bunch_selection=bunch_selection,
                          bunch_spacing_zeta=bunch_spacing_zeta,
                          slicer_moments=slicer_moments)
 
@@ -75,7 +78,7 @@ class ElementWithSlicer:
                 circumference=circumference)
 
     def init_slicer(self, zeta_range, num_slices, filling_scheme,
-                    bunch_numbers, bunch_spacing_zeta, slicer_moments):
+                    bunch_selection, bunch_spacing_zeta, slicer_moments):
         if zeta_range is not None:
             if 'num_particles' in slicer_moments:
                 slicer_moments.remove('num_particles')
@@ -83,7 +86,7 @@ class ElementWithSlicer:
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 filling_scheme=filling_scheme,
-                bunch_numbers=bunch_numbers,
+                bunch_selection=bunch_selection,
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 moments=slicer_moments
             )
@@ -100,19 +103,23 @@ class ElementWithSlicer:
             num_turns=1,
             circumference=None):
 
+        if filling_scheme is not None:
+            i_last_bunch = np.where(filling_scheme)[0][-1]
+            num_periods = i_last_bunch + 1
+        else:
+            num_periods = 1
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                num_periods=(len(filling_scheme) if filling_scheme is not None
-                                                 else 1),
+                num_periods=num_periods,
                 num_turns=num_turns,
                 circumference=circumference)
 
-    def init_pipeline(self, pipeline_manager, element_name, partners_names):
+    def init_pipeline(self, pipeline_manager, element_name, partner_names):
         self.pipeline_manager = pipeline_manager
-        self.partners_names = partners_names
+        self.partner_names = partner_names
         self.name = element_name
 
         self._send_buffer = self.slicer._to_npbuffer()
@@ -137,15 +144,15 @@ class ElementWithSlicer:
     def _slice_and_store(self, particles, _slice_result=None):
         if _slice_result is not None:
             self.i_slice_particles = _slice_result['i_slice_particles']
-            self.i_bunch_particles = _slice_result['i_bunch_particles']
+            self.i_slot_particles = _slice_result['i_slot_particles']
             self.slicer = _slice_result['slicer']
         else:
             # Measure slice moments and get slice indeces
             self.i_slice_particles = particles.particle_id * 0 + -999
-            self.i_bunch_particles = particles.particle_id * 0 + -9999
+            self.i_slot_particles = particles.particle_id * 0 + -9999
             self.slicer.slice(particles,
                               i_slice_particles=self.i_slice_particles,
-                              i_bunch_particles=self.i_bunch_particles)
+                              i_slot_particles=self.i_slot_particles)
 
     def _add_slicer_moments_to_moments_data(self, slicer):
         if not self.with_compressed_profile:
@@ -158,12 +165,13 @@ class ElementWithSlicer:
                 continue
             means[mm] = slicer.mean(mm)
 
-        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_numbers):
+        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_selection):
             moments_bunch = {}
             for nn in means.keys():
-                moments_bunch[nn] = means[nn][i_bunch_in_slicer, :]
-            moments_bunch['num_particles'] = (
-                slicer.num_particles[i_bunch_in_slicer, :])
+                moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]
+
+            moments_bunch['num_particles'] = np.atleast_2d(slicer.num_particles)[i_bunch_in_slicer, :]
+
             self.moments_data.set_moments(
                 moments=moments_bunch,
                 i_turn=0,
@@ -192,7 +200,7 @@ class ElementWithSlicer:
             self.other_bunch_slicers = []
             is_ready_to_send = True
 
-            for i_partner, partner_name in enumerate(self.partners_names):
+            for partner_name in self.partner_names:
                 if not self.pipeline_manager.is_ready_to_send(
                         self.name,
                         particles.name,
@@ -207,12 +215,12 @@ class ElementWithSlicer:
                 self._update_moments_for_new_turn(particles,
                                                   _slice_result=_slice_result)
                 self._slicer_to_buffer(self.slicer)
-                for i_partner, partner_name in enumerate(self.partners_names):
+                for partner_name in self.partner_names:
                     self.pipeline_manager.send_message(
                         self._send_buffer_length,
                         element_name=self.name,
                         sender_name=particles.name,
-                        reciever_name=partner_name,
+                        receiver_name=partner_name,
                         turn=particles.at_turn[0],
                         internal_tag=0
                     )
@@ -220,29 +228,23 @@ class ElementWithSlicer:
                         self._send_buffer,
                         element_name=self.name,
                         sender_name=particles.name,
-                        reciever_name=partner_name,
+                        receiver_name=partner_name,
                         turn=particles.at_turn[0],
                         internal_tag=1)
 
-            for i_partner, partner_name in enumerate(self.partners_names):
-                if not self.pipeline_manager.is_ready_to_recieve(
-                        self.name, partner_name,
-                        particles.name, internal_tag=0):
+            for partner_name in self.partner_names:
+                if not self.pipeline_manager.is_ready_to_receive(
+                                        self.name, partner_name,
+                                        particles.name, internal_tag=0):
                     return xt.PipelineStatus(on_hold=True)
 
         if self.pipeline_manager is not None:
             for i_partner, partner_name in enumerate(self.partners_names):
-                self.pipeline_manager.recieve_message(
-                    self._recv_buffer_length_buffer,
-                    self.name,
-                    partner_name,
-                    particles.name,
-                    internal_tag=0)
+                self.pipeline_manager.receive_message(self._recv_buffer_length_buffer, self.name, partner_name,
+                                                      particles.name, internal_tag=0)
                 self._ensure_recv_buffer_size()
-                self.pipeline_manager.recieve_message(self._recv_buffer,
-                                                      self.name,
-                                                      partner_name,
-                                                      particles.name,
+                self.pipeline_manager.receive_message(self._recv_buffer, self.name, partner_name, particles.name,
+
                                                       internal_tag=1)
                 other_bunch_slicer = self._slice_set_from_buffer()
                 if not self.with_compressed_profile:
@@ -257,5 +259,5 @@ class ElementWithSlicer:
 
         if not self.with_compressed_profile:
             self._slice_result = {'i_slice_particles': self.i_slice_particles,
-                                  'i_bunch_particles': self.i_bunch_particles,
+                                  'i_slot_particles': self.i_slot_particles,
                                   'slicer': self.slicer}

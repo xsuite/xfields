@@ -67,7 +67,7 @@ def test_compressed_profile_interp_result():
                              data_shape_1=comp_prof.data.shape[1],
                              data_shape_2=comp_prof.data.shape[2],
                              data=comp_prof.data,
-                             i_bunch_particles=np.zeros(num_parts, dtype=int),
+                             i_slot_particles=np.zeros(num_parts, dtype=int),
                              i_slice_particles=i_slice_particles,
                              out=interpolated_result
                              )

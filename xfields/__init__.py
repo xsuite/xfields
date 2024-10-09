@@ -21,12 +21,10 @@ from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
 from .beam_elements.beambeam2d import ConfigForUpdateBeamBeamBiGaussian2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
+from .beam_elements.beambeam3dpic import BeamBeamPIC3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
-from .beam_elements.wakefield import WakeComponent, ResonatorWake
-from .beam_elements.wakefield import Wakefield
-from .beam_elements.transverse_damper import TransverseDamper
 
 from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen

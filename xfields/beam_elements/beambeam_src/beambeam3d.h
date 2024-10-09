@@ -300,10 +300,12 @@ void synchrobeam_kick(
     }
     #endif
 
-    // Apply the kicks (Hirata's synchro-beam)
-    *pzeta_star = *pzeta_star + Fz_star + 0.5*(
+    double const dpzeta_star = Fz_star + 0.5 * (
                 Fx_star*(*px_star+0.5*Fx_star + px_slice_star)+
                 Fy_star*(*py_star+0.5*Fy_star + py_slice_star));
+
+    // Apply the kicks (Hirata's synchro-beam)
+    *pzeta_star = *pzeta_star + dpzeta_star;
     *x_star = *x_star - S*Fx_star;
     *px_star = *px_star + Fx_star;
     *y_star = *y_star - S*Fy_star;
@@ -364,15 +366,15 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, Loca
         // Synchro beam
         for (int i_slice=0; i_slice<N_slices; i_slice++)
         {
-                synchrobeam_kick(
-                             el, part,
-                             i_slice, q0, p0c,
-                             &x,
-                             &px,
-                             &y,
-                             &py,
-                             &zeta,
-                             &pzeta);
+            synchrobeam_kick(
+                            el, part,
+                            i_slice, q0, p0c,
+                            &x,
+                            &px,
+                            &y,
+                            &py,
+                            &zeta,
+                            &pzeta);
         }
 
         // Go back to original reference frame and remove dipolar effect
