@@ -11,7 +11,6 @@ import numpy as np
 @for_all_test_contexts
 def test_bunch_monitor_hdf5(test_context):
     n_macroparticles = int(1e6)
-    num_slices = 10
     zeta_range = (-1, 1)
 
     energy = 7e12
@@ -72,7 +71,6 @@ def test_bunch_monitor_hdf5(test_context):
         monitor_particles=False,
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
-        num_slices=num_slices,
         filling_scheme=filling_scheme,
         bunch_spacing_zeta=bunch_spacing_zeta,
     )
@@ -132,7 +130,6 @@ def test_bunch_monitor_hdf5(test_context):
 @for_all_test_contexts
 def test_bunch_monitor_json(test_context):
     n_macroparticles = int(1e6)
-    num_slices = 10
     zeta_range = (-1, 1)
 
     energy = 7e12
@@ -193,7 +190,6 @@ def test_bunch_monitor_json(test_context):
         monitor_particles=False,
         flush_data_every=n_turns,
         zeta_range=zeta_range,
-        num_slices=num_slices,
         filling_scheme=filling_scheme,
         bunch_spacing_zeta=bunch_spacing_zeta,
     )
@@ -569,7 +565,6 @@ def test_slice_monitor_json(test_context):
 @for_all_test_contexts
 def test_particle_monitor_hdf5(test_context):
     n_macroparticles = int(1e2)
-    num_slices = 10
     zeta_range = (-1, 1)
 
     particles = xt.Particles(
@@ -595,7 +590,6 @@ def test_particle_monitor_hdf5(test_context):
         monitor_particles=True,
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
-        num_slices=num_slices,
         particle_monitor_mask=particle_monitor_mask,
     )
 
@@ -615,7 +609,6 @@ def test_particle_monitor_hdf5(test_context):
 @for_all_test_contexts
 def test_particle_monitor_json(test_context):
     n_macroparticles = int(1e2)
-    num_slices = 10
     zeta_range = (-1, 1)
 
     particles = xt.Particles(
@@ -641,7 +634,6 @@ def test_particle_monitor_json(test_context):
         monitor_particles=True,
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
-        num_slices=num_slices,
         particle_monitor_mask=particle_monitor_mask,
     )
 
