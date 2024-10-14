@@ -53,7 +53,8 @@ class CollectiveMonitor(ElementWithSlicer):
     zeta_range : Tuple
         Zeta range for each bunch used in the underlying slicer.
     num_slices : int
-        Number of slices per bunch used in the underlying slicer.
+        Number of slices per bunch used in the underlying slicer. It should be
+        specified if the slice-by-slice data is monitored.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
     filling_scheme: np.ndarray
@@ -107,7 +108,7 @@ class CollectiveMonitor(ElementWithSlicer):
                  particle_monitor_mask=None,
                  flush_data_every=1,
                  zeta_range=None,
-                 num_slices=None,
+                 num_slices=1,
                  bunch_spacing_zeta=None,
                  filling_scheme=None,
                  bunch_selection=None,
@@ -458,10 +459,9 @@ def flush_buffer_to_file_json(buffer, filename):
         with open(filename, 'r') as f:
             old_buffer = json.load(f)
         for key in buffer_lists:
-            if not type(buffer_lists[key]) is not dict:
+            if type(buffer_lists[key]) is not dict:
                 # this is for the particle buffer
-                old_buffer[key] = np.concatenate(
-                    (old_buffer[key], buffer_lists[key]), axis=0).tolist()
+                old_buffer[key] = np.concatenate((old_buffer[key], buffer_lists[key]), axis=0).tolist()
             else:
                 # this is for the bunch or slice buffer
                 for subkey in buffer_lists[key]:
