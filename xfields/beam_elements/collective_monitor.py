@@ -27,14 +27,15 @@ class CollectiveMonitor(ElementWithSlicer):
 
     Parameters
     ----------
-    base_file_name : str
-        Base file name for the output files.
     monitor_bunches : Bool
         If True, the bunch-by-bunch data is monitored
     monitor_slices : Bool
         If True, the slice-by-slice data is monitored
     monitor_particles : Bool
         If True, the particle-by-particle data is monitored
+    base_file_name : str
+        Base file name for the output files. If it is not specified, the data
+        will not be saved to disk.
     particle_monitor_mask : np.ndarray
         Mask identifying the particles to be monitored. If later on we try to
         monitor a number of particles different than the length of the mask, an
@@ -99,10 +100,10 @@ class CollectiveMonitor(ElementWithSlicer):
     }
 
     def __init__(self,
-                 base_file_name,
                  monitor_bunches,
                  monitor_slices,
                  monitor_particles,
+                 base_file_name=None,
                  particle_monitor_mask=None,
                  flush_data_every=1,
                  zeta_range=None,
@@ -156,23 +157,24 @@ class CollectiveMonitor(ElementWithSlicer):
         self.flush_data_every = flush_data_every
         self.particle_monitor_mask = particle_monitor_mask
 
-        self._bunches_filename = (self.base_file_name + '_bunches.' +
-                                  self.extension)
-
-        if os.path.exists(self._bunches_filename) and monitor_bunches:
-            os.remove(self._bunches_filename)
-
-        self._slices_filename = (self.base_file_name + '_slices.' +
-                                 self.extension)
-
-        if os.path.exists(self._slices_filename) and monitor_slices:
-            os.remove(self._slices_filename)
-
-        self._particles_filename = (self.base_file_name + '_particles.' +
+        if base_file_name is not None:
+            self._bunches_filename = (self.base_file_name + '_bunches.' +
                                     self.extension)
 
-        if os.path.exists(self._particles_filename) and monitor_particles:
-            os.remove(self._particles_filename)
+            if os.path.exists(self._bunches_filename) and monitor_bunches:
+                os.remove(self._bunches_filename)
+
+            self._slices_filename = (self.base_file_name + '_slices.' +
+                                    self.extension)
+
+            if os.path.exists(self._slices_filename) and monitor_slices:
+                os.remove(self._slices_filename)
+
+            self._particles_filename = (self.base_file_name + '_particles.' +
+                                        self.extension)
+
+            if os.path.exists(self._particles_filename) and monitor_particles:
+                os.remove(self._particles_filename)
 
         self.pipeline_manager = None
 
@@ -221,7 +223,8 @@ class CollectiveMonitor(ElementWithSlicer):
 
             self._update_bunch_buffer(particles)
 
-            if self.i_turn % self.flush_data_every == 0:
+            if (self.i_turn % self.flush_data_every == 0 and
+                    self.base_file_name is not None):
                 self.flush_buffer_to_file_func(
                     self.bunch_buffer, self._bunches_filename)
                 self.bunch_buffer = self._init_bunch_buffer()
@@ -232,7 +235,8 @@ class CollectiveMonitor(ElementWithSlicer):
 
             self._update_slice_buffer(particles)
 
-            if self.i_turn % self.flush_data_every == 0:
+            if (self.i_turn % self.flush_data_every == 0 and
+                    self.base_file_name is not None):
                 self.flush_buffer_to_file_func(
                     self.slice_buffer, self._slices_filename)
                 self.slice_buffer = self._init_slice_buffer()
@@ -243,7 +247,8 @@ class CollectiveMonitor(ElementWithSlicer):
 
             self._update_particle_buffer(particles)
 
-            if self.i_turn % self.flush_data_every == 0:
+            if (self.i_turn % self.flush_data_every == 0 and
+                    self.base_file_name is not None):
                 self.flush_buffer_to_file_func(
                     self.particle_buffer, self._particles_filename)
                 self.particle_buffer = self._init_particle_buffer()
