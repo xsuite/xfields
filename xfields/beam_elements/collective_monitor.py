@@ -1,7 +1,6 @@
 import numpy as np
 
 from .element_with_slicer import ElementWithSlicer
-import h5py
 import json
 import os
 import xfields as xf
@@ -383,6 +382,10 @@ class CollectiveMonitor(ElementWithSlicer):
 
 
 def flush_buffer_to_file_hdf5(buffer, filename):
+    try:
+        import h5py
+    except ImportError:
+        raise ImportError('h5py is required to save the data in hdf5 format')
     # Iif the file does not exist, create it and write the buffer
     if not os.path.exists(filename):
         with h5py.File(filename, 'w') as f:
