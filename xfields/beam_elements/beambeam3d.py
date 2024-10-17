@@ -265,6 +265,41 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     **kwargs):
 
+        """
+        3D beam-beam element in the soft-Gaussian approximation.
+
+        Args:
+             phi (float): Half crossing angle in [rad]. 
+             alpha (float): Crossing plane. E.g. CMS (y-z crossing) has `alpha=pi/2` and ATLAS (x-z crossing) has `alpha=0`.
+             other_beam_q0 (float): Charge sign of opposing beam. -1 for electrons, +1 for protons or positrons.
+             scale_strength (float): Used to scale beam-beam force strength. Scales `other_beam_q0`.
+             slices_other_beam_num_particles (float array): Number of real charges per slice in the opposing bunch. Length of the array is the number of longitudinal slices.
+             slices_other_beam_{x,px,y,py,zeta,pzeta}_center (float array): Array storing the per-slice centroid variables of the opposing bunch, in the boosted accelerator frame. Length of the array is the number of longitudinal slices. 
+             flag_beamstrahlung (int): Flag to simulate beamstrahlung. 0: OFF, 1: ON (mean, only for testing), 2: ON (quantum, use this for simulations)
+             slices_other_beam_zeta_bin_width_beamstrahlung (float array): Array storing the longitudinal bin width in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. Used for beamstrahlung only.
+             slices_other_beam_zeta_bin_width_star_beamstrahlung (float array): Array storing the longitudinal bin width in the boosted accelerator frame. Length of the array is the number of longitudinal slices. Used for beamstrahlung only. Obtained as slices_other_beam_zeta_bin_width_beamstrahlung/cos(phi). 
+             slices_other_beam_sqrtSigma_{135}{135}_beamstrahlung (float array): Array storing the per-slice standard deviations of x (=1), y (=3) and zeta (=5) of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. Used for beamstrahlung only. 
+             flag_bhabha (int): Flag to simulate small angle radiative Bhabha scattering. 1: ON (quantum), 0: OFF
+             compt_x_min (float): Low energy cut on virtual photon spectrum, used for Bhabha, in units of [gamma^-2] where gamma is the rel. Lorentz factor.
+             flag_beamsize_effect (int): Flag to simulate beamsize effect, used for Bhabha. 1: ON, 0: OFF. Results in ~factor 2 reduction in cross section.
+             flag_luminosity (int): Flag to record soft-Gaussian luminosity per bunch crossing in a buffer. Luminosity will be in units of [m^-2].
+             slices_other_beam_{x,px,y,py,zeta,pzeta}_center_star (float array): Array storing the per-slice centroid variables of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. 
+             slices_other_beam_Sigma_{1234}{1234} (float array): Array storing the per-slice statistical moments (variances and covariances of x (=1), px (=2), y (=3), py (=4)) of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. 
+             slices_other_beam_Sigma_{1234}{1234}_star (float array): Array storing the per-slice statistical moments (variances and covariances of x (=1), px (=2), y (=3), py (=4)) of the opposing bunch, in the boosted accelerator frame. Length of the array is the number of longitudinal slices. 
+             ref_shift_{x,px,y,py,zeta,pzeta} (float): Closed orbit shift, subtracted from each macroparticle before collision and added back after.
+             other_beam_shift_{x,px,y,py,zeta,pzeta} (float): Closed orbit shift of the opposing beam (used in weak-strong mode). Subtracted and from the opposing slice centroids before collision and added back after.
+             post_subtract_{x,px,y,py,zeta,pzeta} (float): Additional quantity that is subtracted after the beam-beam collision. Used e.g. for dipole kick.
+             min_sigma_diff (float): Round beam kick (~2x faster) is used instead of elliptical kick, if `fabs(sigma_x-sigma_y) < min_sigma_diff`.
+             threshold_singular (float): Small number used to handle singularities when transporting slice moments from interaction point (IP) to collision point (CP).
+             old_interface (dict): Dictionary containing parameters with the old interface. (obsolete)
+             config_for_update (xfields.ConfigForUpdateBeamBeamBiGaussian3D): Used for (quasi-)strong-strong beam-beam and `None` for weak-strong. See documentation of xfields.ConfigForUpdateBeamBeamBiGaussian3D.
+             _sin_phi (float): Sine of half crossing angle.
+             _cos_phi (float): Cosine of half crossing angle.
+             _tan_phi (float): Tangent of half crossing angle.
+             _sin_alpha (float): Sine of crossing plane.
+             _cos_alpha (float): Cosine of crossing plane.
+        """
+
         if '_xobject' in kwargs.keys():
             self.xoinitialize(**kwargs)
             return
