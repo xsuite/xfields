@@ -76,6 +76,23 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
                     **kwargs):
 
+        """
+        2D beam-beam element in the soft-Gaussian approximation.
+
+        Args:
+             scale_strength (float): Used to scale beam-beam force strength. Scales `other_beam_q0`.
+             other_beam_q0 (float): Charge sign of opposing beam. -1 for electrons, +1 for protons or positrons.
+             other_beam_beta0 (float): Relativistic beta of the opposing beam.
+             other_beam_num_particles (float): Number of real charges in the opposing bunch. 
+             other_beam_Sigma_{13}{13} (float): Statistical moments (variances and covariance of x (=1) and y (=3)) of the opposing bunch, in the unboosted accelerator frame. 
+             ref_shift_{xy} (float): Closed orbit shift, subtracted from each macroparticle before collision and added back after.
+             other_beam_shift_{x,y} (float): Closed orbit shift of the opposing beam. Subtracted and from the opposing slice centroids before collision and added back after.
+             post_subtract_{px,py} (float): Additional quantity that is subtracted after the beam-beam collision. Used e.g. for dipole kick.
+             min_sigma_diff (float): Round beam kick (~2x faster) is used instead of elliptical kick, if `fabs(sigma_x-sigma_y) < min_sigma_diff`.
+             config_for_update (xfields.ConfigForUpdateBeamBeamBiGaussian3D): Used for (quasi-)strong-strong beam-beam and `None` for weak-strong. See documentation of xfields.ConfigForUpdateBeamBeamBiGaussian3D.
+        """
+
+
         if '_xobject' in kwargs.keys():
             self.xoinitialize(**kwargs)
             return
