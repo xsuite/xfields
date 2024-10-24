@@ -24,11 +24,9 @@ void do_luminosity(BeamBeamBiGaussian3DData el, LocalParticle *part,
     // init record table
     BeamBeamBiGaussian3DRecordData lumi_record = NULL;
     LumiTableData lumi_table                   = NULL;
-    RecordIndex lumi_table_index               = NULL;
     lumi_record = BeamBeamBiGaussian3DData_getp_internal_record(el, part);
     if (lumi_record){
         lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
-        lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
     const int at_turn = LocalParticle_get_at_turn(part);
     double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
@@ -69,25 +67,25 @@ void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
 
     const double other_beam_slice_energy =  LocalParticle_get_energy0(part)*(1 + pzeta_slice_star) * 1e-9;  // [GeV] for now betastar is 1; later change to other beam E0
 
-    const double compt_x_min = BeamBeamBiGaussian3DData_get_compt_x_min(el);
-    int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons of the opposite slice using the average energy of the opposite slice
+    const double compt_x_min = BeamBeamBiGaussian3DData_get_compt_x_min(el); // [1] low energy cutoff on scattered photons
+    int n_photons = requiv(part, other_beam_slice_energy, compt_x_min);  // generate virtual photons equivalent to the opposite slice using the average energy of the opposite slice
 
     // generate virtual photons of the opposite slice
     double xmin, e_photon, q2, one_m_x, x_photon, y_photon, px_photon, py_photon, pzeta_photon, radius, theta;
     for (int i_phot=0; i_phot<n_photons; i_phot++){
 
+      // draw total energy [GeV] and squared virtuality [GeV^2] of 1 photon
       mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
 
-      // apply beam size effect here (affects x and y only)
+      // apply beam size effect here (affects x and y of virtual photon only)
       switch(flag_beamsize_effect){
       case 0:  // this is w.r.t of the strong slice centroid
           radius = 0.0;
           x_photon = x_bar_hat_star;
           y_photon = y_bar_hat_star;
           break;
-      case 1:  // photons distributed on a disc around centroid
+      case 1:  // photons distributed on a disc around strong slice centroid
           radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
-          //printf("radius: %.6e\n", radius);
           radius = min(radius, 1e5);
           x_photon = x_bar_hat_star + rndm_sincos(part, &theta) * radius;
           y_photon = y_bar_hat_star + theta * radius;
@@ -98,22 +96,19 @@ void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
           break;
       }
 
-      // virtual photons are located at the opposite slice centroid
-
+      // virtual photons are located at the opposite slice centroid, inherit mom. vars
       px_photon = px_slice_star;
       py_photon = py_slice_star;
       pzeta_photon = pzeta_slice_star;
 
-      //if (radius < sqrt(Sig_33_hat_star)){
-        // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
-        compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
-                 e_photon, compt_x_min, q2,
-                 x_photon, y_photon, S, px_photon, py_photon, pzeta_photon,
-                 *wgt, px_star, py_star, pzeta_star, q0);
+      // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
+      compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
+               e_photon, compt_x_min, q2,
+               x_photon, y_photon, S, px_photon, py_photon, pzeta_photon,
+               *wgt, px_star, py_star, pzeta_star, q0);
 
-        // reload pzeta since they changed from compton; px and py are changed only locally
-        *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
-     // }
+      // reload pzeta since they changed from compton; px and py are changed only locally
+      *pzeta_star = LocalParticle_get_pzeta(part);  // bhabha rescales energy vars, so load again before kick
     }
 }
 
@@ -256,7 +251,7 @@ void synchrobeam_kick(
           sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star),
                       min_sigma_diff, Ex, Ey, &Gx, &Gy);
 
-    // Compute kicks
+    // Compute kicks [1]
     double Fx_hat_star = Ksl*Ex;
     double Fy_hat_star = Ksl*Ey;
     double Gx_hat_star = Ksl*Gx;
@@ -266,7 +261,7 @@ void synchrobeam_kick(
     double Fx_star = Fx_hat_star*costheta - Fy_hat_star*sintheta;
     double Fy_star = Fx_hat_star*sintheta + Fy_hat_star*costheta;
 
-    // Compute longitudinal kick
+    // Compute longitudinal kick [1]
     double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
 
@@ -300,6 +295,7 @@ void synchrobeam_kick(
     }
     #endif
 
+    // compute longitudinal kick on pzeta
     double const dpzeta_star = Fz_star + 0.5 * (
                 Fx_star*(*px_star+0.5*Fx_star - px_slice_star)+
                 Fy_star*(*py_star+0.5*Fy_star - py_slice_star));
