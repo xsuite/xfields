@@ -336,12 +336,13 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
           py_e_prime  += pt_e_prime * cos(phi_e);
           ps_e_prime   = sqrt(e_e_prime*e_e_prime - px_e_prime*px_e_prime - py_e_prime*py_e_prime - MELECTRON_GEV*MELECTRON_GEV);  // [1] longitudinal momentum
 
+          // energy variable
           pzeta_e_prime = (e_e_prime - e_ref) / (beta_ref * beta_ref * e_ref);
 
           // compute scattered photon momenta from momentum conservation
           px_photon_prime    = (*vx  + vx_photon) * e_primary - px_e_prime;
           py_photon_prime    = (*vy  + vy_photon) * e_primary - py_e_prime;
-          pzeta_photon_prime = (*vzeta + vzeta_photon) * e_primary - pzeta_e_prime;
+          //pzeta_photon_prime = (*vzeta + vzeta_photon) * e_primary - pzeta_e_prime;
 
           // account for the event weight
           r1 = RandomUniform_generate(part);
@@ -363,7 +364,6 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
                   BhabhaTableData_set_photon_energy( bhabha_table, i_slot, e_photon_prime*1e9);
                   BhabhaTableData_set_photon_px(     bhabha_table, i_slot, px_photon_prime);
                   BhabhaTableData_set_photon_py(     bhabha_table, i_slot, py_photon_prime);
-                  BhabhaTableData_set_photon_pzeta(  bhabha_table, i_slot, pzeta_photon_prime);
                   BhabhaTableData_set_primary_scattering_angle(bhabha_table, i_slot, theta_e);
                   BhabhaTableData_set_photon_scattering_angle( bhabha_table, i_slot, theta_g);
               }
@@ -377,16 +377,13 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               if (e_loss_primary == 0.0){
                 printf("0 energy loss: %g", e_loss_primary);
               }else{
-                //printf("[%d] lost %g [GeV]\n", (int)part->ipart, e_loss_primary);
                 if (-1.0 * e_loss_primary >= e_primary){  // macropart dies
                   LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
                   return;
                 }else{  // macropart doesnt die
                   *vx    = px_e_prime / e_e_prime;
                   *vy    = py_e_prime / e_e_prime;
-                  *vzeta = pzeta_e_prime / e_e_prime;
                   e_primary += e_loss_primary;
-                  LocalParticle_update_pzeta(part, *vzeta);  // changes energy vars
                   LocalParticle_add_to_energy(part, e_loss_primary*1e9, 0);  // changes pzeta
                 }
               }
