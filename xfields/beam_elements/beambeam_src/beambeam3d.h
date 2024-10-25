@@ -31,7 +31,7 @@ void do_luminosity(BeamBeamBiGaussian3DData el, LocalParticle *part,
         lumi_table_index =                      LumiTableData_getp__index(lumi_table);
 
     const int at_turn = LocalParticle_get_at_turn(part);
-    double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
+    /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
     atomicAdd(lumi_address, *wgt);
     }
 }
