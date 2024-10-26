@@ -235,8 +235,9 @@ double Faddeeva_MIT_Dawson_re(double x); // special case for real x
     faddeeva_w(x, y, out_x, out_y);
 }
 
-
+#  ifndef _GNU_SOURCE
 #  define _GNU_SOURCE // enable GNU libc NAN extension if possible
+#  endif
 
 #  include <float.h>
 #  include <math.h>
