@@ -77,6 +77,19 @@ class ElementWithSlicer:
                 num_turns=num_turns,
                 circumference=circumference)
 
+    @staticmethod
+    def _check_filling_scheme_info(filling_scheme, bunch_numbers, num_slots):
+        if filling_scheme is None and bunch_numbers is None:
+            if num_slots is None:
+                num_slots = 1
+            filling_scheme = np.ones(num_slots, dtype=np.int64)
+            bunch_numbers = np.arange(num_slots, dtype=np.int64)
+        else:
+            assert (num_slots is None and filling_scheme is not None and
+                    bunch_numbers is not None)
+
+        return filling_scheme, bunch_numbers
+
     def init_slicer(self, zeta_range, num_slices, filling_scheme,
                     bunch_selection, bunch_spacing_zeta, slicer_moments):
         if zeta_range is not None:
@@ -239,7 +252,7 @@ class ElementWithSlicer:
                     return xt.PipelineStatus(on_hold=True)
 
         if self.pipeline_manager is not None:
-            for i_partner, partner_name in enumerate(self.partners_names):
+            for i_partner, partner_name in enumerate(self.partner_names):
                 self.pipeline_manager.receive_message(self._recv_buffer_length_buffer, self.name, partner_name,
                                                       particles.name, internal_tag=0)
                 self._ensure_recv_buffer_size()
