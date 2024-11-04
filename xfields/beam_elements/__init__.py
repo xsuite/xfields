@@ -4,3 +4,5 @@
 # ########################################### #
 
 from .spacecharge import SpaceCharge3D
+from .element_with_slicer import ElementWithSlicer
+
