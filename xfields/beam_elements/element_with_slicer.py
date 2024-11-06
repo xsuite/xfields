@@ -239,7 +239,7 @@ class ElementWithSlicer:
                     return xt.PipelineStatus(on_hold=True)
 
         if self.pipeline_manager is not None:
-            for i_partner, partner_name in enumerate(self.partners_names):
+            for i_partner, partner_name in enumerate(self.partner_names):
                 self.pipeline_manager.receive_message(self._recv_buffer_length_buffer, self.name, partner_name,
                                                       particles.name, internal_tag=0)
                 self._ensure_recv_buffer_size()
