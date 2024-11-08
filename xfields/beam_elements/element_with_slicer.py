@@ -5,7 +5,7 @@ import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
 
 
-class ElementWithSlicer:
+class ElementWithSlicer(xt.BeamElement):
     """
     Base class for elements with a slicer.
 
@@ -47,7 +47,10 @@ class ElementWithSlicer:
                  bunch_selection=None,
                  num_turns=1,
                  circumference=None,
-                 with_compressed_profile=False):
+                 with_compressed_profile=False,
+                 **kwargs):
+
+        self.xoinitialize(**kwargs)
 
         self.with_compressed_profile = with_compressed_profile
         self.pipeline_manager = None
@@ -88,7 +91,8 @@ class ElementWithSlicer:
                 filling_scheme=filling_scheme,
                 bunch_selection=bunch_selection,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                moments=slicer_moments
+                moments=slicer_moments,
+                _context=self._context
             )
         else:
             self.zeta_range = None
@@ -115,7 +119,8 @@ class ElementWithSlicer:
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 num_periods=num_periods,
                 num_turns=num_turns,
-                circumference=circumference)
+                circumference=circumference,
+                _context=self.context)
 
     def init_pipeline(self, pipeline_manager, element_name, partner_names):
         self.pipeline_manager = pipeline_manager

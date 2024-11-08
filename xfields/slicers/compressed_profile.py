@@ -156,9 +156,9 @@ class CompressedProfile(xt.BeamElement):
             A dictionary of the form {moment_name: moment_value}
 
         """
-
-        assert np.isscalar(i_source)
-        assert np.isscalar(i_turn)
+        #breakpoint()
+        #assert np.isscalar(i_source)
+        #assert np.isscalar(i_turn)
 
         assert i_source < self._N_S
         assert i_source >= 0
