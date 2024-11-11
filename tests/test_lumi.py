@@ -17,6 +17,8 @@ def test_beambeam3d_lumi_ws_no_config(test_context):
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
 
+    print(repr(test_context))
+
     ###########
     # ttbar 2 #
     ###########

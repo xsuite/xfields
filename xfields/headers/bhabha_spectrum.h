@@ -274,15 +274,15 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     Compton scatter one vitrual macrophoton on one macroparticle. Potentially emit a real Bhabha photon. 
     */
 
-    double e_ref = LocalParticle_get_energy0(part)*1e-9;  // [GeV] nominal beam energy
-    double e_primary = (LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part))*1e-9;  // [GeV] total energy of primary
-    double beta_ref = LocalParticle_get_beta0(part);         // [1] nominal beta
+    //double e_ref = LocalParticle_get_energy0(part)*1e-9;  // [GeV] nominal beam energy
+    //double beta_ref = LocalParticle_get_beta0(part);         // [1] nominal beta
+    double e_primary = (LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part))*1e-9;  // [GeV] total energy of primary macroparticle before scattering
     double part_per_mpart = LocalParticle_get_weight(part);  // [e] num real charges represented by 1 macropart
 
     int n, i;                        // [1]
     double tmp, scal, s, x, y;       // [m^2, m^2, GeV^2, 1, 1]
     double theta_g, theta_e, phi_e;  // [rad] photon scattering angle, electron scattering angle, electron azimuthal scattering angle
-    double e_e_prime, px_e_prime, py_e_prime, pz_e_prime, pt_e_prime;  // pzeta_e_prime; [GeV, GeV/c] scattered primary momenta
+    double e_e_prime, px_e_prime, py_e_prime, pt_e_prime;  // , pz_e_prime, pzeta_e_prime; [GeV, GeV/c, GeV/c, GeV/c] scattered primary momenta
     double e_photon_prime, px_photon_prime, py_photon_prime;      // [GeV, GeV/c] scattered (real) Compton photon momenta
     double e_loss_primary;            // [GeV] energy lost from one photon emission
     double eps = 0.0;                 // 1e-5 in guinea, used due to limited resolution of RNG in the past
@@ -327,35 +327,37 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
           phi_e = 2.0 * PI * RandomUniform_generate(part);  // [rad]
           px_e_prime  += pt_e_prime * sin(phi_e);  // [GeV/c]
           py_e_prime  += pt_e_prime * cos(phi_e);  // [GeV/c]
-          pz_e_prime   = sqrt(e_e_prime*e_e_prime - px_e_prime*px_e_prime - py_e_prime*py_e_prime - MELECTRON_GEV*MELECTRON_GEV);  // [GeV/c] longitudinal momentum
+          //pz_e_prime   = sqrt(e_e_prime*e_e_prime - px_e_prime*px_e_prime - py_e_prime*py_e_prime - MELECTRON_GEV*MELECTRON_GEV);  // [GeV/c] longitudinal momentum
 
           // energy variable
           //pzeta_e_prime = (e_e_prime - e_ref) / (beta_ref * beta_ref * e_ref);
 
           // compute scattered photon momenta from momentum conservation
-          px_photon_prime    = (*vx  + vx_photon) * e_primary - px_e_prime;
-          py_photon_prime    = (*vy  + vy_photon) * e_primary - py_e_prime;
+          px_photon_prime = (*vx + vx_photon) * e_primary - px_e_prime;
+          py_photon_prime = (*vy + vy_photon) * e_primary - py_e_prime;
 
           // account for the event weight
           r1 = RandomUniform_generate(part);
           if (r1 < scal) {
 
             if (bhabha_record){
+
               // Get a slot in the record (this is thread safe)
               int64_t i_slot = RecordIndex_get_slot(bhabha_table_index);
+
               // The returned slot id is negative if record is NULL or if record is full
               if (i_slot>=0){
-                  BhabhaTableData_set_particle_id(   bhabha_table, i_slot, LocalParticle_get_particle_id(part));
-                  BhabhaTableData_set_at_turn(       bhabha_table, i_slot, LocalParticle_get_at_turn(part));
                   BhabhaTableData_set_at_element(    bhabha_table, i_slot, LocalParticle_get_at_element(part));
-                  BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary);
+                  BhabhaTableData_set_at_turn(       bhabha_table, i_slot, LocalParticle_get_at_turn(part));
+                  BhabhaTableData_set_particle_id(   bhabha_table, i_slot, LocalParticle_get_particle_id(part));
+		  BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary*1e9);
                   BhabhaTableData_set_photon_id(     bhabha_table, i_slot, n);
                   BhabhaTableData_set_photon_x(      bhabha_table, i_slot, x_photon);
                   BhabhaTableData_set_photon_y(      bhabha_table, i_slot, y_photon);
                   BhabhaTableData_set_photon_z(      bhabha_table, i_slot, z_photon);
-                  BhabhaTableData_set_photon_energy( bhabha_table, i_slot, e_photon_prime*1e9);
                   BhabhaTableData_set_photon_px(     bhabha_table, i_slot, px_photon_prime);
                   BhabhaTableData_set_photon_py(     bhabha_table, i_slot, py_photon_prime);
+                  BhabhaTableData_set_photon_energy( bhabha_table, i_slot, e_photon_prime*1e9);
                   BhabhaTableData_set_primary_scattering_angle(bhabha_table, i_slot, theta_e);
                   BhabhaTableData_set_photon_scattering_angle( bhabha_table, i_slot, theta_g);
               }

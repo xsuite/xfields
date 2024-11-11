@@ -186,11 +186,15 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
     photon_energy_mean = np.mean(sorted(set(record.beamstrahlungtable.photon_energy))[1:])
     assert np.all(np.abs(record_avg.beamstrahlungtable.photon_energy - photon_energy_mean) / photon_energy_mean < 1e-1)
 
+
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_ws_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
+
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #
@@ -358,11 +362,15 @@ def test_beambeam3d_beamstrahlung_ws_config(test_context):
     photon_energy_mean = np.mean(sorted(set(record.beamstrahlungtable.photon_energy))[1:])
     assert np.all(np.abs(record_avg.beamstrahlungtable.photon_energy - photon_energy_mean) / photon_energy_mean < 1e-1)
 
+
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_qss(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
+
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #
@@ -620,11 +628,15 @@ def test_beambeam3d_beamstrahlung_qss(test_context):
     assert np.all(np.abs(record_avg_b1.beamstrahlungtable.photon_energy - ss_b1_photon_energy_mean) / ss_b1_photon_energy_mean < 1e-1)
     assert np.all(np.abs(record_avg_b2.beamstrahlungtable.photon_energy - ss_b2_photon_energy_mean) / ss_b2_photon_energy_mean < 1e-1)
 
+
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_ss(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
+
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #

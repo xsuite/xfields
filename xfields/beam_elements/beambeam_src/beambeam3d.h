@@ -78,13 +78,16 @@ void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
       mequiv(part, other_beam_slice_energy, compt_x_min, &xmin, &e_photon, &q2, &one_m_x);  // here again use opposite slice energy average
 
       // apply beam size effect here (affects x and y of virtual photon only)
-      switch(flag_beamsize_effect){
-      case 0:  // this is w.r.t of the strong slice centroid
+      if (flag_beamsize_effect == 0){
+          
+	  // this is w.r.t of the strong slice centroid
           radius = 0.0;
           x_photon = x_bar_hat_star;
           y_photon = y_bar_hat_star;
-          break;
-      case 1:  // photons distributed on a disc around strong slice centroid
+
+      }else{ // if flag_beamsize_effect==1
+
+	  // photons distributed on a disc around strong slice centroid
           radius = HBAR_GEVS*C_LIGHT / sqrt(q2*one_m_x);  // [m]
           radius = min(radius, 1e5);
           x_photon = x_bar_hat_star + rndm_sincos(part, &theta) * radius;
@@ -93,7 +96,6 @@ void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
           // resample charge density at randomized photon location
           get_charge_density(x_photon, y_photon, sqrt(Sig_11_hat_star), sqrt(Sig_33_hat_star), rho);
           *wgt =  LocalParticle_get_weight(part) * num_part_slice * (*rho);  // [m^-2] integrated lumi of a single electron colliding with the opposing slice
-          break;
       }
 
       // virtual photons are located at the opposite slice centroid, inherit mom. vars
@@ -130,7 +132,8 @@ void do_beamstrahlung(BeamBeamBiGaussian3DData el, LocalParticle *part,
         }
 
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
-        if(flag_beamstrahlung==1){
+
+	if(flag_beamstrahlung==1){
 
             // get unboosted strong slice RMS [m]
             double sqrtSigma_11 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_11_beamstrahlung(el, i_slice);
@@ -138,11 +141,13 @@ void do_beamstrahlung(BeamBeamBiGaussian3DData el, LocalParticle *part,
             double sqrtSigma_55 = BeamBeamBiGaussian3DData_get_slices_other_beam_sqrtSigma_55_beamstrahlung(el, i_slice);
             beamstrahlung_avg(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table,
                 num_part_slice, sqrtSigma_11, sqrtSigma_33, sqrtSigma_55);
-        } else if (flag_beamstrahlung==2){
+
+	} else if (flag_beamstrahlung==2){
             double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
             double const dz = .5*BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_bin_width_star_beamstrahlung(el, i_slice);  // half slice width [m]
             beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
         }
+
         *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
     }
 
@@ -189,7 +194,6 @@ void synchrobeam_kick(
     const double px_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_px_center_star(el, i_slice);
     const double py_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_py_center_star(el, i_slice);
     const double zeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_zeta_center_star(el, i_slice);
-    const double pzeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_pzeta_center_star(el, i_slice);
 
     const double P0 = p0c/C_LIGHT*QELEM;
 
@@ -265,7 +269,7 @@ void synchrobeam_kick(
     double Fz_star = 0.5*(Fx_hat_star*dS_x_bar_hat_star  + Fy_hat_star*dS_y_bar_hat_star+
                    Gx_hat_star*dS_Sig_11_hat_star + Gy_hat_star*dS_Sig_33_hat_star);
 
-    double rho, wgt;
+    double rho = 0.0, wgt = 0.0;
 
     // calculate luminosity
     const int64_t flag_luminosity = BeamBeamBiGaussian3DData_get_flag_luminosity(el);
@@ -279,6 +283,7 @@ void synchrobeam_kick(
     #ifndef XFIELDS_BB3D_NO_BHABHA
     const int64_t flag_bhabha = BeamBeamBiGaussian3DData_get_flag_bhabha(el);
     if (flag_bhabha == 1) {
+        const double pzeta_slice_star = BeamBeamBiGaussian3DData_get_slices_other_beam_pzeta_center_star(el, i_slice);
         do_bhabha(el, part, &rho, &wgt, flag_luminosity, q0,
             x_bar_hat_star, y_bar_hat_star, Sig_11_hat_star, Sig_33_hat_star,
             num_part_slice, S, px_star, py_star, pzeta_star,

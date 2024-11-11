@@ -11,15 +11,35 @@ import xtrack as xt
 from ..general import _pkg_root
 
 class BeamstrahlungTable(xo.HybridClass):
+    """
+    Buffer size should be larger than the number of expected BS photons emitted. Test on single collision for estimate.
+    If more photons are emitted than the buffer size, the surplus data will be dropped.
+    Photons from multiple turns and beambeam elements are stored in the same buffer.
+    Photons are 'macro' i.e. represent the dynamics of bunch_intensity/n_macroparticles real BS photons.
+    This implies that the number of emitted BS photons scales linearly with n_macroparticles.
+
+    Fields:
+     _index: custom C struct for metadata
+     at_element: [1] element index in the xtrack.Line object, starts with 0
+     at_turn: [1] turn index, starts with 0
+     particle_id: [1] array index in the xpart.Particles object of the primary macroparticle emitting the photon
+     primary_energy: [eV] total energy of primary macroparticle before emission of this photon
+     photon_id: [1] counter for photons emitted from the same primary in the same collision with a single slice
+     photon_energy: [eV] total energy of a beamstrahlung photon
+     photon_critical_energy (with quantum BS only): [eV] critical energy of a beamstrahlung photon
+     rho_inv (with quantum BS only): [m^-1] (Fr/dz) inverse bending radius of the primary macroparticle
+     n_avg (with mean BS only): [1] avg. number of emitted beamstrahlung photons from 1 macroparticle in collision with a single slice
+     delta_avg (with mean BS only): [1] avg. rel. E loss for 1 macroparticle in collision with a single slice
+    """
     _xofields = {
       '_index': xt.RecordIndex,
       'at_element': xo.Int64[:],
       'at_turn': xo.Int64[:],
       'particle_id': xo.Int64[:],
+      'primary_energy': xo.Float64[:],
       'photon_id': xo.Float64[:],
       'photon_energy': xo.Float64[:],
       'photon_critical_energy': xo.Float64[:],
-      'primary_energy': xo.Float64[:],
       'rho_inv': xo.Float64[:],
       'n_avg': xo.Float64[:],
       'delta_avg': xo.Float64[:],
@@ -27,30 +47,58 @@ class BeamstrahlungTable(xo.HybridClass):
 
 
 class BhabhaTable(xo.HybridClass):
+    """
+    Buffer size should be larger than the number of expected BH photons emitted. Test on single collision for estimate.
+    If more photons are emitted than the buffer size, the surplus data will be dropped.
+    Photons from multiple turns and beambeam elements are stored in the same buffer.
+    Photons are 'real' i.e. represent the dynamics of a single real BH photon.
+    This implies that the number of emitted BH photons does not depend on n_macroparticles.
+
+    Fields:
+     _index: custom C struct for metadata
+     at_element: [1] element index in the xtrack.Line object, starts with 0
+     at_turn: [1] turn index, starts with 0
+     particle_id: [1] array index in the xpart.Particles object of the primary macroparticle emitting the photon
+     primary_energy: [eV] total energy of primary macroparticle before emission of this photon
+     photon_id: [1] counter for photons emitted from the same primary in the same collision with a single slice
+     photon_x, photon_y, photon_z: [m] (boosted) coordinates of the scattered Bhabha photon
+     photon_px, photon_py: [m] (boosted) momenta of the scattered Bhabha photon
+     photon_energy: [eV] total energy of the scattered Bhabha photon
+     primary_scattering_angle: [rad] scattering angle of scattered primary macroparticle
+     photon_scattering_angle: [rad] scattering angle of scattered Bhabha photon
+    """
     _xofields = {
       '_index': xt.RecordIndex,
       'at_element': xo.Int64[:],
       'at_turn': xo.Int64[:],
       'particle_id': xo.Int64[:],
-      'photon_id': xo.Int64[:],
       'primary_energy': xo.Float64[:],
+      'photon_id': xo.Int64[:],
       'photon_x': xo.Float64[:],
       'photon_y': xo.Float64[:],
       'photon_z': xo.Float64[:],
-      'photon_energy': xo.Float64[:],
       'photon_px': xo.Float64[:],
       'photon_py': xo.Float64[:],
-      'photon_pzeta': xo.Float64[:],
+      'photon_energy': xo.Float64[:],
       'primary_scattering_angle': xo.Float64[:],
       'photon_scattering_angle': xo.Float64[:],
         }
 
+
 class LumiTable(xo.HybridClass):
+    """
+    Buffer size should be equal to the number of tracking turns.
+    If more turns are tracked than the buffer size, the surplus data will be dropped.
+    Luminosity contributions from multiple beambeam elements in the same tracking turn are aggregated in the same buffer element.
+
+    Fields:
+     _index: custom C struct for metadata
+     at_element: [1] element index in the xtrack.Line object, starts with 0
+     luminosity: [m^-2] integrated luminosity per bunch crossing for one turn
+    """
     _xofields = {
       '_index': xt.RecordIndex,
       'at_element': xo.Int64[:],
-      'at_turn': xo.Int64[:],
-      'particle_id': xo.Int64[:],
       'luminosity': xo.Float64[:],
         }
 
