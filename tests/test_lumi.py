@@ -11,7 +11,7 @@ import xpart as xp
 
 from xobjects.test_helpers import for_all_test_contexts
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_ws_no_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
@@ -114,12 +114,8 @@ def test_beambeam3d_lumi_ws_no_config(test_context):
     # test if relative error is smaller than 15%
     assert np.allclose(lumi_ws_b1, lumi_ip, rtol=1.5e-1, atol=0)
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_ws_config(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         pytest.skip("Not implemented for cupy")
@@ -234,12 +230,8 @@ def test_beambeam3d_lumi_ws_config(test_context):
     assert np.allclose(lumi_ws_b1, lumi_ip, rtol=1.5e-1, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_qss(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         pytest.skip("Not implemented for cupy")
@@ -415,12 +407,8 @@ def test_beambeam3d_lumi_qss(test_context):
     assert np.allclose(lumi_qss_b2, lumi_ip, rtol=1.5e-1, atol=0)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_ss(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         pytest.skip("Not implemented for cupy")
