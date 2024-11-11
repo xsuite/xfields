@@ -130,15 +130,14 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = (test_data_folder
-        / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt")
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
-    bins = np.logspace(
-        np.log10(1e-14), np.log10(1e1), n_bins)
-    xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9,
-                                bins=bins)[0]
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
+    xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     bin_rel_errors = np.abs(xsuite_hist - guinea_hist) / guinea_hist
     print(f"bin relative errors [1]: {bin_rel_errors}")
@@ -315,12 +314,15 @@ def test_beambeam3d_beamstrahlung_ws_config(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
     bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
     xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     bin_rel_errors = np.abs(xsuite_hist - guinea_hist) / guinea_hist
     print(f"bin relative errors [1]: {bin_rel_errors}")
@@ -560,11 +562,13 @@ def test_beambeam3d_beamstrahlung_qss(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
     bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     xsuite_ss_b1_hist = np.histogram(record_ss_b1.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
     xsuite_ss_b2_hist = np.histogram(record_ss_b2.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
@@ -830,11 +834,13 @@ def test_beambeam3d_beamstrahlung_ss(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
     bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     xsuite_ss_b1_hist = np.histogram(record_ss_b1.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
     xsuite_ss_b2_hist = np.histogram(record_ss_b2.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
