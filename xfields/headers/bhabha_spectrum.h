@@ -248,6 +248,7 @@ double compt_select(LocalParticle *part,
     return y;  // [1]
 }
 
+/*gpufun*/
 void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record, RecordIndex bhabha_table_index, BhabhaTableData bhabha_table,
               double e_photon,           // [GeV] single equivalent virtual photon energy before Compton scattering
               const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff

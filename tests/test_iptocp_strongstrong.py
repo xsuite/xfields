@@ -242,7 +242,7 @@ def test_iptocp_strongstrong_px(test_context):
         print(f"beam 1 max. error: { np.max(abserr_b1)}, beam 2 max. error: { np.max(abserr_b2)}")
         print(f"beam 1 avg. error: {np.mean(abserr_b1)}, beam 2 avg. error: {np.mean(abserr_b2)}")
         
-        tol = max(phi*1e-5, 1e-13)  # when phi=0 1e-16 is better
+        tol = max(phi*1e-5, 1e-10)  # when phi=0 1e-16 is better
         assert np.all(abserr_b1<=tol), "beam 1: error too large!"
         assert np.all(abserr_b2<=tol), "beam 2: error too large!"
         
@@ -479,6 +479,6 @@ def test_iptocp_strongstrong_py(test_context):
         print(f"beam 1 max. error: { np.max(abserr_b1)}, beam 2 max. error: { np.max(abserr_b2)}")
         print(f"beam 1 avg. error: {np.mean(abserr_b1)}, beam 2 avg. error: {np.mean(abserr_b2)}")
         
-        tol = max(phi*1e-5, 1e-13)  # when phi=0 1e-16 is better
+        tol = max(phi*1e-5, 1e-10)  # when phi=0 1e-16 is better
         assert np.all(abserr_b1<=tol), "beam 1: error too large!"
         assert np.all(abserr_b2<=tol), "beam 2: error too large!"

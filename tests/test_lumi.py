@@ -60,7 +60,7 @@ def test_beambeam3d_lumi_ws_no_config(test_context):
 
     particles_b1.name = "b1"
 
-    slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+    slicer = xf.TempSlicer(_context=test_context, n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
 
     el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
             _context=test_context,
@@ -116,10 +116,6 @@ def test_beambeam3d_lumi_ws_no_config(test_context):
 
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_ws_config(test_context):
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
@@ -232,10 +228,6 @@ def test_beambeam3d_lumi_ws_config(test_context):
 
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_qss(test_context):
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
@@ -409,10 +401,6 @@ def test_beambeam3d_lumi_qss(test_context):
 
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_lumi_ss(test_context):
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
