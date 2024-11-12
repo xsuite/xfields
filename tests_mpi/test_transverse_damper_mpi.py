@@ -13,7 +13,7 @@ from xobjects.test_helpers import for_all_test_contexts
 exclude_contexts = ['ContextPyopencl', 'ContextCupy']
 
 @for_all_test_contexts(excluding=exclude_contexts)
-def test_transverse_damper(test_context):
+def test_transverse_damper_mpi(test_context):
     longitudinal_mode = 'nonlinear'
     # Machine settings
     n_turns = 1000
@@ -24,13 +24,13 @@ def test_transverse_damper(test_context):
     alpha = 53.86**-2
 
     e0 = physical_constants['proton mass energy equivalent in MeV'][0]*1e6
-    p0c = 450e9
-    gamma = p0c/e0
+    en = 450e9
+    gamma = en/e0
     beta = np.sqrt(1-1/gamma**2)
 
     h_rf = 35640
     bunch_spacing_buckets = 10
-    num_bunches = 2
+    num_bunches = 4
     n_slices = 500
 
     epsn_x = 2e-6
@@ -50,7 +50,6 @@ def test_transverse_damper(test_context):
 
     filling_scheme = np.zeros(int(h_rf/bunch_spacing_buckets))
     filling_scheme[0: num_bunches] = 1
-    filled_slots = np.nonzero(filling_scheme)[0]
 
     one_turn_map = xt.LineSegmentMap(
         length=circumference,
@@ -70,14 +69,13 @@ def test_transverse_damper(test_context):
         zeta_range=zeta_range,
         num_slices=n_slices,
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
-        circumference=circumference,
-        mode='bunch-by-bunch'
+        circumference=circumference
     )
 
-    line = xt.Line(elements=[[one_turn_map, transverse_damper][0]],
-                   element_names=[['one_turn_map', 'transverse_damper'][0]])
+    line = xt.Line(elements=[one_turn_map, transverse_damper],
+                   element_names=['one_turn_map', 'transverse_damper'])
 
-    line.particle_ref = xt.Particles(p0c=p0c)
+    line.particle_ref = xt.Particles(p0c=450e9)
     line.build_tracker(_context=test_context)
 
     particles = xp.generate_matched_gaussian_multibunch_beam(
@@ -87,10 +85,9 @@ def test_transverse_damper(test_context):
         bunch_intensity_particles=intensity,
         nemitt_x=epsn_x, nemitt_y=epsn_y, sigma_z=sigma_z,
         line=line, bunch_spacing_buckets=bunch_spacing_buckets,
-        bunch_selection=filled_slots,
         rf_harmonic=[h_rf], rf_voltage=[v_rf],
         particle_ref=line.particle_ref,
-
+        prepare_line_and_particles_for_mpi_wake_sim=True
     )
 
     # apply a distortion to the bunches
@@ -98,32 +95,27 @@ def test_transverse_damper(test_context):
     particles.px += amplitude
     particles.py += amplitude
 
-    mean_x = np.zeros((n_turns, num_bunches))
-    mean_y = np.zeros((n_turns, num_bunches))
+    mean_x = np.zeros((n_turns))
+    mean_y = np.zeros((n_turns))
 
     for i_turn in range(n_turns):
         line.track(particles, num_turns=1)
-        transverse_damper.track(particles, i_turn)
-        for ib in range(num_bunches):
-            mean_x[i_turn, ib] = np.mean(particles.x[n_macroparticles*ib:
-                                                     n_macroparticles*(ib+1)])
-            mean_y[i_turn, ib] = np.mean(particles.y[n_macroparticles*ib:
-                                                     n_macroparticles*(ib+1)])
+        mean_x[i_turn] = np.mean(particles.x)
+        mean_y[i_turn] = np.mean(particles.y)
 
     turns = np.linspace(0, n_turns-1, n_turns)
 
     i_fit_start = 200
     i_fit_end = 600
 
-    for i_bunch in range(num_bunches):
-        ampls_x = np.abs(hilbert(mean_x[:, i_bunch]))
-        fit_x = linregress(turns[i_fit_start: i_fit_end],
-                           np.log(ampls_x[i_fit_start: i_fit_end]))
+    ampls_x = np.abs(hilbert(mean_x))
+    fit_x = linregress(turns[i_fit_start: i_fit_end],
+                        np.log(ampls_x[i_fit_start: i_fit_end]))
 
-        assert np.isclose(-fit_x.slope*2, gain_x, atol=1e-4, rtol=0)
+    assert np.isclose(-fit_x.slope*2, gain_x, atol=1e-4, rtol=0)
 
-        ampls_y = np.abs(hilbert(mean_y[:, i_bunch]))
-        fit_y = linregress(turns[i_fit_start: i_fit_end],
-                           np.log(ampls_y[i_fit_start: i_fit_end]))
+    ampls_y = np.abs(hilbert(mean_y))
+    fit_y = linregress(turns[i_fit_start: i_fit_end],
+                        np.log(ampls_y[i_fit_start: i_fit_end]))
 
-        assert np.isclose(-fit_y.slope*2, gain_y, atol=1e-4, rtol=0)
+    assert np.isclose(-fit_y.slope*2, gain_y, atol=1e-4, rtol=0)
