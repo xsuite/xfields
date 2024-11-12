@@ -350,7 +350,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
                   BhabhaTableData_set_at_element(    bhabha_table, i_slot, LocalParticle_get_at_element(part));
                   BhabhaTableData_set_at_turn(       bhabha_table, i_slot, LocalParticle_get_at_turn(part));
                   BhabhaTableData_set_particle_id(   bhabha_table, i_slot, LocalParticle_get_particle_id(part));
-		              BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary*1e9);
+		  BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary*1e9);
                   BhabhaTableData_set_photon_id(     bhabha_table, i_slot, n);
                   BhabhaTableData_set_photon_x(      bhabha_table, i_slot, x_photon);
                   BhabhaTableData_set_photon_y(      bhabha_table, i_slot, y_photon);
