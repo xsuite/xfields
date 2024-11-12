@@ -10,18 +10,10 @@ from xobjects.test_helpers import for_all_test_contexts
 
 import ducktrack as dtk
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_digitize(test_context):
 
     print(repr(test_context))
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     slicer = xf.TempSlicer(_context=test_context, n_slices=3, sigma_z=1, mode="unicharge")
     z = np.sort(np.hstack([10, slicer.bin_centers, slicer.bin_edges, -10]))
@@ -40,16 +32,11 @@ def test_digitize(test_context):
     # slice id -1 is ahead of first bin, n_slices is behind last bin or at last bin lower edge
     assert np.all(slice_indices == np_digitize), "Slice indices do not match!"
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_compute_moments_1(test_context):
 
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #
@@ -79,8 +66,11 @@ def test_compute_moments_1(test_context):
 
     for default_blocksize in default_blocksize_list:
 
-        for n_slices in n_slices_list:
+        if isinstance(test_context, xo.ContextCupy):
+            test_context.default_block_size=default_blocksize
+            print(f"[test.py] default_blocksize: {test_context.default_block_size}")
 
+        for n_slices in n_slices_list:
             print(f"[test.py] n_slices: {n_slices}")
 
             if isinstance(test_context, xo.ContextCupy):
@@ -115,7 +105,7 @@ def test_compute_moments_1(test_context):
             particles_b2.state[:int(n_macroparticles/4)] = 0  # set 1/4 of the particles to lost (reduce if more slices)
 
             # np.cumsum[-1] =/= np.sum due to different order of summation
-            # use np.isclose instead of ==; np.sum does pariwise sum which orders values differently thus causing a numerical error
+            # use np.isclose instead of ==; np.sum does pairwise sum which orders values differently thus causing a numerical error
             # https://stackoverflow.com/questions/69610452/why-does-the-last-entry-of-numpy-cumsum-not-necessarily-equal-numpy-sum
             # check if the mean and std of the alive particles in each slice agrees with Xfields compute_moments
             for particles in [particles_b1, particles_b2]:
@@ -183,16 +173,11 @@ def test_compute_moments_1(test_context):
                     f"n_macroparticles={n_macroparticles}, "
                     "blocksize(on GPU only)={default_blocksize}) is wrong!")
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_compute_moments_2(test_context):
 
     print(repr(test_context))
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
 
     ###########
     # ttbar 2 #
@@ -233,12 +218,14 @@ def test_compute_moments_2(test_context):
     binning_list = ["unibin", "unicharge", "shatilov"]
 
     # on GPU check for multiple grid settings
-    default_blocksize_list = [0]
     if isinstance(test_context, xo.ContextCupy):
         test_context.default_shared_mem_size_bytes=n_slices*17*8
         default_blocksize_list = [1, 256, 1024]
+    else:
+        default_blocksize_list = [0]
 
     for default_blocksize in default_blocksize_list:
+
         if isinstance(test_context, xo.ContextCupy):
             test_context.default_block_size=default_blocksize
             print(f"[test.py] default_blocksize: {test_context.default_block_size}")
