@@ -350,7 +350,7 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
                   BhabhaTableData_set_at_element(    bhabha_table, i_slot, LocalParticle_get_at_element(part));
                   BhabhaTableData_set_at_turn(       bhabha_table, i_slot, LocalParticle_get_at_turn(part));
                   BhabhaTableData_set_particle_id(   bhabha_table, i_slot, LocalParticle_get_particle_id(part));
-		  BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary*1e9);
+		              BhabhaTableData_set_primary_energy(bhabha_table, i_slot, e_primary*1e9);
                   BhabhaTableData_set_photon_id(     bhabha_table, i_slot, n);
                   BhabhaTableData_set_photon_x(      bhabha_table, i_slot, x_photon);
                   BhabhaTableData_set_photon_y(      bhabha_table, i_slot, y_photon);
@@ -371,14 +371,12 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
               if (e_loss_primary == 0.0){
                 printf("0 energy loss: %g", e_loss_primary);
               }else{
-                //printf("[%d] lost %g [GeV]\n", (int)part->ipart, e_loss_primary);
                 if (-1.0 * e_loss_primary >= e_primary){  // macropart dies
                   LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
                   return;
                 }else{  // macropart doesnt die
                   *vx    = px_e_prime / e_e_prime;
                   *vy    = py_e_prime / e_e_prime;
-                  //*vzeta = pzeta_e_prime / e_e_prime;
                   e_primary += e_loss_primary;
                   LocalParticle_add_to_energy(part, e_loss_primary*1e9, 0);  // this changes pzeta
                 }
