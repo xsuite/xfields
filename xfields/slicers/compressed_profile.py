@@ -173,10 +173,6 @@ class CompressedProfile(xt.BeamElement):
             i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
             i_end_in_moments_data = i_start_in_moments_data + self._N_1
 
-            #if hasattr(vv, 'get'):
-            #    self.data[i_moment, i_turn,
-            #            i_start_in_moments_data:i_end_in_moments_data] = vv.get()
-            #else:
             self.data[i_moment, i_turn,
                     i_start_in_moments_data:i_end_in_moments_data] = vv
 
