@@ -170,7 +170,7 @@ class ElementWithSlicer(xt.BeamElement):
                 continue
             means[mm] = slicer.mean(mm)
 
-        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_selection):
+        for i_bunch_in_slicer, bunch_number in enumerate(slicer._xobject.bunch_selection):
             moments_bunch = {}
             for nn in means.keys():
                 moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]
@@ -180,7 +180,7 @@ class ElementWithSlicer(xt.BeamElement):
             self.moments_data.set_moments(
                 moments=moments_bunch,
                 i_turn=0,
-                i_source=slicer.filled_slots[bunch_number])
+                i_source=slicer._xobject.filled_slots[bunch_number])
 
     def _update_moments_for_new_turn(self, particles, _slice_result=None):
         if self.with_compressed_profile:
