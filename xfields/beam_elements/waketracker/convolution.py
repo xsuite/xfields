@@ -88,13 +88,13 @@ class _ConvData(xt.BeamElement):
             self._DD = self._BB
 
             # Build wake matrix
-            self.z_wake = self._arr2ctx(_build_z_wake(moments_data._z_a, moments_data._z_b,
+            self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,
                                         moments_data.num_turns,
                                         moments_data._N_aux, moments_data._M_aux,
                                         moments_data.circumference,
                                         moments_data.dz, self._AA,
                                         self._BB, self._CC, self._DD,
-                                        moments_data._z_P))
+                                        moments_data._z_P)
             assert beta0 is not None
             # here below I had to add float() to beta0 because when using Cupy
             # context particles.beta0[0] turns out to be a 0d array. To be checked
