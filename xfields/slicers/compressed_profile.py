@@ -113,11 +113,9 @@ class CompressedProfile(xt.BeamElement):
 
         self.moments_names = moments
 
-        data = np.zeros(
-            (len(moments), num_turns, self._M_aux), dtype=np.float64)
-
         self.xoinitialize(_N_S=_N_S, _N_aux=_N_aux, num_turns=num_turns, 
-                          data=data, **kwargs)
+                          data=(len(moments), num_turns, self._M_aux),
+                          **kwargs)
 
 
     def __getitem__(self, key):
