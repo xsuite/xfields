@@ -183,9 +183,8 @@ class _ConvData(xt.BeamElement):
         if isinstance(moment_names, str):
             moment_names = [moment_names]
 
-        # we do zeros + 1 because there is no ones method in context
-        rho_aux = self.context.zeros(shape=moments_data['result'].shape,
-                                     dtype=np.float64) + 1
+        rho_aux = self.context.nplike_lib.zeros(
+            shape=moments_data['result'].shape, dtype=np.float64)
 
         for nn in moment_names:
             rho_aux *= moments_data[nn]
