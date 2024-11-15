@@ -53,7 +53,10 @@ class WakeTracker(ElementWithSlicer):
                  num_turns=1,
                  circumference=None,
                  log_moments=None,
-                 _flatten=False):
+                 _flatten=False,
+                 **kwargs):
+
+        self.xoinitialize(**kwargs)
 
         self.components = components
         self.pipeline_manager = None
@@ -75,8 +78,8 @@ class WakeTracker(ElementWithSlicer):
             bunch_selection=bunch_selection,
             num_turns=num_turns,
             circumference=circumference,
-            with_compressed_profile=True
-        )
+            with_compressed_profile=True,
+            _context=self.context)
 
         self._initialize_moments(
             zeta_range=zeta_range,  # These are [a, b] in the paper
@@ -114,7 +117,8 @@ class WakeTracker(ElementWithSlicer):
                 continue
 
             cc._conv_data = _ConvData(component=cc, waketracker=self,
-                                            _flatten=self._flatten)
+                                            _flatten=self._flatten,
+                                            _context=self._context)
             cc._conv_data._initialize_conv_data(_flatten=self._flatten,
                                                 moments_data=self.moments_data,
                                                 beta0=beta0)
