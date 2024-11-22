@@ -108,13 +108,13 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
                           subtract_dipolar_kicks=False, fieldmaps=None):
     assert twiss is not None
     assert ecloud_info is not None
-    if subtract_dipolar_kicks:
-        dipolar_kicks = {}
-        assert fieldmaps is not None
-        for key in fieldmaps.keys():
-            fieldmap = fieldmaps[key]
-            dipolar_kicks[key] = electroncloud_dipolar_kicks_of_fieldmap(
-                fieldmap=fieldmap, p0c=line.particle_ref.p0c)
+    # if subtract_dipolar_kicks:
+    #     dipolar_kicks = {}
+    #     assert fieldmaps is not None
+    #     for key in fieldmaps.keys():
+    #         fieldmap = fieldmaps[key]
+    #         dipolar_kicks[key] = electroncloud_dipolar_kicks_of_fieldmap(
+    #             fieldmap=fieldmap, p0c=line.particle_ref.p0c)
 
     length_factor = line.vars['ecloud_strength'] / \
         (line.particle_ref.p0c[0] * line.particle_ref.beta0[0])
