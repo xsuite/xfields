@@ -139,6 +139,9 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
                 temp_part.x = twiss["x"][ii]
                 temp_part.y = twiss["y"][ii]
                 temp_part.zeta = twiss["zeta"][ii]
+                temp_part.px = 0
+                temp_part.py = 0
+                temp_part.ptau = 0 #pzeta has no setter
                 line.elements[ii].track(temp_part)
 
                 ctx_to_np = line._context.nparray_from_context_array
