@@ -115,22 +115,22 @@ def test_electroncloud_config(test_context):
     fname_line = XTRACK_TEST_DATA/"lhc_no_bb/line_and_particle.json"
 
     with open(fname_line, 'r') as fid:
-         input_data = json.load(fid)
+        input_data = json.load(fid)
     line = xt.Line.from_dict(input_data['line'])
     line.particle_ref = xp.Particles(p0c=input_data['particle']['p0c'])
 
     xfields_test_data_folder = pathlib.Path(
-    __file__).parent.joinpath('../test_data').absolute()
+        __file__).parent.joinpath('../test_data').absolute()
 
-    pinch_filenames = {'mqf' : xfields_test_data_folder/"pyecloud_pinch/refined_Pinch_MTI1.0_MLI1.0_DTO2.0_DLO1.0.h5",
-                       'mqd' : xfields_test_data_folder/"pyecloud_pinch/refined_Pinch_MTI1.0_MLI1.0_DTO2.0_DLO1.0.h5"}
+    pinch_filenames = {'mqf': xfields_test_data_folder/"pyecloud_pinch/refined_Pinch_MTI1.0_MLI1.0_DTO2.0_DLO1.0.h5",
+                       'mqd': xfields_test_data_folder/"pyecloud_pinch/refined_Pinch_MTI1.0_MLI1.0_DTO2.0_DLO1.0.h5"}
 
     zeta_max = 0.1
     ecloud_info = json.load(open(xfields_test_data_folder/"pyecloud_pinch/eclouds.json", "r"))
 
     reduced_ecloud_info = {
-         'mqf' : { key : ecloud_info['mqf'][key] for key in list(ecloud_info['mqf'].keys())[:5]},
-         'mqd' : { key : ecloud_info['mqd'][key] for key in list(ecloud_info['mqd'].keys())[:5]}
+        'mqf': {key: ecloud_info['mqf'][key] for key in list(ecloud_info['mqf'].keys())[:5]},
+        'mqd': {key: ecloud_info['mqd'][key] for key in list(ecloud_info['mqd'].keys())[:5]}
     }
 
     twiss_without_ecloud, twiss_with_ecloud = xf.full_electroncloud_setup(line=line, 
