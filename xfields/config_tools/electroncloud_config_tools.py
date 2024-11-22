@@ -41,7 +41,7 @@ def get_electroncloud_fieldmap_from_h5(
 
         if min_index < 0 or max_index > nz:
             raise Exception(
-                f"Range ({-np.abs(zeta_max):.4f}, {np.abs(zeta_max):.4f}) not in maximum range of z_grid: ({zg[0]:.4f},{zg[-1:]:.3f}) of file: {filename}")
+                f"Range ({-np.abs(zeta_max):.4f}, {np.abs(zeta_max):.4f}) not in maximum range of z_grid: ({zg[0]:.4f},{zg[-1]:.3f}) of file: {filename}")
 
         iz1 = min_index
         iz2 = max_index
