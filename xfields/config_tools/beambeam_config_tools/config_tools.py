@@ -86,7 +86,7 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
         surveys = {}
 
         for ip_name in ip_names:
-            sv_ip = line.survey(element0=ip_name)
+            sv_ip = line.survey(element0=ip_name, reverse=False)
             if orientation == 'acw':
                 sv_ip = sv_ip.reverse()
             surveys[ip_name] = sv_ip
