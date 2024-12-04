@@ -6,7 +6,14 @@ import xfields as xf
 
 class CompressedProfile(xt.BeamElement):
     """
-    An object holding a compressed version of the beam data.
+    An object holding a compressed version of the beam data. This allows to
+    store the moments of the beam in a compressed way, i.e. avoiding to store
+    the moments in the empty slices between bunches.
+    The CompressedProfile is used for example in the _ConvData class for the
+    computation of the wake kicks.
+    The way this is handled is based on the algorithm devised by J. Komppula
+    (https://indico.cern.ch/event/735184/contributions/3032237/attachments/1668727/2676169/Multibunch_pyheadtail_algorithms.pdf)
+    and N. Mounet (https://indico.cern.ch/event/735184/contributions/3032242/attachments/1668613/2676354/20180615_PyHEADTAIL_convolution_algorithm.pdf).
 
     Parameters
     ----------.

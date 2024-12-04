@@ -14,8 +14,29 @@ from typing import Tuple
 
 
 class _ConvData(xt.BeamElement):
+    '''
+    This class is used to perform the convolution of the wakefields with the
+    beam. It is not meant to be used directly by the user, but only by the
+    WakeTracker class.
+
+    The convolution algorithm is optimized to avoid the gaps between bunches,
+    using the algorithm described in the Xsuite physics manual (section 10.5), 
+    which was originally developed for PyHEADTAIL by J. Komppula
+    (https://indico.cern.ch/event/735184/contributions/3032237/attachments/1668727/2676169/Multibunch_pyheadtail_algorithms.pdf)
+    and N. Mounet (https://indico.cern.ch/event/735184/contributions/3032242/attachments/1668613/2676354/20180615_PyHEADTAIL_convolution_algorithm.pdf).
+    '''
     def __init__(self, component, waketracker=None, _flatten=False, log_moments=None,
                 **kwargs):
+        '''
+        Parameters:
+        -----------
+        component: xfields.beam_elements.waketracker.WakeField
+            The wakefield component to be convolved with the beam
+        waketracker: xfields.beam_elements.waketracker.WakeTracker
+            The WakeTracker object that will use this ConvData object
+        log_moments: list of str
+            List of moments to be logged in the moments_data object
+        '''
 
         self.xoinitialize(**kwargs)
 
