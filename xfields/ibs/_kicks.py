@@ -23,6 +23,8 @@ from xfields.ibs._formulary import (
     _current_turn,
     _gemitt_x,
     _gemitt_y,
+    _mean_px,
+    _mean_py,
     _sigma_delta,
     _sigma_px,
     _sigma_py,
@@ -343,8 +345,8 @@ class IBSAnalyticalKick(IBSKick):
         # Normalized: for momentum we have to multiply with 1/sqrt(gamma) = sqrt(beta) / sqrt(1 + alpha^2), and the
         # sqrt(beta) is included in the std of p[xy]. If bunch is rotated, the std takes from the "other plane" so
         # we take the normalized momenta to compensate.
-        sigma_px_normalized: float = _sigma_px(particles) / np.sqrt(1 + self._twiss["alfx", self._name] ** 2)
-        sigma_py_normalized: float = _sigma_py(particles) / np.sqrt(1 + self._twiss["alfy", self._name] ** 2)
+        sigma_px_normalized: float = _sigma_px(particles, self._twiss["dpx", self._name]) / np.sqrt(1 + self._twiss["alfx", self._name] ** 2)
+        sigma_py_normalized: float = _sigma_py(particles, self._twiss["dpy", self._name]) / np.sqrt(1 + self._twiss["alfy", self._name] ** 2)
         # ----------------------------------------------------------------------------------------------
         # Determine the "scaling factor", corresponding to 2 * sigma_t * sqrt(pi) in Eq (8) of reference
         scaling_factor: float = float(2 * np.sqrt(np.pi) * bunch_length)
@@ -679,17 +681,17 @@ class IBSKineticKick(IBSKick):
         # reference. Normalized: for momentum we have to multiply with 1 / sqrt(gamma) which is equal to
         # sqrt(beta) / sqrt(1 + alpha^2), and the sqrt(beta) is included in the std of p[xy]. If the bunch
         # is rotated, the stdev takes from the "other plane" so we take the normalized momenta to compensate.
-        sigma_delta: float = _sigma_delta(particles)                                                               # on context
-        sigma_px_normalized: float = _sigma_px(particles) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)  # on context
-        sigma_py_normalized: float = _sigma_py(particles) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)  # on context
+        sigma_delta: float = _sigma_delta(particles)                                                                                               # on context
+        sigma_px_normalized: float = _sigma_px(particles, self._twiss["dpx", self._name]) / nplike.sqrt(1 + self._twiss["alfx", self._name] ** 2)  # on context
+        sigma_py_normalized: float = _sigma_py(particles, self._twiss["dpy", self._name]) / nplike.sqrt(1 + self._twiss["alfy", self._name] ** 2)  # on context
         # ----------------------------------------------------------------------------------------------
         # Determining the Friction kicks (momenta change from friction forces)
         # Friction term is in absolute value and depends on the momentum. If we have a distribution
         # the friction term is with respect to the center -> if the beam is off-center we need to
         # compensate for this, so we use deviation of particle p[xy] from distribution mean of p[xy]
         LOGGER.debug("Determining friction kicks")
-        dev_px: ArrayLike = particles.px[particles.state > 0] - nplike.mean(particles.px[particles.state > 0])           # on context
-        dev_py: ArrayLike = particles.py[particles.state > 0] - nplike.mean(particles.py[particles.state > 0])           # on context
+        dev_px: ArrayLike = particles.px[particles.state > 0] - _mean_px(particles, self._twiss["dpx", self._name])      # on context
+        dev_py: ArrayLike = particles.py[particles.state > 0] - _mean_py(particles, self._twiss["dpy", self._name])      # on context
         dev_delta: ArrayLike = particles.delta[particles.state > 0] - nplike.mean(particles.delta[particles.state > 0])  # on context
         Fx, Fy, Fz = self.friction_coefficients.as_tuple()  # floats
         delta_px_friction: ArrayLike = -Fx * dev_px * dt * rho_z        # on context
@@ -701,7 +703,7 @@ class IBSKineticKick(IBSKick):
         Dx, Dy, Dz = self.diffusion_coefficients.as_tuple()  # floats
         rng = nplike.random.default_rng()
         _size = particles.px[particles.state > 0].shape[0]  # same for py and delta, it's the alive particles
-        # TODO: the factor 2 here is missing in the paper atm and it's a typo (remove when new paper is out)
+        # TODO: the factor 2 here is missing in the paper atm and it's a typo from Michalis (remove comment when new paper is out)
         delta_px_diffusion: ArrayLike = sigma_px_normalized * nplike.sqrt(2 * dt * Dx * rho_z) * rng.standard_normal(_size)  # on context
         delta_py_diffusion: ArrayLike = sigma_py_normalized * nplike.sqrt(2 * dt * Dy * rho_z) * rng.standard_normal(_size)  # on context
         delta_delta_diffusion: ArrayLike = sigma_delta * nplike.sqrt(2 * dt * Dz * rho_z) * rng.standard_normal(_size)       # on context
