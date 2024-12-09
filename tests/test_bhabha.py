@@ -15,7 +15,7 @@ bins = np.logspace(np.log10(1e-4), np.log10(2e2), 20)
 guinea_hist = np.array([2693, 3137, 2912, 2482, 2156])  # from GP legacy ttbar2 100 slices
 cx = 1e-2
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_bhabha_ws_no_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
@@ -66,7 +66,7 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
 
     particles_b1.name = "b1"
 
-    slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+    slicer = xf.TempSlicer(_context=test_context, n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
 
     el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
             _context=test_context,
@@ -99,7 +99,6 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     line.build_tracker(_context=test_context)
 
     assert line._needs_rng == False
-
     line.configure_radiation(model_bhabha='quantum')
     assert line._needs_rng == True
 
@@ -126,16 +125,9 @@ def test_beambeam3d_bhabha_ws_no_config(test_context):
     # test if relative error in the last 5 bins is smaller than 2e-1
     assert np.allclose(xsuite_ws_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_bhabha_ws_config(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
@@ -246,16 +238,9 @@ def test_beambeam3d_bhabha_ws_config(test_context):
     # test if relative error in the last 5 bins is smaller than 2e-1
     assert np.allclose(xsuite_ws_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_bhabha_qss(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp
@@ -425,16 +410,9 @@ def test_beambeam3d_bhabha_qss(test_context):
     assert np.allclose(xsuite_qss_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
     assert np.allclose(xsuite_qss_b2_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_bhabha_ss(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         import cupy as cp

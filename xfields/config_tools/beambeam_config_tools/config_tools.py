@@ -77,7 +77,7 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
         if bb_df is None:
             continue
 
-        twiss = line.twiss()
+        twiss = line.twiss(reverse=False) # Ignore twiss_default for reverse
         if orientation == 'acw':
             tw_acw = twiss
             twiss = twiss.reverse()
@@ -86,7 +86,7 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
         surveys = {}
 
         for ip_name in ip_names:
-            sv_ip = line.survey(element0=ip_name)
+            sv_ip = line.survey(element0=ip_name, reverse=False) # Ignore twiss_default for reverse
             if orientation == 'acw':
                 sv_ip = sv_ip.reverse()
             surveys[ip_name] = sv_ip
@@ -723,7 +723,7 @@ def setup_beam_beam_in_line(
 
 def measure_crabbing(line, bb_df, reverse):
 
-    tw = line.twiss()
+    tw = line.twiss(reverse=False) # Ignore twiss_default for reverse
     if reverse:
         tw = tw.reverse()
 
@@ -735,7 +735,8 @@ def measure_crabbing(line, bb_df, reverse):
             if reverse:
                 zeta0 = -zeta0 # LHC convention
             tw4d_crab = line.twiss(method='4d',zeta0=zeta0,
-                                   freeze_longitudinal=True)
+                                   freeze_longitudinal=True,
+                                   reverse=False) # Ignore twiss_default for reverse
             if reverse:
                 tw4d_crab = tw4d_crab.reverse()
             ii = np.where(np.array(tw.name) == nn)[0][0]

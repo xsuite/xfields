@@ -14,11 +14,12 @@ from xobjects.test_helpers import for_all_test_contexts
 test_data_folder = pathlib.Path(
     __file__).parent.joinpath('../test_data').absolute()
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
 
     print(repr(test_context))
 
@@ -64,7 +65,7 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
 
     particles_b1.name = "b1"
 
-    slicer = xf.TempSlicer(n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
+    slicer = xf.TempSlicer(_context=test_context, n_slices=n_slices, sigma_z=sigma_z_tot, mode="unicharge")
 
     el_beambeam_b1 = xf.BeamBeamBiGaussian3D(
     _context=test_context,
@@ -97,7 +98,6 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
     line.build_tracker(_context=test_context)
 
     assert line._needs_rng == False
-
     line.configure_radiation(model_beamstrahlung='quantum')
     assert line._needs_rng == True
 
@@ -130,15 +130,14 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = (test_data_folder
-        / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt")
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
-    bins = np.logspace(
-        np.log10(1e-14), np.log10(1e1), n_bins)
-    xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9,
-                                bins=bins)[0]
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
+    xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     bin_rel_errors = np.abs(xsuite_hist - guinea_hist) / guinea_hist
     print(f"bin relative errors [1]: {bin_rel_errors}")
@@ -187,19 +186,15 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
     photon_energy_mean = np.mean(sorted(set(record.beamstrahlungtable.photon_energy))[1:])
     assert np.all(np.abs(record_avg.beamstrahlungtable.photon_energy - photon_energy_mean) / photon_energy_mean < 1e-1)
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_ws_config(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
+
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #
@@ -315,12 +310,15 @@ def test_beambeam3d_beamstrahlung_ws_config(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
     bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
     xsuite_hist = np.histogram(record.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     bin_rel_errors = np.abs(xsuite_hist - guinea_hist) / guinea_hist
     print(f"bin relative errors [1]: {bin_rel_errors}")
@@ -364,19 +362,15 @@ def test_beambeam3d_beamstrahlung_ws_config(test_context):
     photon_energy_mean = np.mean(sorted(set(record.beamstrahlungtable.photon_energy))[1:])
     assert np.all(np.abs(record_avg.beamstrahlungtable.photon_energy - photon_energy_mean) / photon_energy_mean < 1e-1)
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_qss(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
+
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #
@@ -560,11 +554,13 @@ def test_beambeam3d_beamstrahlung_qss(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
     bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     xsuite_ss_b1_hist = np.histogram(record_ss_b1.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
     xsuite_ss_b2_hist = np.histogram(record_ss_b2.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
@@ -632,19 +628,15 @@ def test_beambeam3d_beamstrahlung_qss(test_context):
     assert np.all(np.abs(record_avg_b1.beamstrahlungtable.photon_energy - ss_b1_photon_energy_mean) / ss_b1_photon_energy_mean < 1e-1)
     assert np.all(np.abs(record_avg_b2.beamstrahlungtable.photon_energy - ss_b2_photon_energy_mean) / ss_b2_photon_energy_mean < 1e-1)
 
-@for_all_test_contexts
+
+@for_all_test_contexts(excluding="ContextPyopencl")
 def test_beambeam3d_beamstrahlung_ss(test_context):
-
-    if isinstance(test_context, xo.ContextPyopencl):
-        pytest.skip("Not implemented for OpenCL")
-        return
-
-    if isinstance(test_context, xo.ContextCupy):
-        pytest.skip("Not implemented for cupy")
-        return
 
     if isinstance(test_context, xo.ContextCupy):
         print(f"[test.py] default_blocksize: {test_context.default_block_size}")
+        import cupy as cp
+
+    print(repr(test_context))
 
     ###########
     # ttbar 2 #
@@ -830,11 +822,13 @@ def test_beambeam3d_beamstrahlung_ss(test_context):
     # test 1: compare spectrum with guineapig #
     ###########################################
 
-    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
-    guinea_photons = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
+#    fname = test_data_folder / "beamstrahlung/guineapig_ttbar2_beamstrahlung_photon_energies_gev.txt"
+    fname = test_data_folder / "test_beamstrahlung/test_beamstrahlung_guineapig_ttbar2_beamstrahlung_photon_hist.txt"
+
+    guinea_hist = np.loadtxt(fname)  # contains about 250k photons emitted from 1e6 macroparticles in 1 collision
     n_bins = 10
     bins = np.logspace(np.log10(1e-14), np.log10(1e1), n_bins)
-    guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
+    #guinea_hist = np.histogram(guinea_photons, bins=bins)[0]
 
     xsuite_ss_b1_hist = np.histogram(record_ss_b1.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
     xsuite_ss_b2_hist = np.histogram(record_ss_b2.beamstrahlungtable.photon_energy/1e9, bins=bins)[0]
