@@ -79,7 +79,6 @@ def test_tricubic_interpolation(test_context):
 
     p0c = 450e9
     testp0 = xp.Particles(p0c=p0c)
-    beta0 = testp0.beta0
     part = xp.Particles(_context=test_context, x=x_test, y=y_test,
                         zeta=zeta_test, p0c=p0c)
     ecloud.track(part)
@@ -93,22 +92,9 @@ def test_tricubic_interpolation(test_context):
     true_pzeta = np.array([-dfdz(xx, yy, zz) for xx, yy, zz in zip(part.x[mask_p], part.y[mask_p],
                                                                 part.zeta[mask_p])])
 
-    # print(true_px[:5])
-    # print(part.ptau[:5])
-    # print(part.state[:5])
-    # print(f"px kick diff.: {np.mean(part.px[mask_p]-true_px):.2e} +- {np.std(part.px[mask_p] - true_px):.2e}")
-    # print(f"py kick diff.: {np.mean(part.py[mask_p]-true_py):.2e} +- {np.std(part.py[mask_p] - true_py):.2e}")
-    # print(f"ptau kick diff.: {np.mean(part.ptau[mask_p]-true_ptau):.2e} +- {np.std(part.ptau[mask_p] - true_ptau):.2e}")
-    # print(np.allclose(part.px[mask_p], true_px, atol=1.e-13, rtol=1.e-13))
-    # print(np.allclose(part.py[mask_p], true_py, atol=1.e-13, rtol=1.e-13))
-    # print(np.allclose(part.ptau[mask_p], true_ptau, atol=1.e-13, rtol=1.e-13))
-    # print(np.max(np.abs(part.px[mask_p]- true_px)))
-    # print(np.max(np.abs(part.py[mask_p]- true_py)))
-    # print(np.max(np.abs(part.ptau[mask_p]- true_ptau)))
-
-    assert np.allclose(part.px[mask_p], true_px, atol=1.e-13, rtol=1.e-13)
-    assert np.allclose(part.py[mask_p], true_py, atol=1.e-13, rtol=1.e-13)
-    assert np.allclose(part.pzeta[mask_p], true_pzeta, atol=1.e-13, rtol=1.e-13)
+    xo.assert_allclose(part.px[mask_p], true_px, atol=1.e-13, rtol=1.e-13)
+    xo.assert_allclose(part.py[mask_p], true_py, atol=1.e-13, rtol=1.e-13)
+    xo.assert_allclose(part.pzeta[mask_p], true_pzeta, atol=1.e-13, rtol=1.e-13)
 
 @for_all_test_contexts
 def test_electroncloud_config(test_context):
@@ -137,5 +123,5 @@ def test_electroncloud_config(test_context):
                 ecloud_info=reduced_ecloud_info, filenames=pinch_filenames, context=test_context, zeta_max=zeta_max)
 
 
-    assert np.all(np.isclose(twiss_with_ecloud['x'],twiss_without_ecloud['x'], atol=1e-12, rtol=0))
-    assert np.all(np.isclose(twiss_with_ecloud['y'],twiss_without_ecloud['y'], atol=1e-12, rtol=0))
+    xo.assert_allclose(twiss_with_ecloud['x'],twiss_without_ecloud['x'], atol=1e-12, rtol=0)
+    xo.assert_allclose(twiss_with_ecloud['y'],twiss_without_ecloud['y'], atol=1e-12, rtol=0)
