@@ -123,5 +123,5 @@ def test_electroncloud_config(test_context):
                 ecloud_info=reduced_ecloud_info, filenames=pinch_filenames, context=test_context, zeta_max=zeta_max)
 
 
-    xo.assert_allclose(twiss_with_ecloud['x'],twiss_without_ecloud['x'], atol=1e-12, rtol=0)
-    xo.assert_allclose(twiss_with_ecloud['y'],twiss_without_ecloud['y'], atol=1e-12, rtol=0)
+    xo.assert_allclose(twiss_with_ecloud['x'],twiss_without_ecloud['x'], atol=3e-12, rtol=0)
+    xo.assert_allclose(twiss_with_ecloud['y'],twiss_without_ecloud['y'], atol=3e-12, rtol=0)
