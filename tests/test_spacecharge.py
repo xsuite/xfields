@@ -16,8 +16,8 @@ import xfields as xf
 import ducktrack as dtk
 
 import xobjects as xo
-from xobjects.test_helpers import for_all_test_contexts
-
+from xobjects.test_helpers import for_all_test_contexts, fix_random_seed
+from xpart.test_helpers import retry, flaky_assertions
 
 pmass = pmass_kg*clight**2/qe
 
@@ -239,7 +239,9 @@ def test_spacecharge_pic(solver, test_context):
             p_dtk.py[mask_inside_grid],
             atol=3e-2*np.max(np.abs(p_dtk.py[mask_inside_grid])))
 
+
 @for_all_test_contexts
+@fix_random_seed(4342599)
 def test_spacecharge_pic_zkick(test_context):
 
     num_particles = int(10e6)
