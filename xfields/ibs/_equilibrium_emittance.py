@@ -91,11 +91,11 @@ def ibs_rates(
         ):
             # The convention used enforces a total transverse emittance 
             # conservation for any emittance_coupling_factor.
-            natural_emittance_x *= 1 / (1 + emittance_coupling_factor)
             natural_emittance_y = (
                 natural_emittance_x * emittance_coupling_factor
                 / (1 + emittance_coupling_factor)
             )
+            natural_emittance_x *= 1 / (1 + emittance_coupling_factor)
         if (
             emittance_coupling_factor != 0
             and emittance_constraint.lower() == "excitation"
@@ -140,6 +140,7 @@ def ibs_rates(
         -2 * damping_rate_z * (input_emittance_z - natural_emittance_z)
         + ibs_growth_rates.Tz * input_emittance_z
     )
+    
     return (
         (depsilon_x_dt, depsilon_y_dt, depsilon_z_dt),
         (ibs_growth_rates.Tx, ibs_growth_rates.Ty, ibs_growth_rates.Tz),
@@ -232,11 +233,11 @@ def compute_emittance_evolution(
         ):
             # The convention used enforces a total transverse emittance 
             # conservation for any emittance_coupling_factor
-            emittance_x *= 1 / (1 + emittance_coupling_factor)
             emittance_y = (
                 emittance_x * emittance_coupling_factor
                 / (1 + emittance_coupling_factor)
             )
+            emittance_x *= 1 / (1 + emittance_coupling_factor)
         if (
             emittance_coupling_factor != 0
             and emittance_constraint.lower() == "excitation"
@@ -250,20 +251,16 @@ def compute_emittance_evolution(
             warnings.warn("'initial_emittances' is specified but not "
                           "'natural_emittances', proceed with caution.")
         
+    sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
+    sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     if input_sigma_zeta is not None:
         warnings.warn("'input_sigma_zeta' is specified, make sure it remains "
               "consistent with 'initial_emittances'.")
         sigma_zeta = input_sigma_zeta
-        sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     elif input_sigma_delta is not None:
         warnings.warn("'input_sigma_delta' is specified, make sure it remains "
               "consistent with 'initial_emittances'.")
-        sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
-        sigma_delta = input_sigma_delta
-    else:
-        # Default longitudinal_emittance_ratio is twiss.bets0
-        sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
-        sigma_delta = (emittance_z / twiss.bets0) ** 0.5
+        sigma_delta = input_sigma_delta        
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
     if (input_sigma_zeta is not None or input_sigma_delta is not None):
         assert initial_emittances is not None, (
