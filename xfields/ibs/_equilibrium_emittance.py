@@ -89,13 +89,17 @@ def ibs_rates(
             emittance_coupling_factor != 0
             and emittance_constraint.lower() == "coupling"
         ):
-            # The convention used enforces a total transverse emittance 
-            # conservation for any emittance_coupling_factor.
+            # The convention used is valid for arbitrary damping partition
+            # numbers and emittance_coupling_factor.
             natural_emittance_y = (
                 natural_emittance_x * emittance_coupling_factor
-                / (1 + emittance_coupling_factor)
+                / (1 + emittance_coupling_factor *
+                twiss.partition_numbers[1] / twiss.partition_numbers[0])
             )
-            natural_emittance_x *= 1 / (1 + emittance_coupling_factor)
+            natural_emittance_x *= (
+                1 / (1 + emittance_coupling_factor *
+                twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            )
         if (
             emittance_coupling_factor != 0
             and emittance_constraint.lower() == "excitation"
@@ -109,6 +113,10 @@ def ibs_rates(
     if damping_rates is None:
         damping_rate_x, damping_rate_y, damping_rate_z = (
             twiss.damping_constants_s
+        )
+    else:
+        damping_rate_x, damping_rate_y, damping_rate_z = (
+            damping_rates
         )
 
     sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5
@@ -126,7 +134,7 @@ def ibs_rates(
         sigma_delta=sigma_delta,
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
         bunched=True,
-    )
+    )                  
 
     depsilon_x_dt = (
         -2 * damping_rate_x * (input_emittance_x - natural_emittance_x)
@@ -139,7 +147,7 @@ def ibs_rates(
     depsilon_z_dt = (
         -2 * damping_rate_z * (input_emittance_z - natural_emittance_z)
         + ibs_growth_rates.Tz * input_emittance_z
-    )
+    )        
     
     return (
         (depsilon_x_dt, depsilon_y_dt, depsilon_z_dt),
@@ -231,13 +239,18 @@ def compute_emittance_evolution(
             emittance_coupling_factor != 0
             and emittance_constraint.lower() == "coupling"
         ):
-            # The convention used enforces a total transverse emittance 
-            # conservation for any emittance_coupling_factor
+            # The convention used is valid for arbitrary damping partition
+            # numbers and emittance_coupling_factor.
             emittance_y = (
                 emittance_x * emittance_coupling_factor
-                / (1 + emittance_coupling_factor)
+                / (1 + emittance_coupling_factor *
+                twiss.partition_numbers[1] / twiss.partition_numbers[0])
             )
-            emittance_x *= 1 / (1 + emittance_coupling_factor)
+            emittance_x *= (
+                1 / (1 + emittance_coupling_factor *
+                twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            )
+            
         if (
             emittance_coupling_factor != 0
             and emittance_constraint.lower() == "excitation"
