@@ -3,27 +3,70 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
+from __future__ import annotations
+
+import logging
 import sys
 import warnings
-#from logging import getLogger
-from typing import Tuple, Literal
+from typing import Literal
 
 import numpy as np
+import xobjects as xo
 import xtrack as xt
+from xtrack import Table
 
-#LOGGER = getLogger(__name__)
+from xfields.ibs._analytical import IBSGrowthRates
+
+LOGGER = logging.getLogger(__name__)
+
+# ----- Some classes to store results (as xo.HybridClass) ----- #
+
+
+class _EmittanceTimeDerivatives(xo.HybridClass):
+    """
+    Holds emittance evolution rates named ``dex``,
+    ``dey``, and ``dez``. The values are expressed
+    in [m.s^-1].
+
+    Attributes
+    ----------
+    dex : float
+        Horizontal geometric emittance time
+        derivative, in [m.s^-1].
+    dey : float
+        Vertical geometric emittance time
+        derivative, in [m.s^-1].
+    dez : float
+        Longitudinal geometric emittance time
+        derivative, in [m.s^-1].
+    """
+
+    _xofields = {
+        "dex": xo.Float64,
+        "dey": xo.Float64,
+        "dez": xo.Float64,
+    }
+
+    def __init__(self, dex: float, dey: float, dez: float) -> None:
+        """Init with given values."""
+        self.xoinitialize(dex=dex, dey=dey, dez=dez)
+
+    def as_tuple(self) -> tuple[float, float, float]:
+        """Return the growth rates as a tuple."""
+        return float(self.dex), float(self.dey), float(self.dez)
+
 
 def ibs_rates(
     twiss: xt.TwissTable,
     bunch_intensity: float,
-    input_emittances: Tuple,
+    input_emittances: tuple,
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
-    damping_rates: Tuple = None,
+    damping_rates: tuple = None,
     **kwargs,
-):
+) -> tuple[IBSGrowthRates, _EmittanceTimeDerivatives]:
     """
     Compute the IBS growth rates and emittance evolution rates.
 
@@ -34,19 +77,19 @@ def ibs_rates(
     bunch_intensity : float
         Bunch intensity [particles per bunch].
     input_emittances : tuple of floats
-        Tuple containing the equilibrium transverse emittances (horizontal and 
+        Tuple containing the equilibrium transverse emittances (horizontal and
         vertical).
     emittance_coupling_factor : float, optional
-        Emittance coupling factor, defined as the ratio of vertical to 
+        Emittance coupling factor, defined as the ratio of vertical to
         horizontal emittance.
         Default is 0.
     emittance_constraint : str, optional
         Can enforces constraints on the transverse emittance based on the
-        emittance coupling factor. 
+        emittance coupling factor.
         "Coupling" corresponds to the case where the
         vertical emittance is the result of linear coupling.
-        "Excitation" corresponds to the case where the vertical emittance is 
-        the result of an excitation (e.g. from a feedback system). 
+        "Excitation" corresponds to the case where the vertical emittance is
+        the result of an excitation (e.g. from a feedback system).
         Default is "Coupling".
     formalism : str, optional
         Which formalism to use for the computation. Can be ``Nagaitsev``
@@ -76,21 +119,19 @@ def ibs_rates(
     )
 
     if damping_rates is None:
-        damping_rate_x, damping_rate_y, damping_rate_z = (
-            twiss.damping_constants_s
-        )
+        damping_rate_x, damping_rate_y, damping_rate_z = twiss.damping_constants_s
     else:
-        damping_rate_x, damping_rate_y, damping_rate_z = (
-            damping_rates
-        )
+        damping_rate_x, damping_rate_y, damping_rate_z = damping_rates
 
     sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5
     sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5
 
-    assert input_emittance_x > 0., ("'input_emittance_x' should be larger than"
-    " zero, try providing 'initial_emittances'")
-    assert input_emittance_y > 0., ("'input_emittance_y' should be larger than"
-    " zero, try providing 'initial_emittances'")
+    assert input_emittance_x > 0.0, (
+        "'input_emittance_x' should be larger than" " zero, try providing 'initial_emittances'"
+    )
+    assert input_emittance_y > 0.0, (
+        "'input_emittance_y' should be larger than" " zero, try providing 'initial_emittances'"
+    )
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
         total_beam_intensity=bunch_intensity,
@@ -99,7 +140,7 @@ def ibs_rates(
         sigma_delta=sigma_delta,
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
         bunched=True,
-    )                  
+    )
 
     depsilon_x_dt = (
         -2 * damping_rate_x * (input_emittance_x - natural_emittance_x)
@@ -112,12 +153,13 @@ def ibs_rates(
     depsilon_z_dt = (
         -2 * damping_rate_z * (input_emittance_z - natural_emittance_z)
         + ibs_growth_rates.Tz * input_emittance_z
-    )        
-    
+    )
+
     return (
         (depsilon_x_dt, depsilon_y_dt, depsilon_z_dt),
         (ibs_growth_rates.Tx, ibs_growth_rates.Ty, ibs_growth_rates.Tz),
     )
+
 
 def compute_emittance_evolution(
     twiss: xt.TwissTable,
@@ -148,19 +190,19 @@ def compute_emittance_evolution(
     bunch_intensity : float
         Bunch intensity [particles per bunch].
     initial_emittances : tuple of floats, optional
-        Initial values for the horizontal, vertical, and longitudinal 
-        emittances. If None, the equilibrium emittances from the Twiss object 
+        Initial values for the horizontal, vertical, and longitudinal
+        emittances. If None, the equilibrium emittances from the Twiss object
         are used. Default is None.
     emittance_coupling_factor : float, optional
-        Emittance coupling factor, defined as the ratio of vertical to 
+        Emittance coupling factor, defined as the ratio of vertical to
         horizontal emittance. Default is 0.
     emittance_constraint : str, optional
         Can enforces constraints on the transverse emittance based on the
-        emittance coupling factor. 
+        emittance coupling factor.
         "Coupling" corresponds to the case where the
         vertical emittance is the result of linear coupling.
-        "Excitation" corresponds to the case where the vertical emittance is 
-        the result of an excitation (e.g. from a feedback system). 
+        "Excitation" corresponds to the case where the vertical emittance is
+        the result of an excitation (e.g. from a feedback system).
         Default is "Coupling".
     input_sigma_zeta : float
         Used specified RMS momentum spread overwriting the natural one from
@@ -172,7 +214,7 @@ def compute_emittance_evolution(
         Natural emittances (horizontal, vertical, longitudinal).
         If None, they are taken from the `twiss` object. Default is None.
     rtol : float, optional
-        Relative tolerance for equilibrium emittance convergence. 
+        Relative tolerance for equilibrium emittance convergence.
         Default is 1e-6.
 
     Returns
@@ -195,53 +237,60 @@ def compute_emittance_evolution(
     if initial_emittances is None:
         print("Emittances from the Twiss object are being used.")
         emittance_x, emittance_y, emittance_z = (
-            twiss.eq_gemitt_x, twiss.eq_gemitt_y, twiss.eq_gemitt_zeta
+            twiss.eq_gemitt_x,
+            twiss.eq_gemitt_y,
+            twiss.eq_gemitt_zeta,
         )
-        # If emittance_coupling_factor is non zero, then natural emittance is 
+        # If emittance_coupling_factor is non zero, then natural emittance is
         # modified accordingly
-        if (
-            emittance_coupling_factor != 0
-            and emittance_constraint.lower() == "coupling"
-        ):
+        if emittance_coupling_factor != 0 and emittance_constraint.lower() == "coupling":
             # The convention used is valid for arbitrary damping partition
             # numbers and emittance_coupling_factor.
             emittance_y = (
-                emittance_x * emittance_coupling_factor
-                / (1 + emittance_coupling_factor *
-                twiss.partition_numbers[1] / twiss.partition_numbers[0])
+                emittance_x
+                * emittance_coupling_factor
+                / (
+                    1
+                    + emittance_coupling_factor
+                    * twiss.partition_numbers[1]
+                    / twiss.partition_numbers[0]
+                )
             )
-            emittance_x *= (
-                1 / (1 + emittance_coupling_factor *
-                twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            emittance_x *= 1 / (
+                1
+                + emittance_coupling_factor
+                * twiss.partition_numbers[1]
+                / twiss.partition_numbers[0]
             )
-            
-        if (
-            emittance_coupling_factor != 0
-            and emittance_constraint.lower() == "excitation"
-        ):
+
+        if emittance_coupling_factor != 0 and emittance_constraint.lower() == "excitation":
             # The convention used only enforce a constraint on the vertical
             # emittance
             emittance_y = emittance_x * emittance_coupling_factor
     else:
         emittance_x, emittance_y, emittance_z = initial_emittances
-        
+
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     if input_sigma_zeta is not None:
-        warnings.warn("'input_sigma_zeta' is specified, make sure it remains "
-              "consistent with 'initial_emittances'.")
+        warnings.warn(
+            "'input_sigma_zeta' is specified, make sure it remains "
+            "consistent with 'initial_emittances'."
+        )
         sigma_zeta = input_sigma_zeta
     elif input_sigma_delta is not None:
-        warnings.warn("'input_sigma_delta' is specified, make sure it remains "
-              "consistent with 'initial_emittances'.")
-        sigma_delta = input_sigma_delta        
+        warnings.warn(
+            "'input_sigma_delta' is specified, make sure it remains "
+            "consistent with 'initial_emittances'."
+        )
+        sigma_delta = input_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
-    if (input_sigma_zeta is not None or input_sigma_delta is not None):
+    if input_sigma_zeta is not None or input_sigma_delta is not None:
         assert initial_emittances is not None, (
             "Input of 'input_sigma_zeta' or 'input_sigma_delta' provided, but "
             "not of 'initial_emittances'. Please provide 'initial_emittances'."
         )
-    
+
     time = []
     emittances_x_list, emittances_y_list, emittances_z_list = [], [], []
     T_x, T_y, T_z = [], [], []
@@ -250,7 +299,7 @@ def compute_emittance_evolution(
     tol = np.inf
 
     current_emittances = np.array([emittance_x, emittance_y, emittance_z])
-    it = 0 # Iteration counter
+    it = 0  # Iteration counter
 
     while tol > rtol:
         # Print convergence progress
@@ -258,7 +307,9 @@ def compute_emittance_evolution(
 
         # Compute IBS emittance rates and growth rates
         ibs_emittance_rates, ibs_growth_rates = ibs_rates(
-            twiss, bunch_intensity, current_emittances,
+            twiss,
+            bunch_intensity,
+            current_emittances,
             initial_emittances=initial_emittances,
             emittance_coupling_factor=emittance_coupling_factor,
             emittance_constraint=emittance_constraint,
@@ -270,14 +321,13 @@ def compute_emittance_evolution(
 
         # Enforce constraints if specified
         if emittance_constraint.lower() == "coupling":
-            forced_emittance_x = (
-                (current_emittances[0] + current_emittances[1]) 
-                / (1 + emittance_coupling_factor)
+            forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (
+                1 + emittance_coupling_factor
             )
             forced_emittance_y = forced_emittance_x * emittance_coupling_factor
             current_emittances[0] = forced_emittance_x
             current_emittances[1] = forced_emittance_y
-            
+
         if emittance_constraint.lower() == "excitation":
             forced_emittance_y = current_emittances[0] * emittance_coupling_factor
             current_emittances[1] = forced_emittance_y
@@ -293,17 +343,12 @@ def compute_emittance_evolution(
 
         # Compute tolerance
         if it > 0:
-            tol = np.max(
-                np.abs((current_emittances - previous_emittances) 
-                       / previous_emittances)
-            )
+            tol = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
         # Store current emittances for the next iteration
         previous_emittances = current_emittances.copy()
 
         # Update time step for the next iteration
-        time_step = 0.01 / np.max(
-            (ibs_growth_rates, twiss.damping_constants_s)
-        )
+        time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
 
         it += 1
 
