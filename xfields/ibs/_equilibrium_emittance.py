@@ -157,8 +157,8 @@ def _ibs_rates_and_emittance_derivatives(
     )
 
     return (
-        (depsilon_x_dt, depsilon_y_dt, depsilon_z_dt),
-        (ibs_growth_rates.Tx, ibs_growth_rates.Ty, ibs_growth_rates.Tz),
+        ibs_growth_rates,
+        _EmittanceTimeDerivatives(depsilon_x_dt, depsilon_y_dt, depsilon_z_dt),
     )
 
 
@@ -307,7 +307,7 @@ def compute_emittance_evolution(
         sys.stdout.write("\rConvergence = {:.1f}%".format(100 * rtol / tol))
 
         # Compute IBS emittance rates and growth rates
-        ibs_emittance_rates, ibs_growth_rates = _ibs_rates_and_emittance_derivatives(
+        ibs_growth_rates, ibs_emittance_rates = _ibs_rates_and_emittance_derivatives(
             twiss,
             bunch_intensity,
             current_emittances,
