@@ -306,7 +306,7 @@ def compute_emittance_evolution(
         # Print convergence progress
         sys.stdout.write("\rConvergence = {:.1f}%".format(100 * rtol / tol))
 
-        # Compute IBS emittance rates and growth rates
+        # Compute IBS growth rates and emittance derivatives
         ibs_growth_rates, ibs_emittance_rates = _ibs_rates_and_emittance_derivatives(
             twiss,
             bunch_intensity,
@@ -316,6 +316,9 @@ def compute_emittance_evolution(
             emittance_constraint=emittance_constraint,
             longitudinal_emittance_ratio=longitudinal_emittance_ratio,
         )
+        # Make sure we have them as tuples for below
+        ibs_growth_rates = ibs_growth_rates.as_tuple()
+        ibs_emittance_rates = ibs_emittance_rates.as_tuple()
 
         # Update emittances
         current_emittances += np.array(ibs_emittance_rates) * time_step
