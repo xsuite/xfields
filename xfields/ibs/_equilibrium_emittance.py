@@ -19,6 +19,7 @@ from xfields.ibs._analytical import IBSGrowthRates
 
 LOGGER = logging.getLogger(__name__)
 
+
 # ----- Some classes to store results (as xo.HybridClass) ----- #
 
 
@@ -56,7 +57,7 @@ class _EmittanceTimeDerivatives(xo.HybridClass):
         return float(self.dex), float(self.dey), float(self.dez)
 
 
-def ibs_rates(
+def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
     bunch_intensity: float,
     input_emittances: tuple,
@@ -164,7 +165,7 @@ def ibs_rates(
 def compute_emittance_evolution(
     twiss: xt.TwissTable,
     bunch_intensity: float,
-    initial_emittances: Tuple = None,
+    initial_emittances: tuple = None,
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     input_sigma_zeta: float = None,
@@ -306,7 +307,7 @@ def compute_emittance_evolution(
         sys.stdout.write("\rConvergence = {:.1f}%".format(100 * rtol / tol))
 
         # Compute IBS emittance rates and growth rates
-        ibs_emittance_rates, ibs_growth_rates = ibs_rates(
+        ibs_emittance_rates, ibs_growth_rates = _ibs_rates_and_emittance_derivatives(
             twiss,
             bunch_intensity,
             current_emittances,
