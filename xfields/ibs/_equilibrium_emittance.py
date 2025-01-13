@@ -156,7 +156,7 @@ def _ibs_rates_and_emittance_derivatives(
 
     return (
         ibs_growth_rates,
-        _EmittanceTimeDerivatives(depsilon_x_dt, depsilon_y_dt, depsilon_z_dt),
+        _EmittanceTimeDerivatives(dex=depsilon_x_dt, dey=depsilon_y_dt, dez=depsilon_z_dt),
     )
 
 
