@@ -60,45 +60,35 @@ class _EmittanceTimeDerivatives(xo.HybridClass):
 def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
     bunch_intensity: float,
-    input_emittances: tuple,
+    input_emittances: tuple[float, float, float],
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
     damping_rates: tuple = None,
     **kwargs,
 ) -> tuple[IBSGrowthRates, _EmittanceTimeDerivatives]:
     """
-    Compute the IBS growth rates and emittance evolution rates.
+    Compute the IBS growth rates and emittance time derivatives from
+    the effect of both IBS and SR.
 
     Parameters
     ----------
-    twiss : object
-        Twiss object of the ring.
+    twiss : xtrack.TwissTable
+        Twiss results of the `xtrack.Line` configuration.
     bunch_intensity : float
         Bunch intensity [particles per bunch].
-    input_emittances : tuple of floats
-        Tuple containing the equilibrium transverse emittances (horizontal and
-        vertical).
-    emittance_coupling_factor : float, optional
-        Emittance coupling factor, defined as the ratio of vertical to
-        horizontal emittance.
-        Default is 0.
-    emittance_constraint : str, optional
-        Can enforces constraints on the transverse emittance based on the
-        emittance coupling factor.
-        "Coupling" corresponds to the case where the
-        vertical emittance is the result of linear coupling.
-        "Excitation" corresponds to the case where the vertical emittance is
-        the result of an excitation (e.g. from a feedback system).
-        Default is "Coupling".
-    formalism : str, optional
-        Which formalism to use for the computation. Can be ``Nagaitsev``
-        or ``Bjorken-Mtingwa`` (also accepts ``B&M``), case-insensitively.
+    input_emittances : tuple[float, float, float]
+        The bunch's starting geometric emittances in the horizontal,
+        vertical and longitudinal planes, in [m].
+    formalism : str
+        Which formalism to use for the computation of the IBS growth rates.
+        Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
+        case-insensitively.
     longitudinal_emittance_ratio : float, optional
         Ratio of the RMS bunch length to the RMS momentum spread. Used if
-        an user specified input_sigma_zeta or input_sigma_delta are given.
+        a user specified input_sigma_zeta or input_sigma_delta are given.
         It allows accounting for a perturbed longitudinal distrubtion due to
         bunch lengthening or a microwave instability. Default is None.
-    damping_rates : tuple of floats, optional
+    damping_rates : tuple[float, float, float], optional
         SR damping rates (horizontal, vertical, longitudinal).
         If None, they are taken from the `twiss` object. Default is None.
 
@@ -109,14 +99,17 @@ def _ibs_rates_and_emittance_derivatives(
     ibs_growth_rates : tuple of floats
         IBS growth rates (horizontal, vertical, longitudinal).
     """
+    # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
 
+    # TODO: just take from twiss parameter in calculations and remove this attribution
     natural_emittance_x, natural_emittance_y, natural_emittance_z = (
         twiss.eq_gemitt_x,
         twiss.eq_gemitt_y,
         twiss.eq_gemitt_zeta,
     )
 
+    # TODO: just take the damping constants from twiss and be done (remove param and docstring)
     if damping_rates is None:
         damping_rate_x, damping_rate_y, damping_rate_z = twiss.damping_constants_s
     else:
