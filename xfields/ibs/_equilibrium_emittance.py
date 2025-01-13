@@ -98,7 +98,17 @@ def _ibs_rates_and_emittance_derivatives(
     # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
 
-    # TODO: can check that the SR eq emittances are present in twiss object (or in public func?)
+    # TODO: can check that the SR eq emittances are present in twiss object (or in public func?) Could be:
+    # if None in (
+    #     getattr(twiss, "eq_gemitt_x", None),
+    #     getattr(twiss, "eq_gemitt_y", None),
+    #     getattr(twiss, "eq_gemitt_zeta", None),
+    #     getattr(twiss, "damping_constants_s", None),
+    # ):
+    #     raise AttributeError(
+    #         "The TwissTable must contain SR equilibrium emittances and damping constants. "
+    #         "Did you activate radiation and twiss with eneloss_and_damping=True?"
+    #     )
 
     sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5
     sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5
