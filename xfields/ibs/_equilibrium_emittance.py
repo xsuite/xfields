@@ -59,7 +59,7 @@ class EmittanceTimeDerivatives(xo.HybridClass):
 
 def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
-    bunch_intensity: float,
+    bunch_intensity: float,  # TODO: rename total_beam_intensity like in rest of APIs, confirm Seb is ok
     input_emittances: tuple[float, float, float],
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
