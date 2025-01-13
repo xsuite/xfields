@@ -307,7 +307,7 @@ def compute_emittance_evolution(
         sys.stdout.write("\rConvergence = {:.1f}%".format(100 * rtol / tol))
 
         # Compute IBS growth rates and emittance derivatives
-        ibs_growth_rates, ibs_emittance_rates = _ibs_rates_and_emittance_derivatives(
+        ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
             twiss,
             bunch_intensity,
             current_emittances,
@@ -318,10 +318,10 @@ def compute_emittance_evolution(
         )
         # Make sure we have them as tuples for below
         ibs_growth_rates = ibs_growth_rates.as_tuple()
-        ibs_emittance_rates = ibs_emittance_rates.as_tuple()
+        emittance_derivatives = emittance_derivatives.as_tuple()
 
         # Update emittances
-        current_emittances += np.array(ibs_emittance_rates) * time_step
+        current_emittances += np.array(emittance_derivatives) * time_step
 
         # Enforce constraints if specified
         if emittance_constraint.lower() == "coupling":
