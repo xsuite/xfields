@@ -84,9 +84,8 @@ def _ibs_rates_and_emittance_derivatives(
         Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
         case-insensitively.
     longitudinal_emittance_ratio : float, optional
-        Ratio of the RMS bunch length to the RMS momentum spread. Used if
-        a user specified input_sigma_zeta or input_sigma_delta are given.
-        It allows accounting for a perturbed longitudinal distrubtion due to
+        Ratio of the RMS bunch length to the RMS momentum spread. If provided,
+        allows accounting for a perturbed longitudinal distrubtion due to
         bunch lengthening or a microwave instability. Default is None.
     damping_rates : tuple[float, float, float], optional
         SR damping rates (horizontal, vertical, longitudinal).
