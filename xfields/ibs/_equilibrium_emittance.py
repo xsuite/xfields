@@ -97,6 +97,12 @@ def _ibs_rates_and_emittance_derivatives(
     """
     # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
+    assert input_emittance_x > 0.0, (
+        "'input_emittance_x' should be larger than" " zero, try providing 'initial_emittances'"
+    )
+    assert input_emittance_y > 0.0, (
+        "'input_emittance_y' should be larger than" " zero, try providing 'initial_emittances'"
+    )
 
     # TODO: can check that the SR eq emittances are present in twiss object (or in public func?) Could be:
     # if None in (
@@ -113,12 +119,7 @@ def _ibs_rates_and_emittance_derivatives(
     sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5
     sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5
 
-    assert input_emittance_x > 0.0, (
-        "'input_emittance_x' should be larger than" " zero, try providing 'initial_emittances'"
-    )
-    assert input_emittance_y > 0.0, (
-        "'input_emittance_y' should be larger than" " zero, try providing 'initial_emittances'"
-    )
+
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
         total_beam_intensity=bunch_intensity,
