@@ -101,12 +101,8 @@ def _ibs_rates_and_emittance_derivatives(
     # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
 
-    # TODO: just take from twiss parameter in calculations and remove this attribution
-    natural_emittance_x, natural_emittance_y, natural_emittance_z = (
-        twiss.eq_gemitt_x,
-        twiss.eq_gemitt_y,
-        twiss.eq_gemitt_zeta,
-    )
+    # TODO: can check that the SR eq emittances are present in twiss object (or in public func?)
+
 
     # TODO: just take the damping constants from twiss and be done (remove param and docstring)
     if damping_rates is None:
