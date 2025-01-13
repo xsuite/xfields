@@ -20,7 +20,6 @@ def ibs_rates(
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
-    natural_emittances: Tuple = None,
     longitudinal_emittance_ratio: float = None,
     damping_rates: Tuple = None,
     **kwargs,
@@ -52,9 +51,6 @@ def ibs_rates(
     formalism : str, optional
         Which formalism to use for the computation. Can be ``Nagaitsev``
         or ``Bjorken-Mtingwa`` (also accepts ``B&M``), case-insensitively.
-    natural_emittances : tuple of floats, optional
-        Natural emittances (horizontal, vertical, longitudinal).
-        If None, they are taken from the `twiss` object. Default is None.
     longitudinal_emittance_ratio : float, optional
         Ratio of the RMS bunch length to the RMS momentum spread. Used if
         an user specified input_sigma_zeta or input_sigma_delta are given.
@@ -72,43 +68,12 @@ def ibs_rates(
         IBS growth rates (horizontal, vertical, longitudinal).
     """
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
-            
-    if natural_emittances is not None:
-        natural_emittance_x, natural_emittance_y, natural_emittance_z = (
-            natural_emittances
-        )
-    else:
-        natural_emittance_x, natural_emittance_y, natural_emittance_z = (
-            twiss.eq_gemitt_x,
-            twiss.eq_gemitt_y,
-            twiss.eq_gemitt_zeta,
-        )
-        # If emittance_coupling_factor is non-zero, then natural emittance is 
-        # modified accordingly.
-        if (
-            emittance_coupling_factor != 0
-            and emittance_constraint.lower() == "coupling"
-        ):
-            # The convention used is valid for arbitrary damping partition
-            # numbers and emittance_coupling_factor.
-            natural_emittance_y = (
-                natural_emittance_x * emittance_coupling_factor
-                / (1 + emittance_coupling_factor *
-                twiss.partition_numbers[1] / twiss.partition_numbers[0])
-            )
-            natural_emittance_x *= (
-                1 / (1 + emittance_coupling_factor *
-                twiss.partition_numbers[1] / twiss.partition_numbers[0])
-            )
-        if (
-            emittance_coupling_factor != 0
-            and emittance_constraint.lower() == "excitation"
-        ):
-            # The convention used only enforce a constraint on the vertical
-            # emittance.
-            natural_emittance_y = (
-                natural_emittance_x * emittance_coupling_factor
-            )
+
+    natural_emittance_x, natural_emittance_y, natural_emittance_z = (
+        twiss.eq_gemitt_x,
+        twiss.eq_gemitt_y,
+        twiss.eq_gemitt_zeta,
+    )
 
     if damping_rates is None:
         damping_rate_x, damping_rate_y, damping_rate_z = (
@@ -302,7 +267,6 @@ def compute_emittance_evolution(
             emittance_coupling_factor=emittance_coupling_factor,
             emittance_constraint=emittance_constraint,
             longitudinal_emittance_ratio=longitudinal_emittance_ratio,
-            natural_emittances=natural_emittances,
         )
 
         # Update emittances
