@@ -127,7 +127,6 @@ def compute_emittance_evolution(
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     input_sigma_zeta: float = None,
     input_sigma_delta: float = None,
-    natural_emittances: Tuple = None,
     rtol: float = 1e-6,
     **kwargs,
 ):
@@ -225,9 +224,6 @@ def compute_emittance_evolution(
             emittance_y = emittance_x * emittance_coupling_factor
     else:
         emittance_x, emittance_y, emittance_z = initial_emittances
-        if natural_emittances is None:
-            warnings.warn("'initial_emittances' is specified but not "
-                          "'natural_emittances', proceed with caution.")
         
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
