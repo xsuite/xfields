@@ -134,15 +134,15 @@ def _ibs_rates_and_emittance_derivatives(
     )
 
     depsilon_x_dt = (
-        -2 * damping_rate_x * (input_emittance_x - natural_emittance_x)
+        -2 * damping_rate_x * (input_emittance_x - twiss.eq_gemitt_x)
         + ibs_growth_rates.Tx * input_emittance_x
     )
     depsilon_y_dt = (
-        -2 * damping_rate_y * (input_emittance_y - natural_emittance_y)
+        -2 * damping_rate_y * (input_emittance_y - twiss.eq_gemitt_y)
         + ibs_growth_rates.Ty * input_emittance_y
     )
     depsilon_z_dt = (
-        -2 * damping_rate_z * (input_emittance_z - natural_emittance_z)
+        -2 * damping_rate_z * (input_emittance_z - twiss.eq_gemitt_zeta)
         + ibs_growth_rates.Tz * input_emittance_z
     )
 
