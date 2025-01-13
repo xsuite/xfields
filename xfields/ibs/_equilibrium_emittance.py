@@ -95,6 +95,8 @@ def _ibs_rates_and_emittance_derivatives(
         object (namely ``IBSGrowthRates`` and ``EmittanceTimeDerivatives``,
         respectively).
     """
+    LOGGER.debug("Computing IBS growth rates and emittance time derivatives.")
+    # ----------------------------------------------------------------------------------------------
     # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
     assert input_emittance_x > 0.0, (
@@ -103,23 +105,26 @@ def _ibs_rates_and_emittance_derivatives(
     assert input_emittance_y > 0.0, (
         "'input_emittance_y' should be larger than" " zero, try providing 'initial_emittances'"
     )
-
-    # TODO: can check that the SR eq emittances are present in twiss object (or in public func?) Could be:
+    # ----------------------------------------------------------------------------------------------
+    # TODO: check for SR eq emittances etc in twiss table (or in public func?) Could be:
     # if None in (
     #     getattr(twiss, "eq_gemitt_x", None),
     #     getattr(twiss, "eq_gemitt_y", None),
     #     getattr(twiss, "eq_gemitt_zeta", None),
     #     getattr(twiss, "damping_constants_s", None),
     # ):
+    #     LOGGER.error("Invalid TwissTable, does not have SR equilibrium properties.")
     #     raise AttributeError(
     #         "The TwissTable must contain SR equilibrium emittances and damping constants. "
     #         "Did you activate radiation and twiss with eneloss_and_damping=True?"
     #     )
-
-    sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5
-    sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5
-
-
+    # ----------------------------------------------------------------------------------------------
+    # Compute relevant longitudinal parameters for the bunch (needed for IBS growth rates)
+    LOGGER.debug("Computing longitudinal parameters for the bunch.")
+    sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5  # in [m]
+    sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5  # in [-]
+    # ----------------------------------------------------------------------------------------------
+    # Ask to compute the IBS growth rates (this function logs so no need to do it here)
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
         total_beam_intensity=bunch_intensity,
@@ -129,7 +134,11 @@ def _ibs_rates_and_emittance_derivatives(
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
         bunched=True,
     )
-
+    # ----------------------------------------------------------------------------------------------
+    # Computing the emittance time derivatives analytically.
+    # TODO: ADD A REF TO THE FORMULA HERE
+    # TODO: replace input_emittance_[xyz] by gemitt_[xyz] once they are parameters
+    LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
         -2 * twiss.damping_constants_s[0] * (input_emittance_x - twiss.eq_gemitt_x)
         + ibs_growth_rates.Tx * input_emittance_x
@@ -142,7 +151,8 @@ def _ibs_rates_and_emittance_derivatives(
         -2 * twiss.damping_constants_s[2] * (input_emittance_z - twiss.eq_gemitt_zeta)
         + ibs_growth_rates.Tz * input_emittance_z
     )
-
+    # ----------------------------------------------------------------------------------------------
+    # And return the results
     return (
         ibs_growth_rates,
         EmittanceTimeDerivatives(dex=depsilon_x_dt, dey=depsilon_y_dt, dez=depsilon_z_dt),
