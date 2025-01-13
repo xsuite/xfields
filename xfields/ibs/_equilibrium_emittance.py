@@ -61,8 +61,6 @@ def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
     bunch_intensity: float,
     input_emittances: tuple,
-    emittance_coupling_factor: float = 0,
-    emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
     damping_rates: tuple = None,
