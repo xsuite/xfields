@@ -63,7 +63,6 @@ def _ibs_rates_and_emittance_derivatives(
     input_emittances: tuple[float, float, float],
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
-    damping_rates: tuple = None,
     **kwargs,
 ) -> tuple[IBSGrowthRates, _EmittanceTimeDerivatives]:
     """
@@ -87,9 +86,6 @@ def _ibs_rates_and_emittance_derivatives(
         Ratio of the RMS bunch length to the RMS momentum spread. If provided,
         allows accounting for a perturbed longitudinal distrubtion due to
         bunch lengthening or a microwave instability. Default is None.
-    damping_rates : tuple[float, float, float], optional
-        SR damping rates (horizontal, vertical, longitudinal).
-        If None, they are taken from the `twiss` object. Default is None.
 
     Returns
     -------
@@ -102,13 +98,6 @@ def _ibs_rates_and_emittance_derivatives(
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
 
     # TODO: can check that the SR eq emittances are present in twiss object (or in public func?)
-
-
-    # TODO: just take the damping constants from twiss and be done (remove param and docstring)
-    if damping_rates is None:
-        damping_rate_x, damping_rate_y, damping_rate_z = twiss.damping_constants_s
-    else:
-        damping_rate_x, damping_rate_y, damping_rate_z = damping_rates
 
     sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5
     sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5
@@ -130,15 +119,15 @@ def _ibs_rates_and_emittance_derivatives(
     )
 
     depsilon_x_dt = (
-        -2 * damping_rate_x * (input_emittance_x - twiss.eq_gemitt_x)
+        -2 * twiss.damping_constants_s[0] * (input_emittance_x - twiss.eq_gemitt_x)
         + ibs_growth_rates.Tx * input_emittance_x
     )
     depsilon_y_dt = (
-        -2 * damping_rate_y * (input_emittance_y - twiss.eq_gemitt_y)
+        -2 * twiss.damping_constants_s[1] * (input_emittance_y - twiss.eq_gemitt_y)
         + ibs_growth_rates.Ty * input_emittance_y
     )
     depsilon_z_dt = (
-        -2 * damping_rate_z * (input_emittance_z - twiss.eq_gemitt_zeta)
+        -2 * twiss.damping_constants_s[2] * (input_emittance_z - twiss.eq_gemitt_zeta)
         + ibs_growth_rates.Tz * input_emittance_z
     )
 
