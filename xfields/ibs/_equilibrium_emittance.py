@@ -23,7 +23,7 @@ LOGGER = logging.getLogger(__name__)
 # ----- Some classes to store results (as xo.HybridClass) ----- #
 
 
-class _EmittanceTimeDerivatives(xo.HybridClass):
+class EmittanceTimeDerivatives(xo.HybridClass):
     """
     Holds emittance evolution rates named ``dex``,
     ``dey``, and ``dez``. The values are expressed
@@ -64,7 +64,7 @@ def _ibs_rates_and_emittance_derivatives(
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
     **kwargs,
-) -> tuple[IBSGrowthRates, _EmittanceTimeDerivatives]:
+) -> tuple[IBSGrowthRates, EmittanceTimeDerivatives]:
     """
     Compute the IBS growth rates and emittance time derivatives from
     the effect of both IBS and SR.
@@ -89,10 +89,11 @@ def _ibs_rates_and_emittance_derivatives(
 
     Returns
     -------
-    emittance_rates : tuple of floats
-        Time variations of the emittances (horizontal, vertical, longitudinal).
-    ibs_growth_rates : tuple of floats
-        IBS growth rates (horizontal, vertical, longitudinal).
+    tuple[IBSGrowthRates, EmittanceTimeDerivatives]
+        Both the computed IBS growth rates and the emittance time derivatives
+        from the contributions of SR and IBS, each in a specific container
+        object (namely ``IBSGrowthRates`` and ``EmittanceTimeDerivatives``,
+        respectively).
     """
     # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
@@ -133,7 +134,7 @@ def _ibs_rates_and_emittance_derivatives(
 
     return (
         ibs_growth_rates,
-        _EmittanceTimeDerivatives(dex=depsilon_x_dt, dey=depsilon_y_dt, dez=depsilon_z_dt),
+        EmittanceTimeDerivatives(dex=depsilon_x_dt, dey=depsilon_y_dt, dez=depsilon_z_dt),
     )
 
 
