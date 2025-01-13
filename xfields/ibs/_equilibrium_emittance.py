@@ -366,3 +366,15 @@ def compute_emittance_evolution(
         T_y,
         T_z,
     )
+    # return Table(
+    #     data={
+    #         "time": np.cumsum(time),
+    #         "gemitt_x": emittances_x_list,
+    #         "gemitt_y": emittances_y_list,
+    #         "gemitt_z": emittances_z_list,
+    #         "Tx": Tx,
+    #         "Ty": Ty,
+    #         "Tz": Tz,
+    #     },
+    #     index="time",
+    # )
