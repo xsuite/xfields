@@ -320,15 +320,14 @@ def compute_emittance_evolution(
         )
     # ----------------------------------------------------------------------------------------------
     # Start structures to store the iterative results until convergence
-    time = []
-    emittances_x_list, emittances_y_list, emittances_z_list = [], [], []
-    T_x, T_y, T_z = [], [], []
-
+    tolerance = np.inf
     time_step = twiss.T_rev0  # Initial time step is the revolution period
-    tol = np.inf
 
+    time_deltas = []
+    res_gemitt_x, res_gemitt_y, res_gemitt_zeta = [], [], []
+    T_x, T_y, T_z = [], [], []
     current_emittances = np.array([emittance_x, emittance_y, emittance_z])
-    it = 0  # Iteration counter
+    iterations = 0  # Iteration counter
     # ----------------------------------------------------------------------------------------------
     # Start the iterative process until convergence:
     # - Compute IBS rates and emittance time derivatives
@@ -336,9 +335,9 @@ def compute_emittance_evolution(
     # - Enforce transverse / longitudinal constraints if specified
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
-    while tol > rtol:
+    while tolerance > rtol:
         # Print convergence progress
-        sys.stdout.write("\rConvergence = {:.1f}%".format(100 * rtol / tol))
+        sys.stdout.write(f"\rIteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%")
 
         # Compute IBS growth rates and emittance derivatives
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
@@ -353,7 +352,7 @@ def compute_emittance_evolution(
         ibs_growth_rates = ibs_growth_rates.as_tuple()
         emittance_derivatives = emittance_derivatives.as_tuple()
 
-        # Update emittances
+        # Update current emittances - add the time step * emittance time derivatives
         current_emittances += np.array(emittance_derivatives) * time_step
 
         # Enforce constraints if specified
@@ -370,26 +369,27 @@ def compute_emittance_evolution(
             current_emittances[1] = forced_emittance_y
 
         # Append current values to lists
-        time.append(time_step)
-        emittances_x_list.append(current_emittances[0])
-        emittances_y_list.append(current_emittances[1])
-        emittances_z_list.append(current_emittances[2])
+        time_deltas.append(time_step)
+        res_gemitt_x.append(current_emittances[0])
+        res_gemitt_y.append(current_emittances[1])
+        res_gemitt_zeta.append(current_emittances[2])
         T_x.append(ibs_growth_rates[0])
         T_y.append(ibs_growth_rates[1])
         T_z.append(ibs_growth_rates[2])
 
-        # Compute tolerance
-        if it > 0:
-            tol = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
+        # Compute tolerance (but not at first step since there is no previous value)
+        if iterations > 0:
+            tolerance = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
+
         # Store current emittances for the next iteration
         previous_emittances = current_emittances.copy()
 
         # Update time step for the next iteration
         time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
 
-        it += 1
+        iterations += 1
     # ----------------------------------------------------------------------------------------------
-    # Return a table with the results and return it
+    # We have exited the loop, we have converged. Construct a Table with the results and return it
     print("\nConverged!")
     # result_table = Table(
     #     data={
@@ -418,10 +418,10 @@ def compute_emittance_evolution(
     # )
     # return result_table
     return (
-        np.cumsum(time),
-        emittances_x_list,
-        emittances_y_list,
-        emittances_z_list,
+        np.cumsum(time_deltas),
+        res_gemitt_x,
+        res_gemitt_y,
+        res_gemitt_zeta,
         T_x,
         T_y,
         T_z,
