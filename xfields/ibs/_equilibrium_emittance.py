@@ -302,13 +302,13 @@ def compute_emittance_evolution(
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     if sigma_zeta is not None:
         warnings.warn(
-            "'input_sigma_zeta' is specified, make sure it remains "
+            "'sigma_zeta' is specified, make sure it remains "
             "consistent with 'initial_emittances'."
         )
         sigma_zeta = sigma_zeta
     elif sigma_delta is not None:
         warnings.warn(
-            "'input_sigma_delta' is specified, make sure it remains "
+            "'sigma_delta' is specified, make sure it remains "
             "consistent with 'initial_emittances'."
         )
         sigma_delta = sigma_delta
