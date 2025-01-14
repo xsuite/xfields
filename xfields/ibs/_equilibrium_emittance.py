@@ -212,9 +212,10 @@ def compute_emittance_evolution(
         SR equilibrium emittances from the TwissTable are used. Defaults
         to `None`.
     emittance_coupling_factor : float, optional
-        The ratio of vertical to horizontal emittances. If a value is provided
-        it is taken into account for the evolution of emittances. See the next
-        parameter for possible scenarios. Defaults to 0.
+        A factor relating vertical to horizontal emittances. If a value is
+        provided, it is taken into account for the evolution of emittances.
+        See the next parameter for possible scenarios and how this value is
+        used. Defaults to 0.
     emittance_constraint : str, optional
         If an accepted value is provided, enforces constraints on the transverse
         emittances. Can be either "coupling" or "excitation", case-insensitively.
