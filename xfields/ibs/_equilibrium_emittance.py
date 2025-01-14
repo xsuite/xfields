@@ -104,10 +104,10 @@ def _ibs_rates_and_emittance_derivatives(
     # TODO: bunch emittances - ask for the three separately and update docstring
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
     assert input_emittance_x > 0.0, (
-        "'input_emittance_x' should be larger than" " zero, try providing 'initial_emittances'"
+        "'input_emittance_x' should be larger than zero, try providing 'initial_emittances'"
     )
     assert input_emittance_y > 0.0, (
-        "'input_emittance_y' should be larger than" " zero, try providing 'initial_emittances'"
+        "'input_emittance_y' should be larger than zero, try providing 'initial_emittances'"
     )
     # ----------------------------------------------------------------------------------------------
     # TODO: check for SR eq emittances etc in twiss table (or in public func?) Could be:
