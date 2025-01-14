@@ -176,6 +176,7 @@ def compute_emittance_evolution(
     rtol: float = 1e-6,
     **kwargs,
 ):
+    # TODO: rework this main chunk of docstring
     """
     Compute the evolution of beam emittances due to IBS until convergence.
     By default, the function assumes the emittances from the Twiss object.
@@ -224,7 +225,10 @@ def compute_emittance_evolution(
         Relative tolerance to determine when convergence is reached: if the relative
         difference between the computed emittances and those at the previous step is
         below `rtol`, then convergence is considered achieved. Defaults to 1e-6.
-
+    **kwargs : dict
+        Keyword arguments are passed to the growth rates computation method of
+        the chosen IBS formalism implementation. See the formalism classes in
+        the ``xfields.ibs._analytical`` for more details.
 
     Returns
     -------
@@ -314,12 +318,10 @@ def compute_emittance_evolution(
 
         # Compute IBS growth rates and emittance derivatives
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
-            twiss,
-            total_beam_intensity,
-            current_emittances,
-            initial_emittances=initial_emittances,
-            emittance_coupling_factor=emittance_coupling_factor,
-            emittance_constraint=emittance_constraint,
+            twiss=twiss,
+            formalism=formalism,
+            total_beam_intensity=total_beam_intensity,
+            input_emittances=current_emittances,
             longitudinal_emittance_ratio=longitudinal_emittance_ratio,
         )
         # Make sure we have them as tuples for below
