@@ -222,9 +222,8 @@ def compute_emittance_evolution(
         computed from the longitudinal emittance. Defaults to `None`.
 
 
-    natural_emittances : tuple of floats, optional
-        Natural emittances (horizontal, vertical, longitudinal).
-        If None, they are taken from the `twiss` object. Default is None.
+
+
     rtol : float, optional
         Relative tolerance for equilibrium emittance convergence.
         Default is 1e-6.
