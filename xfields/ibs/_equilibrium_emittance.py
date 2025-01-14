@@ -188,8 +188,8 @@ def compute_emittance_evolution(
 
     Parameters
     ----------
-    twiss : object
-        Twiss object of the ring.
+    twiss : xtrack.TwissTable
+        Twiss results of the `xtrack.Line` configuration.
     formalism : str
         Which formalism to use for the computation of the IBS growth rates.
         Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
@@ -241,6 +241,9 @@ def compute_emittance_evolution(
     T_z : list of float
         Longitudinal IBS growth rates computed over all the time steps.
     """
+    # ----------------------------------------------------------------------------------------------
+    # Handle initial transverse emittances and potential effect of coupling / excitation constraints
+    # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
     if initial_emittances is None:
         print("Emittances from the Twiss object are being used.")
         emittance_x, emittance_y, emittance_z = (
@@ -250,25 +253,11 @@ def compute_emittance_evolution(
         )
         # If emittance_coupling_factor is non zero, then natural emittance is
         # modified accordingly
+        # fmt: off
         if emittance_coupling_factor != 0 and emittance_constraint.lower() == "coupling":
-            # The convention used is valid for arbitrary damping partition
-            # numbers and emittance_coupling_factor.
-            emittance_y = (
-                emittance_x
-                * emittance_coupling_factor
-                / (
-                    1
-                    + emittance_coupling_factor
-                    * twiss.partition_numbers[1]
-                    / twiss.partition_numbers[0]
-                )
-            )
-            emittance_x *= 1 / (
-                1
-                + emittance_coupling_factor
-                * twiss.partition_numbers[1]
-                / twiss.partition_numbers[0]
-            )
+            # The convention used is valid for arbitrary damping partition numbers and emittance_coupling_factor.
+            emittance_y = emittance_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            emittance_x *= 1 / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
 
         if emittance_coupling_factor != 0 and emittance_constraint.lower() == "excitation":
             # The convention used only enforce a constraint on the vertical
@@ -276,7 +265,9 @@ def compute_emittance_evolution(
             emittance_y = emittance_x * emittance_coupling_factor
     else:
         emittance_x, emittance_y, emittance_z = initial_emittances
-
+        # fmt: on
+    # ----------------------------------------------------------------------------------------------
+    # Handle initial longitudinal emittance and potential effect of bunch lengthening
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     if input_sigma_zeta is not None:
@@ -297,7 +288,8 @@ def compute_emittance_evolution(
             "Input of 'input_sigma_zeta' or 'input_sigma_delta' provided, but "
             "not of 'initial_emittances'. Please provide 'initial_emittances'."
         )
-
+    # ----------------------------------------------------------------------------------------------
+    # Start structures to store the iterative results until convergence
     time = []
     emittances_x_list, emittances_y_list, emittances_z_list = [], [], []
     T_x, T_y, T_z = [], [], []
@@ -307,7 +299,13 @@ def compute_emittance_evolution(
 
     current_emittances = np.array([emittance_x, emittance_y, emittance_z])
     it = 0  # Iteration counter
-
+    # ----------------------------------------------------------------------------------------------
+    # Start the iterative process until convergence:
+    # - Compute IBS rates and emittance time derivatives
+    # - Update emittances using the time derivatives and time step
+    # - Enforce transverse / longitudinal constraints if specified
+    # - Store all intermediate results for this time step
+    # - Compute tolerance and check for convergence
     while tol > rtol:
         # Print convergence progress
         sys.stdout.write("\rConvergence = {:.1f}%".format(100 * rtol / tol))
@@ -361,7 +359,8 @@ def compute_emittance_evolution(
         time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
 
         it += 1
-
+    # ----------------------------------------------------------------------------------------------
+    # Return the results
     print("\nConverged!")
     return (
         np.cumsum(time),
