@@ -78,7 +78,7 @@ def _ibs_rates_and_emittance_derivatives(
         Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
         case-insensitively.
     total_beam_intensity : int
-        The beam or bunch intensity, in [particles per bunch].
+        The bunch intensity, in [particles per bunch].
     input_emittances : tuple[float, float, float]
         The bunch's starting geometric emittances in the horizontal,
         vertical and longitudinal planes, in [m].
@@ -178,15 +178,6 @@ def compute_emittance_evolution(
 ):
     # TODO: rework this main chunk of docstring
     """
-    Compute the evolution of beam emittances due to IBS until convergence.
-    By default, the function assumes the emittances from the Twiss object.
-    They can also be specified as well as different natural emittances.
-    The emittance evolution can be constrained to follow two scenarios:
-        - A vertical emittance originating from linear coupling.
-        - A vertical emittance originating from an excitation.
-    The impact from the longitudinal impedance (e.g. bunch lengthening or
-    microwave instability) can be accounted for by specifying the RMS bunch
-    length and momentum spread.
 
     Parameters
     ----------
@@ -197,7 +188,7 @@ def compute_emittance_evolution(
         Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
         case-insensitively.
     total_beam_intensity : int
-        The beam or bunch intensity, in [particles per bunch].
+        The bunch intensity, in [particles per bunch].
     initial_emittances : tuple[float, float, float], optional
         The bunch's starting geometric emittances in the horizontal,
         vertical and longitudinal planes, in [m]. If not provided, the
@@ -205,16 +196,21 @@ def compute_emittance_evolution(
         to `None`.
     emittance_coupling_factor : float, optional
         The ratio of vertical to horizontal emittances. If a value is provided
-        and `emittance_constraint` is set to `coupling`, then this ratio is
-        preserved. Defaults to 0.
+        it is taken into account for the evolution of emittances. See the next
+        parameter for possible scenarios. Defaults to 0.
     emittance_constraint : str, optional
         If an accepted value is provided, enforces constraints on the transverse
         emittances. Can be either "coupling" or "excitation", case-insensitively.
-            If `coupling`, vertical emittance is the result of linear coupling and is
-            determined from the horizontal one based on the `emittance_coupling_factor`.
-            If `excitation`, vertical emittance is the result of an excitation (e.g. from
-            a feedback system).
-        Defaults to "coupling", with no effect as `emittance_coupling_factor` defaults to 0.
+        Defaults to "coupling".
+          - If `coupling`, vertical emittance is the result of linear coupling. In
+            this case both the vertical and horizontal emittances are altered and
+            determined based on the value of `emittance_coupling_factor` such that
+            the total transverse IS preserved.
+          - If `excitation`, vertical emittance is the result of an excitation
+            (e.g. from a feedback system) and is determined from the horizontal
+            emittance based on the value of `emittance_coupling_factor`. In this
+            case the total transverse emittance is NOT preserved.
+        This has no effect by default as `emittance_coupling_factor` defaults to 0.
     sigma_zeta : float, optional
         The RMS bunch length. If provided, overwrites the one computed from
         the longitudinal emittance. Defaults to `None`.
