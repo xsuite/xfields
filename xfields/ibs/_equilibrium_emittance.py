@@ -136,7 +136,6 @@ def _ibs_rates_and_emittance_derivatives(
         gemitt_y=input_emittance_y,
         sigma_delta=sigma_delta,
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
-        bunched=True,
         **kwargs,
     )
     # ----------------------------------------------------------------------------------------------
