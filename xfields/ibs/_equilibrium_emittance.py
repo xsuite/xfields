@@ -167,7 +167,14 @@ def compute_emittance_evolution(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
+    # TODO: want to force providing gemitt_x, gemitt_y & gemitt_zeta instead of this initial_emittances (can allow nemitt_x and add checks / conversions)
     initial_emittances: tuple[float, float, float] = None,
+    # gemitt_x: float = None,
+    # nemitt_x: float = None,
+    # gemitt_y: float = None,
+    # nemitt_y: float = None,
+    # gemitt_zeta: float = None,
+    # nemitt_zeta: float = None,
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     # TODO: move these two (still optional) below gemitt_x, gemitt_y, gemitt_zeta when modify that
@@ -243,6 +250,27 @@ def compute_emittance_evolution(
     T_z : list of float
         Longitudinal IBS growth rates computed over all the time steps.
     """
+    # Returns
+    # -------
+    # xtrack.TwissTable
+    #     The convergence calculations results. The table contains the following
+    #     columns, as time-step by time-step quantities:
+    #         - time: time values at which quantities are computed, in [s]
+    #         - gemitt_x: horizontal geometric emittance values, in [m]
+    #         - gemitt_y: vertical geometric emittance values, in [m]
+    #         - gemitt_zeta: longitudinal geometric emittance values, in [m]
+    #         - Tx: horizontal IBS growth rate, in [s^-1]
+    #         - Ty: vertical IBS growth rate, in [s^-1]
+    #         - Tz: longitudinal IBS growth rate, in [s^-1]
+    #     The table also contains the following global quantities:
+    #         - damping_constants_s: radiation damping constants per second used for the calculations
+    #         - partition_numbers: damping partition numbers used for the calculations
+    #         - eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m]
+    #         - eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m]
+    #         - eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
+    #         - sr_eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
+    #         - sr_eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
+    #         - eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
     # ----------------------------------------------------------------------------------------------
     # Handle initial transverse emittances and potential effect of coupling / excitation constraints
     # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
@@ -368,7 +396,7 @@ def compute_emittance_evolution(
     #         "time": np.cumsum(time),
     #         "gemitt_x": emittances_x_list,
     #         "gemitt_y": emittances_y_list,
-    #         "gemitt_z": emittances_z_list,
+    #         "gemitt_zeta": emittances_z_list,
     #         "Tx": Tx,
     #         "Ty": Ty,
     #         "Tz": Tz,
@@ -379,6 +407,7 @@ def compute_emittance_evolution(
     # result_table._data.update(
     #     {
     #         "damping_constants_s": twiss.damping_constants_s,
+    #         "partition_numbers": twiss.partition_numbers,
     #         "eq_gemitt_x": emittances_x_list[-1],
     #         "eq_gemitt_x": emittances_y_list[-1],
     #         "eq_gemitt_x": emittances_z_list[-1],
