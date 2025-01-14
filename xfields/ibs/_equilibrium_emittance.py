@@ -220,13 +220,11 @@ def compute_emittance_evolution(
     sigma_delta : float, optional
         The RMS momentum spread of the bunch. If provided, overwrites the one
         computed from the longitudinal emittance. Defaults to `None`.
-
-
-
-
     rtol : float, optional
-        Relative tolerance for equilibrium emittance convergence.
-        Default is 1e-6.
+        Relative tolerance to determine when convergence is reached: if the relative
+        difference between the computed emittances and those at the previous step is
+        below `rtol`, then convergence is considered achieved. Defaults to 1e-6.
+
 
     Returns
     -------
