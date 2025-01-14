@@ -167,7 +167,7 @@ def compute_emittance_evolution(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
-    initial_emittances: tuple = None,
+    initial_emittances: tuple[float, float, float] = None,
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
     input_sigma_zeta: float = None,
@@ -196,21 +196,26 @@ def compute_emittance_evolution(
         case-insensitively.
     total_beam_intensity : int
         The beam or bunch intensity, in [particles per bunch].
-    initial_emittances : tuple of floats, optional
-        Initial values for the horizontal, vertical, and longitudinal
-        emittances. If None, the equilibrium emittances from the Twiss object
-        are used. Default is None.
+    initial_emittances : tuple[float, float, float], optional
+        The bunch's starting geometric emittances in the horizontal,
+        vertical and longitudinal planes, in [m]. If not provided, the
+        SR equilibrium emittances from the TwissTable are used. Defaults
+        to `None`.
     emittance_coupling_factor : float, optional
-        Emittance coupling factor, defined as the ratio of vertical to
-        horizontal emittance. Default is 0.
+        The ratio of vertical to horizontal emittances. If a value is provided
+        and `emittance_constraint` is set to `coupling`, then this ratio is
+        preserved. Defaults to 0.
     emittance_constraint : str, optional
-        Can enforces constraints on the transverse emittance based on the
-        emittance coupling factor.
-        "Coupling" corresponds to the case where the
-        vertical emittance is the result of linear coupling.
-        "Excitation" corresponds to the case where the vertical emittance is
-        the result of an excitation (e.g. from a feedback system).
-        Default is "Coupling".
+        If an accepted value is provided, enforces constraints on the transverse
+        emittances. Can be either "coupling" or "excitation", case-insensitively.
+            If `coupling`, vertical emittance is the result of linear coupling and is
+            determined from the horizontal one based on the `emittance_coupling_factor`.
+            If `excitation`, vertical emittance is the result of an excitation (e.g. from
+            a feedback system).
+        Defaults to "coupling", with no effect as `emittance_coupling_factor` defaults to 0.
+
+
+        
     input_sigma_zeta : float
         Used specified RMS momentum spread overwriting the natural one from
         the `twiss` object. Default is None.
