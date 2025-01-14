@@ -59,9 +59,9 @@ class EmittanceTimeDerivatives(xo.HybridClass):
 
 def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
+    formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
     input_emittances: tuple[float, float, float],
-    formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
     **kwargs,
 ) -> tuple[IBSGrowthRates, EmittanceTimeDerivatives]:
@@ -73,15 +73,15 @@ def _ibs_rates_and_emittance_derivatives(
     ----------
     twiss : xtrack.TwissTable
         Twiss results of the `xtrack.Line` configuration.
+    formalism : str
+        Which formalism to use for the computation of the IBS growth rates.
+        Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
+        case-insensitively.
     total_beam_intensity : int
         The beam or bunch intensity, in [particles per bunch].
     input_emittances : tuple[float, float, float]
         The bunch's starting geometric emittances in the horizontal,
         vertical and longitudinal planes, in [m].
-    formalism : str
-        Which formalism to use for the computation of the IBS growth rates.
-        Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
-        case-insensitively.
     longitudinal_emittance_ratio : float, optional
         Ratio of the RMS bunch length to the RMS momentum spread. If provided,
         allows accounting for a perturbed longitudinal distrubtion due to
