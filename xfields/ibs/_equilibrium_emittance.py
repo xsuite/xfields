@@ -186,6 +186,15 @@ def compute_emittance_evolution(
 ):
     # TODO: rework this main chunk of docstring
     """
+    Compute the evolution of beam emittances due to IBS until convergence.
+    By default, the function assumes the emittances from the Twiss object.
+    They can also be specified as well as different natural emittances.
+    The emittance evolution can be constrained to follow two scenarios:
+        - A vertical emittance originating from linear coupling.
+        - A vertical emittance originating from an excitation.
+    The impact from the longitudinal impedance (e.g. bunch lengthening or
+    microwave instability) can be accounted for by specifying the RMS bunch
+    length and momentum spread.
 
     Parameters
     ----------
