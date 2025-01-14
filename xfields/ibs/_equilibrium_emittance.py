@@ -59,7 +59,7 @@ class EmittanceTimeDerivatives(xo.HybridClass):
 
 def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
-    bunch_intensity: float,  # TODO: rename total_beam_intensity like in rest of APIs, confirm Seb is ok
+    total_beam_intensity: int,
     input_emittances: tuple[float, float, float],
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"] = "Nagaitsev",
     longitudinal_emittance_ratio: float = None,
@@ -73,8 +73,8 @@ def _ibs_rates_and_emittance_derivatives(
     ----------
     twiss : xtrack.TwissTable
         Twiss results of the `xtrack.Line` configuration.
-    bunch_intensity : float
-        Bunch intensity [particles per bunch].
+    total_beam_intensity : int
+        The beam or bunch intensity, in [particles per bunch].
     input_emittances : tuple[float, float, float]
         The bunch's starting geometric emittances in the horizontal,
         vertical and longitudinal planes, in [m].
@@ -127,7 +127,7 @@ def _ibs_rates_and_emittance_derivatives(
     # Ask to compute the IBS growth rates (this function logs so no need to do it here)
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
-        total_beam_intensity=bunch_intensity,
+        total_beam_intensity=total_beam_intensity,
         gemitt_x=input_emittance_x,
         gemitt_y=input_emittance_y,
         sigma_delta=sigma_delta,
@@ -161,7 +161,7 @@ def _ibs_rates_and_emittance_derivatives(
 
 def compute_emittance_evolution(
     twiss: xt.TwissTable,
-    bunch_intensity: float,
+    total_beam_intensity: int,
     initial_emittances: tuple = None,
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
@@ -185,8 +185,8 @@ def compute_emittance_evolution(
     ----------
     twiss : object
         Twiss object of the ring.
-    bunch_intensity : float
-        Bunch intensity [particles per bunch].
+    total_beam_intensity : int
+        The beam or bunch intensity, in [particles per bunch].
     initial_emittances : tuple of floats, optional
         Initial values for the horizontal, vertical, and longitudinal
         emittances. If None, the equilibrium emittances from the Twiss object
@@ -306,7 +306,7 @@ def compute_emittance_evolution(
         # Compute IBS growth rates and emittance derivatives
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
             twiss,
-            bunch_intensity,
+            total_beam_intensity,
             current_emittances,
             initial_emittances=initial_emittances,
             emittance_coupling_factor=emittance_coupling_factor,
