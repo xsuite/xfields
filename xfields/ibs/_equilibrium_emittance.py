@@ -323,6 +323,7 @@ def compute_emittance_evolution(
             total_beam_intensity=total_beam_intensity,
             input_emittances=current_emittances,
             longitudinal_emittance_ratio=longitudinal_emittance_ratio,
+            **kwargs,
         )
         # Make sure we have them as tuples for below
         ibs_growth_rates = ibs_growth_rates.as_tuple()
