@@ -170,8 +170,9 @@ def compute_emittance_evolution(
     initial_emittances: tuple[float, float, float] = None,
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["Coupling", "Excitation"] = "Coupling",
-    input_sigma_zeta: float = None,
-    input_sigma_delta: float = None,
+    # TODO: move these two (still optional) below gemitt_x, gemitt_y, gemitt_zeta when modify that
+    sigma_zeta: float = None,
+    sigma_delta: float = None,
     rtol: float = 1e-6,
     **kwargs,
 ):
@@ -213,15 +214,14 @@ def compute_emittance_evolution(
             If `excitation`, vertical emittance is the result of an excitation (e.g. from
             a feedback system).
         Defaults to "coupling", with no effect as `emittance_coupling_factor` defaults to 0.
+    sigma_zeta : float, optional
+        The RMS bunch length. If provided, overwrites the one computed from
+        the longitudinal emittance. Defaults to `None`.
+    sigma_delta : float, optional
+        The RMS momentum spread of the bunch. If provided, overwrites the one
+        computed from the longitudinal emittance. Defaults to `None`.
 
 
-        
-    input_sigma_zeta : float
-        Used specified RMS momentum spread overwriting the natural one from
-        the `twiss` object. Default is None.
-    input_sigma_delta : float
-        Used specified RMS momentum spread overwriting the natural one from
-        the `twiss` object. Default is None.
     natural_emittances : tuple of floats, optional
         Natural emittances (horizontal, vertical, longitudinal).
         If None, they are taken from the `twiss` object. Default is None.
@@ -275,20 +275,20 @@ def compute_emittance_evolution(
     # Handle initial longitudinal emittance and potential effect of bunch lengthening
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
-    if input_sigma_zeta is not None:
+    if sigma_zeta is not None:
         warnings.warn(
             "'input_sigma_zeta' is specified, make sure it remains "
             "consistent with 'initial_emittances'."
         )
-        sigma_zeta = input_sigma_zeta
-    elif input_sigma_delta is not None:
+        sigma_zeta = sigma_zeta
+    elif sigma_delta is not None:
         warnings.warn(
             "'input_sigma_delta' is specified, make sure it remains "
             "consistent with 'initial_emittances'."
         )
-        sigma_delta = input_sigma_delta
+        sigma_delta = sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
-    if input_sigma_zeta is not None or input_sigma_delta is not None:
+    if sigma_zeta is not None or sigma_delta is not None:
         assert initial_emittances is not None, (
             "Input of 'input_sigma_zeta' or 'input_sigma_delta' provided, but "
             "not of 'initial_emittances'. Please provide 'initial_emittances'."
