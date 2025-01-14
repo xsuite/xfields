@@ -165,6 +165,7 @@ def _ibs_rates_and_emittance_derivatives(
 
 def compute_emittance_evolution(
     twiss: xt.TwissTable,
+    formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
     initial_emittances: tuple = None,
     emittance_coupling_factor: float = 0,
@@ -189,6 +190,10 @@ def compute_emittance_evolution(
     ----------
     twiss : object
         Twiss object of the ring.
+    formalism : str
+        Which formalism to use for the computation of the IBS growth rates.
+        Can be ``Nagaitsev`` or ``Bjorken-Mtingwa`` (also accepts ``B&M``),
+        case-insensitively.
     total_beam_intensity : int
         The beam or bunch intensity, in [particles per bunch].
     initial_emittances : tuple of floats, optional
