@@ -361,18 +361,9 @@ def compute_emittance_evolution(
 
         it += 1
     # ----------------------------------------------------------------------------------------------
-    # Return the results
+    # Return a table with the results and return it
     print("\nConverged!")
-    return (
-        np.cumsum(time),
-        emittances_x_list,
-        emittances_y_list,
-        emittances_z_list,
-        T_x,
-        T_y,
-        T_z,
-    )
-    # return Table(
+    # result_table = Table(
     #     data={
     #         "time": np.cumsum(time),
     #         "gemitt_x": emittances_x_list,
@@ -384,3 +375,25 @@ def compute_emittance_evolution(
     #     },
     #     index="time",
     # )
+    # Provide global quantities as well
+    # result_table._data.update(
+    #     {
+    #         "damping_constants_s": twiss.damping_constants_s,
+    #         "eq_gemitt_x": emittances_x_list[-1],
+    #         "eq_gemitt_x": emittances_y_list[-1],
+    #         "eq_gemitt_x": emittances_z_list[-1],
+    #         "sr_eq_gemitt_x": twiss.eq_gemitt_x,
+    #         "sr_eq_gemitt_y": twiss.eq_gemitt_y,
+    #         "eq_nemitt_zeta": twiss.eq_nemitt_zeta,
+    #     }
+    # )
+    # return result_table
+    return (
+        np.cumsum(time),
+        emittances_x_list,
+        emittances_y_list,
+        emittances_z_list,
+        T_x,
+        T_y,
+        T_z,
+    )
