@@ -86,6 +86,10 @@ def _ibs_rates_and_emittance_derivatives(
         Ratio of the RMS bunch length to the RMS momentum spread. If provided,
         allows accounting for a perturbed longitudinal distrubtion due to
         bunch lengthening or a microwave instability. Default is None.
+    **kwargs : dict
+        Keyword arguments are passed to the growth rates computation method of
+        the chosen IBS formalism implementation. See the formalism classes in
+        the ``xfields.ibs._analytical`` for more details.
 
     Returns
     -------
@@ -133,6 +137,7 @@ def _ibs_rates_and_emittance_derivatives(
         sigma_delta=sigma_delta,
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
         bunched=True,
+        **kwargs,
     )
     # ----------------------------------------------------------------------------------------------
     # Computing the emittance time derivatives analytically.
