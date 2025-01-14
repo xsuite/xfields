@@ -163,6 +163,7 @@ def _ibs_rates_and_emittance_derivatives(
     )
 
 
+# TODO: find a better, more explicit name for this
 def compute_emittance_evolution(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
