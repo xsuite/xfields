@@ -106,17 +106,17 @@ def _ibs_rates_and_emittance_derivatives(
         respectively).
     """
     LOGGER.debug("Computing IBS growth rates and emittance time derivatives.")
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Check for valid emittance values
     assert gemitt_x > 0.0, "Horizontal emittance should be larger than zero"
     assert gemitt_y > 0.0, "Vertical emittance should be larger than zero"
     assert gemitt_zeta > 0.0, "Longitudinal emittance should be larger than zero"
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Compute relevant longitudinal parameters for the bunch (needed for IBS growth rates)
     LOGGER.debug("Computing longitudinal parameters for the bunch.")
     sigma_zeta = (gemitt_zeta * longitudinal_emittance_ratio) ** 0.5  # in [m]
     sigma_delta = (gemitt_zeta / longitudinal_emittance_ratio) ** 0.5  # in [-]
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Ask to compute the IBS growth rates (this function logs so no need to do it here)
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
@@ -127,7 +127,7 @@ def _ibs_rates_and_emittance_derivatives(
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
         **kwargs,
     )
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Computing the emittance time derivatives analytically.
     # TODO: ADD A REF TO THE FORMULA HERE
     LOGGER.debug("Computing emittance time derivatives analytically.")
@@ -143,7 +143,7 @@ def _ibs_rates_and_emittance_derivatives(
         -2 * twiss.damping_constants_s[2] * (gemitt_zeta - twiss.eq_gemitt_zeta)
         + ibs_growth_rates.Tz * gemitt_zeta
     )
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # And return the results
     return (
         ibs_growth_rates,
@@ -270,7 +270,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - sr_ibs_eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m].
     """
     # fmt: off
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Check for SR equilibrium emittances, damping constants and partition numbers in the TwissTable
     _required_attrs = ["damping_constants_s", "partition_numbers", "eq_gemitt_x", "eq_gemitt_y", "eq_gemitt_zeta"]
     if any(getattr(twiss, attr, None) is None for attr in _required_attrs):
@@ -279,8 +279,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "The TwissTable must contain SR equilibrium emittances and damping constants. "
             "Did you activate radiation and twiss with `eneloss_and_damping=True?`"
         )
-    # ----------------------------------------------------------------------------------------------
-    # Perform checks on required & exclusive parameters, and convert emittances to geometric if needed
+    # # ---------------------------------------------------------------------------------------------
+    # # Perform checks on required & exclusive parameters
     # assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
     # assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
     # assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
@@ -289,6 +289,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     #     assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
     # if gemitt_y is not None:
     #     assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+    # if gemitt_zeta is not None:
+    #     assert nemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
+    # # ---------------------------------------------------------------------------------------------
+    # # Convert emittances to geometric if needed
     # if nemitt_x is not None:
     #     assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
     #     gemitt_x = nemitt_x / (twiss.beta0 * twiss.gamma0)
@@ -298,13 +302,13 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # if nemitt_zeta is not None:
     #     assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
     #     gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Check for valid value of emittance_constraint and warn if constraint provided but factor is 0
     if emittance_constraint is not None:
         assert emittance_constraint.lower() in ("coupling", "excitation"), "Invalid 'emittance_constraint', accepted values are 'coupling' or 'excitation'."
         if emittance_coupling_factor == 0:
             LOGGER.warning("As 'emittance_coupling_factor` is zero, providing 'emittance_constraint' has no effect!")
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Handle initial transverse emittances and potential effect of coupling / excitation constraints
     # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
     if initial_emittances is None:
@@ -327,7 +331,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     else:
         emittance_x, emittance_y, emittance_z = initial_emittances
     # fmt: on
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Handle initial longitudinal emittance and potential effect of bunch lengthening
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
@@ -349,7 +353,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         )
         # Since a longitudinal property was overwritten we recompute the emittance_z
         emittance_z = sigma_zeta * sigma_delta
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Initialize values for the iterative process (first time step is revolution period)
     iterations: float = 0
     tolerance: float = np.inf
@@ -364,7 +368,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     res_gemitt_zeta: list[float] = []
     # Starting emittances (numpy array since we compute the next ones from these)
     current_emittances: ArrayLike = np.array([emittance_x, emittance_y, emittance_z])
-    # ----------------------------------------------------------------------------------------------
+    # ---------------------------------------------------------------------------------------------
     # Start the iterative process until convergence:
     # - Compute IBS rates and emittance time derivatives
     # - Compute new emittances using the time derivatives and time step
@@ -372,12 +376,14 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
-        if verbose is True:  # Display estimated convergence progress if asked
+        # --------------------------------------------------------------------------
+        # Display estimated convergence progress if asked
+        if verbose is True:
             xo.general._print(
                 f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r"
             )
-
-        # Compute IBS growth rates and emittance derivatives
+        # --------------------------------------------------------------------------
+        # Compute IBS growth rates and emittance derivatives (and unpack)
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
             twiss=twiss,
             formalism=formalism,
@@ -388,14 +394,13 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             longitudinal_emittance_ratio=longitudinal_emittance_ratio,
             **kwargs,
         )
-        # Make sure we have them as tuples for below
         ibs_growth_rates = ibs_growth_rates.as_tuple()
         emittance_derivatives = emittance_derivatives.as_tuple()
-
+        # --------------------------------------------------------------------------
         # Update current emittances - add the time step * emittance time derivatives
         current_emittances += np.array(emittance_derivatives) * time_step
-
-        # Enforce constraints if specified
+        # --------------------------------------------------------------------------
+        # Enforce transverse constraint if specified
         if emittance_constraint.lower() == "coupling":
             forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (
                 1 + emittance_coupling_factor
@@ -403,12 +408,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             forced_emittance_y = forced_emittance_x * emittance_coupling_factor
             current_emittances[0] = forced_emittance_x
             current_emittances[1] = forced_emittance_y
-
         elif emittance_constraint.lower() == "excitation":
             forced_emittance_y = current_emittances[0] * emittance_coupling_factor
             current_emittances[1] = forced_emittance_y
-
-        # Append current values to lists
+        # --------------------------------------------------------------------------
+        # Store the current values for this time step
         time_deltas.append(time_step)
         T_x.append(ibs_growth_rates[0])
         T_y.append(ibs_growth_rates[1])
@@ -416,19 +420,17 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         res_gemitt_x.append(current_emittances[0])
         res_gemitt_y.append(current_emittances[1])
         res_gemitt_zeta.append(current_emittances[2])
-
+        # --------------------------------------------------------------------------
         # Compute tolerance (but not at first step since there is no previous value)
+        # and store current emittances for tolerance computation at next iteration
         if iterations > 0:
             tolerance = np.max(
                 np.abs((current_emittances - previous_emittances) / previous_emittances)
             )
-
-        # Store current emittances for the next iteration
         previous_emittances = current_emittances.copy()
-
-        # Update time step for the next iteration
+        # --------------------------------------------------------------------------
+        # Update time step for the next iteration and increase counter
         time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
-
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
