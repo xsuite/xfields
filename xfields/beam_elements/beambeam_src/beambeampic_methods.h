@@ -14,12 +14,12 @@ void do_beamstrahlung_pic(BeamBeamPIC3DData el, LocalParticle *part,
 
         // init record table
         BeamBeamPIC3DRecordData beamstrahlung_record = NULL;
-        BeamstrahlungTableData beamstrahlung_table          = NULL;
-        RecordIndex beamstrahlung_table_index               = NULL;
+        BeamstrahlungTableData beamstrahlung_table   = NULL;
+        RecordIndex beamstrahlung_table_index        = NULL;
         beamstrahlung_record = BeamBeamPIC3DData_getp_internal_record(el, part);
         if (beamstrahlung_record){
             beamstrahlung_table       = BeamBeamPIC3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-            beamstrahlung_table_index =                 BeamstrahlungTableData_getp__index(beamstrahlung_table);
+            beamstrahlung_table_index =               BeamstrahlungTableData_getp__index(beamstrahlung_table);
         }
 
         LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
@@ -28,8 +28,7 @@ void do_beamstrahlung_pic(BeamBeamPIC3DData el, LocalParticle *part,
             // no average beamstrahlung implemented
 	} else if (flag_beamstrahlung==2){
             double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
-            double const dz_half = .5*dz;  // half slice width [m] from grid cell size 0.5*dz
-            beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz_half);
+            beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
         }
 
         *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
@@ -212,10 +211,6 @@ void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
 
         // Effect of the particle angle as in Hirata
         double dpz = 0.5 * (dpx * (px + 0.5 * dpx) + dpy * (py + 0.5 * dpy));
-
-        FILE* f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/n141_test_beambeam_pic_single_coll/xsuite_pic_forces.txt","a");
-        fprintf(f1, "%g %g %g %g %g %g %g %g %g %g %g \n", q0, x, y, zeta, px, py, pzeta, dpx, dpy, dpz, factor);
-        fclose(f1);
 
         // emit beamstrahlung photons from single macropart
         #ifndef XFIELDS_BB3D_NO_BEAMSTR

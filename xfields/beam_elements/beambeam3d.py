@@ -882,8 +882,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                                 at_turn,
                                                 internal_tag=self.config_for_update._i_step):
             # Compute moments
-            self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
-            self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
+            #self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
+            self.moments = self.config_for_update.slicer.compute_moments(particles)  # assign to slices happens inside here
 
             pipeline_manager.send_message(self.moments,
                                                 self.config_for_update.element_name,

@@ -257,14 +257,14 @@ class BeamBeamPIC3D(xt.BeamElement):
         # Compute particles coordinates in the reference system of the other beam
         z_step_self = self._z_steps_self[self._i_step]
         mask_alive = pp.state > 0
-        z_step_other = self._z_steps_other[self._i_step]
+        z_step_other = self._z_steps_other[self._i_step]  # same as z_step_self
         # For now assuming symmetric ultra-relativistic beams
         z_other = (-pp.zeta[mask_alive] + z_step_other + z_step_self)
         x_other = -pp.x[mask_alive]
         y_other = pp.y[mask_alive]
 
         # Get fields in the reference system of the other beam
-        dphi_dx, dphi_dy, dphi_dz = self.fieldmap_other.get_values_at_points(
+        dphi_dx, dphi_dy, dphi_dz = self.fieldmap_other.get_values_at_points(  # all 0s at first step since other beam hasnt sent its rho yet
             x=x_other, y=y_other, z=z_other,
             return_rho=False,
             return_phi=False,
@@ -333,7 +333,7 @@ class BeamBeamPIC3D(xt.BeamElement):
     def flag_beamstrahlung(self):
         return self._flag_beamstrahlung
 
-    #@flag_beamstrahlung.setter
+    @flag_beamstrahlung.setter
     def flag_beamstrahlung(self, flag_beamstrahlung):
         self._flag_beamstrahlung = flag_beamstrahlung
 

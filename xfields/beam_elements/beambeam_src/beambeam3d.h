@@ -304,10 +304,6 @@ void synchrobeam_kick(
                 Fx_star*(*px_star+0.5*Fx_star - px_slice_star)+
                 Fy_star*(*py_star+0.5*Fy_star - py_slice_star));
 
-    FILE* f1 = fopen("/Users/pkicsiny/phd/cern/xsuite/outputs/n141_test_beambeam_pic_single_coll/xsuite_forces.txt","a");
-    fprintf(f1, "%g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g %g \n", q0, *x_star, *y_star, *zeta_star, *px_star, *py_star, *pzeta_star, x_bar_star, y_bar_star, Fx_star, Fy_star, dpzeta_star, S, Ksl, Fx_hat_star, Fy_hat_star, num_part_slice);
-    fclose(f1);
-
     // Apply the kicks (Hirata's synchro-beam)
     *pzeta_star = *pzeta_star + dpzeta_star;
     *x_star = *x_star - S*Fx_star;
