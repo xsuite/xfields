@@ -223,13 +223,16 @@ def compute_emittance_evolution(
         Defaults to "coupling".
           - If `coupling`, vertical emittance is the result of linear coupling. In
             this case both the vertical and horizontal emittances are altered and
-            determined based on the value of `emittance_coupling_factor` such that
-            the total transverse IS preserved.
+            determined based on the value of `emittance_coupling_factor` and the
+            damping partition numbers. If the horizontal and vertical partition
+            numbers are equal then the total transverse emittance is preserved.
           - If `excitation`, vertical emittance is the result of an excitation
             (e.g. from a feedback system) and is determined from the horizontal
             emittance based on the value of `emittance_coupling_factor`. In this
             case the total transverse emittance is NOT preserved.
-        This has no effect by default as `emittance_coupling_factor` defaults to 0.
+        Providing `None` or an empty string allows one to study a scenarion without
+        constraint. Note as `emittance_coupling_factor` defaults to 0, this parameter
+        has no effect unless a non-zero value is provided.
     overwrite_sigma_zeta : float, optional
         The RMS bunch length. If provided, overwrites the one computed from
         the longitudinal emittance. Defaults to `None`.
