@@ -12,6 +12,7 @@ from typing import Literal
 import numpy as np
 import xobjects as xo
 import xtrack as xt
+from numpy.typing import ArrayLike
 from xtrack import Table
 
 from xfields.ibs._analytical import IBSGrowthRates
@@ -350,19 +351,19 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         emittance_z = sigma_zeta * sigma_delta
     # ----------------------------------------------------------------------------------------------
     # Initialize values for the iterative process (first time step is revolution period)
-    iterations = 0
-    tolerance = np.inf
-    time_step = twiss.T_rev0
+    iterations: float = 0
+    tolerance: float = np.inf
+    time_step: float = twiss.T_rev0
     # Structures for iterative results (time, IBS growth rates, computed emittances)
-    time_deltas = []  # stores the deltas (!), we do a cumsum at the end
-    T_x = []
-    T_y = []
-    T_z = []
-    res_gemitt_x = []
-    res_gemitt_y = []
-    res_gemitt_zeta = []
+    time_deltas: list[float] = []  # stores the deltas (!), we do a cumsum at the end
+    T_x: list[float] = []
+    T_y: list[float] = []
+    T_z: list[float] = []
+    res_gemitt_x: list[float] = []
+    res_gemitt_y: list[float] = []
+    res_gemitt_zeta: list[float] = []
     # Starting emittances (numpy array since we compute the next ones from these)
-    current_emittances = np.array([emittance_x, emittance_y, emittance_z])
+    current_emittances: ArrayLike = np.array([emittance_x, emittance_y, emittance_z])
     # ----------------------------------------------------------------------------------------------
     # Start the iterative process until convergence:
     # - Compute IBS rates and emittance time derivatives
@@ -409,12 +410,12 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
 
         # Append current values to lists
         time_deltas.append(time_step)
-        res_gemitt_x.append(current_emittances[0])
-        res_gemitt_y.append(current_emittances[1])
-        res_gemitt_zeta.append(current_emittances[2])
         T_x.append(ibs_growth_rates[0])
         T_y.append(ibs_growth_rates[1])
         T_z.append(ibs_growth_rates[2])
+        res_gemitt_x.append(current_emittances[0])
+        res_gemitt_y.append(current_emittances[1])
+        res_gemitt_zeta.append(current_emittances[2])
 
         # Compute tolerance (but not at first step since there is no previous value)
         if iterations > 0:
