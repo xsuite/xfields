@@ -158,8 +158,10 @@ def _ibs_rates_and_emittance_derivatives(
     )
 
 
-# TODO: find a better, more explicit name for this
-def compute_emittance_evolution(
+# ----- Public API (to be integrated as method in TwissTable) ----- #
+
+
+def compute_equilibrium_emittances_from_sr_and_ibs(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
@@ -252,22 +254,22 @@ def compute_emittance_evolution(
     xtrack.TwissTable
         The convergence calculations results. The table contains the following
         columns, as time-step by time-step quantities:
-            - time: time values at which quantities are computed, in [s]
-            - gemitt_x: horizontal geometric emittance values, in [m]
-            - gemitt_y: vertical geometric emittance values, in [m]
-            - gemitt_zeta: longitudinal geometric emittance values, in [m]
-            - Tx: horizontal IBS growth rate, in [s^-1]
-            - Ty: vertical IBS growth rate, in [s^-1]
-            - Tz: longitudinal IBS growth rate, in [s^-1]
+            - time: time values at which quantities are computed, in [s].
+            - gemitt_x: horizontal geometric emittance values, in [m].
+            - gemitt_y: vertical geometric emittance values, in [m].
+            - gemitt_zeta: longitudinal geometric emittance values, in [m].
+            - Tx: horizontal IBS growth rate, in [s^-1].
+            - Ty: vertical IBS growth rate, in [s^-1].
+            - Tz: longitudinal IBS growth rate, in [s^-1].
         The table also contains the following global quantities:
-            - damping_constants_s: radiation damping constants per second used for the calculations
-            - partition_numbers: damping partition numbers used for the calculations
-            - eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
-            - eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
-            - eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
-            - sr_ibs_eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m]
-            - sr_ibs_eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m]
-            - sr_ibs_eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
+            - damping_constants_s: radiation damping constants per second used.
+            - partition_numbers: damping partition numbers used.
+            - eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m].
+            - eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m].
+            - eq_gemitt_zeta: longitudinal equilibrium geometric emittance from synchrotron radiation used, in [m].
+            - sr_ibs_eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m].
+            - sr_ibs_eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m].
+            - sr_ibs_eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m].
     """
     # ----------------------------------------------------------------------------------------------
     # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
@@ -411,12 +413,12 @@ def compute_emittance_evolution(
         {
             "damping_constants_s": twiss.damping_constants_s,
             "partition_numbers": twiss.partition_numbers,
-            "sr_ibs_eq_gemitt_x": res_gemitt_x[-1],
-            "sr_ibs_eq_gemitt_y": res_gemitt_y[-1],
-            "sr_ibs_eq_gemitt_zeta": res_gemitt_zeta[-1],
             "eq_gemitt_x": twiss.eq_gemitt_x,
             "eq_gemitt_y": twiss.eq_gemitt_y,
             "eq_gemitt_zeta": twiss.eq_gemitt_zeta,
+            "sr_ibs_eq_gemitt_x": res_gemitt_x[-1],
+            "sr_ibs_eq_gemitt_y": res_gemitt_y[-1],
+            "sr_ibs_eq_gemitt_zeta": res_gemitt_zeta[-1],
         }
     )
     return result_table
