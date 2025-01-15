@@ -183,7 +183,7 @@ def compute_emittance_evolution(
     rtol: float = 1e-6,
     verbose: bool = True,
     **kwargs,
-):
+) -> Table:
     # TODO: rework this main chunk of docstring
     """
     Compute the evolution of beam emittances due to IBS until convergence.
@@ -253,42 +253,26 @@ def compute_emittance_evolution(
 
     Returns
     -------
-    time : numpy.ndarray
-        Computed time steps [s].
-    emittances_x : list of float
-        Horizontal emittance values computed over all the time steps.
-    emittances_y : list of float
-        Vertical emittance values computed over all the time steps.
-    emittances_z : list of float
-        Longitudinal emittance values computed over all the time steps.
-    T_x : list of float
-        Horizontal IBS growth rates computed over all the time steps.
-    T_y : list of float
-        Vertical IBS growth rates computed over all the time steps.
-    T_z : list of float
-        Longitudinal IBS growth rates computed over all the time steps.
+    xtrack.TwissTable
+        The convergence calculations results. The table contains the following
+        columns, as time-step by time-step quantities:
+            - time: time values at which quantities are computed, in [s]
+            - gemitt_x: horizontal geometric emittance values, in [m]
+            - gemitt_y: vertical geometric emittance values, in [m]
+            - gemitt_zeta: longitudinal geometric emittance values, in [m]
+            - Tx: horizontal IBS growth rate, in [s^-1]
+            - Ty: vertical IBS growth rate, in [s^-1]
+            - Tz: longitudinal IBS growth rate, in [s^-1]
+        The table also contains the following global quantities:
+            - damping_constants_s: radiation damping constants per second used for the calculations
+            - partition_numbers: damping partition numbers used for the calculations
+            - eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m]
+            - eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m]
+            - eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
+            - sr_eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
+            - sr_eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
+            - sr_eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
     """
-    # Returns
-    # -------
-    # xtrack.TwissTable
-    #     The convergence calculations results. The table contains the following
-    #     columns, as time-step by time-step quantities:
-    #         - time: time values at which quantities are computed, in [s]
-    #         - gemitt_x: horizontal geometric emittance values, in [m]
-    #         - gemitt_y: vertical geometric emittance values, in [m]
-    #         - gemitt_zeta: longitudinal geometric emittance values, in [m]
-    #         - Tx: horizontal IBS growth rate, in [s^-1]
-    #         - Ty: vertical IBS growth rate, in [s^-1]
-    #         - Tz: longitudinal IBS growth rate, in [s^-1]
-    #     The table also contains the following global quantities:
-    #         - damping_constants_s: radiation damping constants per second used for the calculations
-    #         - partition_numbers: damping partition numbers used for the calculations
-    #         - eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m]
-    #         - eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m]
-    #         - eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
-    #         - sr_eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
-    #         - sr_eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
-    #         - sr_eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
     # ----------------------------------------------------------------------------------------------
     # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
     # ----------------------------------------------------------------------------------------------
@@ -405,39 +389,30 @@ def compute_emittance_evolution(
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
-    print("\nConverged!")
-    # result_table = Table(
-    #     data={
-    #         "time": np.cumsum(time),
-    #         "gemitt_x": emittances_x_list,
-    #         "gemitt_y": emittances_y_list,
-    #         "gemitt_zeta": emittances_z_list,
-    #         "Tx": Tx,
-    #         "Ty": Ty,
-    #         "Tz": Tz,
-    #     },
-    #     index="time",
-    # )
-    # Provide global quantities as well
-    # result_table._data.update(
-    #     {
-    #         "damping_constants_s": twiss.damping_constants_s,
-    #         "partition_numbers": twiss.partition_numbers,
-    #         "eq_gemitt_x": emittances_x_list[-1],
-    #         "eq_gemitt_x": emittances_y_list[-1],
-    #         "eq_gemitt_x": emittances_z_list[-1],
-    #         "sr_eq_gemitt_x": twiss.eq_gemitt_x,
-    #         "sr_eq_gemitt_y": twiss.eq_gemitt_y,
-    #         "eq_nemitt_zeta": twiss.eq_nemitt_zeta,
-    #     }
-    # )
-    # return result_table
-    return (
-        np.cumsum(time_deltas),
-        res_gemitt_x,
-        res_gemitt_y,
-        res_gemitt_zeta,
-        T_x,
-        T_y,
-        T_z,
+    xo.general._print(f"Converged to equilibrium with a tolerance of {tolerance:.4e}")
+    result_table = Table(
+        data={
+            "time": np.cumsum(time),
+            "gemitt_x": res_gemitt_x,
+            "gemitt_y": res_gemitt_y,
+            "gemitt_zeta": res_gemitt_zeta,
+            "Tx": T_x,
+            "Ty": T_y,
+            "Tz": T_z,
+        },
+        index="time",
     )
+    # Provide global quantities as well
+    result_table._data.update(
+        {
+            "damping_constants_s": twiss.damping_constants_s,
+            "partition_numbers": twiss.partition_numbers,
+            "eq_gemitt_x": res_gemitt_x[-1],
+            "eq_gemitt_x": res_gemitt_y[-1],
+            "eq_gemitt_x": res_gemitt_zeta[-1],
+            "sr_eq_gemitt_x": twiss.eq_gemitt_x,
+            "sr_eq_gemitt_y": twiss.eq_gemitt_y,
+            "eq_nemitt_zeta": twiss.eq_nemitt_zeta,
+        }
+    )
+    return result_table
