@@ -129,7 +129,6 @@ def _ibs_rates_and_emittance_derivatives(
     # ----------------------------------------------------------------------------------------------
     # Computing the emittance time derivatives analytically.
     # TODO: ADD A REF TO THE FORMULA HERE
-    # TODO: replace input_emittance_[xyz] by gemitt_[xyz] once they are parameters
     LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
         -2 * twiss.damping_constants_s[0] * (gemitt_x - twiss.eq_gemitt_x)
