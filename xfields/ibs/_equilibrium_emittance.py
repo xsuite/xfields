@@ -379,7 +379,7 @@ def compute_emittance_evolution(
             current_emittances[0] = forced_emittance_x
             current_emittances[1] = forced_emittance_y
 
-        if emittance_constraint.lower() == "excitation":
+        elif emittance_constraint.lower() == "excitation":
             forced_emittance_y = current_emittances[0] * emittance_coupling_factor
             current_emittances[1] = forced_emittance_y
 
