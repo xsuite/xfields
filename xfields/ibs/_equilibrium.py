@@ -227,9 +227,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             (e.g. from a feedback system) and is determined from the horizontal
             emittance based on the value of `emittance_coupling_factor`. In this
             case the total transverse emittance is NOT preserved.
-        Providing `None` or an empty string allows one to study a scenarion without
-        constraint. Note as `emittance_coupling_factor` defaults to 0, this parameter
-        has no effect unless a non-zero value is provided.
+        Providing `None` allows one to study a scenario without constraint. Note
+        that as `emittance_coupling_factor` defaults to 0, the constraint has no
+        effect unless a non-zero factor is provided.
     overwrite_sigma_zeta : float, optional
         The RMS bunch length. If provided, overwrites the one computed from
         the longitudinal emittance. Defaults to `None`.
@@ -272,20 +272,20 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     """
     # ----------------------------------------------------------------------------------------------
     # Check for SR equilibrium emittances, damping constants and partition numbers in the TwissTable
-    if None in (
-        getattr(twiss, "eq_gemitt_x", None),
-        getattr(twiss, "eq_gemitt_y", None),
-        getattr(twiss, "eq_gemitt_zeta", None),
-        getattr(twiss, "damping_constants_s", None),
-        getattr(twiss, "partition_numbers", None),
-    ):
+    # fmt: off
+    required_twiss_attributes = ["eq_gemitt_x", "eq_gemitt_y", "eq_gemitt_zeta", "damping_constants_s", "partition_numbers"]
+    if any(getattr(twiss, attr, None) is None for attr in required_twiss_attributes):
         LOGGER.error("Invalid TwissTable, does not have SR equilibrium properties. Did you configure radiation?")
         raise AttributeError(
             "The TwissTable must contain SR equilibrium emittances and damping constants. "
             "Did you activate radiation and twiss with `eneloss_and_damping=True?`"
         )
     # ----------------------------------------------------------------------------------------------
-    # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
+    # Check for valid value of emittance_constraint and warn if constraint provided but factor is 0
+    if emittance_constraint is not None:
+        assert emittance_constraint.lower() in ("coupling", "excitation"), "Invalid 'emittance_constraint', accepted values are 'coupling' or 'excitation'."
+        if emittance_coupling_factor == 0:
+            LOGGER.warning("As 'emittance_coupling_factor` is zero, providing 'emittance_constraint' has no effect!")
     # ----------------------------------------------------------------------------------------------
     # Handle initial transverse emittances and potential effect of coupling / excitation constraints
     # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
@@ -296,11 +296,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             twiss.eq_gemitt_y,
             twiss.eq_gemitt_zeta,
         )
-        # If emittance_coupling_factor is non zero, then natural emittance is
-        # modified accordingly
-        # fmt: off
+        # If emittance_coupling_factor is non zero, then natural emittance is modified accordingly (used
+        # convention is valid for arbitrary damping partition numbers and emittance_coupling_factor).
         if emittance_coupling_factor != 0 and emittance_constraint.lower() == "coupling":
-            # The convention used is valid for arbitrary damping partition numbers and emittance_coupling_factor.
             emittance_y = emittance_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
             emittance_x *= 1 / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
 
@@ -310,7 +308,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             emittance_y = emittance_x * emittance_coupling_factor
     else:
         emittance_x, emittance_y, emittance_z = initial_emittances
-        # fmt: on
+    # fmt: on
     # ----------------------------------------------------------------------------------------------
     # Handle initial longitudinal emittance and potential effect of bunch lengthening
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
