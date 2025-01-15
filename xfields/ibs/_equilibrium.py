@@ -100,16 +100,12 @@ def _ibs_rates_and_emittance_derivatives(
     """
     LOGGER.debug("Computing IBS growth rates and emittance time derivatives.")
     # ----------------------------------------------------------------------------------------------
-    # TODO: bunch emittances - ask for the three separately and update docstring
+    # TODO: bunch emittances - ask for the three separately and update docstring - keep checks here
     input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
-    assert input_emittance_x > 0.0, (
-        "'input_emittance_x' should be larger than zero, try providing 'initial_emittances'"
-    )
-    assert input_emittance_y > 0.0, (
-        "'input_emittance_y' should be larger than zero, try providing 'initial_emittances'"
-    )
+    assert input_emittance_x > 0.0, "'input_emittance_x' should be larger than zero"
+    assert input_emittance_y > 0.0, "'input_emittance_y' should be larger than zero"
     # ----------------------------------------------------------------------------------------------
-    # TODO: check for SR eq emittances etc in twiss table (or in public func?) Could be:
+    # TODO: check for SR eq emittances etc in twiss table (or in public func?) (move to main func)
     # if None in (
     #     getattr(twiss, "eq_gemitt_x", None),
     #     getattr(twiss, "eq_gemitt_y", None),
@@ -305,10 +301,14 @@ def compute_emittance_evolution(
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     if overwrite_sigma_zeta is not None:
-        warnings.warn("'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'.")
+        warnings.warn(
+            "'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'."
+        )
         sigma_zeta = overwrite_sigma_zeta
     elif overwrite_sigma_delta is not None:
-        warnings.warn("'sigma_delta' is specified, make sure it remains consistent with 'initial_emittances'.")
+        warnings.warn(
+            "'sigma_delta' is specified, make sure it remains consistent with 'initial_emittances'."
+        )
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
     if overwrite_sigma_zeta is not None or overwrite_sigma_delta is not None:
@@ -336,7 +336,9 @@ def compute_emittance_evolution(
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
         if verbose is True:  # Display estimated convergence progress if asked
-            xo.general._print(f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r")
+            xo.general._print(
+                f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r"
+            )
 
         # Compute IBS growth rates and emittance derivatives
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
@@ -378,7 +380,9 @@ def compute_emittance_evolution(
 
         # Compute tolerance (but not at first step since there is no previous value)
         if iterations > 0:
-            tolerance = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
+            tolerance = np.max(
+                np.abs((current_emittances - previous_emittances) / previous_emittances)
+            )
 
         # Store current emittances for the next iteration
         previous_emittances = current_emittances.copy()
@@ -389,16 +393,16 @@ def compute_emittance_evolution(
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
-    xo.general._print(f"Converged to equilibrium with a tolerance of {tolerance:.4e}")
+    xo.general._print(f"Reached equilibrium with tolerance={tolerance:.2e} (vs rtol={rtol:.2e})")
     result_table = Table(
         data={
-            "time": np.cumsum(time),
-            "gemitt_x": res_gemitt_x,
-            "gemitt_y": res_gemitt_y,
-            "gemitt_zeta": res_gemitt_zeta,
-            "Tx": T_x,
-            "Ty": T_y,
-            "Tz": T_z,
+            "time": np.cumsum(time_deltas),
+            "gemitt_x": np.array(res_gemitt_x),
+            "gemitt_y": np.array(res_gemitt_y),
+            "gemitt_zeta": np.array(res_gemitt_zeta),
+            "Tx": np.array(T_x),
+            "Ty": np.array(T_y),
+            "Tz": np.array(T_z),
         },
         index="time",
     )
