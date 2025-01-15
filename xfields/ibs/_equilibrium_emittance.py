@@ -212,8 +212,9 @@ def compute_emittance_evolution(
         SR equilibrium emittances from the TwissTable are used. Defaults
         to `None`.
     emittance_coupling_factor : float, optional
-        A factor relating vertical to horizontal emittances. If a value is
-        provided, it is taken into account for the evolution of emittances.
+        The ratio of perturbed transverse emittances due to betatron coupling.
+        If a value is provided, it is taken into account for the evolution of
+        emittances and induced an emittance sharing between the two planes.
         See the next parameter for possible scenarios and how this value is
         used. Defaults to 0.
     emittance_constraint : str, optional
@@ -285,6 +286,8 @@ def compute_emittance_evolution(
     #         - sr_eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
     #         - sr_eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
     #         - eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
+    # ----------------------------------------------------------------------------------------------
+    # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
     # ----------------------------------------------------------------------------------------------
     # Handle initial transverse emittances and potential effect of coupling / excitation constraints
     # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
