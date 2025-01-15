@@ -68,7 +68,8 @@ def _ibs_rates_and_emittance_derivatives(
 ) -> tuple[IBSGrowthRates, EmittanceTimeDerivatives]:
     """
     Compute the IBS growth rates and emittance time derivatives from
-    the effect of both IBS and SR.
+    the effect of both IBS and SR. TODO: Include a ref here to the
+    analytical formula used.
 
     Parameters
     ----------
@@ -109,19 +110,6 @@ def _ibs_rates_and_emittance_derivatives(
     assert gemitt_x > 0.0, "Horizontal emittance should be larger than zero"
     assert gemitt_y > 0.0, "Vertical emittance should be larger than zero"
     assert gemitt_zeta > 0.0, "Longitudinal emittance should be larger than zero"
-    # ----------------------------------------------------------------------------------------------
-    # TODO: check for SR eq emittances etc in twiss table (or in public func?) (move to main func)
-    # if None in (
-    #     getattr(twiss, "eq_gemitt_x", None),
-    #     getattr(twiss, "eq_gemitt_y", None),
-    #     getattr(twiss, "eq_gemitt_zeta", None),
-    #     getattr(twiss, "damping_constants_s", None),
-    # ):
-    #     LOGGER.error("Invalid TwissTable, does not have SR equilibrium properties.")
-    #     raise AttributeError(
-    #         "The TwissTable must contain SR equilibrium emittances and damping constants. "
-    #         "Did you activate radiation and twiss with eneloss_and_damping=True?"
-    #     )
     # ----------------------------------------------------------------------------------------------
     # Compute relevant longitudinal parameters for the bunch (needed for IBS growth rates)
     LOGGER.debug("Computing longitudinal parameters for the bunch.")
@@ -282,6 +270,20 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - sr_ibs_eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m].
             - sr_ibs_eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m].
     """
+    # ----------------------------------------------------------------------------------------------
+    # Check for SR equilibrium emittances, damping constants and partition numbers in the TwissTable
+    if None in (
+        getattr(twiss, "eq_gemitt_x", None),
+        getattr(twiss, "eq_gemitt_y", None),
+        getattr(twiss, "eq_gemitt_zeta", None),
+        getattr(twiss, "damping_constants_s", None),
+        getattr(twiss, "partition_numbers", None),
+    ):
+        LOGGER.error("Invalid TwissTable, does not have SR equilibrium properties. Did you configure radiation?")
+        raise AttributeError(
+            "The TwissTable must contain SR equilibrium emittances and damping constants. "
+            "Did you activate radiation and twiss with `eneloss_and_damping=True?`"
+        )
     # ----------------------------------------------------------------------------------------------
     # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
     # ----------------------------------------------------------------------------------------------
