@@ -349,13 +349,19 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # Since a longitudinal property was overwritten we recompute the emittance_z
         emittance_z = sigma_zeta * sigma_delta
     # ----------------------------------------------------------------------------------------------
-    # Start structures to store the iterative results until convergence
+    # Initialize values for the iterative process (first time step is revolution period)
+    iterations = 0
     tolerance = np.inf
-    time_step = twiss.T_rev0  # Initial time step is the revolution period
-
-    time_deltas = []
-    res_gemitt_x, res_gemitt_y, res_gemitt_zeta = [], [], []
-    T_x, T_y, T_z = [], [], []
+    time_step = twiss.T_rev0
+    # Structures for iterative results (time, IBS growth rates, computed emittances)
+    time_deltas = []  # stores the deltas (!), we do a cumsum at the end
+    T_x = []
+    T_y = []
+    T_z = []
+    res_gemitt_x = []
+    res_gemitt_y = []
+    res_gemitt_zeta = []
+    # Starting emittances (numpy array since we compute the next ones from these)
     current_emittances = np.array([emittance_x, emittance_y, emittance_z])
     # ----------------------------------------------------------------------------------------------
     # Start the iterative process until convergence:
