@@ -150,7 +150,7 @@ def _ibs_rates_and_emittance_derivatives(
     )
 
 
-# ----- Public API (to be integrated as method in TwissTable) ----- #
+# ----- Public API (integrated as method in TwissTable) ----- #
 
 
 def compute_equilibrium_emittances_from_sr_and_ibs(
@@ -268,16 +268,35 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - sr_ibs_eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m].
             - sr_ibs_eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m].
     """
+    # fmt: off
     # ----------------------------------------------------------------------------------------------
     # Check for SR equilibrium emittances, damping constants and partition numbers in the TwissTable
-    # fmt: off
-    required_twiss_attributes = ["eq_gemitt_x", "eq_gemitt_y", "eq_gemitt_zeta", "damping_constants_s", "partition_numbers"]
-    if any(getattr(twiss, attr, None) is None for attr in required_twiss_attributes):
+    _required_attrs = ["damping_constants_s", "partition_numbers", "eq_gemitt_x", "eq_gemitt_y", "eq_gemitt_zeta"]
+    if any(getattr(twiss, attr, None) is None for attr in _required_attrs):
         LOGGER.error("Invalid TwissTable, does not have SR equilibrium properties. Did you configure radiation?")
         raise AttributeError(
             "The TwissTable must contain SR equilibrium emittances and damping constants. "
             "Did you activate radiation and twiss with `eneloss_and_damping=True?`"
         )
+    # ----------------------------------------------------------------------------------------------
+    # Perform checks on required & exclusive parameters, and convert emittances to geometric if needed
+    # assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
+    # assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+    # assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+    # assert any([gemitt_zeta, nemitt_zeta]), "Must provide either 'gemitt_zeta' or 'nemitt_zeta'"
+    # if gemitt_x is not None:
+    #     assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+    # if gemitt_y is not None:
+    #     assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+    # if nemitt_x is not None:
+    #     assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+    #     gemitt_x = nemitt_x / (twiss.beta0 * twiss.gamma0)
+    # if nemitt_y is not None:
+    #     assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+    #     gemitt_y = nemitt_y / (twiss.beta0 * twiss.gamma0)
+    # if nemitt_zeta is not None:
+    #     assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
+    #     gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
     # ----------------------------------------------------------------------------------------------
     # Check for valid value of emittance_constraint and warn if constraint provided but factor is 0
     if emittance_constraint is not None:
@@ -327,7 +346,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "Input of 'overwrite_sigma_zeta' or 'overwrite_sigma_delta' provided, but "
             "not of 'initial_emittances'. Please provide 'initial_emittances'."
         )
-    # TODO: potentially here we redefine the emittance_z here as the ratio after the change here (product of the two sigmas)
+        # Since a longitudinal property was overwritten we recompute the emittance_z
+        emittance_z = sigma_zeta * sigma_delta
     # ----------------------------------------------------------------------------------------------
     # Start structures to store the iterative results until convergence
     tolerance = np.inf
@@ -337,11 +357,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     res_gemitt_x, res_gemitt_y, res_gemitt_zeta = [], [], []
     T_x, T_y, T_z = [], [], []
     current_emittances = np.array([emittance_x, emittance_y, emittance_z])
-    iterations = 0  # Iteration counter
     # ----------------------------------------------------------------------------------------------
     # Start the iterative process until convergence:
     # - Compute IBS rates and emittance time derivatives
-    # - Update emittances using the time derivatives and time step
+    # - Compute new emittances using the time derivatives and time step
     # - Enforce transverse constraints if specified
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
