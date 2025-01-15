@@ -6,16 +6,20 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xobjects as xo
 import xtrack as xt
-from numpy.typing import ArrayLike
 from xobjects.general import _print
 from xtrack import Table
 
-from xfields.ibs._analytical import IBSGrowthRates
+if TYPE_CHECKING:
+    from typing import Literal
+
+    from numpy.typing import ArrayLike
+
+    from xfields.ibs._analytical import IBSGrowthRates
 
 LOGGER = logging.getLogger(__name__)
 
