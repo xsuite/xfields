@@ -182,17 +182,23 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     verbose: bool = True,
     **kwargs,
 ) -> Table:
-    # TODO: rework this main chunk of docstring
     """
-    Compute the evolution of beam emittances due to IBS until convergence.
-    By default, the function assumes the emittances from the Twiss object.
-    They can also be specified as well as different natural emittances.
-    The emittance evolution can be constrained to follow two scenarios:
-        - A vertical emittance originating from linear coupling.
+    Compute the evolution of emittances due to Synchrotron Radiation
+    and Intra-Beam Scattering until convergence to equilibrium values.
+    The equilibrium state is determined by an iterative process which
+    consists in computing the IBS growth rates and the emittance time
+    derivaties, then computing the emittances at the next time step,
+    potentially including the effect of transverse constraints, and
+    checking for convergence. The convergence criteria can be chosen
+    by the user.
+
+    Transverse emittances can be constrained to follow two scenarios:
+        - An emittance exchange originating from betatron coupling.
         - A vertical emittance originating from an excitation.
-    The impact from the longitudinal impedance (e.g. bunch lengthening or
-    microwave instability) can be accounted for by specifying the RMS bunch
-    length and momentum spread.
+
+    The impact from the longitudinal impedance (e.g. bunch lengthening
+    or microwave instability) can be accounted for by specifying the RMS
+    bunch length and momentum spread.
 
     Parameters
     ----------
@@ -251,7 +257,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
 
     Returns
     -------
-    xtrack.TwissTable
+    xtrack.Table
         The convergence calculations results. The table contains the following
         columns, as time-step by time-step quantities:
             - time: time values at which quantities are computed, in [s].
