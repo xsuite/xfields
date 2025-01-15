@@ -346,7 +346,7 @@ def compute_emittance_evolution(
     # Start the iterative process until convergence:
     # - Compute IBS rates and emittance time derivatives
     # - Update emittances using the time derivatives and time step
-    # - Enforce transverse / longitudinal constraints if specified
+    # - Enforce transverse constraints if specified
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
