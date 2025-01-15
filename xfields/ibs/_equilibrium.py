@@ -324,11 +324,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         )
         # If emittance_coupling_factor is non zero, then natural emittance is modified accordingly (used
         # convention is valid for arbitrary damping partition numbers and emittance_coupling_factor).
-        if emittance_coupling_factor != 0 and emittance_constraint.lower() == "coupling":
+        if emittance_constraint.lower() == "coupling" and emittance_coupling_factor != 0:
             emittance_y = emittance_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
             emittance_x *= 1 / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
 
-        if emittance_coupling_factor != 0 and emittance_constraint.lower() == "excitation":
+        if emittance_constraint.lower() == "excitation" and emittance_coupling_factor != 0:
             # The convention used only enforce a constraint on the vertical
             # emittance
             emittance_y = emittance_x * emittance_coupling_factor
