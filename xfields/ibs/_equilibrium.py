@@ -266,12 +266,12 @@ def compute_emittance_evolution(
         The table also contains the following global quantities:
             - damping_constants_s: radiation damping constants per second used for the calculations
             - partition_numbers: damping partition numbers used for the calculations
-            - eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m]
-            - eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m]
-            - eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
-            - sr_eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
-            - sr_eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
-            - sr_eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
+            - eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
+            - eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
+            - eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
+            - sr_ibs_eq_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m]
+            - sr_ibs_eq_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m]
+            - sr_ibs_eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
     """
     # ----------------------------------------------------------------------------------------------
     # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
@@ -407,12 +407,12 @@ def compute_emittance_evolution(
         {
             "damping_constants_s": twiss.damping_constants_s,
             "partition_numbers": twiss.partition_numbers,
-            "eq_gemitt_x": res_gemitt_x[-1],
-            "eq_gemitt_x": res_gemitt_y[-1],
-            "eq_gemitt_x": res_gemitt_zeta[-1],
-            "sr_eq_gemitt_x": twiss.eq_gemitt_x,
-            "sr_eq_gemitt_y": twiss.eq_gemitt_y,
-            "eq_nemitt_zeta": twiss.eq_nemitt_zeta,
+            "sr_ibs_eq_gemitt_x": res_gemitt_x[-1],
+            "sr_ibs_eq_gemitt_y": res_gemitt_y[-1],
+            "sr_ibs_eq_gemitt_zeta": res_gemitt_zeta[-1],
+            "eq_gemitt_x": twiss.eq_gemitt_x,
+            "eq_gemitt_y": twiss.eq_gemitt_y,
+            "eq_gemitt_zeta": twiss.eq_gemitt_zeta,
         }
     )
     return result_table
