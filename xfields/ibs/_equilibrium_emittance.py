@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import sys
 import warnings
 from typing import Literal
 
@@ -182,6 +181,7 @@ def compute_emittance_evolution(
     overwrite_sigma_zeta: float = None,
     overwrite_sigma_delta: float = None,
     rtol: float = 1e-6,
+    verbose: bool = True,
     **kwargs,
 ):
     # TODO: rework this main chunk of docstring
@@ -239,6 +239,9 @@ def compute_emittance_evolution(
         Relative tolerance to determine when convergence is reached: if the relative
         difference between the computed emittances and those at the previous step is
         below `rtol`, then convergence is considered achieved. Defaults to 1e-6.
+    verbose : bool, optional
+        Whether to print out information on the current iteration step and estimated
+        convergence progress. Defaults to `False`.
     **kwargs : dict
         Keyword arguments are passed to the growth rates computation method of
         the chosen IBS formalism implementation. See the formalism classes in
@@ -341,8 +344,8 @@ def compute_emittance_evolution(
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
-        # Print convergence progress
-        sys.stdout.write(f"\rIteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%")
+        if verbose is True:  # Display estimated convergence progress if asked
+            xo.general._print(f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r")
 
         # Compute IBS growth rates and emittance derivatives
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
