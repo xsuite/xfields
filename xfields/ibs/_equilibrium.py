@@ -6,7 +6,6 @@
 from __future__ import annotations
 
 import logging
-import warnings
 from typing import Literal
 
 import numpy as np
@@ -313,7 +312,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # Handle initial transverse emittances and potential effect of coupling / excitation constraints
     # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
     if initial_emittances is None:
-        print("Emittances from the Twiss object are being used.")
+        _print("Emittances from the Twiss object are being used.")
         emittance_x, emittance_y, emittance_z = (
             twiss.eq_gemitt_x,
             twiss.eq_gemitt_y,
@@ -337,14 +336,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
     if overwrite_sigma_zeta is not None:
-        warnings.warn(
-            "'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'."
-        )
+        LOGGER.warning("'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'.")
         sigma_zeta = overwrite_sigma_zeta
     elif overwrite_sigma_delta is not None:
-        warnings.warn(
-            "'sigma_delta' is specified, make sure it remains consistent with 'initial_emittances'."
-        )
+        LOGGER.warning("'sigma_delta' is specified, make sure it remains consistent with 'initial_emittances'.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
     if overwrite_sigma_zeta is not None or overwrite_sigma_delta is not None:
@@ -401,9 +396,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Enforce transverse constraint if specified
         if emittance_constraint.lower() == "coupling":
-            forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (
-                1 + emittance_coupling_factor
-            )
+            forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
             forced_emittance_y = forced_emittance_x * emittance_coupling_factor
             current_emittances[0] = forced_emittance_x
             current_emittances[1] = forced_emittance_y
