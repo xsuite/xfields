@@ -60,7 +60,9 @@ def _ibs_rates_and_emittance_derivatives(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
-    input_emittances: tuple[float, float, float],
+    gemitt_x: float,
+    gemitt_y: float,
+    gemitt_zeta: float,
     longitudinal_emittance_ratio: float = None,
     **kwargs,
 ) -> tuple[IBSGrowthRates, EmittanceTimeDerivatives]:
@@ -78,9 +80,12 @@ def _ibs_rates_and_emittance_derivatives(
         case-insensitively.
     total_beam_intensity : int
         The bunch intensity, in [particles per bunch].
-    input_emittances : tuple[float, float, float]
-        The bunch's starting geometric emittances in the horizontal,
-        vertical and longitudinal planes, in [m].
+    gemitt_x : float
+        Horizontal geometric emittance in [m].
+    gemitt_y : float
+        Vertical geometric emittance in [m].
+    gemitt_zeta : float
+        Longitudinal geometric emittance in [m].
     longitudinal_emittance_ratio : float, optional
         Ratio of the RMS bunch length to the RMS momentum spread. If provided,
         allows accounting for a perturbed longitudinal distrubtion due to
@@ -100,10 +105,10 @@ def _ibs_rates_and_emittance_derivatives(
     """
     LOGGER.debug("Computing IBS growth rates and emittance time derivatives.")
     # ----------------------------------------------------------------------------------------------
-    # TODO: bunch emittances - ask for the three separately and update docstring - keep checks here
-    input_emittance_x, input_emittance_y, input_emittance_z = input_emittances
-    assert input_emittance_x > 0.0, "'input_emittance_x' should be larger than zero"
-    assert input_emittance_y > 0.0, "'input_emittance_y' should be larger than zero"
+    # Check for valid emittance values
+    assert gemitt_x > 0.0, "Horizontal emittance should be larger than zero"
+    assert gemitt_y > 0.0, "Vertical emittance should be larger than zero"
+    assert gemitt_zeta > 0.0, "Longitudinal emittance should be larger than zero"
     # ----------------------------------------------------------------------------------------------
     # TODO: check for SR eq emittances etc in twiss table (or in public func?) (move to main func)
     # if None in (
@@ -120,15 +125,15 @@ def _ibs_rates_and_emittance_derivatives(
     # ----------------------------------------------------------------------------------------------
     # Compute relevant longitudinal parameters for the bunch (needed for IBS growth rates)
     LOGGER.debug("Computing longitudinal parameters for the bunch.")
-    sigma_zeta = (input_emittance_z * longitudinal_emittance_ratio) ** 0.5  # in [m]
-    sigma_delta = (input_emittance_z / longitudinal_emittance_ratio) ** 0.5  # in [-]
+    sigma_zeta = (gemitt_zeta * longitudinal_emittance_ratio) ** 0.5  # in [m]
+    sigma_delta = (gemitt_zeta / longitudinal_emittance_ratio) ** 0.5  # in [-]
     # ----------------------------------------------------------------------------------------------
     # Ask to compute the IBS growth rates (this function logs so no need to do it here)
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
         total_beam_intensity=total_beam_intensity,
-        gemitt_x=input_emittance_x,
-        gemitt_y=input_emittance_y,
+        gemitt_x=gemitt_x,
+        gemitt_y=gemitt_y,
         sigma_delta=sigma_delta,
         bunch_length=sigma_zeta,  # 1 sigma_{zeta,RMS} bunch length
         **kwargs,
@@ -139,16 +144,16 @@ def _ibs_rates_and_emittance_derivatives(
     # TODO: replace input_emittance_[xyz] by gemitt_[xyz] once they are parameters
     LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
-        -2 * twiss.damping_constants_s[0] * (input_emittance_x - twiss.eq_gemitt_x)
-        + ibs_growth_rates.Tx * input_emittance_x
+        -2 * twiss.damping_constants_s[0] * (gemitt_x - twiss.eq_gemitt_x)
+        + ibs_growth_rates.Tx * gemitt_x
     )
     depsilon_y_dt = (
-        -2 * twiss.damping_constants_s[1] * (input_emittance_y - twiss.eq_gemitt_y)
-        + ibs_growth_rates.Ty * input_emittance_y
+        -2 * twiss.damping_constants_s[1] * (gemitt_y - twiss.eq_gemitt_y)
+        + ibs_growth_rates.Ty * gemitt_y
     )
     depsilon_z_dt = (
-        -2 * twiss.damping_constants_s[2] * (input_emittance_z - twiss.eq_gemitt_zeta)
-        + ibs_growth_rates.Tz * input_emittance_z
+        -2 * twiss.damping_constants_s[2] * (gemitt_zeta - twiss.eq_gemitt_zeta)
+        + ibs_growth_rates.Tz * gemitt_zeta
     )
     # ----------------------------------------------------------------------------------------------
     # And return the results
@@ -353,7 +358,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             twiss=twiss,
             formalism=formalism,
             total_beam_intensity=total_beam_intensity,
-            input_emittances=current_emittances,
+            gemitt_x=current_emittances[0],
+            gemitt_y=current_emittances[1],
+            gemitt_zeta=current_emittances[2],
             longitudinal_emittance_ratio=longitudinal_emittance_ratio,
             **kwargs,
         )
