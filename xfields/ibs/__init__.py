@@ -10,9 +10,9 @@ from ._kicks import IBSAnalyticalKick, IBSKineticKick
 
 __all__ = [
     "BjorkenMtingwaIBS",
+    "compute_equilibrium_emittances_from_sr_and_ibs",
     "configure_intrabeam_scattering",
     "get_intrabeam_scattering_growth_rates",
-    "compute_equilibrium_emittances_from_sr_and_ibs",
     "IBSGrowthRates",
     "IBSAnalyticalKick",
     "IBSKineticKick",
