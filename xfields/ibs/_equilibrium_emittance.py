@@ -245,7 +245,7 @@ def compute_emittance_evolution(
         below `rtol`, then convergence is considered achieved. Defaults to 1e-6.
     verbose : bool, optional
         Whether to print out information on the current iteration step and estimated
-        convergence progress. Defaults to `False`.
+        convergence progress. Defaults to `True`.
     **kwargs : dict
         Keyword arguments are passed to the growth rates computation method of
         the chosen IBS formalism implementation. See the formalism classes in
