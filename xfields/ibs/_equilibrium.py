@@ -166,11 +166,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # nemitt_y: float = None,
     # gemitt_zeta: float = None,
     # nemitt_zeta: float = None,
-    emittance_coupling_factor: float = 0,
-    emittance_constraint: Literal["coupling", "excitation"] = "coupling",
-    # TODO: move these two (still optional) below gemitt_x, gemitt_y, gemitt_zeta when modify that
     overwrite_sigma_zeta: float = None,
     overwrite_sigma_delta: float = None,
+    emittance_coupling_factor: float = 0,
+    emittance_constraint: Literal["coupling", "excitation"] = "coupling",
     rtol: float = 1e-6,
     verbose: bool = True,
     **kwargs,
