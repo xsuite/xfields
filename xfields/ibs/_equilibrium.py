@@ -13,6 +13,7 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 from numpy.typing import ArrayLike
+from xobjects.general import _print
 from xtrack import Table
 
 from xfields.ibs._analytical import IBSGrowthRates
@@ -379,9 +380,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Display estimated convergence progress if asked
         if verbose is True:
-            xo.general._print(
-                f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r"
-            )
+            _print(f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r")
         # --------------------------------------------------------------------------
         # Compute IBS growth rates and emittance derivatives (and unpack)
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
@@ -434,7 +433,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
-    xo.general._print(f"Reached equilibrium with tolerance={tolerance:.2e} (vs rtol={rtol:.2e})")
+    _print(f"Reached equilibrium with tolerance={tolerance:.2e} (vs rtol={rtol:.2e})")
     result_table = Table(
         data={
             "time": np.cumsum(time_deltas),
