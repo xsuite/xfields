@@ -332,6 +332,7 @@ def compute_emittance_evolution(
             "Input of 'overwrite_sigma_zeta' or 'overwrite_sigma_delta' provided, but "
             "not of 'initial_emittances'. Please provide 'initial_emittances'."
         )
+    # TODO: potentially here we redefine the emittance_z here as the ratio after the change here (product of the two sigmas)
     # ----------------------------------------------------------------------------------------------
     # Start structures to store the iterative results until convergence
     tolerance = np.inf
