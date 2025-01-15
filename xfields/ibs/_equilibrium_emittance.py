@@ -288,7 +288,7 @@ def compute_emittance_evolution(
     #         - eq_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m]
     #         - sr_eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m]
     #         - sr_eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m]
-    #         - eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
+    #         - sr_eq_nemitt_zeta: longitudinal equilibrium normalized emittance from synchrotron radiation used, in [m]
     # ----------------------------------------------------------------------------------------------
     # TODO: Perform check for valid value of emittance_constraint but no value of emittance coupling factor
     # ----------------------------------------------------------------------------------------------
