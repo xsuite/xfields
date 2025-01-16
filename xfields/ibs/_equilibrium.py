@@ -366,6 +366,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "not of 'initial_emittances'. Please provide 'initial_emittances'."
         )
         # Since a longitudinal property was overwritten we recompute the emittance_z
+        LOGGER.warning("At least one longitudinal property overwritten, recomputing longitudinal emittance.")
         emittance_z = sigma_zeta * sigma_delta
     # ---------------------------------------------------------------------------------------------
     # Initialize values for the iterative process (first time step is revolution period)
