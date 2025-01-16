@@ -336,9 +336,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         emittance_x, emittance_y, emittance_z = initial_emittances
     # fmt: on
     # ---------------------------------------------------------------------------------------------
-    # Handle initial longitudinal emittance and potential effect of bunch lengthening
+    # Handle the potential longitudinal effects (bunch lengthening, microwave instability)
+    # First compute bunch length and momentum spread from longitudinal emittance (see xsuite twiss doc)
     sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
     sigma_delta = (emittance_z / twiss.bets0) ** 0.5
+    # Now handle the scenario where the user wants to overwrite those
     if overwrite_sigma_zeta is not None:
         LOGGER.warning("'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'.")
         sigma_zeta = overwrite_sigma_zeta
@@ -346,6 +348,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.warning("'sigma_delta' is specified, make sure it remains consistent with 'initial_emittances'.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
+    # Recompute the longidutinal emittance if either bunch length or momentum spread was overwritten
     if overwrite_sigma_zeta is not None or overwrite_sigma_delta is not None:
         assert initial_emittances is not None, (
             "Input of 'overwrite_sigma_zeta' or 'overwrite_sigma_delta' provided, but "
@@ -437,6 +440,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "gemitt_x": np.array(res_gemitt_x),
             "gemitt_y": np.array(res_gemitt_y),
             "gemitt_zeta": np.array(res_gemitt_zeta),
+            "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * twiss.bets0) ,
+            "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / twiss.bets0),
             "Tx": np.array(T_x),
             "Ty": np.array(T_y),
             "Tz": np.array(T_z),
