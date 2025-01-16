@@ -183,7 +183,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     and Intra-Beam Scattering until convergence to equilibrium values.
     The equilibrium state is determined by an iterative process which
     consists in computing the IBS growth rates and the emittance time
-    derivaties, then computing the emittances at the next time step,
+    derivatives, then computing the emittances at the next time step,
     potentially including the effect of transverse constraints, and
     checking for convergence. The convergence criteria can be chosen
     by the user.
@@ -195,6 +195,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     The impact from the longitudinal impedance (e.g. bunch lengthening
     or microwave instability) can be accounted for by specifying the RMS
     bunch length and momentum spread.
+
+    Notes
+    -----
+        It is required that radiation has been configured in the line,
+        and that the `TwissTable` holds information on the equilibrium
+        state from Synchrotron Radiation. This means calling first
+        `line.configure_radiation(model="mean")` and then the `.twiss()`
+        method with `eneloss_and_damping=True`. Please refer to the Twiss
+        user guide in the `xsuite` documentation for more information.
 
     Parameters
     ----------
