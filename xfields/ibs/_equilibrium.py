@@ -244,10 +244,12 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         effect unless a non-zero factor is provided.
     overwrite_sigma_zeta : float, optional
         The RMS bunch length. If provided, overwrites the one computed from
-        the longitudinal emittance. Defaults to `None`.
+        the longitudinal emittance and forces a recompute of the longitudinal
+        emittance. Defaults to `None`.
     overwrite_sigma_delta : float, optional
         The RMS momentum spread of the bunch. If provided, overwrites the one
-        computed from the longitudinal emittance. Defaults to `None`.
+        computed from the longitudinal emittance and forces a recompute of the
+        longitudinal emittance. Defaults to `None`.
     rtol : float, optional
         Relative tolerance to determine when convergence is reached: if the relative
         difference between the computed emittances and those at the previous step is
