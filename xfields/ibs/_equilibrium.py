@@ -275,7 +275,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - Ty: vertical IBS growth rate, in [s^-1].
             - Tz: longitudinal IBS growth rate, in [s^-1].
         The table also contains the following global quantities:
-            - damping_constants_s: radiation damping constants per second used.
+            - damping_constants_s: radiation damping constants used, in [s^-1].
             - partition_numbers: damping partition numbers used.
             - eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m].
             - eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m].
