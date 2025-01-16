@@ -260,6 +260,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - gemitt_x: horizontal geometric emittance values, in [m].
             - gemitt_y: vertical geometric emittance values, in [m].
             - gemitt_zeta: longitudinal geometric emittance values, in [m].
+            - sigma_zeta: bunch length values, in [m].
+            - sigma_delta: momentum spread values, in [-].
             - Tx: horizontal IBS growth rate, in [s^-1].
             - Ty: vertical IBS growth rate, in [s^-1].
             - Tz: longitudinal IBS growth rate, in [s^-1].
@@ -440,7 +442,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "gemitt_x": np.array(res_gemitt_x),
             "gemitt_y": np.array(res_gemitt_y),
             "gemitt_zeta": np.array(res_gemitt_zeta),
-            "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * twiss.bets0) ,
+            "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * twiss.bets0),
             "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / twiss.bets0),
             "Tx": np.array(T_x),
             "Ty": np.array(T_y),
