@@ -387,19 +387,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     sigma_delta = (starting_gemitt_zeta / twiss.bets0) ** 0.5
     # Now handle the scenario where the user wants to overwrite those
     if overwrite_sigma_zeta is not None:
-        LOGGER.warning("'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'.")
+        LOGGER.warning("'overwrite_sigma_zeta' specified, make sure it is consistent with provided longitudinal emittance.")
         sigma_zeta = overwrite_sigma_zeta
     elif overwrite_sigma_delta is not None:
-        LOGGER.warning("'sigma_delta' is specified, make sure it remains consistent with 'initial_emittances'.")
+        LOGGER.warning("'overwrite_sigma_delta' specified, make sure it is consistent with provided longitudinal emittance.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
     # Recompute the longidutinal emittance if either bunch length or momentum spread was overwritten
     if overwrite_sigma_zeta is not None or overwrite_sigma_delta is not None:
-        assert initial_emittances is not None, (
-            "Input of 'overwrite_sigma_zeta' or 'overwrite_sigma_delta' provided, but "
-            "not of 'initial_emittances'. Please provide 'initial_emittances'."
-        )
-        # Since a longitudinal property was overwritten we recompute the emittance_z
+        # Since a longitudinal property was overwritten we recompute the starting longitudinal emittance
         LOGGER.warning("At least one longitudinal property overwritten, recomputing longitudinal emittance.")
         starting_gemitt_zeta = sigma_zeta * sigma_delta
     # ---------------------------------------------------------------------------------------------
