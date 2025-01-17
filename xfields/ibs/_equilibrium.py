@@ -164,12 +164,12 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     total_beam_intensity: int,
     # TODO: want to force providing gemitt_x, gemitt_y & gemitt_zeta instead of this initial_emittances (can allow nemitt_x and add checks / conversions)
     initial_emittances: tuple[float, float, float] = None,
-    # gemitt_x: float = None,
-    # nemitt_x: float = None,
-    # gemitt_y: float = None,
-    # nemitt_y: float = None,
-    # gemitt_zeta: float = None,
-    # nemitt_zeta: float = None,
+    gemitt_x: float = None,
+    nemitt_x: float = None,
+    gemitt_y: float = None,
+    nemitt_y: float = None,
+    gemitt_zeta: float = None,
+    nemitt_zeta: float = None,
     overwrite_sigma_zeta: float = None,
     overwrite_sigma_delta: float = None,
     emittance_coupling_factor: float = 0,
@@ -288,6 +288,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     """
     # fmt: off
     # ---------------------------------------------------------------------------------------------
+    # Check for the required parameters
+    assert formalism is not None, "Must provide 'formalism'"  # accepted values check in called functions
+    assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
+    assert rtol is not None, "Must provide 'rtol'"  # if the user sets None we would crash in weird ways
+    # ---------------------------------------------------------------------------------------------
     # Check for SR equilibrium emittances, damping constants and partition numbers in the TwissTable
     _required_attrs = ["damping_constants_s", "partition_numbers", "eq_gemitt_x", "eq_gemitt_y", "eq_gemitt_zeta"]
     if any(getattr(twiss, attr, None) is None for attr in _required_attrs):
@@ -296,20 +301,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "The TwissTable must contain SR equilibrium emittances and damping constants. "
             "Did you activate radiation and twiss with `eneloss_and_damping=True?`"
         )
-    # # ---------------------------------------------------------------------------------------------
-    # # Perform checks on required & exclusive parameters
-    # assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
-    # assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
-    # assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
-    # assert any([gemitt_zeta, nemitt_zeta]), "Must provide either 'gemitt_zeta' or 'nemitt_zeta'"
-    # if gemitt_x is not None:
-    #     assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
-    # if gemitt_y is not None:
-    #     assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
-    # if gemitt_zeta is not None:
-    #     assert nemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
-    # # ---------------------------------------------------------------------------------------------
-    # # Convert emittances to geometric if needed
+    # ---------------------------------------------------------------------------------------------
+    # First: if geometric emittances are provided we will just use those. If instead normalized
+    # emittances are provided, we convert those to geometric emittances
     # if nemitt_x is not None:
     #     assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
     #     gemitt_x = nemitt_x / (twiss.beta0 * twiss.gamma0)
@@ -319,6 +313,18 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # if nemitt_zeta is not None:
     #     assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
     #     gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
+    # ---------------------------------------------------------------------------------------------
+    # Perform checks on required & exclusive parameters
+    # assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+    # assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+    # assert any([gemitt_zeta, nemitt_zeta]), "Must provide either 'gemitt_zeta' or 'nemitt_zeta'"
+    # if gemitt_x is not None:
+    #     assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+    # if gemitt_y is not None:
+    #     assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+    # if gemitt_zeta is not None:
+    #     assert nemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
+
     # ---------------------------------------------------------------------------------------------
     # Check for valid value of emittance_constraint and warn if constraint provided but factor is 0
     if emittance_constraint is not None:
