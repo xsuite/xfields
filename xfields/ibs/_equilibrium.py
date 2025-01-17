@@ -302,6 +302,13 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "Did you activate radiation and twiss with `eneloss_and_damping=True?`"
         )
     # ---------------------------------------------------------------------------------------------
+    # Check for valid value of emittance_constraint and warn if constraint provided but factor is 0
+    if emittance_constraint is not None:
+        _valid_constraints = ("coupling", "excitation")
+        assert emittance_constraint.lower() in _valid_constraints, "Invalid 'emittance_constraint', accepted values are 'coupling' or 'excitation'."
+        if emittance_coupling_factor == 0:
+            LOGGER.warning("As 'emittance_coupling_factor` is zero, providing 'emittance_constraint' has no effect!")
+    # ---------------------------------------------------------------------------------------------
     # First: if geometric emittances are provided we will just use those. If instead normalized
     # emittances are provided, we convert those to geometric emittances
     if nemitt_x is not None:
@@ -314,23 +321,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
         gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
     # ---------------------------------------------------------------------------------------------
-    # Perform checks on required & exclusive parameters
-    # assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
-    # assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
-    # assert any([gemitt_zeta, nemitt_zeta]), "Must provide either 'gemitt_zeta' or 'nemitt_zeta'"
-    # if gemitt_x is not None:
-    #     assert nemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
-    # if gemitt_y is not None:
-    #     assert nemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
-    # if gemitt_zeta is not None:
-    #     assert nemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
 
-    # ---------------------------------------------------------------------------------------------
-    # Check for valid value of emittance_constraint and warn if constraint provided but factor is 0
-    if emittance_constraint is not None:
-        assert emittance_constraint.lower() in ("coupling", "excitation"), "Invalid 'emittance_constraint', accepted values are 'coupling' or 'excitation'."
-        if emittance_coupling_factor == 0:
-            LOGGER.warning("As 'emittance_coupling_factor` is zero, providing 'emittance_constraint' has no effect!")
     # ---------------------------------------------------------------------------------------------
     # Handle initial transverse emittances and potential effect of coupling / excitation constraints
     # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
