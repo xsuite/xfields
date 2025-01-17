@@ -336,27 +336,26 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.info("No initial longitudinal emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_zeta = twiss.eq_gemitt_zeta
     # ---------------------------------------------------------------------------------------------
-    # Handle initial transverse emittances and potential effect of coupling / excitation constraints
-    # TODO: I don't like this, would rather force the user to provide gemitt_x, gemitt_y & gemitt_zeta
-    if initial_emittances is None:
-        _print("Emittances from the Twiss object are being used.")
-        emittance_x, emittance_y, emittance_z = (
-            twiss.eq_gemitt_x,
-            twiss.eq_gemitt_y,
-            twiss.eq_gemitt_zeta,
-        )
-        # If emittance_coupling_factor is non zero, then natural emittance is modified accordingly (used
-        # convention is valid for arbitrary damping partition numbers and emittance_coupling_factor).
+    # By now we should have a value for geometric emittances in each plane. We assign them to new
+    # variables for clarity, and these might be overwritten below in case we have to apply a constraint
+    starting_gemitt_x = gemitt_x
+    starting_gemitt_y = gemitt_y
+    starting_gemitt_zeta = gemitt_zeta
+    # ---------------------------------------------------------------------------------------------
+    # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
+    # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
+    # damping partition numbers and emittance_coupling_factor values).
+    if _renormalize_transverse_emittances is True:
+        # If constraint is coupling, both emittances are modified (from factor and partition numbers)
         if emittance_constraint.lower() == "coupling" and emittance_coupling_factor != 0:
-            emittance_y = emittance_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
-            emittance_x *= 1 / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
-
-        if emittance_constraint.lower() == "excitation" and emittance_coupling_factor != 0:
-            # The convention used only enforce a constraint on the vertical
-            # emittance
-            emittance_y = emittance_x * emittance_coupling_factor
-    else:
-        emittance_x, emittance_y, emittance_z = initial_emittances
+            LOGGER.info("Enforcing 'coupling' constraint on transverse emittances.")
+            starting_gemitt_y = gemitt_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            starting_gemitt_x = gemitt_x / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
+        # If constraint is excitation, only vertical emittance is modified
+        elif emittance_constraint.lower() == "excitation" and emittance_coupling_factor != 0:
+            LOGGER.info("Enforcing 'excitation' constraint on transverse emittances.")
+            starting_gemitt_y = gemitt_x * emittance_coupling_factor
+            starting_gemitt_x = gemitt_x
     # fmt: on
     # ---------------------------------------------------------------------------------------------
     # Handle the potential longitudinal effects (bunch lengthening, microwave instability)
