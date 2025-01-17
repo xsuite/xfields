@@ -220,6 +220,30 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         vertical and longitudinal planes, in [m]. If not provided, the
         SR equilibrium emittances from the TwissTable are used. Defaults
         to `None`.
+    gemitt_x : float, optional
+        Starting horizontal geometric emittance, in [m]. If neither this nor
+        the normalized one is provided, the SR equilibrium value from the
+        provided `TwissTable` is used.
+    nemitt_x : float, optional
+        Starting horizontal normalized emittance, in [m]. If neither this nor
+        the geometric one is provided, the SR equilibrium value from the
+        provided `TwissTable` is used.
+    gemitt_y : float, optional
+        Starting vertical geometric emittance, in [m]. If neither this nor
+        the normalized one is provided, the SR equilibrium value from the
+        provided `TwissTable` is used.
+    nemitt_y : float, optional
+        Starting vertical normalized emittance, in [m]. If neither this nor
+        the geometric one is provided, the SR equilibrium value from the
+        provided `TwissTable` is used.
+    gemitt_zeta : float, optional
+        Starting longitudinal geometric emittance, in [m]. If neither this
+        nor the normalized one is provided, the SR equilibrium value from the
+        provided `TwissTable` is used.
+    nemitt_zeta : float, optional
+        Starting longitudinal normalized emittance, in [m]. If neither this
+        nor the geometric one is provided, the SR equilibrium value from the
+        provided `TwissTable` is used.
     emittance_coupling_factor : float, optional
         The ratio of perturbed transverse emittances due to betatron coupling.
         If a value is provided, it is taken into account for the evolution of
