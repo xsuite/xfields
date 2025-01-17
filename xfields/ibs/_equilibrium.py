@@ -304,15 +304,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # ---------------------------------------------------------------------------------------------
     # First: if geometric emittances are provided we will just use those. If instead normalized
     # emittances are provided, we convert those to geometric emittances
-    # if nemitt_x is not None:
-    #     assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
-    #     gemitt_x = nemitt_x / (twiss.beta0 * twiss.gamma0)
-    # if nemitt_y is not None:
-    #     assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
-    #     gemitt_y = nemitt_y / (twiss.beta0 * twiss.gamma0)
-    # if nemitt_zeta is not None:
-    #     assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
-    #     gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
+    if nemitt_x is not None:
+        assert gemitt_x is None, "Cannot provide both 'gemitt_x' and 'nemitt_x'"
+        gemitt_x = nemitt_x / (twiss.beta0 * twiss.gamma0)
+    if nemitt_y is not None:
+        assert gemitt_y is None, "Cannot provide both 'gemitt_y' and 'nemitt_y'"
+        gemitt_y = nemitt_y / (twiss.beta0 * twiss.gamma0)
+    if nemitt_zeta is not None:
+        assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
+        gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
     # ---------------------------------------------------------------------------------------------
     # Perform checks on required & exclusive parameters
     # assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
