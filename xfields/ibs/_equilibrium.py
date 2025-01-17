@@ -205,8 +205,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
 
     Warning
     -------
-        TODO: write about providing initial emittances and respecting the
-        constraint if it is also provided.
+        If the user does not provide a starting emittance, the program
+        defaults to using the SR equilibrium value from the `TwissTable`,
+        which is a reasonable defaults for light sources. If an constraint
+        is provided via `emittance_constraint`  the starting emittances are
+        re-computed to respect that constraint (this is logged to the user).
+
+        If the user does provide starting emittances **and** a constraint, it
+        is up to the user to make sure these provided values are consistent
+        with the provided constraint!
 
     Parameters
     ----------
