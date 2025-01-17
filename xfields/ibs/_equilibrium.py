@@ -360,8 +360,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # ---------------------------------------------------------------------------------------------
     # Handle the potential longitudinal effects (bunch lengthening, microwave instability)
     # First compute bunch length and momentum spread from longitudinal emittance (see xsuite twiss doc)
-    sigma_zeta = (emittance_z * twiss.bets0) ** 0.5
-    sigma_delta = (emittance_z / twiss.bets0) ** 0.5
+    sigma_zeta = (starting_gemitt_zeta * twiss.bets0) ** 0.5
+    sigma_delta = (starting_gemitt_zeta / twiss.bets0) ** 0.5
     # Now handle the scenario where the user wants to overwrite those
     if overwrite_sigma_zeta is not None:
         LOGGER.warning("'overwrite_sigma_zeta' is specified, make sure it remains consistent with 'initial_emittances'.")
@@ -378,7 +378,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         )
         # Since a longitudinal property was overwritten we recompute the emittance_z
         LOGGER.warning("At least one longitudinal property overwritten, recomputing longitudinal emittance.")
-        emittance_z = sigma_zeta * sigma_delta
+        starting_gemitt_zeta = sigma_zeta * sigma_delta
     # ---------------------------------------------------------------------------------------------
     # Initialize values for the iterative process (first time step is revolution period)
     iterations: float = 0
@@ -393,7 +393,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     res_gemitt_y: list[float] = []
     res_gemitt_zeta: list[float] = []
     # Starting emittances (numpy array since we compute the next ones from these)
-    current_emittances: ArrayLike = np.array([emittance_x, emittance_y, emittance_z])
+    current_emittances: ArrayLike = np.array([starting_gemitt_x, starting_gemitt_y, starting_gemitt_zeta])
     # ---------------------------------------------------------------------------------------------
     # Start the iterative process until convergence:
     # - Compute IBS rates and emittance time derivatives
