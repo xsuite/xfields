@@ -162,8 +162,6 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
-    # TODO: want to force providing gemitt_x, gemitt_y & gemitt_zeta instead of this initial_emittances (can allow nemitt_x and add checks / conversions)
-    initial_emittances: tuple[float, float, float] = None,
     gemitt_x: float = None,
     nemitt_x: float = None,
     gemitt_y: float = None,
@@ -215,11 +213,6 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         case-insensitively.
     total_beam_intensity : int
         The bunch intensity, in [particles per bunch].
-    initial_emittances : tuple[float, float, float], optional
-        The bunch's starting geometric emittances in the horizontal,
-        vertical and longitudinal planes, in [m]. If not provided, the
-        SR equilibrium emittances from the TwissTable are used. Defaults
-        to `None`.
     gemitt_x : float, optional
         Starting horizontal geometric emittance, in [m]. If neither this nor
         the normalized one is provided, the SR equilibrium value from the
