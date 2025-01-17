@@ -350,6 +350,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         assert gemitt_zeta is None, "Cannot provide both 'gemitt_zeta' and 'nemitt_zeta'"
         gemitt_zeta = nemitt_zeta / (twiss.beta0 * twiss.gamma0)
     # ---------------------------------------------------------------------------------------------
+    # TODO: We can just check if ONE (or more) is None and say we take all 3 from TwissTable in this case -> any(emit is None for emit in (gemitt_x, gemitt_y, gemitt_zeta))
     # Take default values from the TwissTable if no initial emittances are provided. In this case we
     # need to renormalize with the emittance_constraint so we add a flag to know we need to do that
     _renormalize_transverse_emittances = False
@@ -374,7 +375,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     starting_gemitt_y = gemitt_y
     starting_gemitt_zeta = gemitt_zeta
     # ---------------------------------------------------------------------------------------------
-    # TODO: Decide with Seb if this is ok - we renormalize EVEN if just 1 value was taken from TwissTable SR eq
+    # TODO: Decide with Seb if this is ok - we renormalize EVEN if just 1 value was taken from TwissTable SR eq -> not case if we do the TODO from above
     # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
     # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
     # damping partition numbers and emittance_coupling_factor values).
