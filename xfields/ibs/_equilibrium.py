@@ -357,6 +357,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     if gemitt_zeta is None and nemitt_zeta is None:
         LOGGER.info("No longitudinal emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_zeta = twiss.eq_gemitt_zeta
+    # We need to also check for the case where use provided emittance and it is the twiss SR eq one
+    if gemitt_x == twiss.eq_gemitt_x or gemitt_y == twiss.eq_gemitt_y or gemitt_zeta == twiss.eq_gemitt_zeta:
+        _renormalize_transverse_emittances = True
     # ---------------------------------------------------------------------------------------------
     # By now we should have a value for geometric emittances in each plane. We assign them to new
     # variables for clarity. These might be overwritten below in case we have to apply a constraint
@@ -472,7 +475,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
-    _print(f"Reached equilibrium with tolerance={tolerance:.2e} (vs rtol={rtol:.2e})")
+    _print(f"Reached equilibrium in {iterations} iterations, with tolerance={tolerance:.2e} (vs rtol={rtol:.2e})")
     result_table = Table(
         data={
             "time": np.cumsum(time_deltas),
