@@ -25,7 +25,7 @@ def test_ibs_emittance_constraints(emittance_constraint):
 
     emittance_coupling_factor = 0.02
 
-    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = xf.ibs.compute_emittance_evolution(
+    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
         twiss, bunch_intensity,
         emittance_coupling_factor=emittance_coupling_factor,
         emittance_constraint=emittance_constraint,
@@ -82,7 +82,7 @@ def test_ibs_emittance_coupling_factor(emittance_coupling_factor):
     # Equilibrium emittances calculations #
     #######################################
 
-    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = xf.ibs.compute_emittance_evolution(
+    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
         twiss, bunch_intensity,
         emittance_coupling_factor=emittance_coupling_factor,
     )
@@ -126,7 +126,7 @@ def test_ibs_emittance_no_constraint(emittance_coupling_factor):
     # Equilibrium emittances calculations #
     #######################################
 
-    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = xf.ibs.compute_emittance_evolution(
+    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
         twiss, bunch_intensity,
         initial_emittances=initial_emittances,
         emittance_coupling_factor=emittance_coupling_factor,
