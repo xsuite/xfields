@@ -342,6 +342,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     starting_gemitt_y = gemitt_y
     starting_gemitt_zeta = gemitt_zeta
     # ---------------------------------------------------------------------------------------------
+    # TODO: Decide with Seb if this is ok - we renormalize even if just 1 value was taken from TwissTable SR eq
     # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
     # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
     # damping partition numbers and emittance_coupling_factor values).
