@@ -359,12 +359,12 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         gemitt_zeta = twiss.eq_gemitt_zeta
     # ---------------------------------------------------------------------------------------------
     # By now we should have a value for geometric emittances in each plane. We assign them to new
-    # variables for clarity, and these might be overwritten below in case we have to apply a constraint
+    # variables for clarity. These might be overwritten below in case we have to apply a constraint
     starting_gemitt_x = gemitt_x
     starting_gemitt_y = gemitt_y
     starting_gemitt_zeta = gemitt_zeta
     # ---------------------------------------------------------------------------------------------
-    # TODO: Decide with Seb if this is ok - we renormalize even if just 1 value was taken from TwissTable SR eq
+    # TODO: Decide with Seb if this is ok - we renormalize EVEN if just 1 value was taken from TwissTable SR eq
     # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
     # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
     # damping partition numbers and emittance_coupling_factor values).
@@ -393,9 +393,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.warning("'overwrite_sigma_delta' specified, make sure it is consistent with provided longitudinal emittance.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
-    # Recompute the longidutinal emittance if either bunch length or momentum spread was overwritten
+    # If either bunch length or momentum spread was overwritten, we recompute the longidutinal emittance
     if overwrite_sigma_zeta is not None or overwrite_sigma_delta is not None:
-        # Since a longitudinal property was overwritten we recompute the starting longitudinal emittance
         LOGGER.warning("At least one longitudinal property overwritten, recomputing longitudinal emittance.")
         starting_gemitt_zeta = sigma_zeta * sigma_delta
     # ---------------------------------------------------------------------------------------------
@@ -443,7 +442,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # Update current emittances - add the time step * emittance time derivatives
         current_emittances += np.array(emittance_derivatives) * time_step
         # --------------------------------------------------------------------------
-        # Enforce transverse constraint if specified
+        # Enforce transverse constraint if specified (valid with a factor value of 0)
         if emittance_constraint.lower() == "coupling":
             forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
             forced_emittance_y = forced_emittance_x * emittance_coupling_factor
@@ -465,9 +464,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # Compute tolerance (but not at first step since there is no previous value)
         # and store current emittances for tolerance computation at next iteration
         if iterations > 0:
-            tolerance = np.max(
-                np.abs((current_emittances - previous_emittances) / previous_emittances)
-            )
+            tolerance = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
         previous_emittances = current_emittances.copy()
         # --------------------------------------------------------------------------
         # Update time step for the next iteration and increase counter
