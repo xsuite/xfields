@@ -347,15 +347,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # need to renormalize with the emittance_constraint so we add a flag to know we need to do that
     _renormalize_transverse_emittances = False
     if gemitt_x is None and nemitt_x is None:
-        LOGGER.info("No initial horizontal emittance provided, taking SR equilibrium value from TwissTable.")
+        LOGGER.info("No horizontal emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_x = twiss.eq_gemitt_x
         _renormalize_transverse_emittances = True
     if gemitt_y is None and nemitt_y is None:
-        LOGGER.info("No initial vertical emittance provided, taking SR equilibrium value from TwissTable.")
+        LOGGER.info("No vertical emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_y = twiss.eq_gemitt_y
         _renormalize_transverse_emittances = True
     if gemitt_zeta is None and nemitt_zeta is None:
-        LOGGER.info("No initial longitudinal emittance provided, taking SR equilibrium value from TwissTable.")
+        LOGGER.info("No longitudinal emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_zeta = twiss.eq_gemitt_zeta
     # ---------------------------------------------------------------------------------------------
     # By now we should have a value for geometric emittances in each plane. We assign them to new
