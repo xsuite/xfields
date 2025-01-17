@@ -203,6 +203,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         method with `eneloss_and_damping=True`. Please refer to the Twiss
         user guide in the `xsuite` documentation for more information.
 
+    Warning
+    -------
+        TODO: write about providing initial emittances and respecting the
+        constraint if it is also provided.
+
     Parameters
     ----------
     twiss : xtrack.TwissTable
