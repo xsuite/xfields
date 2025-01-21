@@ -4,7 +4,7 @@ import xtrack as xt
 from cpymad.madx import Madx
 from ibs_conftest import XTRACK_TEST_DATA, get_ref_particle_from_madx_beam
 from numpy.testing import assert_allclose
-from xobjects.test_helpers import for_all_test_contexts
+from xobjects.test_helpers import for_all_test_contexts, fix_random_seed
 from xpart.test_helpers import flaky_assertions, retry
 
 from xfields.ibs import IBSAnalyticalKick, IBSKineticKick
@@ -170,6 +170,7 @@ def test_kick_coefficients(test_context, formalism):
 
 
 @for_all_test_contexts(excluding=("ContextPyopencl"))
+@fix_random_seed(43425349)
 def test_kinetic_coefficients(test_context):
     """
     We get a line and generate a large particle distribution
