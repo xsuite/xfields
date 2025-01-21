@@ -386,16 +386,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # damping partition numbers and emittance_coupling_factor values).
     if _renormalize_transverse_emittances is True:
         # If constraint is coupling, both emittances are modified (from factor and partition numbers)
-        # TODO: renormalize using starting_... variables
         if emittance_constraint.lower() == "coupling" and emittance_coupling_factor != 0:
             LOGGER.info("Enforcing 'coupling' constraint on transverse emittances.")
-            starting_gemitt_y = gemitt_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
-            starting_gemitt_x = gemitt_x / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            starting_gemitt_y = starting_gemitt_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
+            starting_gemitt_x = starting_gemitt_x / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
         # If constraint is excitation, only vertical emittance is modified
         elif emittance_constraint.lower() == "excitation" and emittance_coupling_factor != 0:
             LOGGER.info("Enforcing 'excitation' constraint on transverse emittances.")
-            starting_gemitt_y = gemitt_x * emittance_coupling_factor
-            starting_gemitt_x = gemitt_x
+            starting_gemitt_y = starting_gemitt_x * emittance_coupling_factor
+            starting_gemitt_x = starting_gemitt_x
     # fmt: on
     # ---------------------------------------------------------------------------------------------
     # Handle the potential longitudinal effects (bunch lengthening, microwave instability)
