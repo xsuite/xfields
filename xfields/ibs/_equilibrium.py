@@ -517,9 +517,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "eq_gemitt_x": twiss.eq_gemitt_x,
             "eq_gemitt_y": twiss.eq_gemitt_y,
             "eq_gemitt_zeta": twiss.eq_gemitt_zeta,
-            "sr_ibs_eq_gemitt_x": res_gemitt_x[-1],
-            "sr_ibs_eq_gemitt_y": res_gemitt_y[-1],
-            "sr_ibs_eq_gemitt_zeta": res_gemitt_zeta[-1],
+            "eq_sr_ibs_gemitt_x": res_gemitt_x[-1],
+            "eq_sr_ibs_gemitt_y": res_gemitt_y[-1],
+            "eq_sr_ibs_gemitt_zeta": res_gemitt_zeta[-1],
         }
     )
     return result_table
