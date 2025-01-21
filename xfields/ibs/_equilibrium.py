@@ -73,8 +73,9 @@ def _ibs_rates_and_emittance_derivatives(
 ) -> tuple[IBSGrowthRates, EmittanceTimeDerivatives]:
     """
     Compute the IBS growth rates and emittance time derivatives from
-    the effect of both IBS and SR. TODO: Include a ref here to the
-    analytical formula used.
+    the effect of both IBS and SR. Time derivatives are computed as
+    expressed in 'A Code for Calculating Intrabeam Scattering and
+    Beam Lifetime', C.H.Kim, LBNL-40296, 1997.
 
     Parameters
     ----------
@@ -132,8 +133,7 @@ def _ibs_rates_and_emittance_derivatives(
         **kwargs,
     )
     # ---------------------------------------------------------------------------------------------
-    # Computing the emittance time derivatives analytically.
-    # TODO: ADD A REF TO THE FORMULA HERE
+    # Computing the emittance time derivatives analytically. These are Eq (1-3) of the reference
     LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
         -2 * twiss.damping_constants_s[0] * (gemitt_x - twiss.eq_gemitt_x)
