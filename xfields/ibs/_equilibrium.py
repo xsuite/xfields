@@ -6,8 +6,9 @@
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Optional
 
+from matplotlib.pyplot import step
 import numpy as np
 import xobjects as xo
 import xtrack as xt
@@ -173,9 +174,15 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["coupling", "excitation"] = "coupling",
     rtol: float = 1e-6,
+    # tstep: float = None,  # TODO: feature for later?
     verbose: bool = True,
     **kwargs,
 ) -> Table:
+    # TODO: tstep docstring, feature for later?
+    # tstep : float, Optional
+    #     Time step to use for each iteration, in [s]. If not provided, an
+    #     adaptive time step is computed based on the IBS growth rates and
+    #     the damping constants. Defaults to `None`.
     """
     Compute the evolution of emittances due to Synchrotron Radiation
     and Intra-Beam Scattering until convergence to equilibrium values.
@@ -367,6 +374,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         gemitt_zeta = twiss.eq_gemitt_zeta
     # We need to also check for the case where use provided emittance and it is the twiss SR eq one
     if gemitt_x == twiss.eq_gemitt_x or gemitt_y == twiss.eq_gemitt_y or gemitt_zeta == twiss.eq_gemitt_zeta:
+        # TODO: log here
         _renormalize_transverse_emittances = True
     # ---------------------------------------------------------------------------------------------
     # By now we should have a value for geometric emittances in each plane. We assign them to new
@@ -381,6 +389,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # damping partition numbers and emittance_coupling_factor values).
     if _renormalize_transverse_emittances is True:
         # If constraint is coupling, both emittances are modified (from factor and partition numbers)
+        # TODO: renormalize using starting_... variables
         if emittance_constraint.lower() == "coupling" and emittance_coupling_factor != 0:
             LOGGER.info("Enforcing 'coupling' constraint on transverse emittances.")
             starting_gemitt_y = gemitt_x * emittance_coupling_factor / (1 + emittance_coupling_factor * twiss.partition_numbers[1] / twiss.partition_numbers[0])
@@ -479,6 +488,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         previous_emittances = current_emittances.copy()
         # --------------------------------------------------------------------------
         # Update time step for the next iteration and increase counter
+        # time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))  # TODO: feature for later?
         time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
         iterations += 1
     # ----------------------------------------------------------------------------------------------
