@@ -6,9 +6,10 @@ clight = c
 from xfields.slicers import CompressedProfile
 from xobjects.test_helpers import for_all_test_contexts
 import xtrack as xt
+import xobjects as xo
 
-
-def test_compressed_profile_interp_result():
+@for_all_test_contexts
+def test_compressed_profile_interp_result(test_context):
     # Machine settings
     moments = ['result']
     zeta_range = (0, 1)
@@ -25,30 +26,32 @@ def test_compressed_profile_interp_result():
                                   bunch_spacing_zeta=bunch_spacing_zeta,
                                   num_periods=num_bunches,
                                   num_turns=num_turns,
-                                  circumference=circumference
+                                  circumference=circumference,
+                                  _context=test_context
                                   )
 
     num_parts = 100
 
-    interpolated_result = np.zeros(num_parts, dtype=float)
-    i_slice_particles = np.linspace(0, num_slices - 1, num_parts, dtype=int)
+    interpolated_result = test_context.zeros(num_parts, dtype=float)
+    i_slice_particles = test_context.nplike_lib.linspace(0, num_slices - 1, num_parts, dtype=int)
 
-    result_parts = np.zeros(num_parts)
+    result_parts = test_context.zeros(num_parts)
 
     def func(z, i):
         return z + circumference * i
 
     for i_turn in range(num_turns):
         moments = {
-            'result': func(np.linspace(zeta_range[0] + dz / 2,
+            'result': comp_prof._arr2ctx(
+                func(np.linspace(zeta_range[0] + dz / 2,
                                        zeta_range[1] - dz / 2,
-                                       num_slices), i_turn)
+                                       num_slices), i_turn))
         }
 
         comp_prof.set_moments(moments=moments,
                               i_turn=i_turn, i_source=0)
 
-        result_parts += func(i_slice_particles * dz + dz / 2, i_turn)
+        result_parts += comp_prof._arr2ctx(func(i_slice_particles * dz + dz / 2, i_turn))
 
     particles = xt.Particles(
         mass0=xt.PROTON_MASS_EV,
@@ -60,16 +63,17 @@ def test_compressed_profile_interp_result():
         zeta=np.zeros(num_parts),
         delta=np.zeros(num_parts),
         weight=np.ones(num_parts),
+        _context=test_context
     )
 
     comp_prof._interp_result(particles=particles,
-                             data_shape_0=comp_prof.data.shape[0],
-                             data_shape_1=comp_prof.data.shape[1],
-                             data_shape_2=comp_prof.data.shape[2],
-                             data=comp_prof.data,
-                             i_slot_particles=np.zeros(num_parts, dtype=int),
-                             i_slice_particles=i_slice_particles,
-                             out=interpolated_result
-                             )
+        data_shape_0=comp_prof.data.shape[0],
+        data_shape_1=comp_prof.data.shape[1],
+        data_shape_2=comp_prof.data.shape[2],
+        data=comp_prof.data,
+        i_slot_particles=test_context.nplike_lib.zeros(num_parts, dtype=int),
+        i_slice_particles=i_slice_particles,
+        out=interpolated_result
+    )
 
-    assert np.allclose(result_parts, interpolated_result)
+    xo.assert_allclose(result_parts, interpolated_result)
