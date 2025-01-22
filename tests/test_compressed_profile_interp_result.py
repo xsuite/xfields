@@ -33,9 +33,10 @@ def test_compressed_profile_interp_result(test_context):
     num_parts = 100
 
     interpolated_result = test_context.zeros(num_parts, dtype=float)
-    i_slice_particles = test_context.nplike_lib.linspace(0, num_slices - 1, num_parts, dtype=int)
+    i_slice_particles = test_context.nparray_to_context_array(
+        np.linspace(0, num_slices - 1, num_parts, dtype=int))
 
-    result_parts = test_context.zeros(num_parts)
+    result_parts = test_context.zeros(num_parts, dtype=float)
 
     def func(z, i):
         return z + circumference * i
@@ -71,7 +72,7 @@ def test_compressed_profile_interp_result(test_context):
         data_shape_1=comp_prof.data.shape[1],
         data_shape_2=comp_prof.data.shape[2],
         data=comp_prof.data,
-        i_slot_particles=test_context.nplike_lib.zeros(num_parts, dtype=int),
+        i_slot_particles=test_context.zeros(num_parts, dtype=int),
         i_slice_particles=i_slice_particles,
         out=interpolated_result
     )
