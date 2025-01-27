@@ -2,7 +2,6 @@ import pytest
 import xobjects as xo
 import xtrack as xt
 from ibs_conftest import XTRACK_TEST_DATA
-from numpy.testing import assert_allclose
 
 import xfields as xf
 
@@ -56,7 +55,7 @@ def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiat
 
     if emittance_constraint == "coupling":
         # Check equilibrium emittance
-        assert_allclose(
+        xo.assert_allclose(
             emittances_x_list[-1],
             tw.eq_gemitt_x
             / (1 + emittance_coupling_factor)
@@ -64,31 +63,31 @@ def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiat
             rtol=5e-2,
         )
         # Check equilibrium emittance
-        assert_allclose(
+        xo.assert_allclose(
             emittances_z_list[-1],
             tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
             rtol=2e-2,
         )
         # Check emittance coupling constraint
-        assert_allclose(
+        xo.assert_allclose(
             emittances_y_list[-1] / emittances_x_list[-1], emittance_coupling_factor, rtol=2e-2
         )
 
     else:
         # Check equilibrium emittance
-        assert_allclose(
+        xo.assert_allclose(
             emittances_x_list[-1],
             tw.eq_gemitt_x / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
             rtol=5e-2,
         )
         # Check equilibrium emittance
-        assert_allclose(
+        xo.assert_allclose(
             emittances_z_list[-1],
             tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
             rtol=2e-2,
         )
         # Check emittance coupling constraint
-        assert_allclose(
+        xo.assert_allclose(
             emittances_y_list[-1] / emittances_x_list[-1],
             emittance_coupling_factor,
         )
@@ -118,7 +117,7 @@ def test_ibs_emittance_coupling_factor(
     )
 
     # Check equilibrium emittance
-    assert_allclose(
+    xo.assert_allclose(
         emittances_x_list[-1],
         tw.eq_gemitt_x
         / (1 + emittance_coupling_factor)
@@ -126,13 +125,13 @@ def test_ibs_emittance_coupling_factor(
         rtol=1e-1,
     )
     # Check equilibrium emittance
-    assert_allclose(
+    xo.assert_allclose(
         emittances_z_list[-1],
         tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
         rtol=2e-2,
     )
     # Check emittance coupling constraint
-    assert_allclose(
+    xo.assert_allclose(
         emittances_y_list[-1] / emittances_x_list[-1],
         emittance_coupling_factor,
     )
@@ -176,19 +175,19 @@ def test_ibs_emittance_no_constraint(
     )
 
     # Check equilibrium emittance
-    assert_allclose(
+    xo.assert_allclose(
         emittances_x_list[-1],
         tw.eq_gemitt_x / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
         rtol=2e-2,
     )
     # Check equilibrium emittance
-    assert_allclose(
+    xo.assert_allclose(
         emittances_y_list[-1],
         emittance_coupling_factor * tw.eq_gemitt_x / (1 - T_y[-1] / 2 / tw.damping_constants_s[1]),
         rtol=2e-2,
     )
     # Check equilibrium emittance
-    assert_allclose(
+    xo.assert_allclose(
         emittances_z_list[-1],
         tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
         rtol=2e-2,
