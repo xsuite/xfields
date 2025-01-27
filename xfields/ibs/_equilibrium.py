@@ -471,6 +471,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         elif emittance_constraint.lower() == "excitation":
             forced_gemitt_y = current_emittances[0] * emittance_coupling_factor
             current_emittances[1] = forced_gemitt_y
+        LOGGER.debug(f"Stored emittances after constraint: {current_emittances}")
         # --------------------------------------------------------------------------
         # Store the current values for this time step
         time_deltas.append(time_step)
