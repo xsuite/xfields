@@ -33,7 +33,7 @@ def bessy3_line_with_radiation() -> xt.Line:
     return line
 
 
-# ----- Test Functions ----- #
+# ----- Test Functions vs Analytical Formulae ----- #
 
 
 @pytest.mark.parametrize("emittance_constraint", ["coupling", "excitation"])
