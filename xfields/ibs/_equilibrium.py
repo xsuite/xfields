@@ -414,6 +414,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.warning("At least one longitudinal property overwritten, recomputing longitudinal emittance.")
         starting_gemitt_zeta = sigma_zeta * sigma_delta
     # ---------------------------------------------------------------------------------------------
+    # Log the starting emittances and the computed longitudinal properties - useful for debugging
+    LOGGER.debug(f"Starting emittances are: {starting_gemitt_x:.2e}, {starting_gemitt_y:.2e}, {starting_gemitt_zeta:.2e}")
+    # ---------------------------------------------------------------------------------------------
     # Initialize values for the iterative process (first time step is revolution period)
     iterations: float = 0
     tolerance: float = np.inf
@@ -436,6 +439,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
+        LOGGER.debug(f"Current emittances (x, y, zeta): {current_emittances}")
         # --------------------------------------------------------------------------
         # Display estimated convergence progress if asked
         if verbose is True:
@@ -460,13 +464,13 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Enforce transverse constraint if specified (valid with a factor value of 0)
         if emittance_constraint.lower() == "coupling":
-            forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
-            forced_emittance_y = forced_emittance_x * emittance_coupling_factor
-            current_emittances[0] = forced_emittance_x
-            current_emittances[1] = forced_emittance_y
+            forced_gemitt_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
+            forced_gemitt_y = forced_gemitt_x * emittance_coupling_factor
+            current_emittances[0] = forced_gemitt_x
+            current_emittances[1] = forced_gemitt_y
         elif emittance_constraint.lower() == "excitation":
-            forced_emittance_y = current_emittances[0] * emittance_coupling_factor
-            current_emittances[1] = forced_emittance_y
+            forced_gemitt_y = current_emittances[0] * emittance_coupling_factor
+            current_emittances[1] = forced_gemitt_y
         # --------------------------------------------------------------------------
         # Store the current values for this time step
         time_deltas.append(time_step)
@@ -485,6 +489,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Update time step for the next iteration and increase counter
         time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
+        LOGGER.debug(f"Time step for next iteration: {time_step:.2e}")
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
