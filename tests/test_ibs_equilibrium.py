@@ -8,19 +8,37 @@ import xfields as xf
 
 bunch_intensity = 6.2e9  # 1C bunch intensity
 
-bessy3_dir = XTRACK_TEST_DATA / "bessy3"
-line = xt.Line.from_json(str(bessy3_dir / "line.json"))
-line.build_tracker(_context=xo.ContextCpu())
-line.matrix_stability_tol = 1e-2
-line.configure_radiation(model="mean")
-line.compensate_radiation_energy_loss()
+# ----- Fixture for the (configured) BESSY III line ----- #
 
-twiss = line.twiss(eneloss_and_damping=True)
+
+@pytest.fixture(scope="module")
+def bessy3_line_with_radiation() -> xt.Line:
+    """
+    Loads the BESSY III lattice as a Line and
+    configures radiation before returning it.
+    """
+    # -------------------------------------------
+    # Load the line with a particle_ref
+    bess3_dir = XTRACK_TEST_DATA / "bessy3"
+    linefile = bess3_dir / "line.json"
+    line = xt.Line.from_json(linefile)
+    # -------------------------------------------
+    # Build tracker and configure radiation 
+    line.build_tracker()
+    line.matrix_stability_tol = 1e-2
+    line.configure_radiation(model="mean")
+    line.compensate_radiation_energy_loss()
+    # Run twiss in fixture to compile kernels once
+    line.twiss(eneloss_and_damping=True)
+    return line
+
+
+# ----- Test Functions ----- #
 
 
 @pytest.mark.parametrize("emittance_constraint", ["coupling", "excitation"])
-def test_ibs_emittance_constraints(emittance_constraint):
-
+def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiation: xt.Line):
+    twiss = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     #######################################
     # Equilibrium emittances calculations #
     #######################################
@@ -77,13 +95,16 @@ def test_ibs_emittance_constraints(emittance_constraint):
 
 
 @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 0.2])
-def test_ibs_emittance_coupling_factor(emittance_coupling_factor):
+def test_ibs_emittance_coupling_factor(
+    emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
+):
     """
     As the emittance coupling factor increases, the equilibrium emittance
     cannot be compared anymore to the solution of the differential equation
     describing the emittance evolution in presence of IBS and SR if a
     constraint on the emittance is enforced.
     """
+    twiss = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     #######################################
     # Equilibrium emittances calculations #
     #######################################
@@ -118,12 +139,15 @@ def test_ibs_emittance_coupling_factor(emittance_coupling_factor):
 
 
 @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1.0])
-def test_ibs_emittance_no_constraint(emittance_coupling_factor):
+def test_ibs_emittance_no_constraint(
+    emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
+):
     """
     Without any emittance constraint, the equilibrium emittance becomes
     almost identical to the solution of the differential equation describing
     the emittance evolution in presence of IBS and SR.
     """
+    twiss = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     initial_emittances = (
         twiss.eq_gemitt_x,
         emittance_coupling_factor * twiss.eq_gemitt_x,
