@@ -4,6 +4,7 @@
 # ########################################### #
 
 import numpy as np
+from scipy.integrate import trapezoid
 
 from xfields import LongitudinalProfileQGaussian
 from xobjects.test_helpers import for_all_test_contexts
@@ -28,9 +29,9 @@ def test_qgauss(test_context):
         lden_dev = lprofile.line_density(z_dev)
         lden = test_context.nparray_from_context_array(lden_dev)
 
-        area = np.trapz(lden, z)
-        z_mean = np.trapz(lden*z/area, z)
-        z_std = np.sqrt(np.trapz(lden*(z-z_mean)**2/area, z))
+        area = trapezoid(lden, z)
+        z_mean = trapezoid(lden*z/area, z)
+        z_std = np.sqrt(trapezoid(lden*(z-z_mean)**2/area, z))
         assert np.isclose(area, npart)
         assert np.isclose(z_mean, z0)
         assert np.isclose(z_std, sigma_z)

@@ -5,7 +5,7 @@ import xfields as xf
 from xfields.slicers.compressed_profile import CompressedProfile
 
 
-class ElementWithSlicer:
+class ElementWithSlicer(xt.BeamElement):
     """
     Base class for elements with a slicer.
 
@@ -47,7 +47,10 @@ class ElementWithSlicer:
                  bunch_selection=None,
                  num_turns=1,
                  circumference=None,
-                 with_compressed_profile=False):
+                 with_compressed_profile=False,
+                 **kwargs):
+
+        self.xoinitialize(**kwargs)
 
         self.with_compressed_profile = with_compressed_profile
         self.pipeline_manager = None
@@ -88,7 +91,8 @@ class ElementWithSlicer:
                 filling_scheme=filling_scheme,
                 bunch_selection=bunch_selection,
                 bunch_spacing_zeta=bunch_spacing_zeta,
-                moments=slicer_moments
+                moments=slicer_moments,
+                _context=self._context
             )
         else:
             self.zeta_range = None
@@ -115,7 +119,8 @@ class ElementWithSlicer:
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 num_periods=num_periods,
                 num_turns=num_turns,
-                circumference=circumference)
+                circumference=circumference,
+                _context=self.context)
 
     def init_pipeline(self, pipeline_manager, element_name, partner_names):
         self.pipeline_manager = pipeline_manager
@@ -165,7 +170,7 @@ class ElementWithSlicer:
                 continue
             means[mm] = slicer.mean(mm)
 
-        for i_bunch_in_slicer, bunch_number in enumerate(slicer.bunch_selection):
+        for i_bunch_in_slicer, bunch_number in enumerate(slicer._xobject.bunch_selection):
             moments_bunch = {}
             for nn in means.keys():
                 moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]
@@ -175,7 +180,7 @@ class ElementWithSlicer:
             self.moments_data.set_moments(
                 moments=moments_bunch,
                 i_turn=0,
-                i_source=slicer.filled_slots[bunch_number])
+                i_source=slicer._xobject.filled_slots[bunch_number])
 
     def _update_moments_for_new_turn(self, particles, _slice_result=None):
         if self.with_compressed_profile:
