@@ -173,15 +173,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["coupling", "excitation"] = "coupling",
     rtol: float = 1e-6,
-    # tstep: float = None,  # TODO: feature for later?
+    tstep: float = None,
     verbose: bool = True,
     **kwargs,
 ) -> Table:
-    # TODO: tstep docstring, feature for later?
-    # tstep : float, Optional
-    #     Time step to use for each iteration, in [s]. If not provided, an
-    #     adaptive time step is computed based on the IBS growth rates and
-    #     the damping constants. Defaults to `None`.
     """
     Compute the evolution of emittances due to Synchrotron Radiation
     and Intra-Beam Scattering until convergence to equilibrium values.
@@ -289,6 +284,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         Relative tolerance to determine when convergence is reached: if the relative
         difference between the computed emittances and those at the previous step is
         below `rtol`, then convergence is considered achieved. Defaults to 1e-6.
+    tstep : float, optional
+        Time step to use for each iteration, in [s]. If not provided, an
+        adaptive time step is computed based on the IBS growth rates and
+        the damping constants. Defaults to `None`.
     verbose : bool, optional
         Whether to print out information on the current iteration step and estimated
         convergence progress. Defaults to `True`.
@@ -371,6 +370,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.info("No longitudinal emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_zeta = twiss.eq_gemitt_zeta
     # We need to also check for the case where use provided emittance and it is the twiss SR eq one
+    # which would be our default if not provided and then would trigger renormalization above
     if gemitt_x == twiss.eq_gemitt_x or gemitt_y == twiss.eq_gemitt_y:
         LOGGER.debug("At least one provided transverse emittance is the SR equilibrium value, renormalizing transverse emittances if constraint provided.")
         _renormalize_transverse_emittances = True
@@ -484,8 +484,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         previous_emittances = current_emittances.copy()
         # --------------------------------------------------------------------------
         # Update time step for the next iteration and increase counter
-        # time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))  # TODO: feature for later?
-        time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
+        time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
