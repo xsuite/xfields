@@ -37,21 +37,27 @@ def bessy3_line_with_radiation() -> xt.Line:
 
 @pytest.mark.parametrize("emittance_constraint", ["coupling", "excitation"])
 def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiation: xt.Line):
-    tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
-    #######################################
-    # Equilibrium emittances calculations #
-    #######################################
-
+    """TODO: Succinct description of what is tested."""
+    # -------------------------------------------
+    # Get the twiss with SR effects from the configured line
     emittance_coupling_factor = 0.02
-
-    time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
-        xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
-            tw,
-            BUNCH_INTENSITY,
-            emittance_coupling_factor=emittance_coupling_factor,
-            emittance_constraint=emittance_constraint,
-        )
+    tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
+    # -------------------------------------------
+    # Compute the equilibrium emittances
+    result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        formalism="Nagaitsev",  # No Dy in the line, faster
+        total_beam_intensity=BUNCH_INTENSITY,
+        emittance_coupling_factor=emittance_coupling_factor,
+        emittance_constraint=emittance_constraint,
     )
+#     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
+#         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
+#             tw,
+#             BUNCH_INTENSITY,
+#             emittance_coupling_factor=emittance_coupling_factor,
+#             emittance_constraint=emittance_constraint,
+#         )
+#     )
 
     if emittance_constraint == "coupling":
         # Check equilibrium emittance
