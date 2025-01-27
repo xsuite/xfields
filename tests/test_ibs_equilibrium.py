@@ -6,7 +6,7 @@ from numpy.testing import assert_allclose
 
 import xfields as xf
 
-bunch_intensity = 6.2e9  # 1C bunch intensity
+BUNCH_INTENSITY: float = 6.2e9  # 1C bunch intensity
 
 # ----- Fixture for the (configured) BESSY III line ----- #
 
@@ -48,7 +48,7 @@ def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiat
     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
             twiss,
-            bunch_intensity,
+            BUNCH_INTENSITY,
             emittance_coupling_factor=emittance_coupling_factor,
             emittance_constraint=emittance_constraint,
         )
@@ -112,7 +112,7 @@ def test_ibs_emittance_coupling_factor(
     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
             twiss,
-            bunch_intensity,
+            BUNCH_INTENSITY,
             emittance_coupling_factor=emittance_coupling_factor,
         )
     )
@@ -167,7 +167,7 @@ def test_ibs_emittance_no_constraint(
     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
             twiss,
-            bunch_intensity,
+            BUNCH_INTENSITY,
             initial_emittances=initial_emittances,
             emittance_coupling_factor=emittance_coupling_factor,
             emittance_constraint=emittance_constraint,
