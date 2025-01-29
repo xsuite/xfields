@@ -384,7 +384,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
     # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
     # damping partition numbers and emittance_coupling_factor values).
-    if _renormalize_transverse_emittances is True:
+    if _renormalize_transverse_emittances is True and emittance_constraint is not None:
         # If constraint is coupling, both emittances are modified (from factor and partition numbers)
         if emittance_constraint.lower() == "coupling" and emittance_coupling_factor != 0:
             LOGGER.info("Enforcing 'coupling' constraint on transverse emittances.")
@@ -463,15 +463,16 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         current_emittances += np.array(emittance_derivatives) * time_step
         # --------------------------------------------------------------------------
         # Enforce transverse constraint if specified (valid with a factor value of 0)
-        if emittance_constraint.lower() == "coupling":
-            forced_gemitt_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
-            forced_gemitt_y = forced_gemitt_x * emittance_coupling_factor
-            current_emittances[0] = forced_gemitt_x
-            current_emittances[1] = forced_gemitt_y
-        elif emittance_constraint.lower() == "excitation":
-            forced_gemitt_y = current_emittances[0] * emittance_coupling_factor
-            current_emittances[1] = forced_gemitt_y
-        LOGGER.debug(f"Stored emittances after constraint: {current_emittances}")
+        if emittance_constraint is not None:
+            if emittance_constraint.lower() == "coupling":
+                forced_gemitt_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
+                forced_gemitt_y = forced_gemitt_x * emittance_coupling_factor
+                current_emittances[0] = forced_gemitt_x
+                current_emittances[1] = forced_gemitt_y
+            elif emittance_constraint.lower() == "excitation":
+                forced_gemitt_y = current_emittances[0] * emittance_coupling_factor
+                current_emittances[1] = forced_gemitt_y
+        LOGGER.debug(f"Stored emittances after time step: {current_emittances}")
         # --------------------------------------------------------------------------
         # Store the current values for this time step
         time_deltas.append(time_step)

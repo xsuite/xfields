@@ -47,7 +47,7 @@ def test_equilibrium_vs_analytical_constraint_coupling(
     an equilibrium with SR and IBS, in the case where we enforce
     a betatron coupling constraint on the transverse planes. The
     resulting values are tested against an analytical estimate.
-    TODO: ref for the analytical formula
+    TODO: ref for the analytical formula?
     """
     # -------------------------------------------
     # Get the twiss with SR effects from the configured line
@@ -88,7 +88,7 @@ def test_equilibrium_vs_analytical_constraint_excitation(
     an equilibrium with SR and IBS, in the case where we enforce
     an excitation type constraint on the transverse planes. The
     resulting values are tested against an analytical estimate.
-    TODO: ref for the analytical formula
+    TODO: ref for the analytical formula?
     """
     # -------------------------------------------
     # Get the twiss with SR effects from the configured line
@@ -119,58 +119,53 @@ def test_equilibrium_vs_analytical_constraint_excitation(
     )
 
 
-# @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1.0])
-# def test_ibs_emittance_no_constraint(
-#     emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
-# ):
-#     """
-#     Without any emittance constraint, the equilibrium emittance becomes
-#     almost identical to the solution of the differential equation describing
-#     the emittance evolution in presence of IBS and SR.
-#     """
-#     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
-#     initial_emittances = (
-#         tw.eq_gemitt_x,
-#         emittance_coupling_factor * tw.eq_gemitt_x,
-#         tw.eq_gemitt_zeta,
-#     )
-#     emittance_constraint = ""
-#     natural_emittances = (
-#         tw.eq_gemitt_x,
-#         emittance_coupling_factor * tw.eq_gemitt_x,
-#         tw.eq_gemitt_zeta,
-#     )
-
-#     #######################################
-#     # Equilibrium emittances calculations #
-#     #######################################
-
-#     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
-#         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
-#             tw,
-#             BUNCH_INTENSITY,
-#             initial_emittances=initial_emittances,
-#             emittance_coupling_factor=emittance_coupling_factor,
-#             emittance_constraint=emittance_constraint,
-#             natural_emittances=natural_emittances,
-#         )
-#     )
-
-#     # Check equilibrium emittance
-#     xo.assert_allclose(
-#         emittances_x_list[-1],
-#         tw.eq_gemitt_x / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
-#         rtol=2e-2,
-#     )
-#     # Check equilibrium emittance
-#     xo.assert_allclose(
-#         emittances_y_list[-1],
-#         emittance_coupling_factor * tw.eq_gemitt_x / (1 - T_y[-1] / 2 / tw.damping_constants_s[1]),
-#         rtol=2e-2,
-#     )
-#     # Check equilibrium emittance
-#     xo.assert_allclose(
-#         emittances_z_list[-1],
-#         tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
-#         rtol=2e-2,
-#     )
+@pytest.mark.parametrize("initial_factor", [0.02, 0.1, 1])
+def test_equilibrium_vs_analytical_no_constraint(
+    initial_factor, bessy3_line_with_radiation: xt.Line
+):
+    """
+    Load the BESSY III line and compute ierations until we reach
+    an equilibrium with SR and IBS, whithout any constraint on
+    the transverse planes. In that case, the equilibrium emittance
+    becomes almost identical to the solution of the differential
+    equation describing the emittance evolution in presence of IBS
+    and SR.
+    TODO: ref for the analytical formula?
+    """
+    # -------------------------------------------
+    # Get the twiss with SR effects from the configured line
+    tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
+    # Determine initial emittances based on a ratio
+    init_gemitt_x = tw.eq_gemitt_x
+    init_gemitt_y = init_gemitt_x * initial_factor
+    init_gemitt_zeta = tw.eq_gemitt_zeta
+    # -------------------------------------------
+    # Compute the equilibrium emittances - no constraint
+    result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        formalism="Nagaitsev",  # No Dy in the line, faster
+        total_beam_intensity=BUNCH_INTENSITY,
+        gemitt_x=init_gemitt_x,
+        gemitt_y=init_gemitt_y,
+        gemitt_zeta=init_gemitt_zeta,
+        emittance_constraint=None,
+    )
+    # -------------------------------------------
+    # Check results vs analytical estimations
+    # Check the horizontal equilibrium emittance
+    xo.assert_allclose(
+        result.eq_sr_ibs_gemitt_x,
+        result.gemitt_x[0] / (1 - result.Tx[-1] / 2 / tw.damping_constants_s[0]),
+        rtol=1e-2,
+    )
+    # Check the vertical equilibrium emittance
+    xo.assert_allclose(
+        result.eq_sr_ibs_gemitt_y,
+        result.gemitt_y[0] / (1 - result.Ty[-1] / 2 / tw.damping_constants_s[1]),
+        rtol=1e-2
+    )
+    # Check the longitudinal equilibrium emittance
+    xo.assert_allclose(
+        result.eq_sr_ibs_gemitt_zeta,
+        result.gemitt_zeta[0] / (1 - result.Tz[-1] / 2 / (tw.damping_constants_s[2])),
+        rtol=1e-2,
+    )
