@@ -119,7 +119,9 @@ def test_equilibrium_vs_analytical_constraint_excitation(
     )
 
 
-@pytest.mark.parametrize("initial_factor", [0.02, 0.1, 1])
+# This factor should not be too high as otherwise the starting
+# vertical emittance will be way out of realistic values
+@pytest.mark.parametrize("initial_factor", [0.01, 0.02, 0.05])
 def test_equilibrium_vs_analytical_no_constraint(
     initial_factor, bessy3_line_with_radiation: xt.Line
 ):
@@ -135,18 +137,16 @@ def test_equilibrium_vs_analytical_no_constraint(
     # -------------------------------------------
     # Get the twiss with SR effects from the configured line
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
-    # Determine initial emittances based on a ratio
-    init_gemitt_x = tw.eq_gemitt_x
-    init_gemitt_y = init_gemitt_x * initial_factor
-    init_gemitt_zeta = tw.eq_gemitt_zeta
     # -------------------------------------------
     # Compute the equilibrium emittances - no constraint
+    # No constraint so no renormalization of transverse emittances
+    # and SR eq in vertical is 0 so we change it to avoid exact 0
     result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
         formalism="Nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
-        gemitt_x=init_gemitt_x,
-        gemitt_y=init_gemitt_y,
-        gemitt_zeta=init_gemitt_zeta,
+        gemitt_x=tw.eq_gemitt_x,
+        gemitt_y=tw.eq_gemitt_x * initial_factor,
+        gemitt_zeta=tw.eq_gemitt_zeta,
         emittance_constraint=None,
     )
     # -------------------------------------------
