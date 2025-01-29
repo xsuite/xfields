@@ -39,7 +39,7 @@ def bessy3_line_with_radiation() -> xt.Line:
 
 
 @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1])
-def test_equilibrium_coupling_constraint_vs_analytical(
+def test_equilibrium_vs_analytical_constraint_coupling(
     emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
 ):
     """TODO: Succinct description of what is tested."""
