@@ -1,7 +1,10 @@
+from turtle import rt
+
 import pytest
 import xobjects as xo
 import xtrack as xt
 from ibs_conftest import XTRACK_TEST_DATA
+from matplotlib.image import resample
 
 import xfields as xf
 
@@ -35,12 +38,13 @@ def bessy3_line_with_radiation() -> xt.Line:
 # ----- Test Functions vs Analytical Formulae ----- #
 
 
-@pytest.mark.parametrize("emittance_constraint", ["coupling", "excitation"])
-def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiation: xt.Line):
+@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1])
+def test_equilibrium_coupling_constraint_vs_analytical(
+    emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
+):
     """TODO: Succinct description of what is tested."""
     # -------------------------------------------
     # Get the twiss with SR effects from the configured line
-    emittance_coupling_factor = 0.02
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # -------------------------------------------
     # Compute the equilibrium emittances
@@ -48,55 +52,44 @@ def test_ibs_emittance_constraints(emittance_constraint, bessy3_line_with_radiat
         formalism="Nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
         emittance_coupling_factor=emittance_coupling_factor,
-        emittance_constraint=emittance_constraint,
+        emittance_constraint="coupling",
     )
-#     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
-#         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
-#             tw,
-#             BUNCH_INTENSITY,
-#             emittance_coupling_factor=emittance_coupling_factor,
-#             emittance_constraint=emittance_constraint,
-#         )
-#     )
+    # -------------------------------------------
+    # Check results vs analytical estimations
+    factor = 1 + emittance_coupling_factor * (tw.partition_numbers[1] / tw.partition_numbers[0])
+    # Check the horizontal equilibrium emittance
+    xo.assert_allclose(
+        result.eq_sr_ibs_gemitt_x,
+        result.gemitt_x[0] / (1 - result.Tx[-1] / 2 / (tw.damping_constants_s[0] * factor)),
+        rtol=1e-2,
+    )
+    # Check the emittance coupling constraint (also checks vert. eq. emittance)
+    xo.assert_allclose(result.gemitt_y / result.gemitt_x, emittance_coupling_factor, rtol=1e-2)
+    # Check the longitudinal equilibrium emittance
+    xo.assert_allclose(
+        result.eq_sr_ibs_gemitt_zeta,  # this is result.gemitt_zeta[-1]
+        result.gemitt_zeta[0] / (1 - result.Tz[-1] / 2 / (tw.damping_constants_s[2])),
+        rtol=1e-2,
+    )
 
-    if emittance_constraint == "coupling":
-        # Check equilibrium emittance
-        xo.assert_allclose(
-            emittances_x_list[-1],
-            tw.eq_gemitt_x
-            / (1 + emittance_coupling_factor)
-            / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
-            rtol=5e-2,
-        )
-        # Check equilibrium emittance
-        xo.assert_allclose(
-            emittances_z_list[-1],
-            tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
-            rtol=2e-2,
-        )
-        # Check emittance coupling constraint
-        xo.assert_allclose(
-            emittances_y_list[-1] / emittances_x_list[-1], emittance_coupling_factor, rtol=2e-2
-        )
-
-    else:
-        # Check equilibrium emittance
-        xo.assert_allclose(
-            emittances_x_list[-1],
-            tw.eq_gemitt_x / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
-            rtol=5e-2,
-        )
-        # Check equilibrium emittance
-        xo.assert_allclose(
-            emittances_z_list[-1],
-            tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
-            rtol=2e-2,
-        )
-        # Check emittance coupling constraint
-        xo.assert_allclose(
-            emittances_y_list[-1] / emittances_x_list[-1],
-            emittance_coupling_factor,
-        )
+    # else:
+    # Check equilibrium emittance
+    # xo.assert_allclose(
+    #     emittances_x_list[-1],
+    #     tw.eq_gemitt_x / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
+    #     rtol=5e-2,
+    # )
+    # # Check equilibrium emittance
+    # xo.assert_allclose(
+    #     emittances_z_list[-1],
+    #     tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
+    #     rtol=2e-2,
+    # )
+    # # Check emittance coupling constraint
+    # xo.assert_allclose(
+    #     emittances_y_list[-1] / emittances_x_list[-1],
+    #     emittance_coupling_factor,
+    # )
 
 
 @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 0.2])
