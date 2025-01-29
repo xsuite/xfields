@@ -119,50 +119,6 @@ def test_equilibrium_vs_analytical_constraint_excitation(
     )
 
 
-# @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 0.2])
-# def test_ibs_emittance_coupling_factor(
-#     emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
-# ):
-#     """
-#     As the emittance coupling factor increases, the equilibrium emittance
-#     cannot be compared anymore to the solution of the differential equation
-#     describing the emittance evolution in presence of IBS and SR if a
-#     constraint on the emittance is enforced.
-#     """
-#     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
-#     #######################################
-#     # Equilibrium emittances calculations #
-#     #######################################
-
-#     time, emittances_x_list, emittances_y_list, emittances_z_list, T_x, T_y, T_z = (
-#         xf.ibs.compute_equilibrium_emittances_from_sr_and_ibs(
-#             tw,
-#             BUNCH_INTENSITY,
-#             emittance_coupling_factor=emittance_coupling_factor,
-#         )
-#     )
-
-#     # Check equilibrium emittance
-#     xo.assert_allclose(
-#         emittances_x_list[-1],
-#         tw.eq_gemitt_x
-#         / (1 + emittance_coupling_factor)
-#         / (1 - T_x[-1] / 2 / tw.damping_constants_s[0]),
-#         rtol=1e-1,
-#     )
-#     # Check equilibrium emittance
-#     xo.assert_allclose(
-#         emittances_z_list[-1],
-#         tw.eq_gemitt_zeta / (1 - T_z[-1] / 2 / tw.damping_constants_s[2]),
-#         rtol=2e-2,
-#     )
-#     # Check emittance coupling constraint
-#     xo.assert_allclose(
-#         emittances_y_list[-1] / emittances_x_list[-1],
-#         emittance_coupling_factor,
-#     )
-
-
 # @pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1.0])
 # def test_ibs_emittance_no_constraint(
 #     emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
