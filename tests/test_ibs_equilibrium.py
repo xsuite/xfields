@@ -47,7 +47,7 @@ def test_equilibrium_vs_analytical_constraint_coupling(
     # Get the twiss with SR effects from the configured line
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # -------------------------------------------
-    # Compute the equilibrium emittances
+    # Compute the equilibrium emittances - coupling constraint
     result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
         formalism="Nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
@@ -67,7 +67,7 @@ def test_equilibrium_vs_analytical_constraint_coupling(
     xo.assert_allclose(result.gemitt_y / result.gemitt_x, emittance_coupling_factor, rtol=1e-2)
     # Check the longitudinal equilibrium emittance
     xo.assert_allclose(
-        result.eq_sr_ibs_gemitt_zeta,  # this is result.gemitt_zeta[-1]
+        result.eq_sr_ibs_gemitt_zeta,
         result.gemitt_zeta[0] / (1 - result.Tz[-1] / 2 / (tw.damping_constants_s[2])),
         rtol=1e-2,
     )
