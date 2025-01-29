@@ -42,7 +42,13 @@ def bessy3_line_with_radiation() -> xt.Line:
 def test_equilibrium_vs_analytical_constraint_coupling(
     emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
 ):
-    """TODO: Succinct description of what is tested."""
+    """
+    Load the BESSY III line and compute ierations until we reach
+    an equilibrium with SR and IBS, in the case where we enforce
+    a betatron coupling constraint on the transverse planes. The
+    resulting values are tested against an analytical estimate.
+    TODO: ref for the analytical formula
+    """
     # -------------------------------------------
     # Get the twiss with SR effects from the configured line
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
@@ -77,7 +83,13 @@ def test_equilibrium_vs_analytical_constraint_coupling(
 def test_equilibrium_vs_analytical_constraint_excitation(
     emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
 ):
-    """TODO: Succinct description of what is tested."""
+    """
+    Load the BESSY III line and compute ierations until we reach
+    an equilibrium with SR and IBS, in the case where we enforce
+    an excitation type constraint on the transverse planes. The
+    resulting values are tested against an analytical estimate.
+    TODO: ref for the analytical formula
+    """
     # -------------------------------------------
     # Get the twiss with SR effects from the configured line
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
