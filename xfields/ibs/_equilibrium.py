@@ -488,7 +488,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             tolerance = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
         previous_emittances = current_emittances.copy()
         # --------------------------------------------------------------------------
-        # Update time step for the next iteration and increase counter
+        # Update time step for the next iteration and increase counter. If the user
+        # provided a time step value we use it, otherwise it is adaptive and set to
+        # 1% of the max damping time between IBS and SR across all planes
         time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
         LOGGER.debug(f"Time step for next iteration: {time_step:.2e}")
         iterations += 1
