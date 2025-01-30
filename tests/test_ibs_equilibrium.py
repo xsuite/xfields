@@ -1,14 +1,11 @@
-from turtle import rt
-
 import pytest
 import xobjects as xo
 import xtrack as xt
 from ibs_conftest import XTRACK_TEST_DATA
-from matplotlib.image import resample
 
-import xfields as xf
 
 BUNCH_INTENSITY: float = 6.2e9  # 1C bunch intensity
+
 
 # ----- Fixture for the (configured) BESSY III line ----- #
 
@@ -161,7 +158,7 @@ def test_equilibrium_vs_analytical_no_constraint(
     xo.assert_allclose(
         result.eq_sr_ibs_gemitt_y,
         result.gemitt_y[0] / (1 - result.Ty[-1] / 2 / tw.damping_constants_s[1]),
-        rtol=1e-2
+        rtol=1e-2,
     )
     # Check the longitudinal equilibrium emittance
     xo.assert_allclose(
