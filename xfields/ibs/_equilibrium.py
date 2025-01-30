@@ -173,15 +173,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     emittance_coupling_factor: float = 0,
     emittance_constraint: Literal["coupling", "excitation"] = "coupling",
     rtol: float = 1e-6,
-    # tstep: float = None,  # TODO: feature for later?
+    tstep: float = None,
     verbose: bool = True,
     **kwargs,
 ) -> Table:
-    # TODO: tstep docstring, feature for later?
-    # tstep : float, Optional
-    #     Time step to use for each iteration, in [s]. If not provided, an
-    #     adaptive time step is computed based on the IBS growth rates and
-    #     the damping constants. Defaults to `None`.
     """
     Compute the evolution of emittances due to Synchrotron Radiation
     and Intra-Beam Scattering until convergence to equilibrium values.
@@ -289,6 +284,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         Relative tolerance to determine when convergence is reached: if the relative
         difference between the computed emittances and those at the previous step is
         below `rtol`, then convergence is considered achieved. Defaults to 1e-6.
+    tstep : float, optional
+        Time step to use for each iteration, in [s]. If not provided, an
+        adaptive time step is computed based on the IBS growth rates and
+        the damping constants. Defaults to `None`.
     verbose : bool, optional
         Whether to print out information on the current iteration step and estimated
         convergence progress. Defaults to `True`.
@@ -371,6 +370,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.info("No longitudinal emittance provided, taking SR equilibrium value from TwissTable.")
         gemitt_zeta = twiss.eq_gemitt_zeta
     # We need to also check for the case where use provided emittance and it is the twiss SR eq one
+    # which would be our default if not provided and then would trigger renormalization above
     if gemitt_x == twiss.eq_gemitt_x or gemitt_y == twiss.eq_gemitt_y:
         LOGGER.debug("At least one provided transverse emittance is the SR equilibrium value, renormalizing transverse emittances if constraint provided.")
         _renormalize_transverse_emittances = True
@@ -384,7 +384,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
     # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
     # damping partition numbers and emittance_coupling_factor values).
-    if _renormalize_transverse_emittances is True:
+    if _renormalize_transverse_emittances is True and emittance_constraint is not None:
         # If constraint is coupling, both emittances are modified (from factor and partition numbers)
         if emittance_constraint.lower() == "coupling" and emittance_coupling_factor != 0:
             LOGGER.info("Enforcing 'coupling' constraint on transverse emittances.")
@@ -414,6 +414,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         LOGGER.warning("At least one longitudinal property overwritten, recomputing longitudinal emittance.")
         starting_gemitt_zeta = sigma_zeta * sigma_delta
     # ---------------------------------------------------------------------------------------------
+    # Log the starting emittances and the computed longitudinal properties - useful for debugging
+    LOGGER.debug(f"Starting emittances are: {starting_gemitt_x:.2e}, {starting_gemitt_y:.2e}, {starting_gemitt_zeta:.2e}")
+    # ---------------------------------------------------------------------------------------------
     # Initialize values for the iterative process (first time step is revolution period)
     iterations: float = 0
     tolerance: float = np.inf
@@ -436,6 +439,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
+        LOGGER.debug(f"Current emittances (x, y, zeta): {current_emittances}")
         # --------------------------------------------------------------------------
         # Display estimated convergence progress if asked
         if verbose is True:
@@ -459,14 +463,16 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         current_emittances += np.array(emittance_derivatives) * time_step
         # --------------------------------------------------------------------------
         # Enforce transverse constraint if specified (valid with a factor value of 0)
-        if emittance_constraint.lower() == "coupling":
-            forced_emittance_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
-            forced_emittance_y = forced_emittance_x * emittance_coupling_factor
-            current_emittances[0] = forced_emittance_x
-            current_emittances[1] = forced_emittance_y
-        elif emittance_constraint.lower() == "excitation":
-            forced_emittance_y = current_emittances[0] * emittance_coupling_factor
-            current_emittances[1] = forced_emittance_y
+        if emittance_constraint is not None:
+            if emittance_constraint.lower() == "coupling":
+                forced_gemitt_x = (current_emittances[0] + current_emittances[1]) / (1 + emittance_coupling_factor)
+                forced_gemitt_y = forced_gemitt_x * emittance_coupling_factor
+                current_emittances[0] = forced_gemitt_x
+                current_emittances[1] = forced_gemitt_y
+            elif emittance_constraint.lower() == "excitation":
+                forced_gemitt_y = current_emittances[0] * emittance_coupling_factor
+                current_emittances[1] = forced_gemitt_y
+        LOGGER.debug(f"Stored emittances after time step: {current_emittances}")
         # --------------------------------------------------------------------------
         # Store the current values for this time step
         time_deltas.append(time_step)
@@ -483,9 +489,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             tolerance = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
         previous_emittances = current_emittances.copy()
         # --------------------------------------------------------------------------
-        # Update time step for the next iteration and increase counter
-        # time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))  # TODO: feature for later?
-        time_step = 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
+        # Update time step for the next iteration and increase counter. If the user
+        # provided a time step value we use it, otherwise it is adaptive and set to
+        # 1% of the max damping time between IBS and SR across all planes
+        time_step = tstep if tstep is not None else 0.01 / np.max((ibs_growth_rates, twiss.damping_constants_s))
+        LOGGER.debug(f"Time step for next iteration: {time_step:.2e}")
         iterations += 1
     # ----------------------------------------------------------------------------------------------
     # We have exited the loop, we have converged. Construct a Table with the results and return it
