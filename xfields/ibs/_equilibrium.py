@@ -403,10 +403,10 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     sigma_delta = (starting_gemitt_zeta / twiss.bets0) ** 0.5
     # Now handle the scenario where the user wants to overwrite those
     if overwrite_sigma_zeta is not None:
-        LOGGER.warning("'overwrite_sigma_zeta' specified, make sure it is consistent with provided longitudinal emittance.")
+        LOGGER.warning("'overwrite_sigma_zeta' specified.")
         sigma_zeta = overwrite_sigma_zeta
     elif overwrite_sigma_delta is not None:
-        LOGGER.warning("'overwrite_sigma_delta' specified, make sure it is consistent with provided longitudinal emittance.")
+        LOGGER.warning("'overwrite_sigma_delta' specified.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
     # If either bunch length or momentum spread was overwritten, we recompute the longidutinal emittance
