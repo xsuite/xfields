@@ -1,4 +1,3 @@
-from math import e
 import pytest
 import xobjects as xo
 import xtrack as xt
@@ -169,7 +168,7 @@ def test_equilibrium_vs_analytical_no_constraint(
     )
 
 
-# ----- Test Functions for Behaviour ----- #
+# ----- Some Test Functions for Behaviour ----- #
 
 
 def test_missing_required_twiss_attributes_raises(bessy3_line_with_radiation: xt.Line):
