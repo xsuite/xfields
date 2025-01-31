@@ -220,3 +220,17 @@ def test_missing_params_raises(bessy3_line_with_radiation: xt.Line):
             total_beam_intensity=BUNCH_INTENSITY,
             rtol=None,
         )
+
+
+@pytest.mark.parametrize("emittance_constraint", ["WRONG", "invalid"])
+def test_invalid_constraint_raises(emittance_constraint, bessy3_line_with_radiation: xt.Line):
+    """Check we raise if the emittance coupling constraint is invalid."""
+    tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
+    # This should tell us we're missing something in the config
+    with pytest.raises(AssertionError, match="Invalid 'emittance_constraint'"):
+        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+            formalism="Nagaitsev",
+            total_beam_intensity=BUNCH_INTENSITY,
+            emittance_coupling_factor=1,
+            emittance_constraint=emittance_constraint,
+        )
