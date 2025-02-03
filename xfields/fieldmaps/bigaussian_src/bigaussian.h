@@ -39,8 +39,10 @@ void get_transv_field_gauss_round(
   double r2, temp;
 
   r2 = (x-Delta_x)*(x-Delta_x)+(y-Delta_y)*(y-Delta_y);
-  if (r2<1e-20) temp = sqrt(r2)/(2.*PI*EPSILON_0*sigma); //linearised
-  else          temp = (1-exp(-0.5*r2/(sigma*sigma)))/(2.*PI*EPSILON_0*r2);
+  double const inv_sig2 = 1./(sigma*sigma);
+  double const r2_sig2 = r2 * inv_sig2;
+  if (r2_sig2<1e-10) temp = inv_sig2/(4.*PI*EPSILON_0); //linearised
+  else temp = inv_sig2 * (1-exp(-0.5*r2_sig2))/(2.*PI*EPSILON_0*r2_sig2);
 
   (*Ex) = temp * (x-Delta_x);
   (*Ey) = temp * (y-Delta_y);
