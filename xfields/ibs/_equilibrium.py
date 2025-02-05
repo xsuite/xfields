@@ -504,9 +504,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "gemitt_x": np.array(res_gemitt_x),
             "gemitt_y": np.array(res_gemitt_y),
             "gemitt_zeta": np.array(res_gemitt_zeta),
-            # TODO: check the below, might need to input the longitudinal_ratio in this calculation (if we have bunch lengthening etc)
-            # "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * twiss.bets0),
-            # "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / twiss.bets0),
+            "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * longitudinal_emittance_ratio),
+            "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / longitudinal_emittance_ratio),
             "Tx": np.array(T_x),
             "Ty": np.array(T_y),
             "Tz": np.array(T_z),
