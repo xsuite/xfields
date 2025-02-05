@@ -166,6 +166,10 @@ def test_equilibrium_vs_analytical_no_constraint(
         result.gemitt_zeta[0] / (1 - result.Tz[-1] / 2 / (tw.damping_constants_s[2])),
         rtol=1e-2,
     )
+    # -------------------------------------------
+    # Check against ELEGANT results for this scenario
+    # These are hardcoded (from ELEGANT version with
+    # corrected partition numbers use)
 
 
 # ----- Some Test Functions for Behaviour ----- #
