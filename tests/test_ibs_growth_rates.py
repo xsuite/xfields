@@ -1,4 +1,5 @@
 import pytest
+import xobjects as xo
 import xtrack as xt
 from cpymad.madx import Madx
 from ibs_conftest import (
@@ -8,7 +9,6 @@ from ibs_conftest import (
     get_ref_particle_from_madx_beam,
     set_madx_beam_parameters,
 )
-from numpy.testing import assert_allclose
 
 # ------------------------------------------------------------------------
 # We compare our values to the ones of MAD-X, hence in the numpy function
@@ -78,13 +78,13 @@ def test_clic_dr_growth_rates(bunched):
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 11% isn't crazy
-        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
-        assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
-        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
+        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
+        xo.assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
+        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
+    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
+    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
+    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
 
 
 # ----- Test with positive charge particle ----- #
@@ -135,13 +135,13 @@ def test_sps_injection_protons_growth_rates(bunched):
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 10% isn't crazy
-        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-        assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=10e-2)
-        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=10e-2)
+        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
 
 # ----- Test with ion particles ----- #
@@ -206,13 +206,13 @@ def test_sps_ions_growth_rates(bunched):
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 10% isn't crazy
-        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-        assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
 
 # ----- Test with vertical dispersion ----- #
@@ -268,9 +268,9 @@ def test_hllhc14_growth_rates(bunched):
     # Compare the results - Nagaitsev (don't compare vertical
     # as lattice has Dy and formalism is wrong in this case)
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
-        assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
-        assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
+        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
-    assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-    assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
+    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
