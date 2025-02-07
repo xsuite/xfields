@@ -1,11 +1,13 @@
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Tuple
 
 import xtrack as xt
 from cpymad.madx import Madx
 
 # /!\ This assumes xtrack repo is sitting next to xfields repo
 XTRACK_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
+
 
 def set_madx_beam_parameters(
     madx: Madx,
@@ -80,7 +82,7 @@ def set_madx_beam_parameters(
     madx.sequence[seq_name].beam.bunched = bunched  # set if the beam is bunched
 
 
-def get_madx_ibs_growth_rates(madx: Madx) -> Tuple[float, float, float]:
+def get_madx_ibs_growth_rates(madx: Madx) -> tuple[float, float, float]:
     """
     Calls the IBS module then return horizontal, vertical and longitudinal
     growth rates. A Twiss call is done to make sure it is centered.
@@ -128,7 +130,7 @@ def get_ref_particle_from_madx_beam(madx: Madx) -> xt.Particles:
     return xt.Particles(q0=q0, mass0=mass0, gamma0=gamma0)
 
 
-def get_parameters_from_madx_beam(madx: Madx) -> Tuple[float, float, float, float, float]:
+def get_parameters_from_madx_beam(madx: Madx) -> tuple[float, float, float, float, float]:
     """
     Get beam intensity, transverse emittances, momentum spread and
     bunch length from the MAD-X's beam parameters. A Twiss call is
