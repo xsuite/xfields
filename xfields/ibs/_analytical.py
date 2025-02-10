@@ -62,8 +62,8 @@ class NagaitsevIntegrals(xo.HybridClass):
 class IBSEmittanceGrowthRates(xo.HybridClass):
     """
     Holds IBS emittance growth rates in each plane, named
-    ``Tx``, ``Ty``, and ``Tz``. By growth rate we mean the
-    1/tau values, expressed in [s^-1].
+    ``Tx``, ``Ty``, and ``Tz``, expressed in [s^-1]. The
+    growth rate corresponds 1/tau, with tau the growth time.
     
     Methods are available to get the corresponding emittance
     growth times, in [s] or even the rates and times but for
