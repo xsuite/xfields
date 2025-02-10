@@ -93,13 +93,15 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         """Return the growth rates as a tuple."""
         return float(self.Tx), float(self.Ty), float(self.Tz)
 
-    def growth_times(self) -> tuple[float, float, float]:
+    def to_growth_times(self) -> tuple[float, float, float]:
         """
         Returns a tuple with the corresponding emittance
         growth times, in [s] (the inverse of the growth
         rates).
         """
         return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
+
+
 
 
 # ----- Abstract Base Class to Inherit from ----- #
