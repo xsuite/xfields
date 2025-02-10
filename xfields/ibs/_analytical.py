@@ -109,8 +109,8 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         are the emittance growth times multiplied by 2.
         """
         # There is a factor 2 to apply to the EMITTANCE growth times
-        tx, ty, tz = self.to_emittance_growth_times()
-        return float(2 * tx), float(2 * ty), float(2 * tz)
+        tau_x, tau_y, tau_z = self.to_emittance_growth_times()
+        return float(2 * tau_x), float(2 * tau_y), float(2 * tau_z)
 
     def to_amplitude_growth_rates(self) -> tuple[float, float, float]:
         """
