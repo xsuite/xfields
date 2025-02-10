@@ -154,7 +154,7 @@ def test_sps_injection_protons_growth_rates(bunched):
 
 @pytest.mark.parametrize("bunched", [True, False])
 def test_sps_ions_growth_rates(bunched):
-    """Compare to MAD-X for the SPS injection protons."""
+    """Compare to MAD-X for the SPS injection ions."""
     # -----------------------------------------------------
     # Have MAD-X load SPS sequence
     sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
