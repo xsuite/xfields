@@ -102,6 +102,15 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         """
         return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
 
+    def to_amplitude_growth_times(self) -> tuple[float, float, float]:
+        """
+        Returns the corresponding IBS growth times for the beam
+        size (amplitude) instead of the emittance, in [s]. These
+        are the emittance growth times multiplied by 2.
+        """
+        # There is a factor 2 to apply to the EMITTANCE growth times
+        tx, ty, tz = self.to_emittance_growth_times()
+        return float(2 * tx), float(2 * ty), float(2 * tz)
 
 # ----- Abstract Base Class to Inherit from ----- #
 
