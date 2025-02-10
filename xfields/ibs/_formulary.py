@@ -199,6 +199,7 @@ def _mean_px(particles: xt.Particles, dpx: float = 0) -> float:
     delta: ArrayLike = particles.delta[particles.state > 0]
     return float(nplike.mean(px - dpx * delta))
 
+
 def _mean_py(particles: xt.Particles, dpy: float = 0) -> float:
     """
     Get the arithmetic mean of the vertical momentum from
