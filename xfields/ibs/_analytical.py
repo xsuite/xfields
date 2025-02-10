@@ -8,7 +8,7 @@ from __future__ import annotations  # important for sphinx to alias ArrayLike
 import warnings
 from abc import ABC, abstractmethod
 from logging import getLogger
-from typing import Callable, Tuple
+from typing import Callable
 
 import numpy as np
 import xobjects as xo
@@ -54,7 +54,7 @@ class NagaitsevIntegrals(xo.HybridClass):
         """Init with the results of the integrals."""
         self.xoinitialize(Ix=Ix, Iy=Iy, Iz=Iz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the integrals as a tuple."""
         return float(self.Ix), float(self.Iy), float(self.Iz)
 
@@ -63,8 +63,11 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
     """
     Holds IBS emittance growth rates in each plane, named
     ``Tx``, ``Ty``, and ``Tz``. By growth rate we mean the
-    1/tau values, expressed in [s^-1]. A method is available
-    to get the growth times, in [s].
+    1/tau values, expressed in [s^-1].
+    
+    Methods are available to get the corresponding emittance
+    growth times, in [s] or even the rates and times but for
+    amplitude (beam size).
 
     Attributes
     ----------
@@ -86,17 +89,18 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         """Init with given values."""
         self.xoinitialize(Tx=Tx, Ty=Ty, Tz=Tz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Tx), float(self.Ty), float(self.Tz)
 
-    def growth_times(self) -> Tuple[float, float, float]:
+    def growth_times(self) -> tuple[float, float, float]:
         """
         Returns a tuple with the corresponding emittance
         growth times, in [s] (the inverse of the growth
         rates).
         """
         return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
+
 
 # ----- Abstract Base Class to Inherit from ----- #
 
@@ -1206,7 +1210,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         bunch_length: float,
         total_beam_intensity: int,
         bunched: bool = True,
-    ) -> Tuple[float, ArrayLike, ArrayLike, float]:
+    ) -> tuple[float, ArrayLike, ArrayLike, float]:
         r"""
         Computes the constant terms of Eq (8) in the MAD-X note
         :cite:`CERN:Antoniou:Revision_IBS_MADX`. Returned are four terms:
@@ -1235,7 +1239,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Returns
         -------
-        Tuple[float, ArrayLike, ArrayLike, float]
+        tuple[float, ArrayLike, ArrayLike, float]
             Four variables corresponding to the common, horizontal, vertical and
             longitudinal 'constants' of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`.
             The horizontal and vertical ones are arrays, with a value per element.
@@ -1289,7 +1293,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         const_y: ArrayLike = bety_over_epsy
         const_z: float = gamma**2 / sigma_delta**2
         # ----------------------------------------------------------------------------------------------
-        # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
+        # Return the four terms now - they are tuple[float, ArrayLike, ArrayLike, float]
         return common_constant_term, const_x, const_y, const_z
 
     def growth_rates(
