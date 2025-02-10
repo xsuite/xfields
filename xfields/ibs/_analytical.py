@@ -90,7 +90,7 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         self.xoinitialize(Tx=Tx, Ty=Ty, Tz=Tz)
 
     def as_tuple(self) -> tuple[float, float, float]:
-        """Return the growth rates as a tuple."""
+        """Return the IBS emittance growth rates as a tuple."""
         return float(self.Tx), float(self.Ty), float(self.Tz)
 
     def to_emittance_growth_times(self) -> tuple[float, float, float]:
