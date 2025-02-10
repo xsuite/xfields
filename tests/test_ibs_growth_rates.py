@@ -20,7 +20,12 @@ from numpy.testing import assert_allclose
 #     if T = 1e-8 [1/s],
 #     then tau = 1/T > 3 years,
 #     and we are pretty safe from IBS.
-
+#
+# PLEASE NOTE: What is computed in MAD-X is the EMITTANCE growth times, in [s].
+# These are stored in the ibs.tx, ibs.ty and ibs.tl variables. In Xsuite we
+# compute the EMITTANCE growth rates (also available as growth times) so we
+# take the inverse of the MAD-X values (done in get_madx_ibs_growth_rates) to
+# do the comparison. This way we compare EMITTANCE GROWTH RATES (in [1/s]).
 
 # ----- Test with negative charge particle ----- #
 
@@ -269,6 +274,7 @@ def test_hllhc14_growth_rates(bunched):
     # as lattice has Dy and formalism is wrong in this case)
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
+        # Not Ty - Nagaitsev does not account for vertical dispersion
         assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
     assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
