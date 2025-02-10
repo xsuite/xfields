@@ -72,11 +72,11 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
     Attributes
     ----------
     Tx : float
-        Horizontal IBS growth rate, in [s^-1].
+        Horizontal IBS emittance growth rate, in [s^-1].
     Ty : float
-        Vertical IBS growth rate, in [s^-1].
+        Vertical IBS emittance growth rate, in [s^-1].
     Tz : float
-        Longitudinal IBS growth rate, in [s^-1].
+        Longitudinal IBS emittance growth rate, in [s^-1].
     """
 
     _xofields = {
@@ -95,12 +95,12 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
 
     def to_emittance_growth_times(self) -> tuple[float, float, float]:
         """
-        Returns a tuple with the corresponding emittance
-        growth times, in [s] (the inverse of the growth
-        rates).
+        Returns a tuple with the corresponding emittance growth
+        times, in [s] (the inverse of the growth rates). These
+        are equal to the ibs.tx, ibs.ty and ibs.tl variables
+        found in MAD-X after calling the IBS command.
         """
         return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
-
 
 
 # ----- Abstract Base Class to Inherit from ----- #
