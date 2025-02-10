@@ -59,11 +59,12 @@ class NagaitsevIntegrals(xo.HybridClass):
         return float(self.Ix), float(self.Iy), float(self.Iz)
 
 
-class IBSGrowthRates(xo.HybridClass):
+class IBSEmittanceGrowthRates(xo.HybridClass):
     """
-    Holds IBS growth rates in each plane, named ``Tx``,
-    ``Ty``, and ``Tz``. By growth rate we mean the 1/tau
-    values, expressed in [s^-1].
+    Holds IBS emittance growth rates in each plane, named
+    ``Tx``, ``Ty``, and ``Tz``. By growth rate we mean the
+    1/tau values, expressed in [s^-1]. A method is available
+    to get the growth times, in [s].
 
     Attributes
     ----------
@@ -123,7 +124,7 @@ class AnalyticalIBS(ABC):
         self._twiss = twiss
         self._particle = twiss.particle_on_co
         # This one self-updates when computed, but can be overwritten by the user
-        self.ibs_growth_rates: IBSGrowthRates = None
+        self.ibs_growth_rates: IBSEmittanceGrowthRates = None
 
     def coulomb_log(
         self,
@@ -255,7 +256,7 @@ class AnalyticalIBS(ABC):
         bunch_length: float = None,
         total_beam_intensity: int = None,
         bunched: bool = True,
-    ) -> IBSGrowthRates:
+    ) -> IBSEmittanceGrowthRates:
         r"""
         Method to compute the IBS growth rates. This is an abstract method
         that should be implemented in child classes based on their formalism.
@@ -488,7 +489,7 @@ class NagaitsevIBS(AnalyticalIBS):
         bunch_length: float = None,
         total_beam_intensity: int = None,
         bunched: bool = True,
-    ) -> IBSGrowthRates:
+    ) -> IBSEmittanceGrowthRates:
         r"""
         Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
         code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
@@ -616,7 +617,7 @@ class NagaitsevIBS(AnalyticalIBS):
         Tx = float(Ix * full_constant_term / gemitt_x) / factor
         Ty = float(Iy * full_constant_term / gemitt_y) / factor
         Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
-        result = IBSGrowthRates(Tx, Ty, Tz)
+        result = IBSEmittanceGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attribute before returning
         self.ibs_growth_rates = result
@@ -1302,7 +1303,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         total_beam_intensity: int = None,
         bunched: bool = True,
         integration_intervals: int = 17,
-    ) -> IBSGrowthRates:
+    ) -> IBSEmittanceGrowthRates:
         r"""
         Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
         code base, according to the Bjorken & Mtingwa formalism. These correspond to the
@@ -1493,7 +1494,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             Tx: float = float(quad(_tx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
             Ty: float = float(quad(_ty, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
             Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-        result = IBSGrowthRates(Tx, Ty, Tz)
+        result = IBSEmittanceGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attribute before returning
         self.ibs_growth_rates = result

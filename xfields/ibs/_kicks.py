@@ -15,7 +15,7 @@ from numpy.typing import ArrayLike
 from scipy.constants import c
 from scipy.special import elliprd
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates
+from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSEmittanceGrowthRates
 from xfields.ibs._formulary import (
     _assert_accepted_context,
     _beam_intensity,
@@ -353,7 +353,7 @@ class IBSAnalyticalKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Computing the analytical IBS growth rates through the instance's set TwissTable
         # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
-        growth_rates: IBSGrowthRates = self._twiss.get_ibs_growth_rates(
+        growth_rates: IBSEmittanceGrowthRates = self._twiss.get_ibs_growth_rates(
             formalism=self.formalism,
             gemitt_x=float(gemitt_x),
             gemitt_y=float(gemitt_y),

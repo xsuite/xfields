@@ -8,7 +8,7 @@ from typing import Literal
 import numpy as np
 import xtrack as xt
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates, NagaitsevIBS
+from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSEmittanceGrowthRates, NagaitsevIBS
 from xfields.ibs._formulary import _beam_intensity, _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
 from xfields.ibs._kicks import IBSAnalyticalKick, IBSKick
 
@@ -31,7 +31,7 @@ def get_intrabeam_scattering_growth_rates(
     bunched: bool = True,
     particles: xt.Particles = None,
     **kwargs,
-) -> IBSGrowthRates:
+) -> IBSEmittanceGrowthRates:
     """
     Computes IntraBeam Scattering growth rates from the provided
     `xtrack.TwissTable`.
