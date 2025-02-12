@@ -128,7 +128,7 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         tau_x, tau_y, tau_z = self.to_emittance_growth_times()
         return float(2 * tau_x), float(2 * tau_y), float(2 * tau_z)
 
-    def to_amplitude_growth_rates(self) -> tuple[float, float, float]:
+    def to_amplitude_growth_rates(self) -> IBSAmplitudeGrowthRates:
         """
         Returns the corresponding IBS growth rates for the beam
         size (amplitude) instead of the emittance, in [s^-1]. The
@@ -136,10 +136,12 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
 
         Returns
         -------
-        Ax, Ay, Az : tuple[float, float, float]
-            The amplitude growth rates, in [s^-1].
+        amplitude_rates : IBSAmplitudeGrowthRates
+            An `IBSAmplitudeGrowthRates` object with the amplitude
+            growth rates, in [s^-1].
         """
-        return float(self.Tx / 2), float(self.Ty / 2), float(self.Tz / 2)
+        Ax, Ay, Az = float(self.Tx / 2), float(self.Ty / 2), float(self.Tz / 2)
+        return IBSAmplitudeGrowthRates(Ax=Ax, Ay=Ay, Az=Az)
 
 
 class IBSAmplitudeGrowthRates(xo.HybridClass):
