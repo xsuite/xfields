@@ -131,7 +131,7 @@ def _sigma_px(particles: xt.Particles, dpx: float = 0) -> float:
     dpx : float, optional
         Horizontal momentum dispersion function at the location
         where the sigma_px is computed. Defaults to 0.
-    
+
     Returns
     -------
     sigma_px : float
@@ -159,7 +159,7 @@ def _sigma_py(particles: xt.Particles, dpy: float = 0) -> float:
     dpy : float, optional
         Vertical momentum dispersion function at the location
         where the sigma_py is computed. Defaults to 0.
-    
+
     Returns
     -------
     sigma_py : float

@@ -15,7 +15,11 @@ from numpy.typing import ArrayLike
 from scipy.constants import c
 from scipy.special import elliprd
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
+from xfields.ibs._analytical import (
+    BjorkenMtingwaIBS,
+    IBSAmplitudeGrowthRates,
+    IBSEmittanceGrowthRates,
+)
 from xfields.ibs._formulary import (
     _assert_accepted_context,
     _beam_intensity,
@@ -163,7 +167,7 @@ def line_density(particles: xt.Particles, num_slices: int) -> ArrayLike:
     # ----------------------------------------------------------------------------------------------
     # Determine properties from longitudinal particles distribution: cuts, slice width, bunch length
     LOGGER.debug("Determining longitudinal particles distribution properties")
-    zeta: ArrayLike = particles.zeta[particles.state > 0]  # careful to only consider active particles
+    zeta: ArrayLike = particles.zeta[particles.state > 0]  # only consider active particles
     z_cut_head: float = nplike.max(zeta)  # z cut at front of bunch
     z_cut_tail: float = nplike.min(zeta)  # z cut at back of bunch
     slice_width: float = (z_cut_head - z_cut_tail) / num_slices  # slice width
@@ -178,8 +182,8 @@ def line_density(particles: xt.Particles, num_slices: int) -> ArrayLike:
     )
     bin_centers: ArrayLike = (bin_edges[:-1] + bin_edges[1:]) / 2.0
     # ----------------------------------------------------------------------------------------------
-    # Compute histogram on longitudinal distribution then compute and return line density
-    counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)  # density to normalize
+    # Compute histogram on longitudinal distribution then compute and return normalized line density
+    counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)
     return nplike.interp(zeta, bin_centers, counts_normed)
 
 
@@ -334,6 +338,7 @@ class IBSAnalyticalKick(IBSKick):
         _assert_accepted_context(particles._context)
         # ----------------------------------------------------------------------------------------------
         # Compute the momentum spread, bunch length and (geometric) emittances from the Particles object
+        # fmt: off
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
         beam_intensity: float = _beam_intensity(particles)
         bunch_length: float = _bunch_length(particles)
@@ -558,6 +563,7 @@ class IBSKineticKick(IBSKick):
         # do the rest of the computation on CPU than to transfer arrays to GPU and finish it there.
         # ----------------------------------------------------------------------------------------------
         # Compute (geometric) emittances, momentum spread, bunch length and sigmas from the Particles
+        # fmt: off
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
         gemitt_x: float = _gemitt_x(particles, self._twiss["betx", self._name], self._twiss["dx", self._name])
         gemitt_y: float = _gemitt_y(particles, self._twiss["bety", self._name], self._twiss["dy", self._name])
@@ -566,6 +572,7 @@ class IBSKineticKick(IBSKick):
         sigma_delta: float = _sigma_delta(particles)
         sigma_x: float = _sigma_x(particles)
         sigma_y: float = _sigma_y(particles)
+        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Allocating some properties to simple variables for readability
         beta0: float = self._twiss.beta0
@@ -621,7 +628,6 @@ class IBSKineticKick(IBSKick):
         Kx: ArrayLike = 1.0 * (R2 * (1 + a2 / sqrt_term) + R3 * (1 - a2 / sqrt_term))  # Eq says 0.5
         Ky: ArrayLike = 2 * R1  # Eq says 1
         Kz: ArrayLike = 1.0 * gamma0**2 * (R2 * (1 - a2 / sqrt_term) + R3 * (1 + a2 / sqrt_term))  # Eq says 0.5
-        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Computing integrands for the diffusion and friction terms from Eq (45-50)
         # TODO: missing bet[xy] terms in paper are typos, remove this comment when new version is out
@@ -632,6 +638,7 @@ class IBSKineticKick(IBSKick):
         Fx_integrand: ArrayLike = betx * (Kx + (dx**2 / betx**2 + phix**2) * Kz) / int_denominator
         Fy_integrand: ArrayLike = bety * Ky / int_denominator
         Fz_integrand: ArrayLike = Kz / int_denominator
+        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Integrating them to obtain the final diffusion and friction coefficients (full Eq (45-50))
         ds: ArrayLike = np.diff(self._twiss.s)

@@ -1243,6 +1243,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
         Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
+        # fmt: off
         by: ArrayLike = (
             gamma**2 * (bety_over_epsy - 2 * betx_over_epsx) * (Hx / gemitt_x + 1 / sigma_delta**2)
             + gamma**2 * Hy / gemitt_y * (bety_over_epsy - 4 * betx_over_epsx)
@@ -1260,6 +1261,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
             + 6 * gamma**2 * phiy**2 * betx_over_epsx * bety_over_epsy
         )
+        # fmt: on
         return by
 
     def _az(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
@@ -1355,11 +1357,13 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
         Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
+        # fmt: off
         bz: ArrayLike = (
             (betx_over_epsx + bety_over_epsy) * gamma**2 * (Hx / gemitt_x + Hy / gemitt_y + 1 / sigma_delta**2)
             - 2 * betx_over_epsx * bety_over_epsy
             - gamma**2 * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
         )
+        # fmt: on
         return bz
 
     def _constants(

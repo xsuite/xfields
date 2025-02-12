@@ -175,9 +175,11 @@ def configure_intrabeam_scattering(
     twiss = line.twiss(method="4d")
     # ----------------------------------------------------------------------------------------------
     # Figure out the IBS kick element and its name in the line
-    only_ibs_kicks = {name: element for name, element in line.element_dict.items() if isinstance(element, IBSKick)}
-    assert len(only_ibs_kicks) == 1, "Only one 'IBSKick' element should be present in the line"
-    name, element = only_ibs_kicks.popitem()
+    inserted_ibs_kicks = {
+        name: element for name, element in line.element_dict.items() if isinstance(element, IBSKick)
+    }
+    assert len(inserted_ibs_kicks) == 1, "Only one 'IBSKick' element should be present in the line"
+    name, element = inserted_ibs_kicks.popitem()
     # ----------------------------------------------------------------------------------------------
     # Set necessary (private) attributes for the kick to function
     element.update_every = update_every
