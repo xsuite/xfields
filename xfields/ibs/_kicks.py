@@ -15,7 +15,7 @@ from numpy.typing import ArrayLike
 from scipy.constants import c
 from scipy.special import elliprd
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSEmittanceGrowthRates
+from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
 from xfields.ibs._formulary import (
     _assert_accepted_context,
     _beam_intensity,
@@ -354,8 +354,7 @@ class IBSAnalyticalKick(IBSKick):
         # Computing the analytical IBS growth rates through the instance's set TwissTable. Note that since
         # we have no way of detecting coasting beams we assume bunched and take the rms bunch length as is
         # (but we don't get the correction factor in the coulomb logarithm...)
-        # TODO: if rates are now in amplitude, convert to emittance before using!
-        growth_rates: IBSEmittanceGrowthRates = self._twiss.get_ibs_growth_rates(
+        amp_growth_rates: IBSAmplitudeGrowthRates = self._twiss.get_ibs_growth_rates(
             formalism=self.formalism,
             gemitt_x=float(gemitt_x),
             gemitt_y=float(gemitt_y),
@@ -364,7 +363,11 @@ class IBSAnalyticalKick(IBSKick):
             total_beam_intensity=beam_intensity,
             **kwargs,
         )
-        Tx, Ty, Tz = growth_rates.as_tuple()  # each is a float
+        # ----------------------------------------------------------------------------------------------
+        # In Xsuite we give growth rates in amplitude convention but the theory of R. Bruce assumes the
+        # growth rates to be in emittance convention, so we do the conversion here.
+        emit_growth_rates: IBSEmittanceGrowthRates = amp_growth_rates.to_emittance_growth_rates()
+        Tx, Ty, Tz = emit_growth_rates.as_tuple()  # each is a float
         # ----------------------------------------------------------------------------------------------
         # Making sure we do not have negative growth rates (see class docstring warning for detail)
         Tx: float = 0.0 if Tx < 0 else float(Tx)
