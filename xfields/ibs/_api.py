@@ -8,8 +8,7 @@ from typing import Literal
 import numpy as np
 import xtrack as xt
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSEmittanceGrowthRates, NagaitsevIBS
-from xfields.ibs._formulary import _beam_intensity, _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
+from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, NagaitsevIBS
 from xfields.ibs._kicks import IBSAnalyticalKick, IBSKick
 
 LOGGER = getLogger(__name__)
@@ -29,12 +28,12 @@ def get_intrabeam_scattering_growth_rates(
     sigma_delta: float = None,
     bunch_length: float = None,
     bunched: bool = True,
-    particles: xt.Particles = None,
     **kwargs,
-) -> IBSEmittanceGrowthRates:
+) -> IBSAmplitudeGrowthRates:
     """
-    Computes IntraBeam Scattering growth rates from the provided
-    `xtrack.TwissTable`.
+    Computes IntraBeam Scattering amplitude growth rates from the
+    provided `xtrack.TwissTable`. We give values in amplitude to
+    be consistent with the Xsuite SR damping times.
 
     Parameters
     ----------
@@ -64,11 +63,6 @@ def get_intrabeam_scattering_growth_rates(
     bunched : bool, optional
         Whether the beam is bunched or not (coasting). Defaults to `True`.
         Required if `particles` is not provided.
-    particles : xtrack.Particles
-        The particles to circulate in the line. If provided the emittances,
-        momentum spread and bunch length will be computed from the particles.
-        Otherwise explicit values must be provided (see above parameters).
-        Currently pending a new xtrack release, will come in the future.
     **kwargs : dict
         Keyword arguments are passed to the growth rates computation method of
         the chosen IBS formalism implementation. See the formalism classes in
@@ -76,27 +70,16 @@ def get_intrabeam_scattering_growth_rates(
 
     Returns
     -------
-    IBSGrowthRates
-        An ``IBSGrowthRates`` object with the computed growth rates.
+    IBSAmplitudeGrowthRates
+        An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
     """
     # ----------------------------------------------------------------------------------------------
     # Perform checks on exclusive parameters: need either particles or all emittances, etc.
-    if isinstance(particles, xt.Particles):
-        # TODO: wait for production-ready functionality from xtrack to handle this
-        raise NotImplementedError("Using provided xt.Particles is not yet implemented, please provide parameters.")
-        LOGGER.info("Will determine emittances, etc. from provided xt.Particles object")
-        gemitt_x = _gemitt_x(particles, twiss.betx[0], twiss.dx[0])
-        gemitt_y = _gemitt_y(particles, twiss.bety[0], twiss.dy[0])
-        sigma_delta = _sigma_delta(particles)
-        bunch_length = _bunch_length(particles)
-        total_beam_intensity = _beam_intensity(particles)
-    else:
-        LOGGER.info("Using explicitely provided parameters for emittances, etc.")
-        assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
-        assert sigma_delta is not None, "Must provide 'sigma_delta'"
-        assert bunch_length is not None, "Must provide 'bunch_length'"
-        assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
-        assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
+    assert total_beam_intensity is not None, "Must provide 'total_beam_intensity'"
+    assert sigma_delta is not None, "Must provide 'sigma_delta'"
+    assert bunch_length is not None, "Must provide 'bunch_length'"
+    assert any([gemitt_x, nemitt_x]), "Must provide either 'gemitt_x' or 'nemitt_x'"
+    assert any([gemitt_y, nemitt_y]), "Must provide either 'gemitt_y' or 'nemitt_y'"
     # ----------------------------------------------------------------------------------------------
     # Ensure valid formalism parameter was given and determine the corresponding class
     assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
