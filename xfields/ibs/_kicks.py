@@ -15,11 +15,7 @@ from numpy.typing import ArrayLike
 from scipy.constants import c
 from scipy.special import elliprd
 
-from xfields.ibs._analytical import (
-    BjorkenMtingwaIBS,
-    IBSAmplitudeGrowthRates,
-    IBSEmittanceGrowthRates,
-)
+from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
 from xfields.ibs._formulary import (
     _assert_accepted_context,
     _beam_intensity,
