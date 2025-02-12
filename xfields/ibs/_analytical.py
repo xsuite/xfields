@@ -213,7 +213,7 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
         atau_x, atau_y, atau_z = self.to_amplitude_growth_times()
         return float(2 * atau_x), float(2 * atau_y), float(2 * atau_z)
 
-    def to_emittance_growth_rates(self) -> tuple[float, float, float]:
+    def to_emittance_growth_rates(self) -> IBSEmittanceGrowthRates:
         """
         Returns the corresponding IBS growth rates for the
         emittance instead of the amplitude, in [s^-1]. The
@@ -222,10 +222,12 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
 
         Returns
         -------
-        Tx, Ty, Tz : tuple[float, float, float]
-            The emittance growth rates, in [s^-1].
+        emittance_rates : IBSEmittanceGrowthRates
+            An `IBSEmittanceGrowthRates` object with the
+            emittance growth rates, in [s^-1].
         """
-        return float(2 * self.Ax), float(2 * self.Ay), float(2 * self.Az)
+        Tx, Ty, Tz = float(2 * self.Ax), float(2 * self.Ay), float(2 * self.Az)
+        return IBSEmittanceGrowthRates(Tx=Tx, Ty=Ty, Tz=Tz)
 
 
 # ----- Abstract Base Class to Inherit from ----- #
