@@ -190,6 +190,27 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
         """
         return float(1 / self.Ax), float(1 / self.Ay), float(1 / self.Az)
 
+    def to_emittance_growth_times(self) -> tuple[float, float, float]:
+        """
+        Returns the corresponding IBS growth times for the
+        emittance instead of the amplitude, in [s]. The
+        emittance growth time is the amplitude growth time
+        divided by 2.
+
+        Note
+        ----
+            The values returned by this method are equal to the
+            ibs.tx, ibs.ty and ibs.tl variables found in MAD-X
+            after calling its IBS command.
+
+        Returns
+        -------
+        tau_x, tau_y, tau_z : tuple[float, float, float]
+            The emittance growth times, in [s].
+        """
+        atau_x, atau_y, atau_z = self.to_amplitude_growth_times()
+        return float(2 * atau_x), float(2 * atau_y), float(2 * atau_z)
+
 # ----- Abstract Base Class to Inherit from ----- #
 
 
