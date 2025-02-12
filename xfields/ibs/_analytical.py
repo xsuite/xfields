@@ -90,6 +90,11 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         """Init with given values."""
         self.xoinitialize(Tx=Tx, Ty=Ty, Tz=Tz)
 
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.Tx == other.Tx and self.Ty == other.Ty and self.Tz == other.Tz
+
     def as_tuple(self) -> tuple[float, float, float]:
         """Return the IBS emittance growth rates as a tuple."""
         return float(self.Tx), float(self.Ty), float(self.Tz)
@@ -174,6 +179,11 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
     def __init__(self, Ax: float, Ay: float, Az: float) -> None:
         """Init with given values."""
         self.xoinitialize(Ax=Ax, Ay=Ay, Az=Az)
+
+    def __eq__(self, other):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.Ax == other.Ax and self.Ay == other.Ay and self.Az == other.Az
 
     def as_tuple(self) -> tuple[float, float, float]:
         """Return the IBS amplitude growth rates as a tuple."""
