@@ -27,6 +27,8 @@ from numpy.testing import assert_allclose
 # take the inverse of the MAD-X values (done in get_madx_ibs_growth_rates) to
 # do the comparison. This way we compare EMITTANCE GROWTH RATES (in [1/s]).
 
+# TODO: adapt tests if we make the change of grates being amplitude wise!
+
 # ----- Test with negative charge particle ----- #
 
 

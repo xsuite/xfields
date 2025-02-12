@@ -351,8 +351,10 @@ class IBSAnalyticalKick(IBSKick):
         # Determine the "scaling factor", corresponding to 2 * sigma_t * sqrt(pi) in Eq (8) of reference
         scaling_factor: float = float(2 * np.sqrt(np.pi) * bunch_length)
         # ----------------------------------------------------------------------------------------------
-        # Computing the analytical IBS growth rates through the instance's set TwissTable
-        # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
+        # Computing the analytical IBS growth rates through the instance's set TwissTable. Note that since
+        # we have no way of detecting coasting beams we assume bunched and take the rms bunch length as is
+        # (but we don't get the correction factor in the coulomb logarithm...)
+        # TODO: if rates are now in amplitude, convert to emittance before using!
         growth_rates: IBSEmittanceGrowthRates = self._twiss.get_ibs_growth_rates(
             formalism=self.formalism,
             gemitt_x=float(gemitt_x),
@@ -550,7 +552,7 @@ class IBSKineticKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # This full computation (apart from getting properties from the particles object) is done
         # on the CPU, as no GPU context provides scipy's elliptic integrals. It is then better to
-        # do the rest of the computation on CPU than transfer arrays to GPU and finish it there.
+        # do the rest of the computation on CPU than to transfer arrays to GPU and finish it there.
         # ----------------------------------------------------------------------------------------------
         # Compute (geometric) emittances, momentum spread, bunch length and sigmas from the Particles
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
@@ -571,8 +573,9 @@ class IBSKineticKick(IBSKick):
         bety = self._twiss.bety
         dx = self._twiss.dx
         # ----------------------------------------------------------------------------------------------
-        # Compute the Coulomb logarithm and then the common constant term of Eq (45-50)
-        # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
+        # Compute the Coulomb logarithm and then the common constant term of Eq (45-50). Note that since
+        # we have no way of detecting coasting beams we assume bunched and take the rms bunch length as is
+        # (but we don't get the correction factor in the coulomb logarithm...)
         coulomb_logarithm: float = BjorkenMtingwaIBS(self._twiss).coulomb_log(
             gemitt_x=gemitt_x,
             gemitt_y=gemitt_y,

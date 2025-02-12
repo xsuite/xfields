@@ -2,6 +2,8 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
+# TODO: adapt if we make the change of grates being amplitude wise
+# TODO: add example of how to switch between conventions
 import json
 
 import xtrack as xt
