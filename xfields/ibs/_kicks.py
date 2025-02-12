@@ -6,16 +6,14 @@
 from __future__ import annotations  # important for sphinx to alias ArrayLike
 
 from logging import getLogger
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xobjects as xo
-import xtrack as xt
-from numpy.typing import ArrayLike
 from scipy.constants import c
 from scipy.special import elliprd
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
+from xfields.ibs._analytical import BjorkenMtingwaIBS
 from xfields.ibs._formulary import (
     _assert_accepted_context,
     _beam_intensity,
@@ -32,6 +30,12 @@ from xfields.ibs._formulary import (
     _sigma_y,
     phi,
 )
+
+if TYPE_CHECKING:
+    import xtrack as xt
+    from numpy.typing import ArrayLike
+
+    from xfields.ibs._analytical import IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
 
 LOGGER = getLogger(__name__)
 
@@ -65,7 +69,7 @@ class DiffusionCoefficients(xo.HybridClass):
         """Init by providing the diffusion coefficients."""
         self.xoinitialize(Dx=Dx, Dy=Dy, Dz=Dz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Dx), float(self.Dy), float(self.Dz)
 
@@ -96,7 +100,7 @@ class FrictionCoefficients(xo.HybridClass):
         """Init by providing the friction coefficients."""
         self.xoinitialize(Fx=Fx, Fy=Fy, Fz=Fz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Fx), float(self.Fy), float(self.Fz)
 
@@ -127,7 +131,7 @@ class IBSKickCoefficients(xo.HybridClass):
         """Init by providing the kick coefficients."""
         self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Kx), float(self.Ky), float(self.Kz)
 
@@ -521,7 +525,7 @@ class IBSKineticKick(IBSKick):
 
     def compute_kinetic_coefficients(
         self, particles: xt.Particles
-    ) -> Tuple[DiffusionCoefficients, FrictionCoefficients]:
+    ) -> tuple[DiffusionCoefficients, FrictionCoefficients]:
         r"""
         Computes the ``IBS`` friction coefficients (named :math:`D_x, D_y`
         and :math:`D_z` in this code base) and friction coefficients (named

@@ -6,10 +6,13 @@
 from __future__ import annotations  # important for sphinx to alias ArrayLike
 
 import logging
+from typing import TYPE_CHECKING
 
 import xobjects as xo
-import xtrack as xt
-from numpy.typing import ArrayLike
+
+if TYPE_CHECKING:
+    import xtrack as xt
+    from numpy.typing import ArrayLike
 
 LOGGER = logging.getLogger(__name__)
 

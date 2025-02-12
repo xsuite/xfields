@@ -2,14 +2,23 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
+from __future__ import annotations
+
 from logging import getLogger
-from typing import Literal
+from typing import TYPE_CHECKING
 
 import numpy as np
-import xtrack as xt
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, NagaitsevIBS
+from xfields.ibs._analytical import BjorkenMtingwaIBS, NagaitsevIBS
 from xfields.ibs._kicks import IBSAnalyticalKick, IBSKick
+
+if TYPE_CHECKING:
+    from typing import Literal
+
+    import xtrack as xt
+
+    from xfields.ibs._analytical import IBSAmplitudeGrowthRates
+
 
 LOGGER = getLogger(__name__)
 

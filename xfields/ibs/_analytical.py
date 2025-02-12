@@ -8,18 +8,22 @@ from __future__ import annotations  # important for sphinx to alias ArrayLike
 import warnings
 from abc import ABC, abstractmethod
 from logging import getLogger
-from typing import Callable
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xobjects as xo
 import xtrack as xt
-from numpy.typing import ArrayLike
 from scipy.constants import c, hbar
 from scipy.integrate import quad, quad_vec
 from scipy.interpolate import interp1d
 from scipy.special import elliprd
 
 from xfields.ibs._formulary import phi
+
+if TYPE_CHECKING:
+    from typing import Callable
+
+    from numpy.typing import ArrayLike
 
 LOGGER = getLogger(__name__)
 
