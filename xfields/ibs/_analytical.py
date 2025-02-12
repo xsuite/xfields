@@ -1644,9 +1644,13 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             Tx: float = float(quad(_tx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
             Ty: float = float(quad(_ty, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
             Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-        # TODO: convert to amplitude before storing and returning? (and specify in docstring)
-        result = IBSEmittanceGrowthRates(Tx, Ty, Tz)
+        emittance_rates = IBSEmittanceGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
-        # Self-update the instance's attribute before returning
+        # Important: the calculations of B&M yield emittance growth rates (this is what one gets in MAD-X
+        # for instance does). In Xsuite we chose to return amplitude growth rates for consistency with SR
+        # damping times (also in amplitude). We then do the conversion now before updating the instance's
+        # attribute and returning.
+        LOGGER.debug("Converting to amplitude growth rates")
+        result: IBSAmplitudeGrowthRates = emittance_rates.to_amplitude_growth_rates()
         self.ibs_growth_rates = result
         return result
