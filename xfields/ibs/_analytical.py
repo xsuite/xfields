@@ -631,7 +631,7 @@ class NagaitsevIBS(AnalyticalIBS):
         bunch_length: float = None,
         total_beam_intensity: int = None,
         bunched: bool = True,
-    ) -> IBSEmittanceGrowthRates:
+    ) -> IBSAmplitudeGrowthRates:
         r"""
         Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
         code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
@@ -701,8 +701,8 @@ class NagaitsevIBS(AnalyticalIBS):
 
         Returns
         -------
-        IBSGrowthRates
-            An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSAmplitudeGrowthRates
+            An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
         """
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
