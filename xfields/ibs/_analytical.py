@@ -492,8 +492,8 @@ class NagaitsevIBS(AnalyticalIBS):
     Attributes
     ----------
     ibs_growth_rates : IBSAmplitudeGrowthRates
-        The computed IBS growth rates. This self-updates when
-        they are computed with the `.growth_rates` method.
+        The computed IBS amplitude growth rates. This self-updates
+        when they are computed with the `.growth_rates` method.
     nagaitsev_integrals : NagaitsevIntegrals
         The computed Nagaitsev integrals. This self-updates when
         they are computed with the `.integrals` method.
@@ -640,10 +640,10 @@ class NagaitsevIBS(AnalyticalIBS):
         r"""
         Computes the ``IBS`` amplitude growth rates, according to Nagaitsev's formalism.
         Please note that Nagaitsev's formalism computes emittance growth rates, which we
-        convert to amplitude growth rates before returning to the user - for consistency
+        convert to amplitude growth rates before returning to the user for consistency
         with Xsuite SR damping times.
 
-        The computed emittance growth rates correspond to the :math:`1 / \tau` terms of
+        The emittance growth rates correspond to the :math:`1 / \tau` terms of
         Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
         instance attribute `self.ibs_growth_rates` is automatically updated with the
         results of this method when it is called.
@@ -786,19 +786,27 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
     to the `Bjorken & Mtingwa` formalism. The method follows the
     ``MAD-X`` implementation, which has corrected B&M in order to take
     in consideration vertical dispersion (see the relevant note about
-    the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX`).
+    the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX` by F. Antoniou
+    and F. Zimmermann).
 
-    .. note::
-        In ``MAD-X`` it is ensure that the Twiss table is centered.
+    Note
+    ----
+        Please note the adapted B&M formalism computes emittance growth rates,
+        which we convert to amplitude growth rates before returning to the user
+        for consistency with Xsuite SR damping times.
+
+    Note
+    ----
+        In ``MAD-X`` it is ensured that the Twiss table is centered.
         One might observe some small discrepancies against ``MAD-X``
         growth rates if not providing a centered Twiss table (by
         slicing the lattice first, for instance.)
 
     Attributes:
     -----------
-    ibs_growth_rates : IBSGrowthRates
-        The computed IBS growth rates. This self-updates when
-        they are computed with the `.growth_rates` method.
+    ibs_growth_rates : IBSAmplitudeGrowthRates
+        The computed IBS amplitude growth rates. This self-updates
+        when they are computed with the `.growth_rates` method.
     """
 
     def __init__(self, twiss: xt.TwissTable) -> None:
@@ -1461,14 +1469,18 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         integration_intervals: int = 17,
     ) -> IBSEmittanceGrowthRates:
         r"""
-        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
-        code base, according to the Bjorken & Mtingwa formalism. These correspond to the
-        (averaged) :math:`1 / \tau` terms of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`.
-        The instance attribute `self.ibs_growth_rates` is automatically updated with the result
-        of this method when it is called.
+        Computes the ``IBS`` growth rates, according to the adapted Bjorken & Mtingwa
+        formalism. Please note that B&M's formalism computes emittance growth rates,
+        which we convert to amplitude growth rates before returning to the user for
+        consistency with Xsuite SR damping times.
+
+        The emittance growth rates correspond to the (averaged) :math:`1 / \tau` terms
+        of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`. The instance attribute
+        `self.ibs_growth_rates` is automatically updated with the result of this method
+        when it is called.
 
         .. warning::
-            In ``MAD-X`` it is ensure that the Twiss table is centered.
+            In ``MAD-X`` it is ensured that the Twiss table is centered.
             One might observe some small discrepancies against ``MAD-X``
             growth rates if not providing a centered Twiss table (by
             slicing the lattice first, for instance.)
@@ -1477,11 +1489,14 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             The calculation is done according to the following steps, which are related
             to different equations in :cite:`CERN:Antoniou:Revision_IBS_MADX`:
 
-                - Adjusts the :math:`D_x, D_y, D^{\prime}_{x}, D^{\prime}_{y}` terms (multiply by :math:`\beta_{rel}`) to be in the :math:`pt` frame.
+                - Adjusts the :math:`D_x, D_y, D^{\prime}_{x}, D^{\prime}_{y}` terms
+                  (multiply by :math:`\beta_{rel}`) to be in the :math:`pt` frame.
                 - Computes the various terms from Table 1 of the MAD-X note.
-                - Computes the Coulomb logarithm and the common constant term (first fraction) of Eq (8).
+                - Computes the Coulomb logarithm and the common constant term (first
+                  fraction) of Eq (8).
                 - Defines the integrands of integrals in Eq (8) of the MAD-X note.
-                - Defines sub-intervals and integrates the above over all of them, getting growth rates at each element in the lattice.
+                - Defines sub-intervals and integrates the above over all of them,
+                  getting growth rates at each element in the lattice.
                 - Averages the results over the full circumference of the machine.
 
         Parameters
@@ -1514,8 +1529,8 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Returns
         -------
-        IBSGrowthRates
-            An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSAmplitudeGrowthRates
+            An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
         """
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
