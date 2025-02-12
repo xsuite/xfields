@@ -633,11 +633,15 @@ class NagaitsevIBS(AnalyticalIBS):
         bunched: bool = True,
     ) -> IBSAmplitudeGrowthRates:
         r"""
-        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
-        code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
-        terms of Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
-        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
-        this method when it is called.
+        Computes the ``IBS`` amplitude growth rates, according to Nagaitsev's formalism.
+        Please note that Nagaitsev's formalism computes emittance growth rates, which we
+        convert to amplitude growth rates before returning to the user - for consistency
+        with Xsuite SR damping times.
+
+        The computed emittance growth rates correspond to the :math:`1 / \tau` terms of
+        Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
+        instance attribute `self.ibs_growth_rates` is automatically updated with the
+        results of this method when it is called.
 
         .. warning::
             Currently this calculation does not take into account vertical dispersion.
