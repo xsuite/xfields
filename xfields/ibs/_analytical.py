@@ -90,7 +90,7 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         """Init with given values."""
         self.xoinitialize(Tx=Tx, Ty=Ty, Tz=Tz)
 
-    def __eq__(self, other):
+    def __eq__(self, other: IBSEmittanceGrowthRates):
         if not isinstance(other, self.__class__):
             return False
         return self.Tx == other.Tx and self.Ty == other.Ty and self.Tz == other.Tz
@@ -180,7 +180,7 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
         """Init with given values."""
         self.xoinitialize(Ax=Ax, Ay=Ay, Az=Az)
 
-    def __eq__(self, other):
+    def __eq__(self, other: IBSAmplitudeGrowthRates):
         if not isinstance(other, self.__class__):
             return False
         return self.Ax == other.Ax and self.Ay == other.Ay and self.Az == other.Az
