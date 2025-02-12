@@ -23,11 +23,9 @@ from numpy.testing import assert_allclose
 #
 # PLEASE NOTE: What is computed in MAD-X is the EMITTANCE growth times, in [s].
 # These are stored in the ibs.tx, ibs.ty and ibs.tl variables. In Xsuite we
-# compute the EMITTANCE growth rates (also available as growth times) so we
-# take the inverse of the MAD-X values (done in get_madx_ibs_growth_rates) to
-# do the comparison. This way we compare EMITTANCE GROWTH RATES (in [1/s]).
-
-# TODO: adapt tests if we make the change of grates being amplitude wise!
+# return the AMPLITUDE growth rates so we do a conversion of our values to
+# then compare to the MAD-X values. This way we compare EMITTANCE GROWTH
+# RATES (in [1/s]).
 
 # ----- Test with negative charge particle ----- #
 
@@ -81,6 +79,11 @@ def test_clic_dr_growth_rates(bunched):
         bunch_length=bl,
         bunched=bunched,
     )
+    # -----------------------------------------------------
+    # We make sure to convert our results to emittance convention
+    # which is the convention used in MAD-X before we compare
+    nag_rates = nag_rates.to_emittance_growth_rates()
+    bm_rates = bm_rates.to_emittance_growth_rates()
     # -----------------------------------------------------
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
@@ -138,6 +141,11 @@ def test_sps_injection_protons_growth_rates(bunched):
         bunch_length=bl,
         bunched=bunched,
     )
+    # -----------------------------------------------------
+    # We make sure to convert our results to emittance convention
+    # which is the convention used in MAD-X before we compare
+    nag_rates = nag_rates.to_emittance_growth_rates()
+    bm_rates = bm_rates.to_emittance_growth_rates()
     # -----------------------------------------------------
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
@@ -210,6 +218,11 @@ def test_sps_ions_growth_rates(bunched):
         bunched=bunched,
     )
     # -----------------------------------------------------
+    # We make sure to convert our results to emittance convention
+    # which is the convention used in MAD-X before we compare
+    nag_rates = nag_rates.to_emittance_growth_rates()
+    bm_rates = bm_rates.to_emittance_growth_rates()
+    # -----------------------------------------------------
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 10% isn't crazy
@@ -271,6 +284,11 @@ def test_hllhc14_growth_rates(bunched):
         bunch_length=bl,
         bunched=bunched,
     )
+    # -----------------------------------------------------
+    # We make sure to convert our results to emittance convention
+    # which is the convention used in MAD-X before we compare
+    nag_rates = nag_rates.to_emittance_growth_rates()
+    bm_rates = bm_rates.to_emittance_growth_rates()
     # -----------------------------------------------------
     # Compare the results - Nagaitsev (don't compare vertical
     # as lattice has Dy and formalism is wrong in this case)
