@@ -486,7 +486,7 @@ class NagaitsevIBS(AnalyticalIBS):
 
     Attributes
     ----------
-    ibs_growth_rates : IBSGrowthRates
+    ibs_growth_rates : IBSAmplitudeGrowthRates
         The computed IBS growth rates. This self-updates when
         they are computed with the `.growth_rates` method.
     nagaitsev_integrals : NagaitsevIntegrals
@@ -657,7 +657,8 @@ class NagaitsevIBS(AnalyticalIBS):
                 - Computes the Coulomb logarithm for the defined beam and optics parameters.
                 - Compute the rest of the constant term of Eq (30-32).
                 - Compute for each plane the full result of Eq (30-32), respectively.
-                - Plug these into Eq (28) and divide by either :math:`\varepsilon_x, \varepsilon_y` or :math:`\sigma_{\delta}^{2}` (as relevant) to get :math:`1 / \tau`.
+                - Plug these into Eq (28) and divide by either :math:`\varepsilon_x, \varepsilon_y`
+                  or :math:`\sigma_{\delta}^{2}` (as relevant) to get :math:`1 / \tau`.
 
             **Note:** As one can see above, this calculation is done by building on the
             Nagaitsev integrals. If these have not been computed yet, this method will
