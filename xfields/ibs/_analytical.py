@@ -142,6 +142,42 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         return float(self.Tx / 2), float(self.Ty / 2), float(self.Tz / 2)
 
 
+class IBSAmplitudeGrowthRates(xo.HybridClass):
+    """
+    Holds IBS amplitude (beam size) growth rates in each
+    plane, named ``Ax``, ``Ay``, and ``Az``, expressed in
+    [s^-1]. The growth rate corresponds to 1/tau, with tau
+    the growth time.
+
+    Methods are available to get the corresponding amplitude
+    growth times, in [s], or even the rates and times but for
+    emittance.
+
+    Attributes
+    ----------
+    Ax : float
+        Horizontal IBS amplitude growth rate, in [s^-1].
+    Ay : float
+        Vertical IBS amplitude growth rate, in [s^-1].
+    Az : float
+        Longitudinal IBS amplitude growth rate, in [s^-1].
+    """
+
+    _xofields = {
+        "Ax": xo.Float64,
+        "Ay": xo.Float64,
+        "Az": xo.Float64,
+    }
+
+    def __init__(self, Ax: float, Ay: float, Az: float) -> None:
+        """Init with given values."""
+        self.xoinitialize(Ax=Ax, Ay=Ay, Az=Az)
+
+    def as_tuple(self) -> tuple[float, float, float]:
+        """Return the IBS amplitude growth rates as a tuple."""
+        return float(self.Ax), float(self.Ay), float(self.Az)
+
+
 # ----- Abstract Base Class to Inherit from ----- #
 
 
