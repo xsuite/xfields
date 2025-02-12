@@ -177,6 +177,18 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
         """Return the IBS amplitude growth rates as a tuple."""
         return float(self.Ax), float(self.Ay), float(self.Az)
 
+    def to_amplitude_growth_times(self) -> tuple[float, float, float]:
+        """
+        Returns a tuple with the corresponding IBS amplitude
+        growth times, in [s]. The growth time is the
+        inverse of the growth rate.
+
+        Returns
+        -------
+        atau_x, atau_y, atau_z : tuple[float, float, float]
+            The amplitude growth times, in [s].
+        """
+        return float(1 / self.Ax), float(1 / self.Ay), float(1 / self.Az)
 
 # ----- Abstract Base Class to Inherit from ----- #
 
