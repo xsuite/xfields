@@ -211,7 +211,7 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
             The emittance growth times, in [s].
         """
         atau_x, atau_y, atau_z = self.to_amplitude_growth_times()
-        return float(2 * atau_x), float(2 * atau_y), float(2 * atau_z)
+        return float(atau_x / 2), float(atau_y / 2), float(atau_z / 2)
 
     def to_emittance_growth_rates(self) -> IBSEmittanceGrowthRates:
         """
