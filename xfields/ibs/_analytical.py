@@ -64,9 +64,9 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
     Holds IBS emittance growth rates in each plane, named
     ``Tx``, ``Ty``, and ``Tz``, expressed in [s^-1]. The
     growth rate corresponds 1/tau, with tau the growth time.
-    
+
     Methods are available to get the corresponding emittance
-    growth times, in [s] or even the rates and times but for
+    growth times, in [s], or even the rates and times but for
     amplitude (beam size).
 
     Attributes
@@ -96,8 +96,8 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
     def to_emittance_growth_times(self) -> tuple[float, float, float]:
         """
         Returns a tuple with the corresponding emittance
-        growth times, in [s] (the inverse of the growth rates).
-        The growth time tau is the inverse of the growth rate T.
+        growth times, in [s]. The emittance growth time is
+        the inverse of the emittance growth rate.
 
         Note
         ----
@@ -139,6 +139,7 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
             The amplitude growth rates, in [s^-1].
         """
         return float(self.Tx / 2), float(self.Ty / 2), float(self.Tz / 2)
+
 
 
 # ----- Abstract Base Class to Inherit from ----- #
