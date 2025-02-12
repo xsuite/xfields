@@ -759,6 +759,7 @@ class NagaitsevIBS(AnalyticalIBS):
         Tx = float(Ix * full_constant_term / gemitt_x) / factor
         Ty = float(Iy * full_constant_term / gemitt_y) / factor
         Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
+        # TODO: convert to amplitude before storing and returning? (and specify in docstring)
         result = IBSEmittanceGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attribute before returning
@@ -1636,6 +1637,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             Tx: float = float(quad(_tx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
             Ty: float = float(quad(_ty, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
             Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+        # TODO: convert to amplitude before storing and returning? (and specify in docstring)
         result = IBSEmittanceGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
         # Self-update the instance's attribute before returning
