@@ -2,8 +2,7 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
-# TODO: adapt if we make the change of grates being amplitude wise
-# TODO: add example of how to switch between conventions
+
 import json
 
 import xtrack as xt
@@ -73,5 +72,5 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 
 # Computed from normalized emittances:
 # ------------------------------------
-# Nagaitsev:       IBSGrowthRates(Tx=6.24e-05, Ty=-2.27e-09, Tz=0.00031)
-# Bjorken-Mtingwa: IBSGrowthRates(Tx=6.21e-05, Ty=1.1e-06, Tz=0.00031)
+# Nagaitsev:       IBSAmplitudeGrowthRates(Ax=3.12e-05, Ay=-1.14e-09, Az=0.000155)
+# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Ax=3.11e-05, Ay=5.52e-07, Az=0.000155)
