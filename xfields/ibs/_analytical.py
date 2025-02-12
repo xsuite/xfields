@@ -475,14 +475,19 @@ class AnalyticalIBS(ABC):
 
 class NagaitsevIBS(AnalyticalIBS):
     r"""
-    Analytical implementation to compute IBS growth
-    rates according to S. Nagaitsev's formalism (see
-    :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`).
+    Analytical implementation to compute IBS growth rates according to S. Nagaitsev's
+    formalism (see :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`).
+
+    Note
+    ----
+        Please note that Nagaitsev's formalism computes emittance growth rates,
+        which we convert to amplitude growth rates before returning to the user
+        for consistency with Xsuite SR damping times.
 
     Please keep in mind that this formalism will give an inaccurate
     vertical growth rate in the presence of vertical dispersion. In
-    such a case, prefer the Bjorken-Mtingwa formalism instead. See
-    the `BjorkenMtingwaIBS` class.
+    such a case, prefer the adapted Bjorken-Mtingwa formalism instead.
+    See the `BjorkenMtingwaIBS` class for details.
 
     Attributes
     ----------
