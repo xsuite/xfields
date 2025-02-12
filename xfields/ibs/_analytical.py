@@ -95,31 +95,50 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
 
     def to_emittance_growth_times(self) -> tuple[float, float, float]:
         """
-        Returns a tuple with the corresponding emittance growth
-        times, in [s] (the inverse of the growth rates). These
-        are equal to the ibs.tx, ibs.ty and ibs.tl variables
-        found in MAD-X after calling the IBS command.
+        Returns a tuple with the corresponding emittance
+        growth times, in [s] (the inverse of the growth rates).
+        The growth time tau is the inverse of the growth rate T.
+
+        Note
+        ----
+            The values returned by this method are equal to the ibs.tx,
+            ibs.ty and ibs.tl variables found in MAD-X after calling its
+            IBS command.
+
+        Returns
+        -------
+        tau_x, tau_y, tau_z : tuple[float, float, float]
+            The emittance growth times, in [s].
         """
         return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
 
     def to_amplitude_growth_times(self) -> tuple[float, float, float]:
         """
         Returns the corresponding IBS growth times for the beam
-        size (amplitude) instead of the emittance, in [s]. These
-        are the emittance growth times multiplied by 2.
+        size (amplitude) instead of the emittance, in [s]. The
+        amplitude growth time is the emittance growth time
+        multiplied by 2.
+
+        Returns
+        -------
+        atau_x, atau_y, atau_z : tuple[float, float, float]
+            The amplitude growth times, in [s].
         """
-        # There is a factor 2 to apply to the EMITTANCE growth times
         tau_x, tau_y, tau_z = self.to_emittance_growth_times()
         return float(2 * tau_x), float(2 * tau_y), float(2 * tau_z)
 
     def to_amplitude_growth_rates(self) -> tuple[float, float, float]:
         """
         Returns the corresponding IBS growth rates for the beam
-        size (amplitude) instead of the emittance, in [s^-1]. These
-        are the inverse of the amplitude growth times.
+        size (amplitude) instead of the emittance, in [s^-1]. The
+        amplitude growth rate half of the emittance growth rate.
+
+        Returns
+        -------
+        Ax, Ay, Az : tuple[float, float, float]
+            The amplitude growth rates, in [s^-1].
         """
-        atx, aty, atz = self.to_amplitude_growth_times()
-        return float(1 / atx), float(1 / aty), float(1 / atz)
+        return float(self.Tx / 2), float(self.Ty / 2), float(self.Tz / 2)
 
 
 # ----- Abstract Base Class to Inherit from ----- #
