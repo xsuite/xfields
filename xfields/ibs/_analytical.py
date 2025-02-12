@@ -759,10 +759,13 @@ class NagaitsevIBS(AnalyticalIBS):
         Tx = float(Ix * full_constant_term / gemitt_x) / factor
         Ty = float(Iy * full_constant_term / gemitt_y) / factor
         Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
-        # TODO: convert to amplitude before storing and returning? (and specify in docstring)
-        result = IBSEmittanceGrowthRates(Tx, Ty, Tz)
+        emittance_rates = IBSEmittanceGrowthRates(Tx, Ty, Tz)
         # ----------------------------------------------------------------------------------------------
-        # Self-update the instance's attribute before returning
+        # Important: the calculations of Nagaitsev yield emittance growth rates. In Xsuite we chose to
+        # return amplitude growth rates for consistency with SR damping times (also in amplitude). We
+        # then do the conversion now before updating the instance's attribute and returning.
+        LOGGER.debug("Converting to amplitude growth rates")
+        result: IBSAmplitudeGrowthRates = emittance_rates.to_amplitude_growth_rates()
         self.ibs_growth_rates = result
         return result
 
