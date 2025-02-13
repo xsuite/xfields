@@ -369,8 +369,8 @@ class IBSAnalyticalKick(IBSKick):
             **kwargs,
         )
         # ----------------------------------------------------------------------------------------------
-        # In Xsuite we give growth rates in amplitude convention but the theory of R. Bruce assumes the
-        # growth rates to be in emittance convention, so we do the conversion here.
+        # In Xsuite we give growth rates in amplitude convention but the theory of R. Bruce assumes
+        # the growth rates to be in emittance convention, so we do the conversion here.
         emit_growth_rates: IBSEmittanceGrowthRates = amp_growth_rates.to_emittance_growth_rates()
         Tx, Ty, Tz = emit_growth_rates.as_tuple()  # each is a float
         # ----------------------------------------------------------------------------------------------
