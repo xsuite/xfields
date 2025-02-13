@@ -402,7 +402,7 @@ class AnalyticalIBS(ABC):
         bunch_length: float = None,
         total_beam_intensity: int = None,
         bunched: bool = True,
-    ) -> IBSEmittanceGrowthRates:
+    ) -> IBSAmplitudeGrowthRates:
         r"""
         Method to compute the IBS growth rates. This is an abstract method
         that should be implemented in child classes based on their formalism.
@@ -786,12 +786,12 @@ class NagaitsevIBS(AnalyticalIBS):
 
 class BjorkenMtingwaIBS(AnalyticalIBS):
     r"""
-    Analytical implementation to compute IBS growth rates according
-    to the `Bjorken & Mtingwa` formalism. The method follows the
-    ``MAD-X`` implementation, which has corrected B&M in order to take
-    in consideration vertical dispersion (see the relevant note about
-    the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX` by F. Antoniou
-    and F. Zimmermann).
+    Analytical implementation to compute IBS amplitude growth rates
+    according to the `Bjorken & Mtingwa` formalism. The method follows
+    the ``MAD-X`` implementation, which has corrected B&M in order to
+    take in consideration vertical dispersion (see the relevant note
+    about the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX` by
+    F. Antoniou and F. Zimmermann).
 
     Note
     ----
@@ -1475,7 +1475,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         total_beam_intensity: int = None,
         bunched: bool = True,
         integration_intervals: int = 17,
-    ) -> IBSEmittanceGrowthRates:
+    ) -> IBSAmplitudeGrowthRates:
         r"""
         Computes the ``IBS`` growth rates, according to the adapted Bjorken & Mtingwa
         formalism. Please note that B&M's formalism computes emittance growth rates,
