@@ -270,7 +270,7 @@ class AnalyticalIBS(ABC):
         self._twiss = twiss
         self._particle = twiss.particle_on_co
         # This one self-updates when computed, but can be overwritten by the user
-        self.ibs_growth_rates: IBSEmittanceGrowthRates = None
+        self.ibs_growth_rates: IBSAmplitudeGrowthRates = None
 
     def coulomb_log(
         self,
