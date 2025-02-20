@@ -21,11 +21,11 @@ from numpy.testing import assert_allclose
 #     then tau = 1/T > 3 years,
 #     and we are pretty safe from IBS.
 #
-# PLEASE NOTE: What is computed in MAD-X is the EMITTANCE growth times, in [s].
-# These are stored in the ibs.tx, ibs.ty and ibs.tl variables. In Xsuite we
-# return the AMPLITUDE growth rates so we do a conversion of our values to
-# then compare to the MAD-X values. This way we compare EMITTANCE GROWTH
-# RATES (in [1/s]).
+# PLEASE NOTE: MAD-X computes the EMITTANCE growth times in [s], which the
+# tests helpers convert to EMITTANCE growth rates in [1/s]. In Xsuite by
+# convention we return the AMPLITUDE growth rates (to align with SR damping
+# times). In the tests, Xsuite results are first converted before comparing
+# to the MAD-X values. This way we compare EMITTANCE GROWTH RATES (in [1/s]).
 
 # ----- Test with negative charge particle ----- #
 
