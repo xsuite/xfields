@@ -14,8 +14,8 @@ from numpy.testing import assert_allclose
 # We compare our values to the ones of MAD-X, hence in the numpy function
 # ours should be the first argument.
 #
-# We also use an absolute tolerance of 1e-8 by definition, as growth rates
-# so small or smaller should just not be considered since the corresponding
+# We also use an absolute tolerance of 1e-8 by default, as growth rates
+# this small or smaller should not be considered since the corresponding
 # damping / growth time is crazy big:
 #     if T = 1e-8 [1/s],
 #     then tau = 1/T > 3 years,
