@@ -6,10 +6,13 @@
 from __future__ import annotations  # important for sphinx to alias ArrayLike
 
 import logging
+from typing import TYPE_CHECKING
 
 import xobjects as xo
-import xtrack as xt
-from numpy.typing import ArrayLike
+
+if TYPE_CHECKING:
+    import xtrack as xt
+    from numpy.typing import ArrayLike
 
 LOGGER = logging.getLogger(__name__)
 
@@ -131,7 +134,7 @@ def _sigma_px(particles: xt.Particles, dpx: float = 0) -> float:
     dpx : float, optional
         Horizontal momentum dispersion function at the location
         where the sigma_px is computed. Defaults to 0.
-    
+
     Returns
     -------
     sigma_px : float
@@ -159,7 +162,7 @@ def _sigma_py(particles: xt.Particles, dpy: float = 0) -> float:
     dpy : float, optional
         Vertical momentum dispersion function at the location
         where the sigma_py is computed. Defaults to 0.
-    
+
     Returns
     -------
     sigma_py : float
@@ -198,6 +201,7 @@ def _mean_px(particles: xt.Particles, dpx: float = 0) -> float:
     px: ArrayLike = particles.px[particles.state > 0]
     delta: ArrayLike = particles.delta[particles.state > 0]
     return float(nplike.mean(px - dpx * delta))
+
 
 def _mean_py(particles: xt.Particles, dpy: float = 0) -> float:
     """
