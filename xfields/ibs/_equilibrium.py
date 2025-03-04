@@ -137,15 +137,15 @@ def _ibs_rates_and_emittance_derivatives(
     LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
         -2 * twiss.damping_constants_s[0] * (gemitt_x - twiss.eq_gemitt_x)
-        + ibs_growth_rates.Tx * gemitt_x
+        + 2 * ibs_growth_rates.Tx * gemitt_x
     )
     depsilon_y_dt = (
         -2 * twiss.damping_constants_s[1] * (gemitt_y - twiss.eq_gemitt_y)
-        + ibs_growth_rates.Ty * gemitt_y
+        + 2 * ibs_growth_rates.Ty * gemitt_y
     )
     depsilon_z_dt = (
         -2 * twiss.damping_constants_s[2] * (gemitt_zeta - twiss.eq_gemitt_zeta)
-        + ibs_growth_rates.Tz * gemitt_zeta
+        + 2 * ibs_growth_rates.Tz * gemitt_zeta
     )
     # ---------------------------------------------------------------------------------------------
     # And return the results
@@ -506,9 +506,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "gemitt_zeta": np.array(res_gemitt_zeta),
             "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * longitudinal_emittance_ratio),
             "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / longitudinal_emittance_ratio),
-            "Tx": np.array(T_x),
-            "Ty": np.array(T_y),
-            "Tz": np.array(T_z),
+            "Ax": np.array(T_x),
+            "Ay": np.array(T_y),
+            "Az": np.array(T_z),
         },
         index="time",
     )
