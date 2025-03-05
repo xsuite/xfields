@@ -24,6 +24,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     print(repr(test_context))
 
     # fcc ttbar 4 IP
+    # https://indico.cern.ch/event/1202105/contributions/5408583/attachments/2659051/4608141/FCCWeek_Optics_Oide_230606.pdf
     bunch_intensity     =  1.55e11  # [e]
     energy              =  182.5  # [GeV]
     p0c                 =  182.5e9  # [eV]
@@ -153,7 +154,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
         xf.BeamBeamPIC3D, capacity={"beamstrahlungtable": int(3e5)})
     record_b2_pic = line_b2.start_internal_logging_for_elements_of_type(
         xf.BeamBeamPIC3D, capacity={"beamstrahlungtable": int(3e5)})
-    
+
     #####################
     # track 1 collision #
     #####################
@@ -162,7 +163,10 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     
     line_b1.stop_internal_logging_for_elements_of_type(xf.BeamBeamPIC3D)
     line_b2.stop_internal_logging_for_elements_of_type(xf.BeamBeamPIC3D)
-    
+
+    record_b1_pic.move(_context=xo.context_default)
+    record_b2_pic.move(_context=xo.context_default)
+
     #####################################
     # test #1: compare against formulas #
     #####################################
@@ -176,15 +180,10 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
                     / (1/137*sigma_z_tot*(sigma_x + sigma_y)))
     
     # get rid of padded zeros in table
-    photon_critical_energy_b1 = record_b1_pic.beamstrahlungtable.photon_critical_energy
-    photon_critical_energy_b2 = record_b2_pic.beamstrahlungtable.photon_critical_energy
-    primary_energy_b1         = record_b1_pic.beamstrahlungtable.primary_energy
-    primary_energy_b2         = record_b2_pic.beamstrahlungtable.primary_energy
-    
-    photon_critical_energy_b1 = photon_critical_energy_b1[photon_critical_energy_b1>0]
-    photon_critical_energy_b2 = photon_critical_energy_b2[photon_critical_energy_b2>0]
-    primary_energy_b1         = primary_energy_b1[primary_energy_b1>0]
-    primary_energy_b2         = primary_energy_b2[primary_energy_b2>0]
+    photon_critical_energy_b1 = np.array(sorted(set(record_b1_pic.beamstrahlungtable.photon_critical_energy))[1:])
+    photon_critical_energy_b2 = np.array(sorted(set(record_b2_pic.beamstrahlungtable.photon_critical_energy))[1:])
+    primary_energy_b1         = np.array(sorted(set(        record_b1_pic.beamstrahlungtable.primary_energy))[1:])
+    primary_energy_b2         = np.array(sorted(set(        record_b2_pic.beamstrahlungtable.primary_energy))[1:])
     
     upsilon_avg_sim_b1 = np.mean(0.67 * photon_critical_energy_b1 / primary_energy_b1)
     upsilon_avg_sim_b2 = np.mean(0.67 * photon_critical_energy_b2 / primary_energy_b2)
