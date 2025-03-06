@@ -272,10 +272,6 @@ class TempSlicer(xo.HybridClass):
         particles.slice = self.get_slice_indices(particles)
 
     def compute_moments(self, particles, update_assigned_slices=True, threshold_num_macroparticles=20):
-        """
-        Takes into account the only particles with weight>0.
-        Assumes identical weight for each particles.
-        """
 
         context = particles._context
 
