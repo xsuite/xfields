@@ -279,10 +279,6 @@ class TempSlicer(xo.HybridClass):
 
         context = particles._context
 
-        # filter test particles which have weight=0. These are not included in the computation of moments.
-        mask = particles.weight > 0
-        particles = particles.filter(mask)
-
         # group particles into longitudinal slices
         if update_assigned_slices:
             self.assign_slices(particles)
