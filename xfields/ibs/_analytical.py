@@ -65,43 +65,42 @@ class NagaitsevIntegrals(xo.HybridClass):
 
 class IBSEmittanceGrowthRates(xo.HybridClass):
     """
-    Holds IBS emittance growth rates in each plane, named
-    ``Tx``, ``Ty``, and ``Tz``, expressed in [s^-1]. The
-    growth rate corresponds to 1/tau, with tau the growth
-    time.
+    Holds IBS emittance growth rates in each plane, expressed
+    in [s^-1]. The growth rate corresponds to 1/tau, with tau
+    the growth time.
 
     Methods are available to get the corresponding emittance
     growth times, in [s], or even the rates and times but for
-    amplitude (beam size).
+    amplitude (beam size) convention.
 
     Attributes
     ----------
-    Tx : float
+    Kx : float
         Horizontal IBS emittance growth rate, in [s^-1].
-    Ty : float
+    Ky : float
         Vertical IBS emittance growth rate, in [s^-1].
-    Tz : float
+    Kz : float
         Longitudinal IBS emittance growth rate, in [s^-1].
     """
 
     _xofields = {
-        "Tx": xo.Float64,
-        "Ty": xo.Float64,
-        "Tz": xo.Float64,
+        "Kx": xo.Float64,
+        "Ky": xo.Float64,
+        "Kz": xo.Float64,
     }
 
-    def __init__(self, Tx: float, Ty: float, Tz: float) -> None:
+    def __init__(self, Kx: float, Ky: float, Kz: float) -> None:
         """Init with given values."""
-        self.xoinitialize(Tx=Tx, Ty=Ty, Tz=Tz)
+        self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
 
     def __eq__(self, other: IBSEmittanceGrowthRates):
         if not isinstance(other, self.__class__):
             return False
-        return self.Tx == other.Tx and self.Ty == other.Ty and self.Tz == other.Tz
+        return self.Kx == other.Kx and self.Ky == other.Ky and self.Kz == other.Kz
 
     def as_tuple(self) -> tuple[float, float, float]:
         """Return the IBS emittance growth rates as a tuple."""
-        return float(self.Tx), float(self.Ty), float(self.Tz)
+        return float(self.Kx), float(self.Ky), float(self.Kz)
 
     def to_emittance_growth_times(self) -> tuple[float, float, float]:
         """
@@ -117,10 +116,10 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
 
         Returns
         -------
-        tau_x, tau_y, tau_z : tuple[float, float, float]
+        tuple[float, float, float]
             The emittance growth times, in [s].
         """
-        return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
+        return float(1 / self.Kx), float(1 / self.Ky), float(1 / self.Kz)
 
     def to_amplitude_growth_times(self) -> tuple[float, float, float]:
         """
@@ -134,8 +133,8 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
         atau_x, atau_y, atau_z : tuple[float, float, float]
             The amplitude growth times, in [s].
         """
-        tau_x, tau_y, tau_z = self.to_emittance_growth_times()
-        return float(2 * tau_x), float(2 * tau_y), float(2 * tau_z)
+        etau_x, etau_y, etau_z = self.to_emittance_growth_times()
+        return float(2 * etau_x), float(2 * etau_y), float(2 * etau_z)
 
     def to_amplitude_growth_rates(self) -> IBSAmplitudeGrowthRates:
         """
@@ -149,49 +148,47 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
             An `IBSAmplitudeGrowthRates` object with the amplitude
             growth rates, in [s^-1].
         """
-        Ax, Ay, Az = float(self.Tx / 2), float(self.Ty / 2), float(self.Tz / 2)
-        return IBSAmplitudeGrowthRates(Ax=Ax, Ay=Ay, Az=Az)
+        return IBSAmplitudeGrowthRates(Kx=self.Kx / 2, Ky=self.Ky / 2, K=self.Kz / 2)
 
 
 class IBSAmplitudeGrowthRates(xo.HybridClass):
     """
-    Holds IBS amplitude (beam size) growth rates in each
-    plane, named ``Ax``, ``Ay``, and ``Az``, expressed in
-    [s^-1]. The growth rate corresponds to 1/tau, with tau
-    the growth time.
+    Holds IBS amplitude (beam size) growth rates in each plane,
+    expressed in [s^-1]. The growth rate corresponds to 1/tau,
+    with tau the growth time.
 
     Methods are available to get the corresponding amplitude
     growth times, in [s], or even the rates and times but for
-    emittance.
+    emittance convention.
 
     Attributes
     ----------
-    Ax : float
+    Kx : float
         Horizontal IBS amplitude growth rate, in [s^-1].
-    Ay : float
+    Ky : float
         Vertical IBS amplitude growth rate, in [s^-1].
-    Az : float
+    Kz : float
         Longitudinal IBS amplitude growth rate, in [s^-1].
     """
 
     _xofields = {
-        "Ax": xo.Float64,
-        "Ay": xo.Float64,
-        "Az": xo.Float64,
+        "Kx": xo.Float64,
+        "Ky": xo.Float64,
+        "Kz": xo.Float64,
     }
 
-    def __init__(self, Ax: float, Ay: float, Az: float) -> None:
+    def __init__(self, Kx: float, Ky: float, Kz: float) -> None:
         """Init with given values."""
-        self.xoinitialize(Ax=Ax, Ay=Ay, Az=Az)
+        self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
 
     def __eq__(self, other: IBSAmplitudeGrowthRates):
         if not isinstance(other, self.__class__):
             return False
-        return self.Ax == other.Ax and self.Ay == other.Ay and self.Az == other.Az
+        return self.Kx == other.Kx and self.Ky == other.Ky and self.Kz == other.Kz
 
     def as_tuple(self) -> tuple[float, float, float]:
         """Return the IBS amplitude growth rates as a tuple."""
-        return float(self.Ax), float(self.Ay), float(self.Az)
+        return float(self.Kx), float(self.Ky), float(self.Kz)
 
     def to_amplitude_growth_times(self) -> tuple[float, float, float]:
         """
@@ -204,7 +201,7 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
         atau_x, atau_y, atau_z : tuple[float, float, float]
             The amplitude growth times, in [s].
         """
-        return float(1 / self.Ax), float(1 / self.Ay), float(1 / self.Az)
+        return float(1 / self.Kx), float(1 / self.Ky), float(1 / self.Kz)
 
     def to_emittance_growth_times(self) -> tuple[float, float, float]:
         """
@@ -240,8 +237,7 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
             An `IBSEmittanceGrowthRates` object with the
             emittance growth rates, in [s^-1].
         """
-        Tx, Ty, Tz = float(2 * self.Ax), float(2 * self.Ay), float(2 * self.Az)
-        return IBSEmittanceGrowthRates(Tx=Tx, Ty=Ty, Tz=Tz)
+        return IBSEmittanceGrowthRates(Kx=self.Kx * 2, Ty=self.Ky * 2, Tz=self.Kz * 2)
 
 
 # ----- Abstract Base Class to Inherit from ----- #
