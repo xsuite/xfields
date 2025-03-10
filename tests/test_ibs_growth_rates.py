@@ -1,3 +1,5 @@
+from typing import TYPE_CHECKING
+
 import pytest
 import xobjects as xo
 import xtrack as xt
@@ -9,6 +11,9 @@ from ibs_conftest import (
     get_ref_particle_from_madx_beam,
     set_madx_beam_parameters,
 )
+
+if TYPE_CHECKING:
+    from xfields.ibs import IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
 
 # ------------------------------------------------------------------------
 # We compare our values to the ones of MAD-X, hence in the numpy function
@@ -300,3 +305,59 @@ def test_hllhc14_growth_rates(bunched):
     xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
     xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
     xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+
+
+# ----- Test for conversion between conventions ----- #
+
+
+def test_convention_conversions():
+    """
+    Make sure conversions and conventions are ok.
+    We test with SPS because it's faster.
+    """
+    # -----------------------------------------------------
+    # Have MAD-X load SPS sequence, beam etc.
+    sps_dir = XTRACK_TEST_DATA / "sps_w_spacecharge"
+    madx = Madx(stdout=False)
+    madx.call(str(sps_dir / "sps_thin.seq"))
+    madx.use(sequence="sps")
+    # -----------------------------------------------------
+    # Get equivalent xtrack.Line and parameters
+    line = xt.Line.from_madx_sequence(madx.sequence.sps)
+    line.particle_ref = get_ref_particle_from_madx_beam(madx)
+    tw = line.twiss(method="4d")
+    npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
+    # -----------------------------------------------------
+    # Get growth rates with Nagaitsev formalism
+    amp_rates: IBSAmplitudeGrowthRates = tw.get_ibs_growth_rates(
+        formalism="nagaitsev",
+        total_beam_intensity=npart,
+        gemitt_x=gemitt_x,
+        gemitt_y=gemitt_y,
+        sigma_delta=sigd,
+        bunch_length=bl,
+    )
+    # We do a first conversion to get the emittance version
+    emit_rates: IBSEmittanceGrowthRates = amp_rates.to_emittance_growth_rates()
+    # -----------------------------------------------------
+    # Check they both give the same amplitude rise times
+    atimes1 = amp_rates.to_amplitude_growth_times()
+    atimes2 = emit_rates.to_amplitude_growth_times()
+    assert atimes1 == atimes2  # they're both tuples
+    # -----------------------------------------------------
+    # Check they both give the same emittance rise times
+    etimes1 = amp_rates.to_emittance_growth_times()
+    etimes2 = emit_rates.to_emittance_growth_times()
+    assert etimes1 == etimes2  # they're both tuples
+    # -----------------------------------------------------
+    # Check they both give the same amplitude growth rates
+    # I have implemented __eq__ so we can compare like this
+    arates1 = amp_rates
+    arates2 = emit_rates.to_amplitude_growth_rates()
+    assert arates1 == arates2
+    # -----------------------------------------------------
+    # Check they both give the same emittance growth rates
+    # I have implemented __eq__ so we can compare like this
+    erates1 = emit_rates
+    erates2 = amp_rates.to_emittance_growth_rates()
+    assert erates1 == erates2
