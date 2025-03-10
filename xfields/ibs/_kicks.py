@@ -372,12 +372,12 @@ class IBSAnalyticalKick(IBSKick):
         # In Xsuite we give growth rates in amplitude convention but the theory of R. Bruce assumes
         # the growth rates to be in emittance convention, so we do the conversion here.
         emit_growth_rates: IBSEmittanceGrowthRates = amp_growth_rates.to_emittance_growth_rates()
-        Tx, Ty, Tz = emit_growth_rates.as_tuple()  # each is a float
         # ----------------------------------------------------------------------------------------------
         # Making sure we do not have negative growth rates (see class docstring warning for detail)
-        Tx: float = 0.0 if Tx < 0 else float(Tx)
-        Ty: float = 0.0 if Ty < 0 else float(Ty)
-        Tz: float = 0.0 if Tz < 0 else float(Tz)
+        # In paper the growth rates are noted with a T so I stick to that
+        Tx: float = 0.0 if emit_growth_rates.Kx < 0 else float(emit_growth_rates.Kx)
+        Ty: float = 0.0 if emit_growth_rates.Ky < 0 else float(emit_growth_rates.Ky)
+        Tz: float = 0.0 if emit_growth_rates.Kz < 0 else float(emit_growth_rates.Kz)
         if any(rate == 0 for rate in (Tx, Ty, Tz)):
             LOGGER.debug("At least one IBS growth rate was negative, and was set to 0")
         # ----------------------------------------------------------------------------------------------
