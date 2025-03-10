@@ -123,6 +123,7 @@ def _ibs_rates_and_emittance_derivatives(
     sigma_delta = (gemitt_zeta / longitudinal_emittance_ratio) ** 0.5  # in [-]
     # ---------------------------------------------------------------------------------------------
     # Ask to compute the IBS growth rates (this function logs so no need to do it here)
+    # They are in amplitude convention in xsuite (like SR damping constants)
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
         total_beam_intensity=total_beam_intensity,
