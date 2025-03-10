@@ -148,7 +148,7 @@ class IBSEmittanceGrowthRates(xo.HybridClass):
             An `IBSAmplitudeGrowthRates` object with the amplitude
             growth rates, in [s^-1].
         """
-        return IBSAmplitudeGrowthRates(Kx=self.Kx / 2, Ky=self.Ky / 2, K=self.Kz / 2)
+        return IBSAmplitudeGrowthRates(Kx=self.Kx / 2, Ky=self.Ky / 2, Kz=self.Kz / 2)
 
 
 class IBSAmplitudeGrowthRates(xo.HybridClass):
@@ -237,7 +237,7 @@ class IBSAmplitudeGrowthRates(xo.HybridClass):
             An `IBSEmittanceGrowthRates` object with the
             emittance growth rates, in [s^-1].
         """
-        return IBSEmittanceGrowthRates(Kx=self.Kx * 2, Ty=self.Ky * 2, Tz=self.Kz * 2)
+        return IBSEmittanceGrowthRates(Kx=self.Kx * 2, Ky=self.Ky * 2, Kz=self.Kz * 2)
 
 
 # ----- Abstract Base Class to Inherit from ----- #
@@ -737,7 +737,7 @@ class NagaitsevIBS(AnalyticalIBS):
         if bunched is False:
             LOGGER.warning(
                 "Using 'bunched=False' in this formalism makes the approximation of bunch length = C/(2*pi). "
-                "Please use the BjorkenMtingwaIBS class for fully accurate results."
+                "Please use the Bjorken-Mtingwa formalism for a correct handling of Dy."
             )
             bunch_length: float = self._twiss.circumference / (2 * np.pi)
         # ----------------------------------------------------------------------------------------------
