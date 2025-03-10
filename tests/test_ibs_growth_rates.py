@@ -328,6 +328,9 @@ def test_convention_conversions():
     tw = line.twiss(method="4d")
     npart, gemitt_x, gemitt_y, sigd, bl = get_parameters_from_madx_beam(madx)
     # -----------------------------------------------------
+    # Note: the validity of the values themselves is tested
+    # in the above tests, here we just check the conversions
+    # -----------------------------------------------------
     # Get growth rates with Nagaitsev formalism
     amp_rates: IBSAmplitudeGrowthRates = tw.get_ibs_growth_rates(
         formalism="nagaitsev",
