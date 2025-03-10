@@ -64,8 +64,8 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 
 # Computed from normalized emittances:
 # ------------------------------------
-# Nagaitsev:       IBSAmplitudeGrowthRates(Ax=0.000518, Ay=0.00552, Az=0.00402)
-# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Ax=0.000554, Ay=0.00546, Az=0.004)
+# Nagaitsev:       IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
+# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Kx=0.000554, Ky=0.00546, Kz=0.004)
 
 #####################
 # Define parameters #
@@ -115,5 +115,5 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates2}")
 
 # Computed from geometric emittances (rough equivalent):
 # ------------------------------------------------------
-# Nagaitsev:       IBSAmplitudeGrowthRates(Ax=0.000518, Ay=0.00552, Az=0.00402)
-# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Ax=0.000554, Ay=0.00546, Az=0.004)
+# Nagaitsev:       IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
+# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Kx=0.000554, Ky=0.00546, Kz=0.004)

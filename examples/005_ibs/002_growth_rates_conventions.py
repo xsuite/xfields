@@ -47,18 +47,18 @@ amp_growth_rates = tw.get_ibs_growth_rates(
 # Notice how, when printing the returned object, it states
 # the growth rates are given in amplitude convention
 print(amp_growth_rates)
-# IBSAmplitudeGrowthRates(Ax=0.000518, Ay=0.00552, Az=0.00402)
+# IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
 
 # Methods are implemented to convert to the emittance convention
 emit_growth_rates = amp_growth_rates.to_emittance_growth_rates()
 print(emit_growth_rates)
-# IBSEmittanceGrowthRates(Tx=0.00104, Ty=0.011, Tz=0.00803)
+# IBSEmittanceGrowthRates(Kx=0.00104, Ky=0.011, Kz=0.00803)
 
 # It is also possible to convert back to the amplitude convention
 print(f"Initial:         {amp_growth_rates}")
 print(f"Converted twice: {emit_growth_rates.to_amplitude_growth_rates()}")
-# Initial:         IBSAmplitudeGrowthRates(Ax=0.000518, Ay=0.00552, Az=0.00402)
-# Converted twice: IBSAmplitudeGrowthRates(Ax=0.000518, Ay=0.00552, Az=0.00402)
+# Initial:         IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
+# Converted twice: IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
 
 ####################################################
 # Converting between growth rates and growth times #
