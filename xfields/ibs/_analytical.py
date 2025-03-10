@@ -400,8 +400,8 @@ class AnalyticalIBS(ABC):
         bunched: bool = True,
     ) -> IBSAmplitudeGrowthRates:
         r"""
-        Method to compute the IBS growth rates. This is an abstract method
-        that should be implemented in child classes based on their formalism.
+        Method to compute the IBS amplitude growth rates. This is an abstract
+        method that should be implemented in child classes based on their formalism.
 
         Parameters
         ----------
@@ -428,8 +428,8 @@ class AnalyticalIBS(ABC):
 
         Returns
         -------
-        IBSGrowthRates
-            An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSAmplitudeGrowthRates
+            An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
         """
         raise NotImplementedError(
             "This method should be implemented in all child classes, but it hasn't been for this one."
@@ -482,7 +482,7 @@ class NagaitsevIBS(AnalyticalIBS):
     ----
         Please note that Nagaitsev's formalism computes emittance growth rates,
         which we convert to amplitude growth rates before returning to the user
-        for consistency with Xsuite SR damping times.
+        for consistency with Xsuite SR damping.
 
     Please keep in mind that this formalism will give an inaccurate
     vertical growth rate in the presence of vertical dispersion. In
@@ -766,10 +766,10 @@ class NagaitsevIBS(AnalyticalIBS):
         Ix, Iy, Iz = self.nagaitsev_integrals.as_tuple()
         # If coasting beams, since we use bunch_length=C/(2*pi) we have to divide rates by 2 (see Piwinski)
         factor = 1.0 if bunched is True else 2.0
-        Tx = float(Ix * full_constant_term / gemitt_x) / factor
-        Ty = float(Iy * full_constant_term / gemitt_y) / factor
-        Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
-        emittance_rates = IBSEmittanceGrowthRates(Tx, Ty, Tz)
+        Kx = float(Ix * full_constant_term / gemitt_x) / factor
+        Ky = float(Iy * full_constant_term / gemitt_y) / factor
+        Kz = float(Iz * full_constant_term / sigma_delta**2) / factor
+        emittance_rates = IBSEmittanceGrowthRates(Kx, Ky, Kz)
         # ----------------------------------------------------------------------------------------------
         # Important: the calculations of Nagaitsev yield emittance growth rates. In Xsuite we chose to
         # return amplitude growth rates for consistency with SR damping times (also in amplitude). We
@@ -1645,35 +1645,35 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # Now we loop over the lattice and compute the integrals at each element
         LOGGER.debug("Computing integrals of Eq (8) of the MAD-X note - at each element in the lattice")
-        Tx_array: ArrayLike = calculate_integral_vectorized(Ix_integrand_vectorized)
-        Ty_array: ArrayLike = calculate_integral_vectorized(Iy_integrand_vectorized)
-        Tz_array: ArrayLike = calculate_integral_vectorized(Iz_integrand_vectorized)
+        Kx_array: ArrayLike = calculate_integral_vectorized(Ix_integrand_vectorized)
+        Ky_array: ArrayLike = calculate_integral_vectorized(Iy_integrand_vectorized)
+        Kz_array: ArrayLike = calculate_integral_vectorized(Iz_integrand_vectorized)
         # ----------------------------------------------------------------------------------------------
         # Don't forget to multiply by the common constant term here
         LOGGER.debug("Including common constant term of Eq (8) of the MAD-X note")
-        Tx_array *= common_constant_term
-        Ty_array *= common_constant_term
-        Tz_array *= common_constant_term
+        Kx_array *= common_constant_term
+        Ky_array *= common_constant_term
+        Kz_array *= common_constant_term
         # ----------------------------------------------------------------------------------------------
         # For a better average, interpolate these intermediate growth rates through the lattice
         LOGGER.debug("Interpolating intermediate growth rates through the lattice")
-        _tx = interp1d(self._twiss.s, Tx_array)
-        _ty = interp1d(self._twiss.s, Ty_array)
-        _tz = interp1d(self._twiss.s, Tz_array)
+        _kx = interp1d(self._twiss.s, Kx_array)
+        _ky = interp1d(self._twiss.s, Ky_array)
+        _kz = interp1d(self._twiss.s, Kz_array)
         # ----------------------------------------------------------------------------------------------
         # And now cmpute the final growth rates for each plane as an average of these interpolated
         # functions over the whole lattice - also ensure conversion to float afterwards!
         LOGGER.debug("Getting average growth rates over the lattice")
         with warnings.catch_warnings():  # Catch and ignore the scipy.integrate.IntegrationWarning
             warnings.simplefilter("ignore", category=UserWarning)
-            Tx: float = float(quad(_tx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-            Ty: float = float(quad(_ty, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-            Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-        emittance_rates = IBSEmittanceGrowthRates(Tx, Ty, Tz)
+            Kx: float = float(quad(_kx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+            Ky: float = float(quad(_ky, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+            Kz: float = float(quad(_kz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+        emittance_rates = IBSEmittanceGrowthRates(Kx, Ky, Kz)
         # ----------------------------------------------------------------------------------------------
         # Important: the calculations of B&M yield emittance growth rates (this is what one gets in MAD-X
         # for instance does). In Xsuite we chose to return amplitude growth rates for consistency with SR
-        # damping times (also in amplitude). We then do the conversion now before updating the instance's
+        # damping (also in amplitude). We then do the conversion now before updating the instance's
         # attribute and returning.
         LOGGER.debug("Converting to amplitude growth rates")
         result: IBSAmplitudeGrowthRates = emittance_rates.to_amplitude_growth_rates()
