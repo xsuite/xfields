@@ -348,6 +348,12 @@ def test_convention_conversions():
     # We do a first conversion to get the emittance version
     emit_rates: IBSEmittanceGrowthRates = amp_rates.to_emittance_growth_rates()
     # -----------------------------------------------------
+    # Check that the factor 2 is correct between conventions
+    # Specifically for rates, emit. is twice amp. convention
+    xo.assert_allclose(emit_rates.Kx, 2 * amp_rates.Kx, atol=0, rtol=1e-5)
+    xo.assert_allclose(emit_rates.Ky, 2 * amp_rates.Ky, atol=0, rtol=1e-5)
+    xo.assert_allclose(emit_rates.Kz, 2 * amp_rates.Kz, atol=0, rtol=1e-5)
+    # -----------------------------------------------------
     # Check they both give the same amplitude rise times
     atimes1 = amp_rates.to_amplitude_growth_times()
     atimes2 = emit_rates.to_amplitude_growth_times()
@@ -369,4 +375,3 @@ def test_convention_conversions():
     erates1 = emit_rates
     erates2 = amp_rates.to_emittance_growth_rates()
     assert erates1 == erates2
-    # TODO : enforce factor 2 check here
