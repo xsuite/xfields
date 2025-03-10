@@ -28,9 +28,10 @@ if TYPE_CHECKING:
 #
 # PLEASE NOTE: MAD-X computes the EMITTANCE growth times in [s], which the
 # tests helpers convert to EMITTANCE growth rates in [1/s]. In Xsuite by
-# convention we return the AMPLITUDE growth rates (to align with SR damping
-# times). In the tests, Xsuite results are first converted before comparing
-# to the MAD-X values. This way we compare EMITTANCE GROWTH RATES (in [1/s]).
+# convention we return the AMPLITUDE growth rates (to align with SR damping).
+# In the tests, Xsuite results are first converted to emittance convention
+# before comparing to the MAD-X values. This way we compare
+# EMITTANCE GROWTH RATES (in [1/s]).
 
 # ----- Test with negative charge particle ----- #
 
@@ -45,7 +46,8 @@ def test_clic_dr_growth_rates(bunched):
     madx.call(str(clic_dr_dir / "sequence.madx"))
     madx.use(sequence="ring")
     # -----------------------------------------------------
-    # Set beam parameters and get growth rates
+    # Set beam parameters and get growth rates (named with
+    # a T here because this is how it is in MAD-X)
     set_madx_beam_parameters(
         madx,
         total_beam_intensity=5e9,
@@ -93,13 +95,13 @@ def test_clic_dr_growth_rates(bunched):
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 11% isn't crazy
-        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
-        xo.assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
-        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
+        xo.assert_allclose(nag_rates.Kx, mad_Tx, atol=1e-8, rtol=11.5e-2)
+        xo.assert_allclose(nag_rates.Ky, mad_Ty, atol=1e-8, rtol=5e-2)
+        xo.assert_allclose(nag_rates.Kz, mad_Tz, atol=1e-8, rtol=5e-2)
     # Compare the results - Bjorken-Mtingwa
-    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=11.5e-2)
-    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=5e-2)
-    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=5e-2)
+    xo.assert_allclose(bm_rates.Kx, mad_Tx, atol=1e-8, rtol=11.5e-2)
+    xo.assert_allclose(bm_rates.Ky, mad_Ty, atol=1e-8, rtol=5e-2)
+    xo.assert_allclose(bm_rates.Kz, mad_Tz, atol=1e-8, rtol=5e-2)
 
 
 # ----- Test with positive charge particle ----- #
@@ -115,7 +117,8 @@ def test_sps_injection_protons_growth_rates(bunched):
     madx.call(str(sps_dir / "sps_thin.seq"))
     madx.use(sequence="sps")
     # -----------------------------------------------------
-    # Beam is fully setup in file, get growth rates
+    # Beam is fully setup in file, get growth rates (named
+    # with a T here because this is how it is in MAD-X)
     madx.sequence.sps.beam.bunched = bunched
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
@@ -155,13 +158,13 @@ def test_sps_injection_protons_growth_rates(bunched):
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 10% isn't crazy
-        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-        xo.assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=10e-2)
-        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Kx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Ky, mad_Ty, atol=1e-8, rtol=10e-2)
+        xo.assert_allclose(nag_rates.Kz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Kx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Ky, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Kz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
 
 # ----- Test with ion particles ----- #
@@ -191,7 +194,8 @@ def test_sps_ions_growth_rates(bunched):
     )
     madx.use(sequence="sps")
     # -----------------------------------------------------
-    # Beam is fully setup in file, get growth rates
+    # Beam is fully setup in file, get growth rates (named
+    # with a T here because this is how it is in MAD-X)
     madx.sequence.sps.beam.bunched = bunched
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
@@ -231,13 +235,13 @@ def test_sps_ions_growth_rates(bunched):
     # Compare the results - Nagaitsev
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
         # Computed with different formalism than MAD-X so 10% isn't crazy
-        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-        xo.assert_allclose(nag_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Kx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Ky, mad_Ty, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Kz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=2.5e-2)
-    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Kx, mad_Tx, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Ky, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Kz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
 
 # ----- Test with vertical dispersion ----- #
@@ -258,7 +262,8 @@ def test_hllhc14_growth_rates(bunched):
     madx.call(str(hllhc14_dir / "final_seq.madx"))
     madx.use(sequence="lhcb1")
     # -----------------------------------------------------
-    # Beam is fully setup in file, get growth rates
+    # Beam is fully setup in file, get growth rates (named
+    # with a T here because this is how it is in MAD-X)
     madx.sequence.lhcb1.beam.bunched = bunched
     mad_Tx, mad_Ty, mad_Tz = get_madx_ibs_growth_rates(madx)
     # -----------------------------------------------------
@@ -298,13 +303,13 @@ def test_hllhc14_growth_rates(bunched):
     # Compare the results - Nagaitsev (don't compare vertical
     # as lattice has Dy and formalism is wrong in this case)
     if bunched is True:  # in Nagaitsev coasting makes big assumptions
-        xo.assert_allclose(nag_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
-        # Not Ty - Nagaitsev does not account for vertical dispersion
-        xo.assert_allclose(nag_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+        xo.assert_allclose(nag_rates.Kx, mad_Tx, atol=1e-8, rtol=4e-2)
+        # Not Ky - Nagaitsev does not account for vertical dispersion
+        xo.assert_allclose(nag_rates.Kz, mad_Tz, atol=1e-8, rtol=2.5e-2)
     # Compare the results - Bjorken-Mtingwa
-    xo.assert_allclose(bm_rates.Tx, mad_Tx, atol=1e-8, rtol=4e-2)
-    xo.assert_allclose(bm_rates.Ty, mad_Ty, atol=1e-8, rtol=2.5e-2)
-    xo.assert_allclose(bm_rates.Tz, mad_Tz, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Kx, mad_Tx, atol=1e-8, rtol=4e-2)
+    xo.assert_allclose(bm_rates.Ky, mad_Ty, atol=1e-8, rtol=2.5e-2)
+    xo.assert_allclose(bm_rates.Kz, mad_Tz, atol=1e-8, rtol=2.5e-2)
 
 
 # ----- Test for conversion between conventions ----- #
@@ -364,3 +369,4 @@ def test_convention_conversions():
     erates1 = emit_rates
     erates2 = amp_rates.to_emittance_growth_rates()
     assert erates1 == erates2
+    # TODO : enforce factor 2 check here
