@@ -424,9 +424,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     time_step: float = twiss.T_rev0
     # Structures for iterative results (time, IBS growth rates, computed emittances)
     time_deltas: list[float] = []  # stores the deltas (!), we do a cumsum at the end
-    T_x: list[float] = []
-    T_y: list[float] = []
-    T_z: list[float] = []
+    A_x: list[float] = []
+    A_y: list[float] = []
+    A_z: list[float] = []
     res_gemitt_x: list[float] = []
     res_gemitt_y: list[float] = []
     res_gemitt_zeta: list[float] = []
@@ -477,9 +477,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Store the current values for this time step
         time_deltas.append(time_step)
-        T_x.append(ibs_growth_rates[0])
-        T_y.append(ibs_growth_rates[1])
-        T_z.append(ibs_growth_rates[2])
+        A_x.append(ibs_growth_rates[0])
+        A_y.append(ibs_growth_rates[1])
+        A_z.append(ibs_growth_rates[2])
         res_gemitt_x.append(current_emittances[0])
         res_gemitt_y.append(current_emittances[1])
         res_gemitt_zeta.append(current_emittances[2])
@@ -507,9 +507,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "gemitt_zeta": np.array(res_gemitt_zeta),
             "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * longitudinal_emittance_ratio),
             "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / longitudinal_emittance_ratio),
-            "Ax": np.array(T_x),
-            "Ay": np.array(T_y),
-            "Az": np.array(T_z),
+            "Ax": np.array(A_x),
+            "Ay": np.array(A_y),
+            "Az": np.array(A_z),
         },
         index="time",
     )
