@@ -123,6 +123,7 @@ def _ibs_rates_and_emittance_derivatives(
     sigma_delta = (gemitt_zeta / longitudinal_emittance_ratio) ** 0.5  # in [-]
     # ---------------------------------------------------------------------------------------------
     # Ask to compute the IBS growth rates (this function logs so no need to do it here)
+    # These are in amplitude convention in xsuite (like SR damping constants)
     ibs_growth_rates = twiss.get_ibs_growth_rates(
         formalism=formalism,
         total_beam_intensity=total_beam_intensity,
@@ -137,15 +138,15 @@ def _ibs_rates_and_emittance_derivatives(
     LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
         -2 * twiss.damping_constants_s[0] * (gemitt_x - twiss.eq_gemitt_x)
-        + ibs_growth_rates.Tx * gemitt_x
+        + 2 * ibs_growth_rates.Ax * gemitt_x
     )
     depsilon_y_dt = (
         -2 * twiss.damping_constants_s[1] * (gemitt_y - twiss.eq_gemitt_y)
-        + ibs_growth_rates.Ty * gemitt_y
+        + 2 * ibs_growth_rates.Ay * gemitt_y
     )
     depsilon_z_dt = (
         -2 * twiss.damping_constants_s[2] * (gemitt_zeta - twiss.eq_gemitt_zeta)
-        + ibs_growth_rates.Tz * gemitt_zeta
+        + 2 * ibs_growth_rates.Az * gemitt_zeta
     )
     # ---------------------------------------------------------------------------------------------
     # And return the results
@@ -423,9 +424,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     time_step: float = twiss.T_rev0
     # Structures for iterative results (time, IBS growth rates, computed emittances)
     time_deltas: list[float] = []  # stores the deltas (!), we do a cumsum at the end
-    T_x: list[float] = []
-    T_y: list[float] = []
-    T_z: list[float] = []
+    A_x: list[float] = []
+    A_y: list[float] = []
+    A_z: list[float] = []
     res_gemitt_x: list[float] = []
     res_gemitt_y: list[float] = []
     res_gemitt_zeta: list[float] = []
@@ -446,6 +447,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             _print(f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r")
         # --------------------------------------------------------------------------
         # Compute IBS growth rates and emittance derivatives (and unpack)
+        # These are in amplitude convention in xsuite (like SR damping constants)
         ibs_growth_rates, emittance_derivatives = _ibs_rates_and_emittance_derivatives(
             twiss=twiss,
             formalism=formalism,
@@ -476,9 +478,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Store the current values for this time step
         time_deltas.append(time_step)
-        T_x.append(ibs_growth_rates[0])
-        T_y.append(ibs_growth_rates[1])
-        T_z.append(ibs_growth_rates[2])
+        A_x.append(ibs_growth_rates[0])
+        A_y.append(ibs_growth_rates[1])
+        A_z.append(ibs_growth_rates[2])
         res_gemitt_x.append(current_emittances[0])
         res_gemitt_y.append(current_emittances[1])
         res_gemitt_zeta.append(current_emittances[2])
@@ -506,9 +508,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "gemitt_zeta": np.array(res_gemitt_zeta),
             "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * longitudinal_emittance_ratio),
             "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / longitudinal_emittance_ratio),
-            "Tx": np.array(T_x),
-            "Ty": np.array(T_y),
-            "Tz": np.array(T_z),
+            "Ax": np.array(A_x),
+            "Ay": np.array(A_y),
+            "Az": np.array(A_z),
         },
         index="time",
     )
