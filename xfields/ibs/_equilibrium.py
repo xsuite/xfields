@@ -308,9 +308,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - gemitt_zeta: longitudinal geometric emittance values, in [m].
             - sigma_zeta: bunch length values, in [m].
             - sigma_delta: momentum spread values, in [-].
-            - Tx: horizontal IBS growth rate, in [s^-1].
-            - Ty: vertical IBS growth rate, in [s^-1].
-            - Tz: longitudinal IBS growth rate, in [s^-1].
+            - Kx: horizontal IBS amplitude growth rate, in [s^-1].
+            - Ky: vertical IBS amplitude growth rate, in [s^-1].
+            - Kz: longitudinal IBS amplitude growth rate, in [s^-1].
         The table also contains the following global quantities:
             - damping_constants_s: radiation damping constants used, in [s^-1].
             - partition_numbers: damping partition numbers used.
