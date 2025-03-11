@@ -138,15 +138,15 @@ def _ibs_rates_and_emittance_derivatives(
     LOGGER.debug("Computing emittance time derivatives analytically.")
     depsilon_x_dt = (
         -2 * twiss.damping_constants_s[0] * (gemitt_x - twiss.eq_gemitt_x)
-        + 2 * ibs_growth_rates.Ax * gemitt_x
+        + 2 * ibs_growth_rates.Kx * gemitt_x
     )
     depsilon_y_dt = (
         -2 * twiss.damping_constants_s[1] * (gemitt_y - twiss.eq_gemitt_y)
-        + 2 * ibs_growth_rates.Ay * gemitt_y
+        + 2 * ibs_growth_rates.Ky * gemitt_y
     )
     depsilon_z_dt = (
         -2 * twiss.damping_constants_s[2] * (gemitt_zeta - twiss.eq_gemitt_zeta)
-        + 2 * ibs_growth_rates.Az * gemitt_zeta
+        + 2 * ibs_growth_rates.Kz * gemitt_zeta
     )
     # ---------------------------------------------------------------------------------------------
     # And return the results
