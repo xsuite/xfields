@@ -201,7 +201,7 @@ def test_missing_params_raises(bessy3_line_with_radiation: xt.Line):
             total_beam_intensity=BUNCH_INTENSITY,
         )
     # Not providing formalism just passes to IBS rates computation which raises
-    with pytest.raises.KypeError):
+    with pytest.raises(TypeError):
         tw.compute_equilibrium_emittances_from_sr_and_ibs(
             # formalism="Nagaitsev",
             total_beam_intensity=BUNCH_INTENSITY,
@@ -212,7 +212,7 @@ def test_missing_params_raises(bessy3_line_with_radiation: xt.Line):
             total_beam_intensity=None,
         )
     # Not providing formalism just passes to IBS rates computation which raises
-    with pytest.raises.KypeError):
+    with pytest.raises(TypeError):
         tw.compute_equilibrium_emittances_from_sr_and_ibs(
             formalism="Nagaitsev",
             # total_beam_intensity=BUNCH_INTENSITY,
