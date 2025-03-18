@@ -1,13 +1,6 @@
-from typing import Tuple
-
 import numpy as np
 
-from scipy.constants import c as clight
-from scipy.constants import e as qe
-from scipy.interpolate import interp1d
-
 import xobjects as xo
-import xtrack as xt
 from ..element_with_slicer import ElementWithSlicer
 from .convolution import _ConvData
 
@@ -126,7 +119,7 @@ class WakeTracker(ElementWithSlicer):
         # Use common slicer from parent class to measure all moments
         status = super().track(particles)
 
-        if status and status.on_hold == True:
+        if status and status.on_hold:
             return status
 
         for wf in self.components:
