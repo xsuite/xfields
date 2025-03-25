@@ -8,9 +8,11 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
-from xobjects.test_helpers import for_all_test_contexts
+from xobjects.test_helpers import for_all_test_contexts, fix_random_seed
+
 
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(54329842)
 def test_iptocp_strongstrong_px(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
@@ -248,6 +250,7 @@ def test_iptocp_strongstrong_px(test_context):
         
         
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(672367)
 def test_iptocp_strongstrong_py(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
