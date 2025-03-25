@@ -149,8 +149,7 @@ void do_beamstrahlung(BeamBeamBiGaussian3DData el, LocalParticle *part,
         }
 
         *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
-    }
-
+}
 
 
 /*gpufun*/

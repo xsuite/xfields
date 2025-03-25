@@ -196,12 +196,10 @@ void equal_newton(
     */
     double eps=1e-6;
     double ytry,xtry;
-    int i=0;
     xtry=*x;
     ytry=compt_int(xtry, x_compt);
     while (fabs(ytry-y)>(fabs(ytry)+fabs(y))*eps
            && (xmax-xmin)>eps) {
-        i++;
         xtry-=(ytry-y)/compt_diff(xtry, x_compt);
         if ((xtry>=xmax)||(xtry<=xmin)) {
             xtry=0.5*(xmax+xmin);

@@ -6,6 +6,34 @@
 #ifndef XFIELDS_BEAMBEAMPIC_METHODS_H
 #define XFIELDS_BEAMBEAMPIC_METHODS_H
 
+/*gpufun*/
+void do_beamstrahlung_pic(BeamBeamPIC3DData el, LocalParticle *part,
+                      double Fx_star, double Fy_star,
+                      double* pzeta_star, double const dz,
+                      const int64_t flag_beamstrahlung){
+
+        // init record table
+        BeamBeamPIC3DRecordData beamstrahlung_record = NULL;
+        BeamstrahlungTableData beamstrahlung_table   = NULL;
+        RecordIndex beamstrahlung_table_index        = NULL;
+        beamstrahlung_record = BeamBeamPIC3DData_getp_internal_record(el, part);
+        if (beamstrahlung_record){
+            beamstrahlung_table       = BeamBeamPIC3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
+            beamstrahlung_table_index =               BeamstrahlungTableData_getp__index(beamstrahlung_table);
+        }
+
+        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
+
+	if(flag_beamstrahlung==1){
+            // no average beamstrahlung implemented
+	} else if (flag_beamstrahlung==2){
+            double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
+            beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
+        }
+
+        *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
+}
+
 
 /*gpufun*/
 void BeamBeamPIC3D_change_ref_frame_local_particle(
@@ -161,7 +189,7 @@ void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
         double y = LocalParticle_get_y(part);
         double px = LocalParticle_get_px(part);
         double py = LocalParticle_get_py(part);
-        double delta = LocalParticle_get_delta(part);
+        double pzeta = LocalParticle_get_pzeta(part);
         double zeta = LocalParticle_get_zeta(part);
         double beta0 = LocalParticle_get_beta0(part);
         double gamma0 = LocalParticle_get_gamma0(part);
@@ -184,12 +212,20 @@ void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
         // Effect of the particle angle as in Hirata
         double dpz = 0.5 * (dpx * (px + 0.5 * dpx) + dpy * (py + 0.5 * dpy));
 
+        // emit beamstrahlung photons from single macropart
+        #ifndef XFIELDS_BB3D_NO_BEAMSTR
+        const int64_t flag_beamstrahlung = BeamBeamPIC3DData_get_flag_beamstrahlung(el);
+        if(flag_beamstrahlung!=0){
+            do_beamstrahlung_pic(el, part, dpx, dpy, &pzeta, dz, flag_beamstrahlung); // no avg only quantum
+        }
+        #endif 
+
         // Apply kick
         px += dpx;
         py += dpy;
         LocalParticle_set_px(part, px);
         LocalParticle_set_py(part, py);
-        LocalParticle_update_delta(part, delta + dpz);
+        LocalParticle_update_pzeta(part, pzeta + dpz);
 
         // Propagate transverse coordinates back to IP
         double ptau = LocalParticle_get_ptau(part);

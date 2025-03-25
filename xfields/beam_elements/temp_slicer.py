@@ -272,12 +272,15 @@ class TempSlicer(xo.HybridClass):
         particles.slice = self.get_slice_indices(particles)
 
     def compute_moments(self, particles, update_assigned_slices=True, threshold_num_macroparticles=20):
-        context = particles._context
-        if isinstance(context, xo.ContextPyopencl):
-            raise NotImplementedError
 
+        context = particles._context
+
+        # group particles into longitudinal slices
         if update_assigned_slices:
             self.assign_slices(particles)
+
+        if isinstance(context, xo.ContextPyopencl):
+            raise NotImplementedError
 
         if isinstance(context, xo.ContextCupy):
             slice_moments = self._context.zeros(self.num_slices*(6+10+1+6+10),dtype=np.float64)  # sums (16) + count (1) + moments (16)

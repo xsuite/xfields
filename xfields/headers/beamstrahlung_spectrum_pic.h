@@ -84,63 +84,7 @@ int beamstrahlung_0(LocalParticle *part,
 
 
 /*gpufun*/
-double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
-        const double n_bb, // [1] strong slice bunch intensity
-        const double sigma_x, const double sigma_y, const double sigma_z  // [m] unboosted strong slice RMS
-){
-    /*
-    Based on:
-    K. Yokoya: Beam-Beam Phenomena In Linear Colliders
-    https://doi.org/10.1007/3-540-55250-2_37
-    ----
-    n_bb and sigma_z are scaled with the (same) slice weights
-    n_avg ~ n_bb -> 1/num_slices less photons per mp in 1 slice
-    delta_avg ~ n_bb^2/sigma_z -> 1/num_slices less rel. E loss per mp in 1 slice
-    e_photon_avg = delta_avg / n_avg -> avg. photon energy is the same in 1 slice
-    */
-
-    // beam properties
-    const double m0             = LocalParticle_get_mass0(part); // [eV/c] beam particle mass
-    const double initial_energy = LocalParticle_get_energy0(part) + LocalParticle_get_ptau(part)*LocalParticle_get_p0c(part); // [eV]
-    const double gamma          = initial_energy / m0; // [1] 
-
-    // constants
-    const double r  = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));      // [m] electron radius
-    const double c1 = 2.59 * ( 5.0/ 6.0) * (    r*r) / REDUCED_COMPTON_WAVELENGTH_ELECTRON;          // [m]
-    const double c2 =  1.2 * (25.0/36.0) * (r*r*r*r) / REDUCED_COMPTON_WAVELENGTH_ELECTRON * 137.0;  // [m^3]
-
-    // compute averaged quantities
-    double n_avg        = c1 * n_bb/(sigma_x + sigma_y);  // [1] avg. number of emitted photons from 1 macroparticle in one slice collision
-    double delta_avg    = c2 * gamma/sigma_z * (n_bb/(sigma_x + sigma_y))*(n_bb/(sigma_x + sigma_y));  // [1] avg. rel. E loss for 1 macroparticle in one slice collision
-    double U_BS         = delta_avg*initial_energy;  // [eV] avg. energy loss per macropart in one slice collision
-    double u_avg        = delta_avg/n_avg;           // [1] avg. rel. photon energy normalized to initial electron energy
-    double e_photon_avg = u_avg*initial_energy;      // [eV] avg. photon energy
-    LocalParticle_add_to_energy(part, -U_BS, 0);
-    double energy_loss = -U_BS;  // <0
-
-    if (beamstrahlung_record){
-
-        // Get a slot in the record (this is thread safe)
-        int64_t i_slot = RecordIndex_get_slot(beamstrahlung_table_index);
-
-        // The returned slot id is negative if record is NULL or if record is full
-        if (i_slot>=0){
-            BeamstrahlungTableData_set_at_element(    beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
-    	    BeamstrahlungTableData_set_at_turn(       beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part)); 
-            BeamstrahlungTableData_set_particle_id(   beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
-            BeamstrahlungTableData_set_primary_energy(beamstrahlung_table, i_slot, initial_energy);
-	    BeamstrahlungTableData_set_photon_energy( beamstrahlung_table, i_slot, e_photon_avg);
-            BeamstrahlungTableData_set_n_avg(         beamstrahlung_table, i_slot, n_avg);
-            BeamstrahlungTableData_set_delta_avg(     beamstrahlung_table, i_slot, delta_avg);
-	}
-    }
-
-    return energy_loss;
-}
-
-
-/*gpufun*/
-double beamstrahlung(LocalParticle *part, BeamBeamBiGaussian3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
+double beamstrahlung(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
      	double Fr,  // [1] radial force sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	double dz   // [m] z slice half width: step between 2 slices ((z_max - z_min) / 2)
 ){

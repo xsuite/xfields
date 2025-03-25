@@ -172,6 +172,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # beamstrahlung
         'flag_beamstrahlung': xo.Int64,
+        'slices_other_beam_zeta_bin_width_beamstrahlung': xo.Float64[:],
         'slices_other_beam_zeta_bin_width_star_beamstrahlung': xo.Float64[:],
         'slices_other_beam_sqrtSigma_11_beamstrahlung': xo.Float64[:],
         'slices_other_beam_sqrtSigma_33_beamstrahlung': xo.Float64[:],
@@ -517,7 +518,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_py_center_star=n_slices,
             slices_other_beam_zeta_center_star=n_slices,
             slices_other_beam_pzeta_center_star=n_slices,
-            slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,  # beamstrahlung
+            slices_other_beam_zeta_bin_width_beamstrahlung=n_slices,  # beamstrahlung
+            slices_other_beam_zeta_bin_width_star_beamstrahlung=n_slices,
             slices_other_beam_sqrtSigma_11_beamstrahlung=n_slices,
             slices_other_beam_sqrtSigma_33_beamstrahlung=n_slices,
             slices_other_beam_sqrtSigma_55_beamstrahlung=n_slices,
@@ -544,24 +546,48 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                             self.config_for_update.slicer.bin_widths_beamstrahlung
                                 / np.cos(self.phi))
 
-        if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None and
-            slices_other_beam_zeta_bin_width_beamstrahlung is not None):
+#        if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None and
+#            slices_other_beam_zeta_bin_width_beamstrahlung is not None):
+#            assert not np.isscalar(slices_other_beam_zeta_bin_width_beamstrahlung), (
+#                'slices_other_beam_zeta_bin_width_beamstrahlung must be an array')
+#            assert (len(slices_other_beam_zeta_bin_width_beamstrahlung)
+#                == len(self.slices_other_beam_num_particles))
+#            slices_other_beam_zeta_bin_width_star_beamstrahlung = (
+#                slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi))
+#
+#        if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
+#            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
+#                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
+#            assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
+#                == len(self.slices_other_beam_num_particles))
+#            self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
+#                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+
+        if slices_other_beam_zeta_bin_width_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_beamstrahlung), (
                 'slices_other_beam_zeta_bin_width_beamstrahlung must be an array')
             assert (len(slices_other_beam_zeta_bin_width_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             slices_other_beam_zeta_bin_width_star_beamstrahlung = (
                 slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi))
-
-        if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
+            self.slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_zeta_bin_width_beamstrahlung))
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+        elif slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
                 'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
             assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
+            slices_other_beam_zeta_bin_width_beamstrahlung = (
+                slices_other_beam_zeta_bin_width_star_beamstrahlung * np.cos(self.phi))
+            self.slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
+                np.array(slices_other_beam_zeta_bin_width_beamstrahlung))
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
                 np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
         else:
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung[:] = 0
+            self.slices_other_beam_zeta_bin_width_beamstrahlung[:] = 0
 
         if slices_other_beam_sqrtSigma_11_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_sqrtSigma_11_beamstrahlung), (
@@ -882,8 +908,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                                 at_turn,
                                                 internal_tag=self.config_for_update._i_step):
             # Compute moments
-            self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
-            self.moments = self.config_for_update.slicer.compute_moments(particles,update_assigned_slices=False)
+            #self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
+            self.moments = self.config_for_update.slicer.compute_moments(particles)  # assign to slices happens inside here
 
             pipeline_manager.send_message(self.moments,
                                                 self.config_for_update.element_name,
@@ -928,7 +954,53 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     @phi.setter
     def phi(self, value):
-        raise NotImplementedError("Setting phi is not implemented yet")
+        #raise NotImplementedError("Setting phi is not implemented yet")
+        _init_alpha_phi(self, phi=value)
+
+        # Trigger properties to set corresponding starred quantities
+        self._init_Sigmas(
+            self.slices_other_beam_Sigma_11,
+            self.slices_other_beam_Sigma_12,
+            self.slices_other_beam_Sigma_13,
+            self.slices_other_beam_Sigma_14,
+            self.slices_other_beam_Sigma_22,
+            self.slices_other_beam_Sigma_23,
+            self.slices_other_beam_Sigma_24,
+            self.slices_other_beam_Sigma_33,
+            self.slices_other_beam_Sigma_34,
+            self.slices_other_beam_Sigma_44,
+
+            self.slices_other_beam_Sigma_11_star,
+            self.slices_other_beam_Sigma_12_star,
+            self.slices_other_beam_Sigma_13_star,
+            self.slices_other_beam_Sigma_14_star,
+            self.slices_other_beam_Sigma_22_star,
+            self.slices_other_beam_Sigma_23_star,
+            self.slices_other_beam_Sigma_24_star,
+            self.slices_other_beam_Sigma_33_star,
+            self.slices_other_beam_Sigma_34_star,
+            self.slices_other_beam_Sigma_44_star,
+        )
+
+        # Initialize slice positions in the boosted frame. Depends on phi, alpha
+        self._init_starred_positions(
+            self.slices_other_beam_num_particles,
+            self.slices_other_beam_x_center, self.slices_other_beam_px_center,
+            self.slices_other_beam_y_center, self.slices_other_beam_py_center,
+            self.slices_other_beam_zeta_center, self.slices_other_beam_pzeta_center,
+            self.slices_other_beam_x_center_star, self.slices_other_beam_px_center_star,
+            self.slices_other_beam_y_center_star, self.slices_other_beam_py_center_star,
+            self.slices_other_beam_zeta_center_star, self.slices_other_beam_pzeta_center_star)
+
+        # Initialize beamstrahlung related quantities. Depends on phi, alpha
+        self._init_beamstrahlung(
+            self.flag_beamstrahlung,
+            self.slices_other_beam_zeta_bin_width_beamstrahlung,
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung,
+            self.slices_other_beam_sqrtSigma_11_beamstrahlung,
+            self.slices_other_beam_sqrtSigma_33_beamstrahlung,
+            self.slices_other_beam_sqrtSigma_55_beamstrahlung,
+        )
 
     @property
     def alpha(self):
@@ -936,7 +1008,53 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     @alpha.setter
     def alpha(self, value):
-        raise NotImplementedError("Setting alpha is not implemented yet")
+        #raise NotImplementedError("Setting alpha is not implemented yet")
+        _init_alpha_phi(self, alpha=value)
+
+        # Trigger properties to set corresponding starred quantities
+        self._init_Sigmas(
+            self.slices_other_beam_Sigma_11,
+            self.slices_other_beam_Sigma_12,
+            self.slices_other_beam_Sigma_13,
+            self.slices_other_beam_Sigma_14,
+            self.slices_other_beam_Sigma_22,
+            self.slices_other_beam_Sigma_23,
+            self.slices_other_beam_Sigma_24,
+            self.slices_other_beam_Sigma_33,
+            self.slices_other_beam_Sigma_34,
+            self.slices_other_beam_Sigma_44,
+
+            self.slices_other_beam_Sigma_11_star,
+            self.slices_other_beam_Sigma_12_star,
+            self.slices_other_beam_Sigma_13_star,
+            self.slices_other_beam_Sigma_14_star,
+            self.slices_other_beam_Sigma_22_star,
+            self.slices_other_beam_Sigma_23_star,
+            self.slices_other_beam_Sigma_24_star,
+            self.slices_other_beam_Sigma_33_star,
+            self.slices_other_beam_Sigma_34_star,
+            self.slices_other_beam_Sigma_44_star,
+        )
+
+        # Initialize slice positions in the boosted frame
+        self._init_starred_positions(
+            self.slices_other_beam_num_particles,
+            self.slices_other_beam_x_center, self.slices_other_beam_px_center,
+            self.slices_other_beam_y_center, self.slices_other_beam_py_center,
+            self.slices_other_beam_zeta_center, self.slices_other_beam_pzeta_center,
+            self.slices_other_beam_x_center_star, self.slices_other_beam_px_center_star,
+            self.slices_other_beam_y_center_star, self.slices_other_beam_py_center_star,
+            self.slices_other_beam_zeta_center_star, self.slices_other_beam_pzeta_center_star)
+
+        # Initialize beamstrahlung related quantities
+        self._init_beamstrahlung(
+            self.flag_beamstrahlung,
+            self.slices_other_beam_zeta_bin_width_beamstrahlung,
+            self.slices_other_beam_zeta_bin_width_star_beamstrahlung,
+            self.slices_other_beam_sqrtSigma_11_beamstrahlung,
+            self.slices_other_beam_sqrtSigma_33_beamstrahlung,
+            self.slices_other_beam_sqrtSigma_55_beamstrahlung,
+        )
 
     def _inv_boost_slice_centers(self):
 
