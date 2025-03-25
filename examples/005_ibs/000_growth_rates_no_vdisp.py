@@ -2,6 +2,7 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
+
 import xtrack as xt
 
 ##########################
@@ -63,16 +64,16 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 
 # Computed from normalized emittances:
 # ------------------------------------
-# Nagaitsev:       IBSGrowthRates(Tx=0.00104, Ty=0.011, Tz=0.00803)
-# Bjorken-Mtingwa: IBSGrowthRates(Tx=0.00111, Ty=0.0109, Tz=0.008)
+# Nagaitsev:       IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
+# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Kx=0.000554, Ky=0.00546, Kz=0.004)
 
 #####################
 # Define parameters #
 #####################
 
-# Should roughly be equivalent
-gemitt_x: float = 1.742e-7
-gemitt_y: float = 1.254e-7
+# Take the equivalent
+gemitt_x: float = nemitt_x / (tw.beta0 * tw.gamma0)
+gemitt_y: float = nemitt_y / (tw.beta0 * tw.gamma0)
 
 ###################################
 # Get growth rates with Nagaitsev #
@@ -114,5 +115,5 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates2}")
 
 # Computed from geometric emittances (rough equivalent):
 # ------------------------------------------------------
-# Nagaitsev:       IBSGrowthRates(Tx=0.00103, Ty=0.0111, Tz=0.00803)
-# Bjorken-Mtingwa: IBSGrowthRates(Tx=0.00111, Ty=0.0109, Tz=0.008)
+# Nagaitsev:       IBSAmplitudeGrowthRates(Kx=0.000518, Ky=0.00552, Kz=0.00402)
+# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Kx=0.000554, Ky=0.00546, Kz=0.004)

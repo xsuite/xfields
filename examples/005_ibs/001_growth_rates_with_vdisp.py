@@ -2,6 +2,7 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
+
 import json
 
 import xtrack as xt
@@ -71,5 +72,5 @@ print(f"Bjorken-Mtingwa: {bm_growth_rates}")
 
 # Computed from normalized emittances:
 # ------------------------------------
-# Nagaitsev:       IBSGrowthRates(Tx=6.24e-05, Ty=-2.27e-09, Tz=0.00031)
-# Bjorken-Mtingwa: IBSGrowthRates(Tx=6.21e-05, Ty=1.1e-06, Tz=0.00031)
+# Nagaitsev:       IBSAmplitudeGrowthRates(Kx=3.12e-05, Ky=-1.14e-09, Kz=0.000155)
+# Bjorken-Mtingwa: IBSAmplitudeGrowthRates(Kx=3.11e-05, Ky=5.52e-07, Kz=0.000155)
