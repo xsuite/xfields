@@ -71,7 +71,7 @@ class ElementWithSlicer(xt.BeamElement):
                          bunch_spacing_zeta=bunch_spacing_zeta,
                          slicer_moments=slicer_moments)
 
-        if with_compressed_profile:
+        if with_compressed_profile: #TODO with a bunch selection, number of sources and targets should differ
             self._initialize_moments(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper

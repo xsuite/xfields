@@ -61,10 +61,28 @@ class WakeTracker(ElementWithSlicer):
         self.components = components
         self.pipeline_manager = None
 
+        self.fake_coupled_bunch_phases = {}
+        if fake_coupled_bunch_phase_x is not None:
+            self.fake_coupled_bunch_phases['x'] = fake_coupled_bunch_phase_x
+            assert beta_x is not None and beta_x > 0
+            self.beta_x = beta_x
+        if fake_coupled_bunch_phase_y is not None:
+            self.fake_coupled_bunch_phases['y'] = fake_coupled_bunch_phase_y
+            assert beta_y is not None and beta_y > 0
+            self.beta_y = beta_y
+        if self.fake_coupled_bunch_phases:
+            assert bunch_selection is not None and filling_scheme is not None
+            assert bunch_selection, "When faking a coupled bunch mode, only one bunch should be selected as ref."
+
         all_slicer_moments = []
         for cc in self.components:
             assert not hasattr(cc, 'moments_data') or cc.moments_data is None
             all_slicer_moments += cc.source_moments
+
+        if self.fake_coupled_bunch_phases:
+            for moment_name in self.fake_coupled_bunch_phases.keys():
+                if moment_name in all_slicer_moments:
+                    all_slicer_moments.append('p'+moment_name)
 
         self.all_slicer_moments = list(set(all_slicer_moments))
 
@@ -90,7 +108,6 @@ class WakeTracker(ElementWithSlicer):
             circumference=circumference)
 
         self._flatten = _flatten
-        all_slicer_moments = list(set(all_slicer_moments))
 
     def init_pipeline(self, pipeline_manager, element_name, partner_names):
 
@@ -129,11 +146,26 @@ class WakeTracker(ElementWithSlicer):
         if status and status.on_hold == True:
             return status
 
+        if self.fake_coupled_bunch_phases:
+            self._compute_fake_bunch_moments()
+
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_slot_particles=self.i_slot_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
+
+    def _compute_fake_bunch_moments(self):
+        conjugate_names = {'x':'px','y':'py'}
+        filled_slots = self.filling_scheme.nonzero()[0]
+        for bunch_number,slot in enumerate(filled_slots):
+            if slot != self.bunch_selection[0]:  
+                moments = {}
+                for moment_name in self.fake_coupled_bunch_phases.keys():
+                    complex_normalised_moments = self.moments_data.get_source_moment_profile(moment_name,0,0) + 1j*self.beta_y*self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,0)
+                    moments[moment_name] = np.real(complex_normalised_moments*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(slot-self.bunch_selection[0])))
+                moments['num_particles'] = self.moments_data.get_source_moment_profile('num_particles',0,0)
+                self.moments_data.set_moments(bunch_number,0,moments)
 
     @property
     def zeta_range(self):
