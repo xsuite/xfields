@@ -81,13 +81,13 @@ class _ConvData:
             self._M_aux = moments_data._M_aux
             self._N_1 = moments_data._N_1
             self._N_S = moments_data._N_S
-            self._N_T = moments_data._N_S
+            self._N_T = moments_data._N_T
             self._BB = 1  # B in the paper
             # (for now we assume that B=0 is the first bunch in time and the
             # last one in zeta)
             self._AA = self._BB - self._N_S
-            self._CC = self._AA
             self._DD = self._BB
+            self._CC = self._DD - self._N_T
 
             # Build wake matrix
             self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,

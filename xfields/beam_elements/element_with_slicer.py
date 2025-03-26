@@ -44,6 +44,7 @@ class ElementWithSlicer(xt.BeamElement):
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
                  filling_scheme=None,
+                 n_fake_bunches = None,
                  bunch_selection=None,
                  num_turns=1,
                  circumference=None,
@@ -77,6 +78,7 @@ class ElementWithSlicer(xt.BeamElement):
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper
                 bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
                 filling_scheme=filling_scheme,
+                n_fake_bunches=n_fake_bunches,
                 num_turns=num_turns,
                 circumference=circumference)
 
@@ -104,20 +106,29 @@ class ElementWithSlicer(xt.BeamElement):
             num_slices=None,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=None,  # This is P in the paper
             filling_scheme=None,
+            n_fake_bunches=None,
             num_turns=1,
             circumference=None):
 
+        if n_fake_bunches is not None or n_fake_bunches > 0:
+            assert filling_scheme is None
+        else:
+            n_fake_bunches = 0
+        self.n_fake_bunches = n_fake_bunches
         if filling_scheme is not None:
             i_last_bunch = np.where(filling_scheme)[0][-1]
             num_periods = i_last_bunch + 1
+            num_targets = num_periods
         else:
-            num_periods = 1
+            num_periods = 1 + self.n_fake_bunches
+            num_targets = 1
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 num_periods=num_periods,
+                num_targets=num_targets,
                 num_turns=num_turns,
                 circumference=circumference,
                 _context=self.context)
