@@ -51,6 +51,9 @@ class WakeTracker(ElementWithSlicer):
                  filling_scheme=None,
                  bunch_selection=None,
                  num_turns=1,
+                 fake_coupled_bunch_phase_x = None,
+                 fake_coupled_bunch_phase_y = None,
+                 beta_x = None, beta_y = None,
                  circumference=None,
                  log_moments=None,
                  _flatten=False,
@@ -62,14 +65,15 @@ class WakeTracker(ElementWithSlicer):
         self.pipeline_manager = None
 
         self.fake_coupled_bunch_phases = {}
+        self.betas = {}
         if fake_coupled_bunch_phase_x is not None:
             self.fake_coupled_bunch_phases['x'] = fake_coupled_bunch_phase_x
             assert beta_x is not None and beta_x > 0
-            self.beta_x = beta_x
+            self.betas['x'] = beta_x
         if fake_coupled_bunch_phase_y is not None:
             self.fake_coupled_bunch_phases['y'] = fake_coupled_bunch_phase_y
             assert beta_y is not None and beta_y > 0
-            self.beta_y = beta_y
+            self.betas['y'] = beta_y
         if self.fake_coupled_bunch_phases:
             assert bunch_selection is not None and filling_scheme is not None
             assert bunch_selection, "When faking a coupled bunch mode, only one bunch should be selected as ref."
@@ -157,14 +161,15 @@ class WakeTracker(ElementWithSlicer):
 
     def _compute_fake_bunch_moments(self):
         conjugate_names = {'x':'px','y':'py'}
-        filled_slots = self.filling_scheme.nonzero()[0]
-        for bunch_number,slot in enumerate(filled_slots):
+        for bunch_number,slot in enumerate(self.slicer.filled_slots):
             if slot != self.bunch_selection[0]:  
                 moments = {}
                 for moment_name in self.fake_coupled_bunch_phases.keys():
-                    complex_normalised_moments = self.moments_data.get_source_moment_profile(moment_name,0,0) + 1j*self.beta_y*self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,0)
+                    z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,0) 
+                    z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,0)
+                    complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
                     moments[moment_name] = np.real(complex_normalised_moments*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(slot-self.bunch_selection[0])))
-                moments['num_particles'] = self.moments_data.get_source_moment_profile('num_particles',0,0)
+                z_dummy,moments['num_particles'] = self.moments_data.get_source_moment_profile('num_particles',0,0)
                 self.moments_data.set_moments(bunch_number,0,moments)
 
     @property
@@ -190,7 +195,7 @@ class WakeTracker(ElementWithSlicer):
     @property
     def circumference(self):
         return self.moments_data.circumference
-
+        
     def __add__(self, other):
 
         if other == 0:
@@ -208,7 +213,7 @@ class WakeTracker(ElementWithSlicer):
                 'Bunch spacing zeta is not consistent')
         else:
             xo.assert_allclose(self.bunch_spacing_zeta, other.bunch_spacing_zeta, atol=1e-12, rtol=0)
-        if self.filling_scheme is None:
+        if self.filling_scheme is None: # TODO I don't know who wrote this, but it's bullshit
             assert other.filling_scheme is None, (
                 'Filling scheme is not consistent')
         else:

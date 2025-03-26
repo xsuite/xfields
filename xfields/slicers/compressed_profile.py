@@ -221,7 +221,7 @@ class CompressedProfile(xt.BeamElement):
 
         return z_out, moment_out
         
-def get_source_moment_profile(self, moment_name, i_turn,i_source):
+    def get_source_moment_profile(self, moment_name, i_turn,i_source):
         """
         Get the moment profile for a given turn.
 
