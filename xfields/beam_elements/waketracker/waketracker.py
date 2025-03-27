@@ -108,6 +108,7 @@ class WakeTracker(ElementWithSlicer):
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
             filling_scheme=filling_scheme,
+            bunch_selection=bunch_selection,
             num_turns=num_turns,
             circumference=circumference)
 
@@ -143,16 +144,12 @@ class WakeTracker(ElementWithSlicer):
             cc._conv_data._initialize_conv_data(_flatten=self._flatten,
                                                 moments_data=self.moments_data,
                                                 beta0=beta0)
-
         # Use common slicer from parent class to measure all moments
         status = super().track(particles)
-
         if status and status.on_hold == True:
             return status
-
         if self.fake_coupled_bunch_phases:
             self._compute_fake_bunch_moments()
-
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_slot_particles=self.i_slot_particles,
@@ -162,7 +159,7 @@ class WakeTracker(ElementWithSlicer):
     def _compute_fake_bunch_moments(self):
         conjugate_names = {'x':'px','y':'py'}
         for bunch_number,slot in enumerate(self.slicer.filled_slots):
-            if slot != self.bunch_selection[0]:  
+            if slot != self.bunch_selection[0]:
                 moments = {}
                 for moment_name in self.fake_coupled_bunch_phases.keys():
                     z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,0) 

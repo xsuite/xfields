@@ -81,13 +81,13 @@ class _ConvData:
             self._M_aux = moments_data._M_aux
             self._N_1 = moments_data._N_1
             self._N_S = moments_data._N_S
-            self._N_T = moments_data._N_S
+            self._N_T = moments_data._N_T
             self._BB = 1  # B in the paper
             # (for now we assume that B=0 is the first bunch in time and the
             # last one in zeta)
             self._AA = self._BB - self._N_S
-            self._CC = self._AA
-            self._DD = self._BB
+            self._DD = self.waketracker.slicer.bunch_selection[0]
+            self._CC = self._DD - self._N_T
 
             # Build wake matrix
             self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,
@@ -151,6 +151,7 @@ class _ConvData:
         # Compute convolution
         self._compute_convolution(moment_names=self.component.source_moments,
                                   moments_data=moments_data)
+
         # Apply kicks
         interpolated_result = particles.zeta * 0
         assert moments_data.moments_names[-1] == 'result'
@@ -164,6 +165,7 @@ class _ConvData:
             i_slot_particles=i_slot_particles,
             i_slice_particles=i_slice_particles,
             out=interpolated_result)
+
         # interpolated result will be zero for lost particles (so nothing to
         # do for them)
         scaling_constant = particles.q0**2 * qe**2 / (
