@@ -8,18 +8,22 @@ from __future__ import annotations  # important for sphinx to alias ArrayLike
 import warnings
 from abc import ABC, abstractmethod
 from logging import getLogger
-from typing import Callable, Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xobjects as xo
 import xtrack as xt
-from numpy.typing import ArrayLike
 from scipy.constants import c, hbar
 from scipy.integrate import quad, quad_vec
 from scipy.interpolate import interp1d
 from scipy.special import elliprd
 
 from xfields.ibs._formulary import phi
+
+if TYPE_CHECKING:
+    from typing import Callable
+
+    from numpy.typing import ArrayLike
 
 LOGGER = getLogger(__name__)
 
@@ -54,47 +58,186 @@ class NagaitsevIntegrals(xo.HybridClass):
         """Init with the results of the integrals."""
         self.xoinitialize(Ix=Ix, Iy=Iy, Iz=Iz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the integrals as a tuple."""
         return float(self.Ix), float(self.Iy), float(self.Iz)
 
 
-class IBSGrowthRates(xo.HybridClass):
+class IBSEmittanceGrowthRates(xo.HybridClass):
     """
-    Holds IBS growth rates in each plane, named ``Tx``,
-    ``Ty``, and ``Tz``. By growth rate we mean the 1/tau
-    values, expressed in [s^-1].
+    Holds IBS emittance growth rates in each plane, expressed
+    in [s^-1]. The growth rate corresponds to 1/tau, with tau
+    the growth time.
+
+    Methods are available to get the corresponding emittance
+    growth times, in [s], or even the rates and times but for
+    amplitude (beam size) convention.
 
     Attributes
     ----------
-    Tx : float
-        Horizontal IBS growth rate, in [s^-1].
-    Ty : float
-        Vertical IBS growth rate, in [s^-1].
-    Tz : float
-        Longitudinal IBS growth rate, in [s^-1].
+    Kx : float
+        Horizontal IBS emittance growth rate, in [s^-1].
+    Ky : float
+        Vertical IBS emittance growth rate, in [s^-1].
+    Kz : float
+        Longitudinal IBS emittance growth rate, in [s^-1].
     """
 
     _xofields = {
-        "Tx": xo.Float64,
-        "Ty": xo.Float64,
-        "Tz": xo.Float64,
+        "Kx": xo.Float64,
+        "Ky": xo.Float64,
+        "Kz": xo.Float64,
     }
 
-    def __init__(self, Tx: float, Ty: float, Tz: float) -> None:
+    def __init__(self, Kx: float, Ky: float, Kz: float) -> None:
         """Init with given values."""
-        self.xoinitialize(Tx=Tx, Ty=Ty, Tz=Tz)
+        self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
-        """Return the growth rates as a tuple."""
-        return float(self.Tx), float(self.Ty), float(self.Tz)
+    def __eq__(self, other: IBSEmittanceGrowthRates):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.Kx == other.Kx and self.Ky == other.Ky and self.Kz == other.Kz
 
-    def as_tau(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
+        """Return the IBS emittance growth rates as a tuple."""
+        return float(self.Kx), float(self.Ky), float(self.Kz)
+
+    def to_emittance_growth_times(self) -> tuple[float, float, float]:
         """
-        Returns a tuple with the inverse of the
-        growth rates: the tau values in [s].
+        Returns a tuple with the corresponding emittance
+        growth times, in [s]. The emittance growth time is
+        the inverse of the emittance growth rate.
+
+        Note
+        ----
+            The values returned by this method are equal to the ibs.tx,
+            ibs.ty and ibs.tl variables found in MAD-X after calling its
+            IBS command.
+
+        Returns
+        -------
+        tuple[float, float, float]
+            The emittance growth times, in [s].
         """
-        return float(1 / self.Tx), float(1 / self.Ty), float(1 / self.Tz)
+        return float(1 / self.Kx), float(1 / self.Ky), float(1 / self.Kz)
+
+    def to_amplitude_growth_times(self) -> tuple[float, float, float]:
+        """
+        Returns the corresponding IBS growth times for the beam
+        size (amplitude) instead of the emittance, in [s]. The
+        amplitude growth time is the emittance growth time
+        multiplied by 2.
+
+        Returns
+        -------
+        atau_x, atau_y, atau_z : tuple[float, float, float]
+            The amplitude growth times, in [s].
+        """
+        etau_x, etau_y, etau_z = self.to_emittance_growth_times()
+        return float(2 * etau_x), float(2 * etau_y), float(2 * etau_z)
+
+    def to_amplitude_growth_rates(self) -> IBSAmplitudeGrowthRates:
+        """
+        Returns the corresponding IBS growth rates for the beam
+        size (amplitude) instead of the emittance, in [s^-1]. The
+        amplitude growth rate half of the emittance growth rate.
+
+        Returns
+        -------
+        amplitude_rates : IBSAmplitudeGrowthRates
+            An `IBSAmplitudeGrowthRates` object with the amplitude
+            growth rates, in [s^-1].
+        """
+        return IBSAmplitudeGrowthRates(Kx=self.Kx / 2, Ky=self.Ky / 2, Kz=self.Kz / 2)
+
+
+class IBSAmplitudeGrowthRates(xo.HybridClass):
+    """
+    Holds IBS amplitude (beam size) growth rates in each plane,
+    expressed in [s^-1]. The growth rate corresponds to 1/tau,
+    with tau the growth time.
+
+    Methods are available to get the corresponding amplitude
+    growth times, in [s], or even the rates and times but for
+    emittance convention.
+
+    Attributes
+    ----------
+    Kx : float
+        Horizontal IBS amplitude growth rate, in [s^-1].
+    Ky : float
+        Vertical IBS amplitude growth rate, in [s^-1].
+    Kz : float
+        Longitudinal IBS amplitude growth rate, in [s^-1].
+    """
+
+    _xofields = {
+        "Kx": xo.Float64,
+        "Ky": xo.Float64,
+        "Kz": xo.Float64,
+    }
+
+    def __init__(self, Kx: float, Ky: float, Kz: float) -> None:
+        """Init with given values."""
+        self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
+
+    def __eq__(self, other: IBSAmplitudeGrowthRates):
+        if not isinstance(other, self.__class__):
+            return False
+        return self.Kx == other.Kx and self.Ky == other.Ky and self.Kz == other.Kz
+
+    def as_tuple(self) -> tuple[float, float, float]:
+        """Return the IBS amplitude growth rates as a tuple."""
+        return float(self.Kx), float(self.Ky), float(self.Kz)
+
+    def to_amplitude_growth_times(self) -> tuple[float, float, float]:
+        """
+        Returns a tuple with the corresponding IBS amplitude
+        growth times, in [s]. The growth time is the
+        inverse of the growth rate.
+
+        Returns
+        -------
+        atau_x, atau_y, atau_z : tuple[float, float, float]
+            The amplitude growth times, in [s].
+        """
+        return float(1 / self.Kx), float(1 / self.Ky), float(1 / self.Kz)
+
+    def to_emittance_growth_times(self) -> tuple[float, float, float]:
+        """
+        Returns the corresponding IBS growth times for the
+        emittance instead of the amplitude, in [s]. The
+        emittance growth time is the amplitude growth time
+        divided by 2.
+
+        Note
+        ----
+            The values returned by this method are equal to the
+            ibs.tx, ibs.ty and ibs.tl variables found in MAD-X
+            after calling its IBS command.
+
+        Returns
+        -------
+        tau_x, tau_y, tau_z : tuple[float, float, float]
+            The emittance growth times, in [s].
+        """
+        atau_x, atau_y, atau_z = self.to_amplitude_growth_times()
+        return float(atau_x / 2), float(atau_y / 2), float(atau_z / 2)
+
+    def to_emittance_growth_rates(self) -> IBSEmittanceGrowthRates:
+        """
+        Returns the corresponding IBS growth rates for the
+        emittance instead of the amplitude, in [s^-1]. The
+        emittance growth rate is twice the amplitude growth
+        rate.
+
+        Returns
+        -------
+        emittance_rates : IBSEmittanceGrowthRates
+            An `IBSEmittanceGrowthRates` object with the
+            emittance growth rates, in [s^-1].
+        """
+        return IBSEmittanceGrowthRates(Kx=self.Kx * 2, Ky=self.Ky * 2, Kz=self.Kz * 2)
 
 
 # ----- Abstract Base Class to Inherit from ----- #
@@ -123,7 +266,7 @@ class AnalyticalIBS(ABC):
         self._twiss = twiss
         self._particle = twiss.particle_on_co
         # This one self-updates when computed, but can be overwritten by the user
-        self.ibs_growth_rates: IBSGrowthRates = None
+        self.ibs_growth_rates: IBSAmplitudeGrowthRates = None
 
     def coulomb_log(
         self,
@@ -255,10 +398,10 @@ class AnalyticalIBS(ABC):
         bunch_length: float = None,
         total_beam_intensity: int = None,
         bunched: bool = True,
-    ) -> IBSGrowthRates:
+    ) -> IBSAmplitudeGrowthRates:
         r"""
-        Method to compute the IBS growth rates. This is an abstract method
-        that should be implemented in child classes based on their formalism.
+        Method to compute the IBS amplitude growth rates. This is an abstract
+        method that should be implemented in child classes based on their formalism.
 
         Parameters
         ----------
@@ -285,8 +428,8 @@ class AnalyticalIBS(ABC):
 
         Returns
         -------
-        IBSGrowthRates
-            An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSAmplitudeGrowthRates
+            An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
         """
         raise NotImplementedError(
             "This method should be implemented in all child classes, but it hasn't been for this one."
@@ -332,20 +475,25 @@ class AnalyticalIBS(ABC):
 
 class NagaitsevIBS(AnalyticalIBS):
     r"""
-    Analytical implementation to compute IBS growth
-    rates according to S. Nagaitsev's formalism (see
-    :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`).
+    Analytical implementation to compute IBS growth rates according to S. Nagaitsev's
+    formalism (see :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`).
+
+    Note
+    ----
+        Please note that Nagaitsev's formalism computes emittance growth rates,
+        which we convert to amplitude growth rates before returning to the user
+        for consistency with Xsuite SR damping.
 
     Please keep in mind that this formalism will give an inaccurate
     vertical growth rate in the presence of vertical dispersion. In
-    such a case, prefer the Bjorken-Mtingwa formalism instead. See
-    the `BjorkenMtingwaIBS` class.
+    such a case, prefer the adapted Bjorken-Mtingwa formalism instead.
+    See the `BjorkenMtingwaIBS` class for details.
 
     Attributes
     ----------
-    ibs_growth_rates : IBSGrowthRates
-        The computed IBS growth rates. This self-updates when
-        they are computed with the `.growth_rates` method.
+    ibs_growth_rates : IBSAmplitudeGrowthRates
+        The computed IBS amplitude growth rates. This self-updates
+        when they are computed with the `.growth_rates` method.
     nagaitsev_integrals : NagaitsevIntegrals
         The computed Nagaitsev integrals. This self-updates when
         they are computed with the `.integrals` method.
@@ -488,13 +636,17 @@ class NagaitsevIBS(AnalyticalIBS):
         bunch_length: float = None,
         total_beam_intensity: int = None,
         bunched: bool = True,
-    ) -> IBSGrowthRates:
+    ) -> IBSAmplitudeGrowthRates:
         r"""
-        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
-        code base, according to Nagaitsev's formalism. These correspond to the :math:`1 / \tau`
-        terms of Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
-        instance attribute `self.ibs_growth_rates` is automatically updated with the results of
-        this method when it is called.
+        Computes the ``IBS`` amplitude growth rates, according to Nagaitsev's formalism.
+        Please note that Nagaitsev's formalism computes emittance growth rates, which we
+        convert to amplitude growth rates before returning to the user for consistency
+        with Xsuite SR damping times.
+
+        The emittance growth rates correspond to the :math:`1 / \tau` terms of
+        Eq (28) in :cite:`PRAB:Nagaitsev:IBS_formulas_fast_numerical_evaluation`. The
+        instance attribute `self.ibs_growth_rates` is automatically updated with the
+        results of this method when it is called.
 
         .. warning::
             Currently this calculation does not take into account vertical dispersion.
@@ -510,7 +662,8 @@ class NagaitsevIBS(AnalyticalIBS):
                 - Computes the Coulomb logarithm for the defined beam and optics parameters.
                 - Compute the rest of the constant term of Eq (30-32).
                 - Compute for each plane the full result of Eq (30-32), respectively.
-                - Plug these into Eq (28) and divide by either :math:`\varepsilon_x, \varepsilon_y` or :math:`\sigma_{\delta}^{2}` (as relevant) to get :math:`1 / \tau`.
+                - Plug these into Eq (28) and divide by either :math:`\varepsilon_x, \varepsilon_y`
+                  or :math:`\sigma_{\delta}^{2}` (as relevant) to get :math:`1 / \tau`.
 
             **Note:** As one can see above, this calculation is done by building on the
             Nagaitsev integrals. If these have not been computed yet, this method will
@@ -558,8 +711,8 @@ class NagaitsevIBS(AnalyticalIBS):
 
         Returns
         -------
-        IBSGrowthRates
-            An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSAmplitudeGrowthRates
+            An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
         """
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
@@ -584,7 +737,7 @@ class NagaitsevIBS(AnalyticalIBS):
         if bunched is False:
             LOGGER.warning(
                 "Using 'bunched=False' in this formalism makes the approximation of bunch length = C/(2*pi). "
-                "Please use the BjorkenMtingwaIBS class for fully accurate results."
+                "Please use the Bjorken-Mtingwa formalism for a correct handling of Dy."
             )
             bunch_length: float = self._twiss.circumference / (2 * np.pi)
         # ----------------------------------------------------------------------------------------------
@@ -613,35 +766,47 @@ class NagaitsevIBS(AnalyticalIBS):
         Ix, Iy, Iz = self.nagaitsev_integrals.as_tuple()
         # If coasting beams, since we use bunch_length=C/(2*pi) we have to divide rates by 2 (see Piwinski)
         factor = 1.0 if bunched is True else 2.0
-        Tx = float(Ix * full_constant_term / gemitt_x) / factor
-        Ty = float(Iy * full_constant_term / gemitt_y) / factor
-        Tz = float(Iz * full_constant_term / sigma_delta**2) / factor
-        result = IBSGrowthRates(Tx, Ty, Tz)
+        Kx = float(Ix * full_constant_term / gemitt_x) / factor
+        Ky = float(Iy * full_constant_term / gemitt_y) / factor
+        Kz = float(Iz * full_constant_term / sigma_delta**2) / factor
+        emittance_rates = IBSEmittanceGrowthRates(Kx, Ky, Kz)
         # ----------------------------------------------------------------------------------------------
-        # Self-update the instance's attribute before returning
+        # Important: the calculations of Nagaitsev yield emittance growth rates. In Xsuite we chose to
+        # return amplitude growth rates for consistency with SR damping times (also in amplitude). We
+        # then do the conversion now before updating the instance's attribute and returning.
+        LOGGER.debug("Converting to amplitude growth rates")
+        result: IBSAmplitudeGrowthRates = emittance_rates.to_amplitude_growth_rates()
         self.ibs_growth_rates = result
         return result
 
 
 class BjorkenMtingwaIBS(AnalyticalIBS):
     r"""
-    Analytical implementation to compute IBS growth rates according
-    to the `Bjorken & Mtingwa` formalism. The method follows the
-    ``MAD-X`` implementation, which has corrected B&M in order to take
-    in consideration vertical dispersion (see the relevant note about
-    the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX`).
+    Analytical implementation to compute IBS amplitude growth rates
+    according to the `Bjorken & Mtingwa` formalism. The method follows
+    the ``MAD-X`` implementation, which has corrected B&M in order to
+    take in consideration vertical dispersion (see the relevant note
+    about the changes at :cite:`CERN:Antoniou:Revision_IBS_MADX` by
+    F. Antoniou and F. Zimmermann).
 
-    .. note::
-        In ``MAD-X`` it is ensure that the Twiss table is centered.
+    Note
+    ----
+        Please note the adapted B&M formalism computes emittance growth rates,
+        which we convert to amplitude growth rates before returning to the user
+        for consistency with Xsuite SR damping times.
+
+    Note
+    ----
+        In ``MAD-X`` it is ensured that the Twiss table is centered.
         One might observe some small discrepancies against ``MAD-X``
         growth rates if not providing a centered Twiss table (by
         slicing the lattice first, for instance.)
 
     Attributes:
     -----------
-    ibs_growth_rates : IBSGrowthRates
-        The computed IBS growth rates. This self-updates when
-        they are computed with the `.growth_rates` method.
+    ibs_growth_rates : IBSAmplitudeGrowthRates
+        The computed IBS amplitude growth rates. This self-updates
+        when they are computed with the `.growth_rates` method.
     """
 
     def __init__(self, twiss: xt.TwissTable) -> None:
@@ -1078,6 +1243,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
         Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
+        # fmt: off
         by: ArrayLike = (
             gamma**2 * (bety_over_epsy - 2 * betx_over_epsx) * (Hx / gemitt_x + 1 / sigma_delta**2)
             + gamma**2 * Hy / gemitt_y * (bety_over_epsy - 4 * betx_over_epsx)
@@ -1095,6 +1261,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
             + 6 * gamma**2 * phiy**2 * betx_over_epsx * bety_over_epsy
         )
+        # fmt: on
         return by
 
     def _az(self, gemitt_x: float, gemitt_y: float, sigma_delta: float) -> ArrayLike:
@@ -1190,11 +1357,13 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         Hx: ArrayLike = (Dx**2 + self._twiss.betx**2 * phix**2) / self._twiss.betx
         Hy: ArrayLike = (Dy**2 + self._twiss.bety**2 * phiy**2) / self._twiss.bety
         # ----------------------------------------------------------------------------------------------
+        # fmt: off
         bz: ArrayLike = (
             (betx_over_epsx + bety_over_epsy) * gamma**2 * (Hx / gemitt_x + Hy / gemitt_y + 1 / sigma_delta**2)
             - 2 * betx_over_epsx * bety_over_epsy
             - gamma**2 * (betx_over_epsx**2 * phix**2 + bety_over_epsy**2 * phiy**2)
         )
+        # fmt: on
         return bz
 
     def _constants(
@@ -1205,7 +1374,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         bunch_length: float,
         total_beam_intensity: int,
         bunched: bool = True,
-    ) -> Tuple[float, ArrayLike, ArrayLike, float]:
+    ) -> tuple[float, ArrayLike, ArrayLike, float]:
         r"""
         Computes the constant terms of Eq (8) in the MAD-X note
         :cite:`CERN:Antoniou:Revision_IBS_MADX`. Returned are four terms:
@@ -1234,7 +1403,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Returns
         -------
-        Tuple[float, ArrayLike, ArrayLike, float]
+        tuple[float, ArrayLike, ArrayLike, float]
             Four variables corresponding to the common, horizontal, vertical and
             longitudinal 'constants' of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`.
             The horizontal and vertical ones are arrays, with a value per element.
@@ -1288,7 +1457,7 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         const_y: ArrayLike = bety_over_epsy
         const_z: float = gamma**2 / sigma_delta**2
         # ----------------------------------------------------------------------------------------------
-        # Return the four terms now - they are Tuple[float, ArrayLike, ArrayLike, float]
+        # Return the four terms now - they are tuple[float, ArrayLike, ArrayLike, float]
         return common_constant_term, const_x, const_y, const_z
 
     def growth_rates(
@@ -1302,16 +1471,20 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         total_beam_intensity: int = None,
         bunched: bool = True,
         integration_intervals: int = 17,
-    ) -> IBSGrowthRates:
+    ) -> IBSAmplitudeGrowthRates:
         r"""
-        Computes the ``IBS`` growth rates, named :math:`T_x, T_y` and :math:`T_z` in this
-        code base, according to the Bjorken & Mtingwa formalism. These correspond to the
-        (averaged) :math:`1 / \tau` terms of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`.
-        The instance attribute `self.ibs_growth_rates` is automatically updated with the result
-        of this method when it is called.
+        Computes the ``IBS`` growth rates, according to the adapted Bjorken & Mtingwa
+        formalism. Please note that B&M's formalism computes emittance growth rates,
+        which we convert to amplitude growth rates before returning to the user for
+        consistency with Xsuite SR damping times.
+
+        The emittance growth rates correspond to the (averaged) :math:`1 / \tau` terms
+        of Eq (8) in :cite:`CERN:Antoniou:Revision_IBS_MADX`. The instance attribute
+        `self.ibs_growth_rates` is automatically updated with the result of this method
+        when it is called.
 
         .. warning::
-            In ``MAD-X`` it is ensure that the Twiss table is centered.
+            In ``MAD-X`` it is ensured that the Twiss table is centered.
             One might observe some small discrepancies against ``MAD-X``
             growth rates if not providing a centered Twiss table (by
             slicing the lattice first, for instance.)
@@ -1320,11 +1493,14 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
             The calculation is done according to the following steps, which are related
             to different equations in :cite:`CERN:Antoniou:Revision_IBS_MADX`:
 
-                - Adjusts the :math:`D_x, D_y, D^{\prime}_{x}, D^{\prime}_{y}` terms (multiply by :math:`\beta_{rel}`) to be in the :math:`pt` frame.
+                - Adjusts the :math:`D_x, D_y, D^{\prime}_{x}, D^{\prime}_{y}` terms
+                  (multiply by :math:`\beta_{rel}`) to be in the :math:`pt` frame.
                 - Computes the various terms from Table 1 of the MAD-X note.
-                - Computes the Coulomb logarithm and the common constant term (first fraction) of Eq (8).
+                - Computes the Coulomb logarithm and the common constant term (first
+                  fraction) of Eq (8).
                 - Defines the integrands of integrals in Eq (8) of the MAD-X note.
-                - Defines sub-intervals and integrates the above over all of them, getting growth rates at each element in the lattice.
+                - Defines sub-intervals and integrates the above over all of them,
+                  getting growth rates at each element in the lattice.
                 - Averages the results over the full circumference of the machine.
 
         Parameters
@@ -1357,8 +1533,8 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
 
         Returns
         -------
-        IBSGrowthRates
-            An ``IBSGrowthRates`` object with the computed growth rates.
+        IBSAmplitudeGrowthRates
+            An ``IBSAmplitudeGrowthRates`` object with the computed growth rates.
         """
         LOGGER.info("Computing IBS growth rates for defined beam and optics parameters")
         # ----------------------------------------------------------------------------------------------
@@ -1469,32 +1645,37 @@ class BjorkenMtingwaIBS(AnalyticalIBS):
         # ----------------------------------------------------------------------------------------------
         # Now we loop over the lattice and compute the integrals at each element
         LOGGER.debug("Computing integrals of Eq (8) of the MAD-X note - at each element in the lattice")
-        Tx_array: ArrayLike = calculate_integral_vectorized(Ix_integrand_vectorized)
-        Ty_array: ArrayLike = calculate_integral_vectorized(Iy_integrand_vectorized)
-        Tz_array: ArrayLike = calculate_integral_vectorized(Iz_integrand_vectorized)
+        Kx_array: ArrayLike = calculate_integral_vectorized(Ix_integrand_vectorized)
+        Ky_array: ArrayLike = calculate_integral_vectorized(Iy_integrand_vectorized)
+        Kz_array: ArrayLike = calculate_integral_vectorized(Iz_integrand_vectorized)
         # ----------------------------------------------------------------------------------------------
         # Don't forget to multiply by the common constant term here
         LOGGER.debug("Including common constant term of Eq (8) of the MAD-X note")
-        Tx_array *= common_constant_term
-        Ty_array *= common_constant_term
-        Tz_array *= common_constant_term
+        Kx_array *= common_constant_term
+        Ky_array *= common_constant_term
+        Kz_array *= common_constant_term
         # ----------------------------------------------------------------------------------------------
         # For a better average, interpolate these intermediate growth rates through the lattice
         LOGGER.debug("Interpolating intermediate growth rates through the lattice")
-        _tx = interp1d(self._twiss.s, Tx_array)
-        _ty = interp1d(self._twiss.s, Ty_array)
-        _tz = interp1d(self._twiss.s, Tz_array)
+        _kx = interp1d(self._twiss.s, Kx_array)
+        _ky = interp1d(self._twiss.s, Ky_array)
+        _kz = interp1d(self._twiss.s, Kz_array)
         # ----------------------------------------------------------------------------------------------
         # And now cmpute the final growth rates for each plane as an average of these interpolated
         # functions over the whole lattice - also ensure conversion to float afterwards!
         LOGGER.debug("Getting average growth rates over the lattice")
         with warnings.catch_warnings():  # Catch and ignore the scipy.integrate.IntegrationWarning
             warnings.simplefilter("ignore", category=UserWarning)
-            Tx: float = float(quad(_tx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-            Ty: float = float(quad(_ty, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-            Tz: float = float(quad(_tz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
-        result = IBSGrowthRates(Tx, Ty, Tz)
+            Kx: float = float(quad(_kx, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+            Ky: float = float(quad(_ky, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+            Kz: float = float(quad(_kz, self._twiss.s[0], self._twiss.s[-1])[0] / self._twiss.circumference)
+        emittance_rates = IBSEmittanceGrowthRates(Kx, Ky, Kz)
         # ----------------------------------------------------------------------------------------------
-        # Self-update the instance's attribute before returning
+        # Important: the calculations of B&M yield emittance growth rates (this is what one gets in MAD-X
+        # for instance does). In Xsuite we chose to return amplitude growth rates for consistency with SR
+        # damping (also in amplitude). We then do the conversion now before updating the instance's
+        # attribute and returning.
+        LOGGER.debug("Converting to amplitude growth rates")
+        result: IBSAmplitudeGrowthRates = emittance_rates.to_amplitude_growth_rates()
         self.ibs_growth_rates = result
         return result
