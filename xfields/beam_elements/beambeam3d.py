@@ -563,11 +563,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             slices_other_beam_zeta_bin_width_beamstrahlung = (
-                slices_other_beam_zeta_bin_width_star_beamstrahlung * np.cos(self.phi))
+                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung) * np.cos(self.phi))
             self.slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_beamstrahlung))
+                slices_other_beam_zeta_bin_width_beamstrahlung)
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+                slices_other_beam_zeta_bin_width_star_beamstrahlung)
         else:
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung[:] = 0
             self.slices_other_beam_zeta_bin_width_beamstrahlung[:] = 0
