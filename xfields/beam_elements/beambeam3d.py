@@ -546,23 +546,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                             self.config_for_update.slicer.bin_widths_beamstrahlung
                                 / np.cos(self.phi))
 
-#        if (slices_other_beam_zeta_bin_width_star_beamstrahlung is None and
-#            slices_other_beam_zeta_bin_width_beamstrahlung is not None):
-#            assert not np.isscalar(slices_other_beam_zeta_bin_width_beamstrahlung), (
-#                'slices_other_beam_zeta_bin_width_beamstrahlung must be an array')
-#            assert (len(slices_other_beam_zeta_bin_width_beamstrahlung)
-#                == len(self.slices_other_beam_num_particles))
-#            slices_other_beam_zeta_bin_width_star_beamstrahlung = (
-#                slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi))
-#
-#        if slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
-#            assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
-#                'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
-#            assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
-#                == len(self.slices_other_beam_num_particles))
-#            self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
-#                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
-
         if slices_other_beam_zeta_bin_width_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_beamstrahlung), (
                 'slices_other_beam_zeta_bin_width_beamstrahlung must be an array')
