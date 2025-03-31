@@ -891,7 +891,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                                                 at_turn,
                                                 internal_tag=self.config_for_update._i_step):
             # Compute moments
-            #self.config_for_update.slicer.assign_slices(particles)  # in this the bin edges are fixed with TempSlicer
             self.moments = self.config_for_update.slicer.compute_moments(particles)  # assign to slices happens inside here
 
             pipeline_manager.send_message(self.moments,
@@ -937,7 +936,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     @phi.setter
     def phi(self, value):
-        #raise NotImplementedError("Setting phi is not implemented yet")
         _init_alpha_phi(self, phi=value)
 
         # Trigger properties to set corresponding starred quantities
@@ -991,7 +989,6 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     @alpha.setter
     def alpha(self, value):
-        #raise NotImplementedError("Setting alpha is not implemented yet")
         _init_alpha_phi(self, alpha=value)
 
         # Trigger properties to set corresponding starred quantities
