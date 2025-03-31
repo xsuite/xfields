@@ -325,11 +325,6 @@ class BeamBeamPIC3D(xt.BeamElement):
             pp.x = -pp.x
             self.fieldmap_self.update_from_particles(particles=pp, update_phi=False)
 
-            with open(f'/Users/pkicsiny/phd/cern/xsuite/Ariz/fmap/fmap_rho_{pp.q0}_self_{self._i_step}','wb') as f:
-                                pkl.dump(self.fieldmap_self.rho, f)
-            with open(f'/Users/pkicsiny/phd/cern/xsuite/Ariz/fmap/fmap_rho_{pp.q0}_other_{self._i_step}','wb') as f:
-                                pkl.dump(self.fieldmap_other.rho, f)
-
             # for visualizing luminous region, size (2, nt=nz, nx, ny, nz), 0: self, 1: other
             at_turn = pp._xobject.at_turn[0] # On CPU there is always an active particle in position 0
             nx, ny, nz, dx, dy, dz = (self.fieldmap_self.nx, self.fieldmap_self.ny, self.fieldmap_self.nz,
