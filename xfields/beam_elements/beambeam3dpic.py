@@ -9,6 +9,7 @@ from scipy.constants import c as clight
 
 import xobjects as xo
 import xtrack as xt
+import pickle as pkl
 
 from ..general import _pkg_root
 from .beambeam3d import _init_alpha_phi
@@ -45,9 +46,33 @@ class BeamstrahlungTable(xo.HybridClass):
       'rho_inv': xo.Float64[:],
         }
 
+class LumiTable(xo.HybridClass):
+    """
+    Buffer size should be equal to the number of tracking turns.
+    If more turns are tracked than the buffer size, the surplus data will be dropped.
+    Luminosity contributions from multiple beambeam elements in the same tracking turn are aggregated in the same buffer element.
+
+    Fields:
+     _index: custom C struct for metadata
+     at_element: [1] element index in the xtrack.Line object, starts with 0
+     at_turn: [1] turn index, starts with 0
+     lumigrid: [1] 3D grid of the macroparticle density distribution, obtained from the numerical solver. Dimension of buffer is: (nt=nz, 2, nx, ny, nz),
+     where 0: fieldmap_self, 1: fieldmap_other, and (nx, ny, nz) are the number of cells (+1) in the PIC grid, and nt is the number of timesteps which is =dz here
+     luminosity: [m^-2] integrated luminosity per bunch crossing for one turn, obtained from the charge density grid. Turn by turn lumi. This is overwritten at every call.
+    """
+    _xofields = {
+      '_index': xt.RecordIndex,
+      'at_turn': xo.Int64[:],
+      'at_element': xo.Int64[:],  # size: n_turns
+      'luminosity': xo.Float64[:],  # size: n_turns
+        }
+
+# currently not possible to have a record table with elements of different size so lumigrid is an attribute
+
 class BeamBeamPIC3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
+        'lumitable': LumiTable,
        }
 
 class BeamBeamPIC3D(xt.BeamElement):
@@ -86,7 +111,12 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         # beamstrahlung
         'flag_beamstrahlung': xo.Int64,
+
+        # luminosity
+        'flag_luminosity': xo.Int64,
+        'flag_lumigrid': xo.Int64,
     }
+
     iscollective = True
 
     _internal_record_class = BeamBeamPIC3DRecord
@@ -107,7 +137,6 @@ class BeamBeamPIC3D(xt.BeamElement):
             'headers/beamstrahlung_spectrum_pic.h'), # merge two headers using a template
         _pkg_root.joinpath(
             'beam_elements/beambeam_src/beambeampic_methods.h'),
-
    ]
 
     _per_particle_kernels={
@@ -136,6 +165,8 @@ class BeamBeamPIC3D(xt.BeamElement):
                  dx=None, dy=None, dz=None,
                  x_grid=None, y_grid=None, z_grid=None,
                  flag_beamstrahlung=0,
+                 flag_luminosity=0,
+                 flag_lumigrid=0,
                  _context=None, _buffer=None,
                  **kwargs):
 
@@ -179,9 +210,16 @@ class BeamBeamPIC3D(xt.BeamElement):
 
         self._working_on_bunch = None
 
-        # Initialize beamstrahlung related quantities
         self.flag_beamstrahlung = flag_beamstrahlung # Trigger property setter
-
+        self.flag_luminosity = flag_luminosity
+        self.flag_lumigrid = flag_lumigrid
+        if self.flag_lumigrid and self.flag_luminosity:
+            self.lumigrid=self._buffer.context.nplike_lib.zeros(
+                self.fieldmap_self.nz*2*self.fieldmap_self.nx*self.fieldmap_self.ny*self.fieldmap_self.nz)
+        elif self.flag_lumigrid and not self.flag_luminosity:
+            raise ValueError(
+                'both flag_luminosity and flag_lumigrid have to be enabled '
+                'to record lumigrid')
 
     def track(self, particles):
 
@@ -209,11 +247,11 @@ class BeamBeamPIC3D(xt.BeamElement):
             z_step_other = self._z_steps_other[self._i_step]
             self.propagate_transverse_coords_at_step(pp, z_step_other=z_step_other)
 
-            # Compute charge density
+            # Compute charge density at CP
             self.fieldmap_self.update_from_particles(particles=pp,
                                                     update_phi=False)
 
-            at_turn = pp.at_turn[mask_alive][0]
+            at_turn = pp._xobject.at_turn[0] # On CPU there is always an active particle in position 0
 
             # Pass charge density to partner
             communication_send_id_data = dict(
@@ -243,6 +281,7 @@ class BeamBeamPIC3D(xt.BeamElement):
             self.pipeline_manager.receive_message(buffer_receive, **communication_recv_id_data)
             buffer_receive = self._context.nparray_to_context_array(buffer_receive)
             rho = buffer_receive.reshape(self.fieldmap_other.rho.shape)
+
             self.fieldmap_other.update_rho(rho, reset=True)
         else:
             return xt.PipelineStatus(on_hold=True,
@@ -258,13 +297,14 @@ class BeamBeamPIC3D(xt.BeamElement):
         z_step_self = self._z_steps_self[self._i_step]
         mask_alive = pp.state > 0
         z_step_other = self._z_steps_other[self._i_step]  # same as z_step_self
+
         # For now assuming symmetric ultra-relativistic beams
         z_other = (-pp.zeta[mask_alive] + z_step_other + z_step_self)
         x_other = -pp.x[mask_alive]
         y_other = pp.y[mask_alive]
 
         # Get fields in the reference system of the other beam
-        dphi_dx, dphi_dy, dphi_dz = self.fieldmap_other.get_values_at_points(  # all 0s at first step since other beam hasnt sent its rho yet
+        dphi_dx, dphi_dy, dphi_dz = self.fieldmap_other.get_values_at_points(
             x=x_other, y=y_other, z=z_other,
             return_rho=False,
             return_phi=False,
@@ -273,13 +313,61 @@ class BeamBeamPIC3D(xt.BeamElement):
             return_dphi_dz=True,
         )
 
+        ##############
+        # lumi begin #
+        ##############
+
+        if self.flag_luminosity:
+
+            # at this point fieldmap_self and fieldmap_other are both at the CP but centered in their own grid
+            # repopulate fieldmap.self with distribution seen from other beam's frame at CP
+            pp.zeta = -pp.zeta + z_step_other + z_step_self
+            pp.x = -pp.x
+            self.fieldmap_self.update_from_particles(particles=pp, update_phi=False)
+
+            with open(f'/Users/pkicsiny/phd/cern/xsuite/Ariz/fmap/fmap_rho_{pp.q0}_self_{self._i_step}','wb') as f:
+                                pkl.dump(self.fieldmap_self.rho, f)
+            with open(f'/Users/pkicsiny/phd/cern/xsuite/Ariz/fmap/fmap_rho_{pp.q0}_other_{self._i_step}','wb') as f:
+                                pkl.dump(self.fieldmap_other.rho, f)
+
+            # for visualizing luminous region, size (2, nt=nz, nx, ny, nz), 0: self, 1: other
+            at_turn = pp._xobject.at_turn[0] # On CPU there is always an active particle in position 0
+            nx, ny, nz, dx, dy, dz = (self.fieldmap_self.nx, self.fieldmap_self.ny, self.fieldmap_self.nz,
+                                      self.fieldmap_self.dx, self.fieldmap_self.dy, self.fieldmap_self.dz)
+
+            # scaling from [C] to [macroparts]
+            weight = pp._xobject.weight[0]  # number of elementary charges per macroparticle
+            pwei = (dx*dy*dz) / (qe * weight)  # qe=1.6e-19 [C] from scipy.constants
+
+            # other beam: fixed in center of grid, self beam: moves in and out of grid
+            if self.flag_lumigrid:
+
+                # unit: [1] (macroparticle dist.)
+                self.lumigrid[2*(nx*ny*nz)*self._i_step:2*(nx*ny*nz)*(self._i_step+1)] = (
+                    self._buffer.context.nplike_lib.hstack(
+                             [self.fieldmap_self.rho.flatten(), self.fieldmap_other.rho.flatten()]
+                             ) * pwei)
+
+            # 2: kinematic factor, dt(=dz): integral over the time, unit: [m^-2]
+            self.record.lumitable.luminosity[at_turn] += (dz*2*(len(pp.x)*weight)**2 *
+                    self.compute_lumi_integral_3d(self.fieldmap_self.rho, self.fieldmap_other.rho, dx, dy, dz))
+
+            # move self beam back to center of its own grid
+            pp.zeta = -pp.zeta + z_step_other + z_step_self
+            pp.x = -pp.x
+            self.fieldmap_self.update_from_particles(particles=pp, update_phi=False)
+
+        ############
+        # lumi end #
+        ############
+
         # Transform fields to self reference frame (dphi_dy is unchanged)
         dphi_dx *= -1
         dphi_dz *= -1
 
         # The kernel relies on the contiguity of pp for element-wise multiplying
         # with dphi_d{x,y,z}
-        pp.reorganize()
+        pp.reorganize() # put dead at end
         self.kick_and_propagate_transverse_coords_back(
             pp, dphi_dx=dphi_dx, dphi_dy=dphi_dy, dphi_dz=dphi_dz,
             z_step_other=z_step_other)
@@ -338,3 +426,43 @@ class BeamBeamPIC3D(xt.BeamElement):
         self._flag_beamstrahlung = flag_beamstrahlung
 
 
+    def compute_lumi_integral_3d(self, lumigrid_my_beam, lumigrid_other_beam, dx, dy, dz):
+
+        sum1 = self._buffer.context.nplike_lib.sum(lumigrid_my_beam)
+        sum2 = self._buffer.context.nplike_lib.sum(lumigrid_other_beam)
+        scale1 = 1.0 / (sum1 * dx * dy * dz)
+        scale2 = 1.0 / (sum2 * dx * dy * dz)
+
+        h1_scaled = lumigrid_my_beam * scale1
+        h2_scaled = lumigrid_other_beam * scale2
+        h_multiplied = h1_scaled * h2_scaled
+        nx, ny, nz = lumigrid_my_beam.shape  # Get 3D grid dimensions
+
+        # corners
+        integral = 0.125 * dx * dy * dz * (
+                h_multiplied[0,    0,    0] + h_multiplied[nx-1,    0,    0] +
+                h_multiplied[0, ny-1,    0] + h_multiplied[nx-1, ny-1,    0] +
+                h_multiplied[0,    0, nz-1] + h_multiplied[nx-1,    0, nz-1] +
+                h_multiplied[0, ny-1, nz-1] + h_multiplied[nx-1, ny-1, nz-1])
+
+        # interior points
+        secondPart = self._buffer.context.nplike_lib.sum(
+                h_multiplied[1:nx-1, 1:ny-1, 1:nz-1])
+
+        # x boundaries
+        thirdPart = self._buffer.context.nplike_lib.sum(
+                h_multiplied[1:nx-1, 0, 1:nz-1] + h_multiplied[1:nx-1, ny-1, 1:nz-1])
+
+        # y boundaries
+        fourthPart = self._buffer.context.nplike_lib.sum(
+                h_multiplied[0, 1:ny-1, 1:nz-1] + h_multiplied[nx-1, 1:ny-1, 1:nz-1])
+
+        # z boundaries
+        fifthPart = self._buffer.context.nplike_lib.sum(
+                h_multiplied[1:nx-1, 1:ny-1, 0] + h_multiplied[1:nx-1, 1:ny-1, nz-1])
+
+        # 3D trapezoid integral
+        integralf = integral + 0.125 * dx * dy * dz * (
+                8 * secondPart + 4 * thirdPart + 4 * fourthPart + 4 * fifthPart)
+
+        return integralf if not self._buffer.context.nplike_lib.isnan(integralf) else 0
