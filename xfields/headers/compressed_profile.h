@@ -1,11 +1,13 @@
 #ifndef XFIELDS_COPRESSED_PROFILE_H
 #define XFIELDS_COPRESSED_PROFILE_H
 
+/*gpufun*/
 void CompressedProfile_track_local_particle(CompressedProfileData el,
                                            LocalParticle *part0){
 
                                            }
 
+/*gpufun*/
 void CompressedProfile_interp_result(
     CompressedProfileData el, LocalParticle *part0,
     int64_t data_shape_0,

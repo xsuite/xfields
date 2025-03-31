@@ -9,12 +9,13 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
-from xobjects.test_helpers import for_all_test_contexts
+from xobjects.test_helpers import fix_random_seed, for_all_test_contexts
 
 test_data_folder = pathlib.Path(
     __file__).parent.joinpath('../test_data').absolute()
 
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(1448795)
 def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
@@ -188,6 +189,7 @@ def test_beambeam3d_beamstrahlung_ws_no_config(test_context):
 
 
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(6221498)
 def test_beambeam3d_beamstrahlung_ws_config(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
@@ -364,6 +366,7 @@ def test_beambeam3d_beamstrahlung_ws_config(test_context):
 
 
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(42)
 def test_beambeam3d_beamstrahlung_qss(test_context):
 
     if isinstance(test_context, xo.ContextCupy):
@@ -630,6 +633,7 @@ def test_beambeam3d_beamstrahlung_qss(test_context):
 
 
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(487654)
 def test_beambeam3d_beamstrahlung_ss(test_context):
 
     if isinstance(test_context, xo.ContextCupy):

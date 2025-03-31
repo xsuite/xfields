@@ -5,13 +5,16 @@
 
 import numpy as np
 
-import xfields as xf
-import xpart as xp
-import xtrack as xt
+from ..beam_elements.electroncloud import ElectronCloud
+from ..fieldmaps.tricubicinterpolated import TriCubicInterpolatedFieldMap
 
+import xpart as xp
+
+from xobjects.general import _print
+from xtrack.progress_indicator import progress
 
 def get_electroncloud_fieldmap_from_h5(
-        filename, tau_max=None, buffer=None, ecloud_name="e-cloud"):
+        filename, zeta_max=None, buffer=None, ecloud_name="e-cloud"):
     assert buffer is not None
     import h5py
     ff = h5py.File(filename, "r")
@@ -24,8 +27,8 @@ def get_electroncloud_fieldmap_from_h5(
     iy1 = 0
     iy2 = ny
 
-    # Select a subset of slices (from -tau_max to +tau_max)
-    if tau_max is None:
+    # Select a subset of slices (from -zeta_max to +zeta_max)
+    if zeta_max is None:
         nz = len(ff["grid/zg"][()])
         iz1 = 0
         iz2 = nz
@@ -33,12 +36,12 @@ def get_electroncloud_fieldmap_from_h5(
         zg = ff["grid/zg"][()]
         nz = len(zg)
         # add one index to make sure range is included
-        min_index = np.argmin(np.abs(zg + np.abs(tau_max))) - 1
-        max_index = np.argmin(np.abs(zg - np.abs(tau_max))) + 1
+        min_index = np.argmin(np.abs(zg + np.abs(zeta_max))) - 1
+        max_index = np.argmin(np.abs(zg - np.abs(zeta_max))) + 1
 
         if min_index < 0 or max_index > nz:
             raise Exception(
-                f"Range ({-np.abs(tau_max):.4f}, {np.abs(tau_max):.4f}) not in maximum range of z_grid: ({zg[0]:.4f},{zg[-1:]:.3f}) of file: {filename}")
+                f"Range ({-np.abs(zeta_max):.4f}, {np.abs(zeta_max):.4f}) not in maximum range of z_grid: ({zg[0]:.4f},{zg[-1]:.3f}) of file: {filename}")
 
         iz1 = min_index
         iz2 = max_index
@@ -50,22 +53,17 @@ def get_electroncloud_fieldmap_from_h5(
     mirror2D = ff["settings/symmetric2D"][()]
     # (in GB), 8 bytes per double-precision number
     memory_estimate = (ix2 - ix1) * (iy2 - iy1) * (iz2 - iz1) * 8 * 8 * 1.e-9
-    print(f"Creating fieldmap... (Memory estimate = {memory_estimate:.2f} GB)")
-    fieldmap = xf.TriCubicInterpolatedFieldMap(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
+    fieldmap = TriCubicInterpolatedFieldMap(x_grid=x_grid, y_grid=y_grid, z_grid=z_grid,
                                                mirror_x=mirror2D, mirror_y=mirror2D, mirror_z=0, _buffer=buffer)
-    print(f"Reading {ecloud_name}: ")
-    kk = 0.
+
     scale = [1., fieldmap.dx, fieldmap.dy, fieldmap.dz,
              fieldmap.dx * fieldmap.dy, fieldmap.dx *
              fieldmap.dz, fieldmap.dy * fieldmap.dz,
              fieldmap.dx * fieldmap.dy * fieldmap.dz]
 
     ####### Optimized version of the loop in the block below. ################
-    for iz in range(iz1, iz2):
-        if (iz - iz1) / (iz2 - iz1) > kk:
-            while (iz - iz1) / (iz2 - iz1) > kk:
-                kk += 0.2
-            print(f"{int(np.round(100*kk)):d}%..")
+    _prog = progress(range(iz1, iz2), desc=f'Reading ecloud {ecloud_name} (~ {memory_estimate:.2f} GB)')
+    for iz in _prog:
         phi_slice = ff[f"slices/slice{iz}/phi"][ix1:ix2,
                                                 iy1:iy2, :].transpose(1, 0, 2)
         for ll in range(8):
@@ -98,7 +96,7 @@ def insert_electronclouds(eclouds, fieldmap=None, line=None):
         s = eclouds[name]["s"]
         length = 0.
         line.insert_element(
-            element=xf.ElectronCloud(
+            element=ElectronCloud(
                 length=length,
                 fieldmap=fieldmap,
                 _buffer=fieldmap._buffer),
@@ -107,20 +105,19 @@ def insert_electronclouds(eclouds, fieldmap=None, line=None):
 
 
 def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_orbit=False,
-                          subtract_dipolar_kicks=False, fieldmaps=None, ecloud_strength=1.):
+                          subtract_dipolar_kicks=False, fieldmaps=None):
     assert twiss is not None
     assert ecloud_info is not None
-    if subtract_dipolar_kicks:
-        dipolar_kicks = {}
-        assert fieldmaps is not None
-        for key in fieldmaps.keys():
-            fieldmap = fieldmaps[key]
-            dipolar_kicks[key] = electroncloud_dipolar_kicks_of_fieldmap(
-                fieldmap=fieldmap, p0c=line.particle_ref.p0c)
+    # if subtract_dipolar_kicks:
+    #     dipolar_kicks = {}
+    #     assert fieldmaps is not None
+    #     for key in fieldmaps.keys():
+    #         fieldmap = fieldmaps[key]
+    #         dipolar_kicks[key] = electroncloud_dipolar_kicks_of_fieldmap(
+    #             fieldmap=fieldmap, p0c=line.particle_ref.p0c)
 
-    length_factor = ecloud_strength / \
+    length_factor = line.vars['ecloud_strength'] / \
         (line.particle_ref.p0c[0] * line.particle_ref.beta0[0])
-    part = twiss["particle_on_co"].copy()
     for ii, el_name in enumerate(twiss["name"]):
         if 'ecloud' in el_name:
             # naming format is "ecloud.ecloud_type.sector.index_in_sector",
@@ -128,21 +125,29 @@ def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_or
             ecloud_type = el_name.split(".")[1]
             length = ecloud_info[ecloud_type][el_name]["length"] * \
                 length_factor
-            line.elements[ii].length = length
+            line.element_refs[el_name].length = length
+            # line.elements[ii].length = length
             assert el_name == line.element_names[ii]
 
             if shift_to_closed_orbit:
                 line.elements[ii].x_shift = twiss["x"][ii]
                 line.elements[ii].y_shift = twiss["y"][ii]
-                part.delta = twiss["delta"][ii]
-                part.zeta = twiss["zeta"][ii]
-                line.elements[ii].tau_shift = part.zeta[0] / \
-                    (part.beta0[0] * part.rvv[0])
+                line.elements[ii].zeta_shift = twiss["zeta"][ii]
 
             if subtract_dipolar_kicks:
-                line.elements[ii].dipolar_px_kick = dipolar_kicks[ecloud_type][0] * length
-                line.elements[ii].dipolar_py_kick = dipolar_kicks[ecloud_type][1] * length
-                line.elements[ii].dipolar_ptau_kick = dipolar_kicks[ecloud_type][2] * length
+                temp_part = line.particle_ref.copy(_context=line._context)
+                temp_part.x = twiss["x"][ii]
+                temp_part.y = twiss["y"][ii]
+                temp_part.zeta = twiss["zeta"][ii]
+                temp_part.px = 0
+                temp_part.py = 0
+                temp_part.ptau = 0 #pzeta has no setter
+                line.elements[ii].track(temp_part)
+
+                ctx_to_np = line._context.nparray_from_context_array
+                line.element_refs[el_name].dipolar_px_kick = ctx_to_np(temp_part.px)[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                line.element_refs[el_name].dipolar_py_kick = ctx_to_np(temp_part.py)[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
+                line.element_refs[el_name].dipolar_pzeta_kick = ctx_to_np(temp_part.pzeta)[0] * line.vars['ecloud_strength'] / line.vars['ecloud_strength']._value
 
 
 def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
@@ -151,32 +156,35 @@ def electroncloud_dipolar_kicks_of_fieldmap(fieldmap=None, p0c=None):
     assert fieldmap is not None
 
     part = xp.Particles(_context=fieldmap._context, p0c=p0c)
-    ecloud = xf.ElectronCloud(
+    ecloud = ElectronCloud(
         length=1,
         fieldmap=fieldmap,
         _buffer=fieldmap._buffer)
     ecloud.track(part)
     px = part.px[0]
     py = part.py[0]
-    ptau = part.ptau[0]
-    return [px, py, ptau]
+    pzeta = part.pzeta[0]
+    return [px, py, pzeta]
 
 
 def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, context=None,
-                             tau_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True):
+                             zeta_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True,
+                             steps_r_matrix=None):
 
     buffer = context.new_buffer()
     fieldmaps = {
         ecloud_type: get_electroncloud_fieldmap_from_h5(
             filename=filename,
             buffer=buffer,
-            tau_max=tau_max,
+            zeta_max=zeta_max,
             ecloud_name=ecloud_type) for (
             ecloud_type,
             filename) in filenames.items()}
 
+    line.vars['ecloud_strength'] = 1
+
     for ecloud_type, fieldmap in fieldmaps.items():
-        print(f"Inserting \"{ecloud_type}\" electron clouds...")
+        _print(f"Inserting \"{ecloud_type}\" electron clouds...")
         insert_electronclouds(
             ecloud_info[ecloud_type],
             fieldmap=fieldmap,
@@ -191,8 +199,8 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
         ecloud_info=ecloud_info,
         subtract_dipolar_kicks=subtract_dipolar_kicks,
         shift_to_closed_orbit=shift_to_closed_orbit,
-        fieldmaps=fieldmaps,
-        ecloud_strength=1)
-    twiss_with_ecloud = line.twiss()
+        fieldmaps=fieldmaps
+        )
+    twiss_with_ecloud = line.twiss(steps_r_matrix=steps_r_matrix)
 
-    return line, twiss_without_ecloud, twiss_with_ecloud
+    return twiss_without_ecloud, twiss_with_ecloud

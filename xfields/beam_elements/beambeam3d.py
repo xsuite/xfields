@@ -25,7 +25,7 @@ class BeamstrahlungTable(xo.HybridClass):
      particle_id: [1] array index in the xpart.Particles object of the primary macroparticle emitting the photon
      primary_energy: [eV] total energy of primary macroparticle before emission of this photon
      photon_id: [1] counter for photons emitted from the same primary in the same collision with a single slice
-     photon_energy: [eV] total energy of a beamstrahlung photon
+        photon_energy: [eV] total energy of a beamstrahlung photon
      photon_critical_energy (with quantum BS only): [eV] critical energy of a beamstrahlung photon
      rho_inv (with quantum BS only): [m^-1] (Fr/dz) inverse bending radius of the primary macroparticle
      n_avg (with mean BS only): [1] avg. number of emitted beamstrahlung photons from 1 macroparticle in collision with a single slice
@@ -563,11 +563,11 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             slices_other_beam_zeta_bin_width_beamstrahlung = (
-                slices_other_beam_zeta_bin_width_star_beamstrahlung * np.cos(self.phi))
+                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung) * np.cos(self.phi))
             self.slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_beamstrahlung))
+                slices_other_beam_zeta_bin_width_beamstrahlung)
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+                slices_other_beam_zeta_bin_width_star_beamstrahlung)
         else:
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung[:] = 0
             self.slices_other_beam_zeta_bin_width_beamstrahlung[:] = 0

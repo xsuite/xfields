@@ -8,7 +8,10 @@ import xobjects as xo
 import xtrack as xt
 import xfields as xf
 import xpart as xp
+from xobjects.test_helpers import fix_random_seed
 
+
+@fix_random_seed(87464541)
 def test_beambeamstrongstrong2d_pi():
 
     context = xo.ContextCpu(omp_num_threads=0)
