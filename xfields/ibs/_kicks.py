@@ -6,16 +6,14 @@
 from __future__ import annotations  # important for sphinx to alias ArrayLike
 
 from logging import getLogger
-from typing import Tuple
+from typing import TYPE_CHECKING
 
 import numpy as np
 import xobjects as xo
-import xtrack as xt
-from numpy.typing import ArrayLike
 from scipy.constants import c
 from scipy.special import elliprd
 
-from xfields.ibs._analytical import BjorkenMtingwaIBS, IBSGrowthRates
+from xfields.ibs._analytical import BjorkenMtingwaIBS
 from xfields.ibs._formulary import (
     _assert_accepted_context,
     _beam_intensity,
@@ -32,6 +30,12 @@ from xfields.ibs._formulary import (
     _sigma_y,
     phi,
 )
+
+if TYPE_CHECKING:
+    import xtrack as xt
+    from numpy.typing import ArrayLike
+
+    from xfields.ibs._analytical import IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates
 
 LOGGER = getLogger(__name__)
 
@@ -65,7 +69,7 @@ class DiffusionCoefficients(xo.HybridClass):
         """Init by providing the diffusion coefficients."""
         self.xoinitialize(Dx=Dx, Dy=Dy, Dz=Dz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Dx), float(self.Dy), float(self.Dz)
 
@@ -96,7 +100,7 @@ class FrictionCoefficients(xo.HybridClass):
         """Init by providing the friction coefficients."""
         self.xoinitialize(Fx=Fx, Fy=Fy, Fz=Fz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Fx), float(self.Fy), float(self.Fz)
 
@@ -127,7 +131,7 @@ class IBSKickCoefficients(xo.HybridClass):
         """Init by providing the kick coefficients."""
         self.xoinitialize(Kx=Kx, Ky=Ky, Kz=Kz)
 
-    def as_tuple(self) -> Tuple[float, float, float]:
+    def as_tuple(self) -> tuple[float, float, float]:
         """Return the growth rates as a tuple."""
         return float(self.Kx), float(self.Ky), float(self.Kz)
 
@@ -163,7 +167,7 @@ def line_density(particles: xt.Particles, num_slices: int) -> ArrayLike:
     # ----------------------------------------------------------------------------------------------
     # Determine properties from longitudinal particles distribution: cuts, slice width, bunch length
     LOGGER.debug("Determining longitudinal particles distribution properties")
-    zeta: ArrayLike = particles.zeta[particles.state > 0]  # careful to only consider active particles
+    zeta: ArrayLike = particles.zeta[particles.state > 0]  # only consider active particles
     z_cut_head: float = nplike.max(zeta)  # z cut at front of bunch
     z_cut_tail: float = nplike.min(zeta)  # z cut at back of bunch
     slice_width: float = (z_cut_head - z_cut_tail) / num_slices  # slice width
@@ -178,8 +182,8 @@ def line_density(particles: xt.Particles, num_slices: int) -> ArrayLike:
     )
     bin_centers: ArrayLike = (bin_edges[:-1] + bin_edges[1:]) / 2.0
     # ----------------------------------------------------------------------------------------------
-    # Compute histogram on longitudinal distribution then compute and return line density
-    counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)  # density to normalize
+    # Compute histogram on longitudinal distribution then compute and return normalized line density
+    counts_normed, bin_edges = nplike.histogram(zeta, bin_edges, density=True)
     return nplike.interp(zeta, bin_centers, counts_normed)
 
 
@@ -334,6 +338,7 @@ class IBSAnalyticalKick(IBSKick):
         _assert_accepted_context(particles._context)
         # ----------------------------------------------------------------------------------------------
         # Compute the momentum spread, bunch length and (geometric) emittances from the Particles object
+        # fmt: off
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
         beam_intensity: float = _beam_intensity(particles)
         bunch_length: float = _bunch_length(particles)
@@ -351,9 +356,10 @@ class IBSAnalyticalKick(IBSKick):
         # Determine the "scaling factor", corresponding to 2 * sigma_t * sqrt(pi) in Eq (8) of reference
         scaling_factor: float = float(2 * np.sqrt(np.pi) * bunch_length)
         # ----------------------------------------------------------------------------------------------
-        # Computing the analytical IBS growth rates through the instance's set TwissTable
-        # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
-        growth_rates: IBSGrowthRates = self._twiss.get_ibs_growth_rates(
+        # Computing the analytical IBS growth rates through the instance's set TwissTable. Note that since
+        # we have no way of detecting coasting beams we assume bunched and take the rms bunch length as is
+        # (but we don't get the correction factor in the coulomb logarithm...)
+        amp_growth_rates: IBSAmplitudeGrowthRates = self._twiss.get_ibs_growth_rates(
             formalism=self.formalism,
             gemitt_x=float(gemitt_x),
             gemitt_y=float(gemitt_y),
@@ -362,12 +368,16 @@ class IBSAnalyticalKick(IBSKick):
             total_beam_intensity=beam_intensity,
             **kwargs,
         )
-        Tx, Ty, Tz = growth_rates.as_tuple()  # each is a float
+        # ----------------------------------------------------------------------------------------------
+        # In Xsuite we give growth rates in amplitude convention but the theory of R. Bruce assumes
+        # the growth rates to be in emittance convention, so we do the conversion here.
+        emit_growth_rates: IBSEmittanceGrowthRates = amp_growth_rates.to_emittance_growth_rates()
         # ----------------------------------------------------------------------------------------------
         # Making sure we do not have negative growth rates (see class docstring warning for detail)
-        Tx: float = 0.0 if Tx < 0 else float(Tx)
-        Ty: float = 0.0 if Ty < 0 else float(Ty)
-        Tz: float = 0.0 if Tz < 0 else float(Tz)
+        # In paper the growth rates are noted with a T so I stick to that
+        Tx: float = 0.0 if emit_growth_rates.Kx < 0 else float(emit_growth_rates.Kx)
+        Ty: float = 0.0 if emit_growth_rates.Ky < 0 else float(emit_growth_rates.Ky)
+        Tz: float = 0.0 if emit_growth_rates.Kz < 0 else float(emit_growth_rates.Kz)
         if any(rate == 0 for rate in (Tx, Ty, Tz)):
             LOGGER.debug("At least one IBS growth rate was negative, and was set to 0")
         # ----------------------------------------------------------------------------------------------
@@ -515,7 +525,7 @@ class IBSKineticKick(IBSKick):
 
     def compute_kinetic_coefficients(
         self, particles: xt.Particles
-    ) -> Tuple[DiffusionCoefficients, FrictionCoefficients]:
+    ) -> tuple[DiffusionCoefficients, FrictionCoefficients]:
         r"""
         Computes the ``IBS`` friction coefficients (named :math:`D_x, D_y`
         and :math:`D_z` in this code base) and friction coefficients (named
@@ -550,9 +560,10 @@ class IBSKineticKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # This full computation (apart from getting properties from the particles object) is done
         # on the CPU, as no GPU context provides scipy's elliptic integrals. It is then better to
-        # do the rest of the computation on CPU than transfer arrays to GPU and finish it there.
+        # do the rest of the computation on CPU than to transfer arrays to GPU and finish it there.
         # ----------------------------------------------------------------------------------------------
         # Compute (geometric) emittances, momentum spread, bunch length and sigmas from the Particles
+        # fmt: off
         LOGGER.debug("Computing emittances, momentum spread and bunch length from particles")
         gemitt_x: float = _gemitt_x(particles, self._twiss["betx", self._name], self._twiss["dx", self._name])
         gemitt_y: float = _gemitt_y(particles, self._twiss["bety", self._name], self._twiss["dy", self._name])
@@ -561,6 +572,7 @@ class IBSKineticKick(IBSKick):
         sigma_delta: float = _sigma_delta(particles)
         sigma_x: float = _sigma_x(particles)
         sigma_y: float = _sigma_y(particles)
+        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Allocating some properties to simple variables for readability
         beta0: float = self._twiss.beta0
@@ -571,8 +583,9 @@ class IBSKineticKick(IBSKick):
         bety = self._twiss.bety
         dx = self._twiss.dx
         # ----------------------------------------------------------------------------------------------
-        # Compute the Coulomb logarithm and then the common constant term of Eq (45-50)
-        # TODO (Gianni): how do we deal with coasting beams? Can pass to Coulog but how to detect?
+        # Compute the Coulomb logarithm and then the common constant term of Eq (45-50). Note that since
+        # we have no way of detecting coasting beams we assume bunched and take the rms bunch length as is
+        # (but we don't get the correction factor in the coulomb logarithm...)
         coulomb_logarithm: float = BjorkenMtingwaIBS(self._twiss).coulomb_log(
             gemitt_x=gemitt_x,
             gemitt_y=gemitt_y,
@@ -615,7 +628,6 @@ class IBSKineticKick(IBSKick):
         Kx: ArrayLike = 1.0 * (R2 * (1 + a2 / sqrt_term) + R3 * (1 - a2 / sqrt_term))  # Eq says 0.5
         Ky: ArrayLike = 2 * R1  # Eq says 1
         Kz: ArrayLike = 1.0 * gamma0**2 * (R2 * (1 - a2 / sqrt_term) + R3 * (1 + a2 / sqrt_term))  # Eq says 0.5
-        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Computing integrands for the diffusion and friction terms from Eq (45-50)
         # TODO: missing bet[xy] terms in paper are typos, remove this comment when new version is out
@@ -626,6 +638,7 @@ class IBSKineticKick(IBSKick):
         Fx_integrand: ArrayLike = betx * (Kx + (dx**2 / betx**2 + phix**2) * Kz) / int_denominator
         Fy_integrand: ArrayLike = bety * Ky / int_denominator
         Fz_integrand: ArrayLike = Kz / int_denominator
+        # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Integrating them to obtain the final diffusion and friction coefficients (full Eq (45-50))
         ds: ArrayLike = np.diff(self._twiss.s)

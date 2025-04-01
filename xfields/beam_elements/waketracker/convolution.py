@@ -1,20 +1,11 @@
 import numpy as np
-import xtrack as xt
-import xobjects as xo
-
-try:
-    import cupy
-    cupy_imported = True
-except ImportError:
-    cupy_imported = False
-
 from scipy.constants import e as qe
 
-from typing import Tuple
+import xobjects as xo
 
 
-class _ConvData(xt.BeamElement):
-    '''
+class _ConvData:
+    """
     This class is used to perform the convolution of the wakefields with the
     beam. It is not meant to be used directly by the user, but only by the
     WakeTracker class.
@@ -24,10 +15,10 @@ class _ConvData(xt.BeamElement):
     which was originally developed for PyHEADTAIL by J. Komppula
     (https://indico.cern.ch/event/735184/contributions/3032237/attachments/1668727/2676169/Multibunch_pyheadtail_algorithms.pdf)
     and N. Mounet (https://indico.cern.ch/event/735184/contributions/3032242/attachments/1668613/2676354/20180615_PyHEADTAIL_convolution_algorithm.pdf).
-    '''
+    """
     def __init__(self, component, waketracker=None, _flatten=False, log_moments=None,
-                **kwargs):
-        '''
+                _context=xo.context_default):
+        """
         Parameters:
         -----------
         component: xfields.beam_elements.waketracker.WakeField
@@ -36,13 +27,13 @@ class _ConvData(xt.BeamElement):
             The WakeTracker object that will use this ConvData object
         log_moments: list of str
             List of moments to be logged in the moments_data object
-        '''
-
-        self.xoinitialize(**kwargs)
+        """
 
         # for now we do not support Pyopencl to avoid complications with the
         # rfft and irfft below
-        if type(self.context) == xo.ContextPyopencl:
+        self._context = _context
+
+        if type(self._context) == xo.ContextPyopencl:
             raise NotImplementedError('Pyopencl not implemented yet')
 
         self._flatten = _flatten
@@ -72,24 +63,14 @@ class _ConvData(xt.BeamElement):
                 raise NotImplementedError('Higher order moments not implemented yet')
 
     def my_rfft(self, data, **kwargs):
-        if type(self.context) == xo.ContextCpu:
-            return np.fft.rfft(data, **kwargs)
-        elif type(self.context) == xo.ContextCupy:
-            if cupy_imported:
-                return cupy.fft.rfft(data, **kwargs)
-            else:
-                raise ImportError('Cupy not installed')
+        if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
+            return self._context.nplike_lib.fft.rfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
 
     def my_irfft(self, data, **kwargs):
-        if type(self.context) == xo.ContextCpu:
-            return np.fft.irfft(data, **kwargs)
-        elif type(self.context) == xo.ContextCupy:
-            if cupy_imported:
-                return cupy.fft.irfft(data, **kwargs)
-            else:
-                raise ImportError('Cupy not installed')
+        if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
+            return self._context.nplike_lib.fft.irfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
 
@@ -119,11 +100,12 @@ class _ConvData(xt.BeamElement):
             assert beta0 is not None
             # here below I had to add float() to beta0 because when using Cupy
             # context particles.beta0[0] turns out to be a 0d array. To be checked
-            self.G_aux = self._arr2ctx(self.component.function_vs_zeta(
-                zeta=self.z_wake, beta0=float(beta0), dzeta=moments_data.dz))
+            self.G_aux = self._context.nparray_to_context_array(
+                self.component.function_vs_zeta(
+                    zeta=self.z_wake, beta0=float(beta0), dzeta=moments_data.dz))
 
             # only positive frequencies because we are using rfft
-            phase_term = self._arr2ctx(np.exp(
+            phase_term = self._context.nparray_to_context_array(np.exp(
                 1j * 2 * np.pi * np.arange(self._M_aux//2 + 1) *
                 ((self._N_S - 1) * self._N_aux + self._N_1) / self._M_aux))
 
@@ -204,7 +186,7 @@ class _ConvData(xt.BeamElement):
         if isinstance(moment_names, str):
             moment_names = [moment_names]
 
-        rho_aux = self.context.nplike_lib.ones(
+        rho_aux = self._context.nplike_lib.ones(
             shape=moments_data['result'].shape, dtype=np.float64)
 
         for nn in moment_names:

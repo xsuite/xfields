@@ -85,9 +85,16 @@ def set_madx_beam_parameters(
 def get_madx_ibs_growth_rates(madx: Madx) -> tuple[float, float, float]:
     """
     Calls the IBS module then return horizontal, vertical and longitudinal
-    growth rates. A Twiss call is done to make sure it is centered.
+    emittance growth rates. A Twiss call is done to make sure it is centered.
     This function assumes the desired sequence is in use, and has a
     corresponding beam with the desired parameters.
+
+    Note
+    ----
+    What is computed in MAD-X is the EMITTANCE growth times, in [s].
+    These are stored in the ibs.tx, ibs.ty and ibs.tl variables. Here
+    we return the inverse of these values, which are the EMITTANCE
+    growth rates in [1/s].
 
     Parameters
     ----------
@@ -97,7 +104,8 @@ def get_madx_ibs_growth_rates(madx: Madx) -> tuple[float, float, float]:
     Returns
     -------
     Tuple[float, float, float]
-        The horizontal, vertical and longitudinal growth rates.
+        The horizontal, vertical and longitudinal emittance growth rates
+        (as the inverse of the emittance growth times computed by MAD-X).
     """
     madx.command.twiss(centre=True)
     madx.command.ibs()
