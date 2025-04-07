@@ -71,13 +71,12 @@ class ElementWithSlicer(xt.BeamElement):
                          bunch_spacing_zeta=bunch_spacing_zeta,
                          slicer_moments=slicer_moments)
 
-        if with_compressed_profile: #TODO with a bunch selection, number of sources and targets should differ
+        if with_compressed_profile:
             self._initialize_moments(
                 zeta_range=zeta_range,  # These are [a, b] in the paper
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper
                 bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
                 filling_scheme=filling_scheme,
-                bunch_selection = bunch_selection,
                 num_turns=num_turns,
                 circumference=circumference)
 
@@ -105,7 +104,6 @@ class ElementWithSlicer(xt.BeamElement):
             num_slices=None,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=None,  # This is P in the paper
             filling_scheme=None,
-            bunch_selection = None,
             num_turns=1,
             circumference=None):
 
@@ -114,18 +112,12 @@ class ElementWithSlicer(xt.BeamElement):
             num_periods = i_last_bunch + 1
         else:
             num_periods = 1
-        if bunch_selection is not None:
-            num_targets = 1+bunch_selection[-1]-bunch_selection[0]
-        else:
-            num_targets = None
-            
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 num_periods=num_periods,
-                num_targets=num_targets,
                 num_turns=num_turns,
                 circumference=circumference,
                 _context=self.context)
