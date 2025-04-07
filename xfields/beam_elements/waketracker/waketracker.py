@@ -1,5 +1,4 @@
 from typing import Tuple
-
 import numpy as np
 
 from scipy.constants import c as clight
@@ -158,17 +157,20 @@ class WakeTracker(ElementWithSlicer):
 
     def _compute_fake_bunch_moments(self):
         conjugate_names = {'x':'px','y':'py'}
+        for moment_name in self.fake_coupled_bunch_phases.keys():
+            z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,self.bunch_selection[0])
+            z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,self.bunch_selection[0])
+            complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
+            for bunch_number,slot in enumerate(self.slicer.filled_slots):
+                if slot != self.bunch_selection[0]:
+                    moments = {}
+                    moments[moment_name] = np.real(complex_normalised_moments*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slot)))
+                    self.moments_data.set_moments(bunch_number,0,moments)
+        moments = {}
+        z_dummy,moments['num_particles'] = self.moments_data.get_source_moment_profile('num_particles',0,self.bunch_selection[0])
         for bunch_number,slot in enumerate(self.slicer.filled_slots):
             if slot != self.bunch_selection[0]:
-                moments = {}
-                for moment_name in self.fake_coupled_bunch_phases.keys():
-                    z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,0) 
-                    z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,0)
-                    complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
-                    moments[moment_name] = np.real(complex_normalised_moments*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(slot-self.bunch_selection[0])))
-                z_dummy,moments['num_particles'] = self.moments_data.get_source_moment_profile('num_particles',0,0)
                 self.moments_data.set_moments(bunch_number,0,moments)
-
     @property
     def zeta_range(self):
         return self.slicer.zeta_range
@@ -210,7 +212,7 @@ class WakeTracker(ElementWithSlicer):
                 'Bunch spacing zeta is not consistent')
         else:
             xo.assert_allclose(self.bunch_spacing_zeta, other.bunch_spacing_zeta, atol=1e-12, rtol=0)
-        if self.filling_scheme is None: # TODO I don't know who wrote this, but it's bullshit
+        if self.filling_scheme is None:
             assert other.filling_scheme is None, (
                 'Filling scheme is not consistent')
         else:
