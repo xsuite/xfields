@@ -2,6 +2,7 @@ import numpy as np
 from scipy import special
 import xobjects as xo
 import xpart as xp
+import xtrack as xt
 from ..general import _pkg_root
 
 _digitize_kernel = xo.Kernel(
@@ -105,6 +106,13 @@ class TempSlicer(xo.HybridClass):
                  _offset=_offset)
 
         self.compile_kernels(only_if_needed=False)
+
+    def compile_kernels(self, *args, **kwargs):
+        extra_compile_args = kwargs.pop('extra_compile_args', [])
+        extra_compile_args.append(f'-I{xt.__path__[0]}')
+        kwargs['extra_compile_args'] = extra_compile_args
+
+        return super().compile_kernels(*args, **kwargs)
 
     def rho(self, z):
         """
