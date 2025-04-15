@@ -344,8 +344,6 @@ class BeamBeamPIC3D(xt.BeamElement):
                              ) * pwei)
 
             # 2: kinematic factor, dt(=dz): integral over the time, unit: [m^-2]
-#            self.record.lumitable.luminosity[at_turn] += (dz*2*(len(pp.x)*weight)**2 *
-#                    self.compute_lumi_integral_3d(self.fieldmap_self.rho, self.fieldmap_other.rho, dx, dy, dz))
             num_macroparts_in_grid_self  = np.abs(np.sum(self.fieldmap_self.rho )*pwei)
             num_macroparts_in_grid_other = np.abs(np.sum(self.fieldmap_other.rho)*pwei)
             self.record.lumitable.luminosity[at_turn] += (dz*2*weight**2 * num_macroparts_in_grid_self * num_macroparts_in_grid_other *
