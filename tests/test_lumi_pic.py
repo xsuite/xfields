@@ -180,7 +180,11 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     # lumi [m^-2]
     piwi    = sigma_z_tot / sigma_x * phi  # [1] 
     lumi_ip = bunch_intensity**2 / (4*np.pi*sigma_x*np.sqrt(1 + piwi**2)*sigma_y)  # [m^-2] lumi per bunch crossing
-    print(lumi_ip, record_b1_pic.lumitable.luminosity, record_b2_pic.lumitable.luminosity)
+    numlumi_b1 = record_b1_pic.lumitable.luminosity[0]
+    numlumi_b2 = record_b2_pic.lumitable.luminosity[0]
+    relabserr_b1 = 100*np.abs(numlumi_b1 - lumi_ip) / lumi_ip
+    relabserr_b2 = 100*np.abs(numlumi_b2 - lumi_ip) / lumi_ip
+    print(f"lumi formula: {lumi_ip:.4e}, numlumi beam 1: {numlumi_b1:.4e}, numlumi beam 2: {numlumi_b2:.4e}, error beam 1: {relabserr_b1:.4f} [%], error beam 2: {relabserr_b2:.4f} [%]")
 
-    assert np.abs(record_b1_pic.lumitable.luminosity - lumi_ip) / lumi_ip * 100 < 1e1
-    assert np.abs(record_b2_pic.lumitable.luminosity - lumi_ip) / lumi_ip * 100 < 1e1
+    assert relabserr_b1 < 1e1, "beam 1 numerical lumi does not match formula within 10%"
+    assert relabserr_b2 < 1e1, "beam 2 numerical lumi does not match formula within 10%"
