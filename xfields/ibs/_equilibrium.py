@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
     from numpy.typing import ArrayLike
 
-    from xfields.ibs._analytical import IBSGrowthRates
+    from xfields.ibs._analytical import IBSAmplitudeGrowthRates
 
 LOGGER = logging.getLogger(__name__)
 
@@ -70,7 +70,7 @@ def _ibs_rates_and_emittance_derivatives(
     gemitt_zeta: float,
     longitudinal_emittance_ratio: float = None,
     **kwargs,
-) -> tuple[IBSGrowthRates, EmittanceTimeDerivatives]:
+) -> tuple[IBSAmplitudeGrowthRates, EmittanceTimeDerivatives]:
     """
     Compute the IBS growth rates and emittance time derivatives from
     the effect of both IBS and SR. Time derivatives are computed as
@@ -104,10 +104,10 @@ def _ibs_rates_and_emittance_derivatives(
 
     Returns
     -------
-    tuple[IBSGrowthRates, EmittanceTimeDerivatives]
+    tuple[IBSAmplitudeGrowthRates, EmittanceTimeDerivatives]
         Both the computed IBS growth rates and the emittance time derivatives
         from the contributions of SR and IBS, each in a specific container
-        object (namely ``IBSGrowthRates`` and ``EmittanceTimeDerivatives``,
+        (namely ``IBSAmplitudeGrowthRates`` and ``EmittanceTimeDerivatives``,
         respectively).
     """
     LOGGER.debug("Computing IBS growth rates and emittance time derivatives.")
