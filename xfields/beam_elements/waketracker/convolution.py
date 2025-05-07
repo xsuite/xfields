@@ -1,4 +1,5 @@
 import numpy as np
+from matplotlib import pyplot as plt
 from scipy.constants import e as qe
 
 import xobjects as xo
@@ -81,13 +82,13 @@ class _ConvData:
             self._M_aux = moments_data._M_aux
             self._N_1 = moments_data._N_1
             self._N_S = moments_data._N_S
-            self._N_T = moments_data._N_S
+            self._N_T = moments_data._N_T
             self._BB = 1  # B in the paper
             # (for now we assume that B=0 is the first bunch in time and the
             # last one in zeta)
             self._AA = self._BB - self._N_S
-            self._CC = self._AA
-            self._DD = self._BB
+            self._DD = -1*np.min(self.waketracker.slicer.bunch_selection)+1
+            self._CC = self._DD - self._N_T
 
             # Build wake matrix
             self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,
@@ -97,6 +98,7 @@ class _ConvData:
                                         moments_data.dz, self._AA,
                                         self._BB, self._CC, self._DD,
                                         moments_data._z_P)
+
             assert beta0 is not None
             # here below I had to add float() to beta0 because when using Cupy
             # context particles.beta0[0] turns out to be a 0d array. To be checked
@@ -246,6 +248,6 @@ def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
             z_p = 0
 
         for ii, ll in enumerate(range(
-                cc - bb + 1, dd - aa)):
+                int(cc - bb + 1), int(dd - aa))):
             z_wake[tt, ii * n_aux:(ii + 1) * n_aux] = temp_z + ll * z_p
     return z_wake
