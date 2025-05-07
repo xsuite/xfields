@@ -100,7 +100,7 @@ class WakeTracker(ElementWithSlicer):
             num_turns=num_turns,
             circumference=circumference,
             with_compressed_profile=True,
-            _context=self.context)
+            _context=self._context)
 
         self._initialize_moments(
             zeta_range=zeta_range,  # These are [a, b] in the paper
