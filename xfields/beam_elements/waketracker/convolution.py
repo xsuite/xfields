@@ -248,6 +248,6 @@ def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
             z_p = 0
 
         for ii, ll in enumerate(range(
-                cc - bb + 1, dd - aa)):
+                int(cc - bb + 1), int(dd - aa))):
             z_wake[tt, ii * n_aux:(ii + 1) * n_aux] = temp_z + ll * z_p
     return z_wake
