@@ -1,3 +1,4 @@
+import time
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.constants import e as qe
@@ -65,13 +66,17 @@ class _ConvData:
 
     def my_rfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            return self._context.nplike_lib.fft.rfft(data, **kwargs)
+            if hasattr(self._context,'omp_num_threads'):
+                kwargs['workers'] = self._context.omp_num_threads
+            return self._context.splike_lib.fft.rfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
 
     def my_irfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            return self._context.nplike_lib.fft.irfft(data, **kwargs)
+            if hasattr(self._context,'omp_num_threads'):
+                kwargs['workers'] = self._context.omp_num_threads
+            return self._context.splike_lib.fft.irfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
 
