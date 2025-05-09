@@ -1,5 +1,6 @@
 from typing import Tuple
 import numpy as np
+from multiprocessing import Process
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
@@ -120,7 +121,6 @@ class WakeTracker(ElementWithSlicer):
                               partner_names=partner_names)
 
     def track(self, particles):
-
         # Find first active particle to get beta0
         if particles.state[0] > 0:
             beta0 = particles.beta0[0]
@@ -155,22 +155,53 @@ class WakeTracker(ElementWithSlicer):
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
 
+    def _dephase_and_add_moment(self,moment_name,mom,start,span):
+        moments = {}
+        for bunch_number in range(start,start+span):
+            slot = self.slicer.filled_slots[bunch_number] 
+            if slot != self.bunch_selection[0]:
+                moments[moment_name] = np.real(mom*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slot)))
+                self.moments_data.set_moments(bunch_number,0,moments)
+    
+    def _add_moment(self,moment_name,mom,start,span):
+        moments = {}
+        moments[moment_name] = mom
+        for bunch_number in range(start,start+span):
+            slot = self.slicer.filled_slots[bunch_number]
+            if slot != self.bunch_selection[0]:
+                self.moments_data.set_moments(bunch_number,0,moments)
+    
+    def loop_multiprocess(self,func,moment_name,mom):
+        if hasattr(self._context,'omp_num_threads') and self._context.omp_num_threads > 1:
+            num_chunks = self._context.omp_num_threads
+            num_filled_slots = len(self.slicer.filled_slots)
+            chunk_size = int(np.ceil(num_filled_slots/num_chunks))
+            last_chunk_size = num_filled_slots-(num_chunks-1)*chunk_size
+            processes = []
+            for i_chunck in range(1,num_chunks-1):
+                process = Process(target=func, args=(moment_name,mom,i_chunck*chunk_size,chunk_size))
+                process.start()
+                processes.append(process)
+            if num_chunks > 1:
+                process = Process(target=func, args=(moment_name,mom,(num_chunks-1)*chunk_size,last_chunk_size))
+                process.start()
+                processes.append(process)
+            func(moment_name,mom,0,chunk_size)
+            for process in processes:
+                process.join()
+        else:
+            func(moment_name,mom,0,len(self.slicer.filled_slots))
+    
     def _compute_fake_bunch_moments(self):
         conjugate_names = {'x':'px','y':'py'}
         for moment_name in self.fake_coupled_bunch_phases.keys():
             z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,self.bunch_selection[0])
             z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,self.bunch_selection[0])
             complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
-            for bunch_number,slot in enumerate(self.slicer.filled_slots):
-                if slot != self.bunch_selection[0]:
-                    moments = {}
-                    moments[moment_name] = np.real(complex_normalised_moments*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slot)))
-                    self.moments_data.set_moments(bunch_number,0,moments)
-        moments = {}
-        z_dummy,moments['num_particles'] = self.moments_data.get_source_moment_profile('num_particles',0,self.bunch_selection[0])
-        for bunch_number,slot in enumerate(self.slicer.filled_slots):
-            if slot != self.bunch_selection[0]:
-                self.moments_data.set_moments(bunch_number,0,moments)
+            self.loop_multiprocess(self._dephase_and_add_moment,moment_name,complex_normalised_moments)
+        z_dummy,num_particles = self.moments_data.get_source_moment_profile('num_particles',0,self.bunch_selection[0])
+        self.loop_multiprocess(self._add_moment,'num_particles',num_particles)
+
     @property
     def zeta_range(self):
         return self.slicer.zeta_range
