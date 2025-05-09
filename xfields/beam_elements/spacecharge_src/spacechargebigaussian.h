@@ -67,7 +67,7 @@ void SpaceChargeBiGaussian_track_local_particle(
 			const double dy = fabs(y / (n_integ - 1));
 
 			double phi = 0.0;
-			double dphi_integ;
+			double dphi_integ = 0.0;
 			for (int ii=0; ii<n_integ; ii++){
 				double const x_integ = ii*dx;
 				double const y_integ = ii*dy;
