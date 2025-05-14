@@ -215,7 +215,10 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
                  dphi_dy = nelem,
                  dphi_dz = nelem)
 
-        self.compile_kernels(only_if_needed=True)
+        self.compile_kernels(
+            only_if_needed=True,
+            extra_compile_args=[f"-I{xt.__path__[0]}"],
+        )
 
         if isinstance(solver, str):
             self.solver = self.generate_solver(solver, fftplan)
@@ -237,7 +240,6 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
     def _assert_updatable(self):
         assert self.updatable, 'This FieldMap is not updatable!'
 
-    #@profile
     def get_values_at_points(self,
             x, y, z,
             return_rho=True,
