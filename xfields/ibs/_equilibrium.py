@@ -172,7 +172,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     overwrite_sigma_zeta: float = None,
     overwrite_sigma_delta: float = None,
     emittance_coupling_factor: float = 0,
-    emittance_constraint: Literal["coupling", "excitation"] = "coupling",
+    emittance_constraint: Literal["coupling", "excitation"] | None = "coupling",
     rtol: float = 1e-6,
     tstep: float = None,
     verbose: bool = True,
@@ -209,7 +209,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     -------
         If the user does not provide a starting emittance, the program
         defaults to using the SR equilibrium value from the `TwissTable`,
-        which is a reasonable defaults for light sources. If an constraint
+        which is a reasonable defaults for light sources. If a constraint
         is provided via `emittance_constraint`  the starting emittances are
         re-computed to respect that constraint (this is logged to the user).
 
@@ -254,7 +254,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     emittance_coupling_factor : float, optional
         The ratio of perturbed transverse emittances due to betatron coupling.
         If a value is provided, it is taken into account for the evolution of
-        emittances and induced an emittance sharing between the two planes.
+        emittances and induces an emittance sharing between the two planes.
         See the next parameter for possible scenarios and how this value is
         used. Defaults to 0.
     emittance_constraint : str, optional
@@ -274,7 +274,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         that as `emittance_coupling_factor` defaults to 0, the constraint has no
         effect unless a non-zero factor is provided.
     overwrite_sigma_zeta : float, optional
-        The RMS bunch length. If provided, overwrites the one computed from
+        The RMS bunch length, in [m]. If provided, overwrites the one computed from
         the longitudinal emittance and forces a recompute of the longitudinal
         emittance. Defaults to `None`.
     overwrite_sigma_delta : float, optional
@@ -303,16 +303,19 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         The convergence calculations results. The table contains the following
         columns, as time-step by time-step quantities:
             - time: time values at which quantities are computed, in [s].
-            - gemitt_x: horizontal geometric emittance values, in [m].
-            - gemitt_y: vertical geometric emittance values, in [m].
-            - gemitt_zeta: longitudinal geometric emittance values, in [m].
-            - sigma_zeta: bunch length values, in [m].
-            - sigma_delta: momentum spread values, in [-].
-            - Kx: horizontal IBS amplitude growth rate, in [s^-1].
-            - Ky: vertical IBS amplitude growth rate, in [s^-1].
-            - Kz: longitudinal IBS amplitude growth rate, in [s^-1].
+            - gemitt_x: horizontal geometric emittances, in [m].
+            - nemitt_x: horizontal normalized emittances, in [m].
+            - gemitt_y: vertical geometric emittances, in [m].
+            - nemitt_y: vertical normalized emittances, in [m].
+            - gemitt_zeta: longitudinal geometric emittances, in [m].
+            - nemitt_zeta: longitudinal normalized emittances, in [m].
+            - sigma_zeta: bunch lengths, in [m].
+            - sigma_delta: momentum spreads, in [-].
+            - Kx: horizontal IBS amplitude growth rates, in [s^-1].
+            - Ky: vertical IBS amplitude growth rates, in [s^-1].
+            - Kz: longitudinal IBS amplitude growth rates, in [s^-1].
         The table also contains the following global quantities:
-            - damping_constants_s: radiation damping constants used, in [s^-1].
+            - damping_constants_s: radiation damping constants used, in [s].
             - partition_numbers: damping partition numbers used.
             - eq_gemitt_x: horizontal equilibrium geometric emittance from synchrotron radiation used, in [m].
             - eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m].
@@ -504,8 +507,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         data={
             "time": np.cumsum(time_deltas),
             "gemitt_x": np.array(res_gemitt_x),
+            "nemitt_x": np.array(res_gemitt_x) * twiss.beta0 * twiss.gamma0,
             "gemitt_y": np.array(res_gemitt_y),
+            "nemitt_y": np.array(res_gemitt_y) * twiss.beta0 * twiss.gamma0,
             "gemitt_zeta": np.array(res_gemitt_zeta),
+            "nemitt_zeta": np.array(res_gemitt_zeta) * twiss.bets0 * twiss.gamma0,
             "sigma_zeta": np.sqrt(np.array(res_gemitt_zeta) * longitudinal_emittance_ratio),
             "sigma_delta": np.sqrt(np.array(res_gemitt_zeta) / longitudinal_emittance_ratio),
             "Kx": np.array(K_x),
