@@ -1,6 +1,5 @@
 from typing import Tuple
 import numpy as np
-from multiprocessing import Process
 
 from scipy.constants import c as clight
 from scipy.constants import e as qe
@@ -125,7 +124,7 @@ class WakeTracker(ElementWithSlicer):
         if particles.state[0] > 0:
             beta0 = particles.beta0[0]
         else:
-            i_alive = np.where(particles.state > 0)[0]
+            i_alive = self._context.nplike_lib.where(particles.state > 0)[0]
             if len(i_alive) == 0:
                 return
             i_first = i_alive[0]
@@ -147,60 +146,30 @@ class WakeTracker(ElementWithSlicer):
         status = super().track(particles)
         if status and status.on_hold == True:
             return status
+
         if self.fake_coupled_bunch_phases:
             self._compute_fake_bunch_moments()
+
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_slot_particles=self.i_slot_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
 
-    def _dephase_and_add_moment(self,moment_name,mom,start,span):
-        moments = {}
-        for bunch_number in range(start,start+span):
-            slot = self.slicer.filled_slots[bunch_number] 
-            if slot != self.bunch_selection[0]:
-                moments[moment_name] = np.real(mom*np.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slot)))
-                self.moments_data.set_moments(bunch_number,0,moments)
-    
-    def _add_moment(self,moment_name,mom,start,span):
-        moments = {}
-        moments[moment_name] = mom
-        for bunch_number in range(start,start+span):
-            slot = self.slicer.filled_slots[bunch_number]
-            if slot != self.bunch_selection[0]:
-                self.moments_data.set_moments(bunch_number,0,moments)
-    
-    def loop_multiprocess(self,func,moment_name,mom):
-        if hasattr(self._context,'omp_num_threads') and self._context.omp_num_threads > 1:
-            num_chunks = self._context.omp_num_threads
-            num_filled_slots = len(self.slicer.filled_slots)
-            chunk_size = int(np.ceil(num_filled_slots/num_chunks))
-            last_chunk_size = num_filled_slots-(num_chunks-1)*chunk_size
-            processes = []
-            for i_chunck in range(1,num_chunks-1):
-                process = Process(target=func, args=(moment_name,mom,i_chunck*chunk_size,chunk_size))
-                process.start()
-                processes.append(process)
-            if num_chunks > 1:
-                process = Process(target=func, args=(moment_name,mom,(num_chunks-1)*chunk_size,last_chunk_size))
-                process.start()
-                processes.append(process)
-            func(moment_name,mom,0,chunk_size)
-            for process in processes:
-                process.join()
-        else:
-            func(moment_name,mom,0,len(self.slicer.filled_slots))
-    
     def _compute_fake_bunch_moments(self):
         conjugate_names = {'x':'px','y':'py'}
+        n_slots = int(self._context.nplike_lib.max(self.slicer.filled_slots))+1
         for moment_name in self.fake_coupled_bunch_phases.keys():
             z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,self.bunch_selection[0])
             z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,self.bunch_selection[0])
             complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
-            self.loop_multiprocess(self._dephase_and_add_moment,moment_name,complex_normalised_moments)
-        z_dummy,num_particles = self.moments_data.get_source_moment_profile('num_particles',0,self.bunch_selection[0])
-        self.loop_multiprocess(self._add_moment,'num_particles',num_particles)
+            slots = self._context.nplike_lib.transpose(self._context.nplike_lib.tile(self.slicer.filled_slots,(len(complex_normalised_moments),1)))
+            complex_normalised_moments = self._context.nplike_lib.tile(complex_normalised_moments,(n_slots,1))
+            all_beam_moments = self._context.nplike_lib.real(complex_normalised_moments*self._context.nplike_lib.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slots)))
+            self.moments_data.set_all_beam_moments(moment_name,0,all_beam_moments)
+        z_dummy,mom = self.moments_data.get_source_moment_profile('num_particles',0,self.bunch_selection[0])
+        all_beam_num_particles = self._context.nplike_lib.tile(mom,(n_slots,1))
+        self.moments_data.set_all_beam_moments('num_particles',0,all_beam_num_particles)
 
     @property
     def zeta_range(self):
