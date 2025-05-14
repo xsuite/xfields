@@ -34,9 +34,9 @@ def bessy3_line_with_radiation() -> xt.Line:
 # ----- Test Functions vs Analytical Formulae ----- #
 
 
-@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1])
+@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1.0])
 def test_equilibrium_vs_analytical_constraint_coupling(
-    emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
+    emittance_coupling_factor: float, bessy3_line_with_radiation: xt.Line
 ):
     """
     Load the BESSY III line and compute ierations until we reach
@@ -56,7 +56,7 @@ def test_equilibrium_vs_analytical_constraint_coupling(
         emittance_constraint="coupling",
     )
     # -------------------------------------------
-    # Check results vs analytical estimations (using last step's growth rate)
+    # Check results vs analytical estimations (uses last step's growth rate!)
     factor = 1 + emittance_coupling_factor * (tw.partition_numbers[1] / tw.partition_numbers[0])
     # Check the horizontal equilibrium emittance
     xo.assert_allclose(
@@ -74,9 +74,9 @@ def test_equilibrium_vs_analytical_constraint_coupling(
     )
 
 
-@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1])
+@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 1.0])
 def test_equilibrium_vs_analytical_constraint_excitation(
-    emittance_coupling_factor, bessy3_line_with_radiation: xt.Line
+    emittance_coupling_factor: float, bessy3_line_with_radiation: xt.Line
 ):
     """
     Load the BESSY III line and compute ierations until we reach
@@ -96,8 +96,7 @@ def test_equilibrium_vs_analytical_constraint_excitation(
         emittance_constraint="excitation",
     )
     # -------------------------------------------
-    # Check results vs analytical estimations (using last step's growth rate)
-    # NOTE: formula valid only if starting emittances are the SR equilibrium
+    # Check results vs analytical estimations (uses last step's growth rate!)
     # Check the horizontal equilibrium emittance
     xo.assert_allclose(
         result.eq_sr_ibs_gemitt_x,
@@ -118,7 +117,7 @@ def test_equilibrium_vs_analytical_constraint_excitation(
 # vertical emittance will be way out of realistic values
 @pytest.mark.parametrize("initial_factor", [0.01, 0.02, 0.05])
 def test_equilibrium_vs_analytical_no_constraint(
-    initial_factor, bessy3_line_with_radiation: xt.Line
+    initial_factor: float, bessy3_line_with_radiation: xt.Line
 ):
     """
     Load the BESSY III line and compute ierations until we reach
@@ -144,7 +143,7 @@ def test_equilibrium_vs_analytical_no_constraint(
         emittance_constraint=None,
     )
     # -------------------------------------------
-    # Check results vs analytical estimations (using last step's growth rate)
+    # Check results vs analytical estimations (uses last step's growth rate!)
     # Check the horizontal equilibrium emittance
     xo.assert_allclose(
         result.eq_sr_ibs_gemitt_x,
@@ -163,10 +162,6 @@ def test_equilibrium_vs_analytical_no_constraint(
         result.gemitt_zeta[0] / (1 - result.Kz[-1] / (tw.damping_constants_s[2])),
         rtol=1e-2,
     )
-    # -------------------------------------------
-    # Check against ELEGANT results for this scenario
-    # These are hardcoded (from ELEGANT version with
-    # corrected partition numbers use)
 
 
 # ----- Test Functions vs ELEGANT Results ----- #
@@ -174,6 +169,7 @@ def test_equilibrium_vs_analytical_no_constraint(
 # Ugly hardcoded results from ELEGANT. The keys here
 # are emittance coupling factor and associated are the
 # corresponding final values we want to compare to.
+# ELEGANT gives IBS rates in emittance convention!
 ELEGANT_RESULTS: dict[float, dict[str, float]] = {
     0.02: {
         "eps_x": 1.88319e-10,
@@ -206,8 +202,8 @@ ELEGANT_RESULTS: dict[float, dict[str, float]] = {
 }
 
 
-@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 0.5, 1])
-def test_equilibrium_vs_elegant(emittance_coupling_factor, bessy3_line_with_radiation: xt.Line):
+@pytest.mark.parametrize("emittance_coupling_factor", [0.02, 0.1, 0.5, 1.0])
+def test_equilibrium_vs_elegant(emittance_coupling_factor: float, bessy3_line_with_radiation: xt.Line):
     """
     Load the BESSY III line and compute ierations until we reach
     an equilibrium with SR and IBS, in the case where we enforce
