@@ -12,12 +12,12 @@ XTRACK_TEST_DATA = Path(__file__).parent.parent.parent / "xtrack" / "test_data/"
 def set_madx_beam_parameters(
     madx: Madx,
     total_beam_intensity: int,
-    gemitt_x: float = None,
-    nemitt_x: float = None,
-    gemitt_y: float = None,
-    nemitt_y: float = None,
-    sigma_delta: float = None,
-    bunch_length: float = None,
+    gemitt_x: float | None = None,
+    nemitt_x: float | None = None,
+    gemitt_y: float | None = None,
+    nemitt_y: float | None = None,
+    sigma_delta: float | None = None,
+    bunch_length: float | None = None,
     bunched: bool = True,
 ) -> None:
     """
