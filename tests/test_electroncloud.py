@@ -119,9 +119,16 @@ def test_electroncloud_config(test_context):
         'mqd': {key: ecloud_info['mqd'][key] for key in list(ecloud_info['mqd'].keys())[:5]}
     }
 
-    twiss_without_ecloud, twiss_with_ecloud = xf.full_electroncloud_setup(line=line, 
-                ecloud_info=reduced_ecloud_info, filenames=pinch_filenames, context=test_context, zeta_max=zeta_max)
-
+    twiss_without_ecloud, twiss_with_ecloud = xf.full_electroncloud_setup(line=line,
+                ecloud_info=reduced_ecloud_info, filenames=pinch_filenames,
+                context=test_context, zeta_max=zeta_max)
 
     xo.assert_allclose(twiss_with_ecloud['x'],twiss_without_ecloud['x'], atol=3e-12, rtol=0)
     xo.assert_allclose(twiss_with_ecloud['y'],twiss_without_ecloud['y'], atol=3e-12, rtol=0)
+
+    tt = line.get_table()
+    assert np.all(tt.rows[tt.element_type == 'ElectronCloud'].name == np.array(
+       ['ecloud.mqd.12.0', 'ecloud.mqf.12.0', 'ecloud.mqd.12.1',
+        'ecloud.mqf.12.1', 'ecloud.mqd.12.10', 'ecloud.mqf.12.10',
+        'ecloud.mqd.12.11', 'ecloud.mqf.12.11', 'ecloud.mqd.12.12',
+        'ecloud.mqf.12.12']))

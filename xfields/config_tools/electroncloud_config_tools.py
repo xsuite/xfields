@@ -92,17 +92,19 @@ def get_electroncloud_fieldmap_from_h5(
 
 def insert_electronclouds(eclouds, fieldmap=None, line=None):
     assert line is not None
+    insertions = []
+    env = line.env
     for name in eclouds.keys():
         s = eclouds[name]["s"]
         length = 0.
-        line.insert_element(
-            element=ElectronCloud(
+        element=ElectronCloud(
                 length=length,
                 fieldmap=fieldmap,
-                _buffer=fieldmap._buffer),
-            name=name,
-            at_s=s)
+                _buffer=fieldmap._buffer)
+        env.elements[name] = element
+        insertions.append(env.place(name, at=s))
 
+    line.insert(insertions)
 
 def config_electronclouds(line, twiss=None, ecloud_info=None, shift_to_closed_orbit=False,
                           subtract_dipolar_kicks=False, fieldmaps=None):
