@@ -22,7 +22,8 @@ def install_spacecharge_frozen(line=None, _buffer=None,
                                tol_spacecharge_position=None,
                                s_spacecharge=None,
                                delta_rms=None,
-                               z_kick_num_integ_per_sigma=0):
+                               z_kick_num_integ_per_sigma=0,
+                               prefix='spacecharge_'):
 
     '''
     Install spacecharge elements (frozen modeling) in a xtrack.Line object.
@@ -106,7 +107,7 @@ def install_spacecharge_frozen(line=None, _buffer=None,
             mean_y=0.,
             sigma_x=1.,
             sigma_y=1.))
-        sc_names.append(f'spacecharge_{ii}')
+        sc_names.append(f'{prefix}{ii}')
 
         insertions.append((ss, [(sc_names[-1], sc_elements[-1])]))
 
