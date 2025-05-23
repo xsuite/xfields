@@ -171,7 +171,9 @@ def full_electroncloud_setup(line=None, ecloud_info=None, filenames=None, contex
                              zeta_max=None, subtract_dipolar_kicks=True, shift_to_closed_orbit=True,
                              steps_r_matrix=None):
 
-    buffer = context.new_buffer()
+    line.build_tracker(compile=False) # To move all elements to the same buffer
+    buffer = line._buffer
+    line.discard_tracker()
     fieldmaps = {
         ecloud_type: get_electroncloud_fieldmap_from_h5(
             filename=filename,
