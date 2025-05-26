@@ -13,4 +13,8 @@ CERN contributors:
  - F. Soubelet
  - E. Waagaard
 
+External contributors:
+ - S. Joly (Helmholtz-Zentrum, Berlin) - Development of IBS + SR equilibrium calculation
+
+
 The Particle In Cell implementation is largely based on the PyPIC package (https://github.com/pycomplete/pypic)
