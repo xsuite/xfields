@@ -321,8 +321,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             - eq_gemitt_y: vertical equilibrium geometric emittance from synchrotron radiation used, in [m].
             - eq_gemitt_zeta: longitudinal equilibrium geometric emittance from synchrotron radiation used, in [m].
             - eq_sr_ibs_gemitt_x: final horizontal equilibrium geometric emittance converged to, in [m].
+            - eq_sr_ibs_nemitt_x: final horizontal equilibrium normalized emittance converged to, in [m].
             - eq_sr_ibs_gemitt_y: final vertical equilibrium geometric emittance converged to, in [m].
+            - eq_sr_ibs_gemitt_y: final vertical equilibrium normalized emittance converged to, in [m].
             - eq_sr_ibs_gemitt_zeta: final longitudinal equilibrium geometric emittance converged to, in [m].
+            - eq_sr_ibs_gemitt_zeta: final longitudinal equilibrium normalized emittance converged to, in [m].
     """
     # fmt: off
     # ---------------------------------------------------------------------------------------------
@@ -529,8 +532,11 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
             "eq_gemitt_y": twiss.eq_gemitt_y,
             "eq_gemitt_zeta": twiss.eq_gemitt_zeta,
             "eq_sr_ibs_gemitt_x": res_gemitt_x[-1],
+            "eq_sr_ibs_nemitt_x": res_gemitt_x[-1] * twiss.beta0 * twiss.gamma0,
             "eq_sr_ibs_gemitt_y": res_gemitt_y[-1],
+            "eq_sr_ibs_nemitt_y": res_gemitt_y[-1] * twiss.beta0 * twiss.gamma0,
             "eq_sr_ibs_gemitt_zeta": res_gemitt_zeta[-1],
+            "eq_sr_ibs_nemitt_zeta": res_gemitt_zeta[-1] * twiss.beta0 * twiss.gamma0,
         }
     )
     return result_table
