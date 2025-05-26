@@ -45,7 +45,7 @@ overwrite_sigma_zeta = 1.2 * (tw.eq_gemitt_zeta * tw.bets0) ** 0.5  # larger sig
 overwrite_sigma_delta = 1.2 * (tw.eq_gemitt_zeta / tw.bets0) ** 0.5  # larger sigma_delta
 
 # A specific time step or relative tolerance for convergence can also be provided.
-result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+result = tw.get_ibs_and_synrad_emittance_evolution(
     formalism="nagaitsev",  # can also be "bjorken-mtingwa"
     total_beam_intensity=bunch_intensity,
     gemitt_x=gemitt_x,  # provided explicitely
