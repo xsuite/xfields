@@ -68,7 +68,7 @@ def _ibs_rates_and_emittance_derivatives(
     gemitt_x: float,
     gemitt_y: float,
     gemitt_zeta: float,
-    longitudinal_emittance_ratio: float | None = None,
+    longitudinal_emittance_ratio: float,
     **kwargs,
 ) -> tuple[IBSAmplitudeGrowthRates, EmittanceTimeDerivatives]:
     """
