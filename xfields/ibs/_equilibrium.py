@@ -175,6 +175,7 @@ def get_ibs_and_synrad_emittance_evolution(
     emittance_constraint: Literal["coupling", "excitation"] | None = "coupling",
     rtol: float = 1e-6,
     tstep: float | None = None,
+    max_steps: float | None = None,
     verbose: bool = True,
     **kwargs,
 ) -> Table:
@@ -289,6 +290,10 @@ def get_ibs_and_synrad_emittance_evolution(
         Time step to use for each iteration, in [s]. If not provided, an
         adaptive time step is computed based on the IBS growth rates and
         the damping constants. Defaults to `None`.
+    max_steps : float, optional
+        The maximum number of iterations to perform before stopping the iterative
+        process. If not provided, the process continues until it reaches convergence
+        (according to the provided `rtol`). Defaults to `None`.
     verbose : bool, optional
         Whether to print out information on the current iteration step and estimated
         convergence progress. Defaults to `True`.
@@ -412,7 +417,7 @@ def get_ibs_and_synrad_emittance_evolution(
     if overwrite_sigma_zeta is not None:
         LOGGER.warning("'overwrite_sigma_zeta' specified.")
         sigma_zeta = overwrite_sigma_zeta
-    if overwrite_sigma_delta is not None:
+    elif overwrite_sigma_delta is not None:
         LOGGER.warning("'overwrite_sigma_delta' specified.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
@@ -446,6 +451,11 @@ def get_ibs_and_synrad_emittance_evolution(
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
+        # --------------------------------------------------------------------------
+        if max_steps is not None and iterations >= max_steps:
+            _print(f"Reached maximum number of iterations ({max_steps}), stopping.")
+            break
+        # --------------------------------------------------------------------------
         LOGGER.debug(f"Current geometric emittances (x, y, zeta): {current_emittances}")
         # --------------------------------------------------------------------------
         # Display estimated convergence progress if asked
