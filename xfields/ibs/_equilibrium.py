@@ -495,7 +495,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # and store current emittances for tolerance computation at next iteration
         if iterations > 0:
             tolerance = np.max(np.abs((current_emittances - previous_emittances) / previous_emittances))
-        previous_emittances = current_emittances.copy()
+        previous_emittances = current_emittances.copy()  # noqa: F841  (used next loop)
         # --------------------------------------------------------------------------
         # Update time step for the next iteration and increase counter. If the user
         # provided a time step value we use it, otherwise it is adaptive and set to
