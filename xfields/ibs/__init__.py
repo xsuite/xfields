@@ -5,12 +5,12 @@
 
 from ._analytical import BjorkenMtingwaIBS, IBSAmplitudeGrowthRates, IBSEmittanceGrowthRates, NagaitsevIBS
 from ._api import configure_intrabeam_scattering, get_intrabeam_scattering_growth_rates
-from ._equilibrium import compute_equilibrium_emittances_from_sr_and_ibs
+from ._equilibrium import get_ibs_and_synrad_emittance_evolution
 from ._kicks import IBSAnalyticalKick, IBSKineticKick
 
 __all__ = [
     "BjorkenMtingwaIBS",
-    "compute_equilibrium_emittances_from_sr_and_ibs",
+    "get_ibs_and_synrad_emittance_evolution",
     "configure_intrabeam_scattering",
     "get_intrabeam_scattering_growth_rates",
     "IBSAmplitudeGrowthRates",

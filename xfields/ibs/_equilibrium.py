@@ -159,7 +159,7 @@ def _ibs_rates_and_emittance_derivatives(
 # ----- Public API (integrated as method in TwissTable) ----- #
 
 
-def compute_equilibrium_emittances_from_sr_and_ibs(
+def get_ibs_and_synrad_emittance_evolution(
     twiss: xt.TwissTable,
     formalism: Literal["Nagaitsev", "Bjorken-Mtingwa", "B&M"],
     total_beam_intensity: int,
@@ -450,7 +450,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
         # --------------------------------------------------------------------------
         # Display estimated convergence progress if asked
         if verbose is True:
-            _print(f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.1f}%", end="\r")
+            _print(f"Iteration {iterations} - convergence = {100 * rtol / tolerance:.2g}%    ", end="\r")
         # --------------------------------------------------------------------------
         # Compute IBS growth rates and emittance derivatives (and unpack)
         # These are in amplitude convention in xsuite (like SR damping constants)
