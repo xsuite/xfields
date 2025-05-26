@@ -446,7 +446,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # - Store all intermediate results for this time step
     # - Compute tolerance and check for convergence
     while tolerance > rtol:
-        LOGGER.debug(f"Current emittances (x, y, zeta): {current_emittances}")
+        LOGGER.debug(f"Current geometric emittances (x, y, zeta): {current_emittances}")
         # --------------------------------------------------------------------------
         # Display estimated convergence progress if asked
         if verbose is True:
