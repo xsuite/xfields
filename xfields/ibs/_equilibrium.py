@@ -384,9 +384,9 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     # ---------------------------------------------------------------------------------------------
     # By now we should have a value for geometric emittances in each plane. We assign them to new
     # variables for clarity. These might be overwritten below in case we have to apply a constraint
-    starting_gemitt_x = gemitt_x
-    starting_gemitt_y = gemitt_y
-    starting_gemitt_zeta = gemitt_zeta
+    starting_gemitt_x: float = gemitt_x  # type: ignore (Pylance does not understand it exists)
+    starting_gemitt_y: float = gemitt_y  # type: ignore
+    starting_gemitt_zeta: float = gemitt_zeta  # type: ignore
     # ---------------------------------------------------------------------------------------------
     # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
     # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
