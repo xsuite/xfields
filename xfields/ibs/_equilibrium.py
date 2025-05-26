@@ -412,7 +412,7 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     if overwrite_sigma_zeta is not None:
         LOGGER.warning("'overwrite_sigma_zeta' specified.")
         sigma_zeta = overwrite_sigma_zeta
-    elif overwrite_sigma_delta is not None:
+    if overwrite_sigma_delta is not None:
         LOGGER.warning("'overwrite_sigma_delta' specified.")
         sigma_delta = overwrite_sigma_delta
     longitudinal_emittance_ratio = sigma_zeta / sigma_delta
