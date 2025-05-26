@@ -49,7 +49,7 @@ def test_equilibrium_vs_analytical_constraint_coupling(
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # -------------------------------------------
     # Compute the equilibrium emittances - coupling constraint
-    result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+    result = tw.get_ibs_and_synrad_emittance_evolution(
         formalism="nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
         emittance_coupling_factor=emittance_coupling_factor,
@@ -89,7 +89,7 @@ def test_equilibrium_vs_analytical_constraint_excitation(
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # -------------------------------------------
     # Compute the equilibrium emittances - excitation constraint
-    result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+    result = tw.get_ibs_and_synrad_emittance_evolution(
         formalism="nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
         emittance_coupling_factor=emittance_coupling_factor,
@@ -134,7 +134,7 @@ def test_equilibrium_vs_analytical_no_constraint(
     # Compute the equilibrium emittances - no constraint
     # No constraint so no renormalization of transverse emittances
     # and SR eq in vertical is 0 so we change it to avoid exact 0
-    result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+    result = tw.get_ibs_and_synrad_emittance_evolution(
         formalism="nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
         gemitt_x=tw.eq_gemitt_x,
@@ -222,7 +222,7 @@ def test_equilibrium_vs_elegant(emittance_coupling_factor: float, bessy3_line_wi
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # -------------------------------------------
     # Compute the equilibrium emittances - coupling constraint
-    result = tw.compute_equilibrium_emittances_from_sr_and_ibs(
+    result = tw.get_ibs_and_synrad_emittance_evolution(
         formalism="nagaitsev",  # No Dy in the line, faster
         total_beam_intensity=BUNCH_INTENSITY,
         emittance_coupling_factor=emittance_coupling_factor,
@@ -270,7 +270,7 @@ def test_missing_required_twiss_attributes_raises(bessy3_line_with_radiation: xt
         AttributeError,
         match="TwissTable must contain SR equilibrium emittances and damping constants.",
     ):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             formalism="Nagaitsev",
             total_beam_intensity=BUNCH_INTENSITY,
             emittance_coupling_factor=1,
@@ -283,29 +283,29 @@ def test_missing_params_raises(bessy3_line_with_radiation: xt.Line):
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # These should tell us we're necessary missing arguments
     with pytest.raises(AssertionError, match="Must provide 'formalism'"):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             formalism=None,
             total_beam_intensity=BUNCH_INTENSITY,
         )
     # Not providing formalism just passes to IBS rates computation which raises
     with pytest.raises(TypeError):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             # formalism="Nagaitsev",
             total_beam_intensity=BUNCH_INTENSITY,
         )
     with pytest.raises(AssertionError, match="Must provide 'total_beam_intensity'"):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             formalism="Nagaitsev",
             total_beam_intensity=None,
         )
     # Not providing formalism just passes to IBS rates computation which raises
     with pytest.raises(TypeError):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             formalism="Nagaitsev",
             # total_beam_intensity=BUNCH_INTENSITY,
         )
     with pytest.raises(AssertionError, match="Must provide 'rtol'"):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             formalism="Nagaitsev",
             total_beam_intensity=BUNCH_INTENSITY,
             rtol=None,
@@ -318,7 +318,7 @@ def test_invalid_constraint_raises(emittance_constraint, bessy3_line_with_radiat
     tw = bessy3_line_with_radiation.twiss(eneloss_and_damping=True)
     # This should tell us we're missing something in the config
     with pytest.raises(AssertionError, match="Invalid 'emittance_constraint'"):
-        tw.compute_equilibrium_emittances_from_sr_and_ibs(
+        tw.get_ibs_and_synrad_emittance_evolution(
             formalism="Nagaitsev",
             total_beam_intensity=BUNCH_INTENSITY,
             emittance_coupling_factor=1,
