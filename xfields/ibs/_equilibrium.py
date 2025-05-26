@@ -388,8 +388,8 @@ def compute_equilibrium_emittances_from_sr_and_ibs(
     starting_gemitt_y: float = gemitt_y  # type: ignore
     starting_gemitt_zeta: float = gemitt_zeta  # type: ignore
     # ---------------------------------------------------------------------------------------------
-    # If we need to renormalize the transverse emittances, we so now. If emittance_coupling_factor is
-    # non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
+    # If we need to renormalize the transverse emittances, we do so now. If emittance_coupling_factor
+    # is non-zero, transverse emittances are modified accordingly (used convention is valid for arbitrary
     # damping partition numbers and emittance_coupling_factor values).
     if _renormalize_transverse_emittances is True and emittance_constraint is not None:
         # If constraint is coupling, both emittances are modified (from factor and partition numbers)
