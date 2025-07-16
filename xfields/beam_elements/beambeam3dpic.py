@@ -5,15 +5,13 @@
 
 import numpy as np
 from scipy.constants import e as qe
-from scipy.constants import c as clight
 
 import xobjects as xo
 import xtrack as xt
-import pickle as pkl
-
-from ..general import _pkg_root
-from .beambeam3d import _init_alpha_phi
 from xfields import TriLinearInterpolatedFieldMap
+from .beambeam3d import _init_alpha_phi
+from ..general import _pkg_root
+
 
 class BeamstrahlungTable(xo.HybridClass):
     """
@@ -30,7 +28,7 @@ class BeamstrahlungTable(xo.HybridClass):
      particle_id: [1] array index in the xpart.Particles object of the primary macroparticle emitting the photon
      primary_energy: [eV] total energy of primary macroparticle before emission of this photon
      photon_id: [1] counter for photons emitted from the same primary in the same collision with a single slice
-     photon_energy: [eV] total energy of a beamstrahlung photon
+     photon_energy: [eV] total energy of a beamstrahlung photon
      photon_critical_energy (with quantum BS only): [eV] critical energy of a beamstrahlung photon
      rho_inv (with quantum BS only): [m^-1] (Fr/dz) inverse bending radius of the primary macroparticle
     """
@@ -44,7 +42,7 @@ class BeamstrahlungTable(xo.HybridClass):
       'photon_energy': xo.Float64[:],
       'photon_critical_energy': xo.Float64[:],
       'rho_inv': xo.Float64[:],
-        }
+    }
 
 class LumiTable(xo.HybridClass):
     """
@@ -61,11 +59,11 @@ class LumiTable(xo.HybridClass):
      luminosity: [m^-2] integrated luminosity per bunch crossing for one turn, obtained from the charge density grid. Turn by turn lumi. This is overwritten at every call.
     """
     _xofields = {
-      '_index': xt.RecordIndex,
-      'at_turn': xo.Int64[:],
-      'at_element': xo.Int64[:],  # size: n_turns
-      'luminosity': xo.Float64[:],  # size: n_turns
-        }
+        '_index': xt.RecordIndex,
+        'at_turn': xo.Int64[:],
+        'at_element': xo.Int64[:],  # size: n_turns
+        'luminosity': xo.Float64[:],  # size: n_turns
+    }
 
 # currently not possible to have a record table with elements of different size so lumigrid is an attribute
 
@@ -73,12 +71,11 @@ class BeamBeamPIC3DRecord(xo.HybridClass):
     _xofields = {
         'beamstrahlungtable': BeamstrahlungTable,
         'lumitable': LumiTable,
-       }
+    }
 
 class BeamBeamPIC3D(xt.BeamElement):
 
     _xofields = {
-
         '_sin_phi': xo.Float64,
         '_cos_phi': xo.Float64,
         '_tan_phi': xo.Float64,
@@ -112,7 +109,7 @@ class BeamBeamPIC3D(xt.BeamElement):
         # beamstrahlung
         'flag_beamstrahlung': xo.Int64,
 
-        # luminosity
+        # luminosity
         'flag_luminosity': xo.Int64,
         'flag_lumigrid': xo.Int64,
     }
@@ -325,16 +322,16 @@ class BeamBeamPIC3D(xt.BeamElement):
             pp.x = -pp.x
             self.fieldmap_self.update_from_particles(particles=pp, update_phi=False)
 
-            # for visualizing luminous region, size (2, nt=nz, nx, ny, nz), 0: self, 1: other
+            # for visualizing luminous region, size (2, nt=nz, nx, ny, nz), 0: self, 1: other
             at_turn = pp._xobject.at_turn[0] # On CPU there is always an active particle in position 0
             nx, ny, nz, dx, dy, dz = (self.fieldmap_self.nx, self.fieldmap_self.ny, self.fieldmap_self.nz,
                                       self.fieldmap_self.dx, self.fieldmap_self.dy, self.fieldmap_self.dz)
 
-            # scaling from [C] to [macroparts]
+            # scaling from [C] to [macroparts]
             weight = pp._xobject.weight[0]  # number of elementary charges per macroparticle
-            pwei = (dx*dy*dz) / (qe * weight)  # qe=1.6e-19 [C] from scipy.constants
+            pwei = (dx*dy*dz) / (qe * weight)  # qe=1.6e-19 [C] from scipy.constants
 
-            # other beam: fixed in center of grid, self beam: moves in and out of grid
+            # other beam: fixed in center of grid, self beam: moves in and out of grid
             if self.flag_lumigrid:
 
                 # unit: [1] (macroparticle dist.)
@@ -343,13 +340,13 @@ class BeamBeamPIC3D(xt.BeamElement):
                              [self.fieldmap_self.rho.flatten(), self.fieldmap_other.rho.flatten()]
                              ) * pwei)
 
-            # 2: kinematic factor, dt(=dz): integral over the time, unit: [m^-2]
+            # 2: kinematic factor, dt(=dz): integral over the time, unit: [m^-2]
             num_macroparts_in_grid_self  = np.abs(np.sum(self.fieldmap_self.rho )*pwei)
             num_macroparts_in_grid_other = np.abs(np.sum(self.fieldmap_other.rho)*pwei)
             self.record.lumitable.luminosity[at_turn] += (dz*2*weight**2 * num_macroparts_in_grid_self * num_macroparts_in_grid_other *
                     self.compute_lumi_integral_3d(self.fieldmap_self.rho, self.fieldmap_other.rho, dx, dy, dz))
 
-            # move self beam back to center of its own grid
+            # move self beam back to center of its own grid
             pp.zeta = -pp.zeta + z_step_other + z_step_self
             pp.x = -pp.x
             self.fieldmap_self.update_from_particles(particles=pp, update_phi=False)
@@ -442,24 +439,27 @@ class BeamBeamPIC3D(xt.BeamElement):
                 h_multiplied[0,    0, nz-1] + h_multiplied[nx-1,    0, nz-1] +
                 h_multiplied[0, ny-1, nz-1] + h_multiplied[nx-1, ny-1, nz-1])
 
-        # interior points
+        # interior points
         secondPart = self._buffer.context.nplike_lib.sum(
                 h_multiplied[1:nx-1, 1:ny-1, 1:nz-1])
 
-        # x boundaries
+        # x boundaries
         thirdPart = self._buffer.context.nplike_lib.sum(
                 h_multiplied[1:nx-1, 0, 1:nz-1] + h_multiplied[1:nx-1, ny-1, 1:nz-1])
 
-        # y boundaries
+        # y boundaries
         fourthPart = self._buffer.context.nplike_lib.sum(
                 h_multiplied[0, 1:ny-1, 1:nz-1] + h_multiplied[nx-1, 1:ny-1, 1:nz-1])
 
-        # z boundaries
+        # z boundaries
         fifthPart = self._buffer.context.nplike_lib.sum(
                 h_multiplied[1:nx-1, 1:ny-1, 0] + h_multiplied[1:nx-1, 1:ny-1, nz-1])
 
-        # 3D trapezoid integral
+        # 3D trapezoid integral
         integralf = integral + 0.125 * dx * dy * dz * (
                 8 * secondPart + 4 * thirdPart + 4 * fourthPart + 4 * fifthPart)
 
-        return integralf if not self._buffer.context.nplike_lib.isnan(integralf) else 0
+        if self._buffer.context.nplike_lib.isnan(integralf):
+            return 0
+
+        return integralf

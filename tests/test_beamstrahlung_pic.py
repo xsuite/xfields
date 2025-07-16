@@ -23,15 +23,15 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
 
     print(repr(test_context))
 
-    # fcc ttbar 4 IP
+    # fcc ttbar 4 IP
     # https://indico.cern.ch/event/1202105/contributions/5408583/attachments/2659051/4608141/FCCWeek_Optics_Oide_230606.pdf
-    bunch_intensity     =  1.55e11  # [e]
+    bunch_intensity     =  1.55e11  # [e]
     energy              =  182.5  # [GeV]
     p0c                 =  182.5e9  # [eV]
     mass0               =  511000  # [eV]
     phi                 =  15e-3  # [rad] half xing
     physemit_x          =  1.59e-09  # [m]
-    physemit_y          =  9e-13  # [m]
+    physemit_y          =  9e-13  # [m]
     beta_x              =  1  # [m]
     beta_y              =  1.6e-3  # [m]
     sigma_x             =  np.sqrt(physemit_x*beta_x)  # [m]
@@ -46,7 +46,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     n_macroparticles_b2 = int(1e6)
     
     ################
-    # create beams #
+    # create beams #
     ################
     
     #e-
@@ -124,7 +124,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     bbpic_ip1_b2.pipeline_manager = pipeline_manager
     
     ######################
-    # set up xtrack line #
+    # set up xtrack line #
     ######################
     
     line_b1 = xt.Line(elements=[bbpic_ip1_b1])
@@ -139,7 +139,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
         enable_debug_log=True, verbose=True)
     
     ################
-    # configure BS #
+    # configure BS #
     ################
     
     assert line_b1._needs_rng == False
@@ -156,7 +156,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
         xf.BeamBeamPIC3D, capacity={"beamstrahlungtable": int(3e5)})
 
     #####################
-    # track 1 collision #
+    # track 1 collision #
     #####################
     
     multitracker.track(num_turns=1)
@@ -218,7 +218,7 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     photons_pic_b1 = set(record_b1_pic.beamstrahlungtable.photon_energy)
     photons_pic_b2 = set(record_b2_pic.beamstrahlungtable.photon_energy)
     
-    # compare the upper part of the energy spectrum bc it has better statistics than low end tail
+    # compare the upper part of the energy spectrum bc it has better statistics than low end tail
     hist_pic_b1 = np.histogram(np.array([*photons_pic_b1]), bins=bins)[0][int(n_bins/2):]
     hist_pic_b2 = np.histogram(np.array([*photons_pic_b2]), bins=bins)[0][int(n_bins/2):]
     
