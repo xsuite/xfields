@@ -151,9 +151,19 @@ def test_beambeam3d_beamstrahlung_pic(test_context):
     assert line_b2._needs_rng == True
     
     record_b1_pic = line_b1.start_internal_logging_for_elements_of_type(
-        xf.BeamBeamPIC3D, capacity={"beamstrahlungtable": int(3e5)})
+        xf.BeamBeamPIC3D,
+        capacity={
+            "beamstrahlungtable": int(3e5),
+            "lumitable": 0,
+        }
+    )
     record_b2_pic = line_b2.start_internal_logging_for_elements_of_type(
-        xf.BeamBeamPIC3D, capacity={"beamstrahlungtable": int(3e5)})
+        xf.BeamBeamPIC3D,
+        capacity={
+            "beamstrahlungtable": int(3e5),
+            "lumitable": 0,
+        }
+    )
 
     #####################
     # track 1 collision #
