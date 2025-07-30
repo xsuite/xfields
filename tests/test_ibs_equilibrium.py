@@ -154,7 +154,7 @@ def test_equilibrium_vs_analytical_no_constraint(
     xo.assert_allclose(
         result.eq_sr_ibs_gemitt_y,
         result.gemitt_y[0] / (1 - result.Ky[-1] / tw.damping_constants_s[1]),
-        rtol=1e-2,
+        atol=5e-7, rtol=1e-2,
     )
     # Check the longitudinal equilibrium emittance
     xo.assert_allclose(

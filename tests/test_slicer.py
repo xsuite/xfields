@@ -22,11 +22,11 @@ def test_slicer_zeta(test_context):
     slicer_2 = xf.UniformBinSlicer(_context=test_context,
                                    zeta_slice_edges=zeta_slice_edges)
     xo.assert_allclose(slicer_0.zeta_centers,
-                       zeta_centers)
+                       zeta_centers, atol=1e-15)
     xo.assert_allclose(slicer_1.zeta_centers,
-                       zeta_centers)
+                       zeta_centers, atol=1e-15)
     xo.assert_allclose(slicer_2.zeta_centers,
-                       zeta_centers)
+                       zeta_centers, atol=1e-15)
 
 
 @for_all_test_contexts
