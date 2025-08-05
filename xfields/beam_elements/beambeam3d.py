@@ -8,7 +8,6 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 
-from ..general import _pkg_root
 
 class BeamstrahlungTable(xo.HybridClass):
     """
@@ -32,18 +31,18 @@ class BeamstrahlungTable(xo.HybridClass):
      delta_avg (with mean BS only): [1] avg. rel. E loss for 1 macroparticle in collision with a single slice
     """
     _xofields = {
-      '_index': xt.RecordIndex,
-      'at_element': xo.Int64[:],
-      'at_turn': xo.Int64[:],
-      'particle_id': xo.Int64[:],
-      'primary_energy': xo.Float64[:],
-      'photon_id': xo.Float64[:],
-      'photon_energy': xo.Float64[:],
-      'photon_critical_energy': xo.Float64[:],
-      'rho_inv': xo.Float64[:],
-      'n_avg': xo.Float64[:],
-      'delta_avg': xo.Float64[:],
-        }
+        '_index': xt.RecordIndex,
+        'at_element': xo.Int64[:],
+        'at_turn': xo.Int64[:],
+        'particle_id': xo.Int64[:],
+        'primary_energy': xo.Float64[:],
+        'photon_id': xo.Float64[:],
+        'photon_energy': xo.Float64[:],
+        'photon_critical_energy': xo.Float64[:],
+        'rho_inv': xo.Float64[:],
+        'n_avg': xo.Float64[:],
+        'delta_avg': xo.Float64[:],
+    }
 
 
 class BhabhaTable(xo.HybridClass):
@@ -68,21 +67,21 @@ class BhabhaTable(xo.HybridClass):
      photon_scattering_angle: [rad] scattering angle of scattered Bhabha photon
     """
     _xofields = {
-      '_index': xt.RecordIndex,
-      'at_element': xo.Int64[:],
-      'at_turn': xo.Int64[:],
-      'particle_id': xo.Int64[:],
-      'primary_energy': xo.Float64[:],
-      'photon_id': xo.Int64[:],
-      'photon_x': xo.Float64[:],
-      'photon_y': xo.Float64[:],
-      'photon_z': xo.Float64[:],
-      'photon_px': xo.Float64[:],
-      'photon_py': xo.Float64[:],
-      'photon_energy': xo.Float64[:],
-      'primary_scattering_angle': xo.Float64[:],
-      'photon_scattering_angle': xo.Float64[:],
-        }
+        '_index': xt.RecordIndex,
+        'at_element': xo.Int64[:],
+        'at_turn': xo.Int64[:],
+        'particle_id': xo.Int64[:],
+        'primary_energy': xo.Float64[:],
+        'photon_id': xo.Int64[:],
+        'photon_x': xo.Float64[:],
+        'photon_y': xo.Float64[:],
+        'photon_z': xo.Float64[:],
+        'photon_px': xo.Float64[:],
+        'photon_py': xo.Float64[:],
+        'photon_energy': xo.Float64[:],
+        'primary_scattering_angle': xo.Float64[:],
+        'photon_scattering_angle': xo.Float64[:],
+    }
 
 
 class LumiTable(xo.HybridClass):
@@ -97,10 +96,10 @@ class LumiTable(xo.HybridClass):
      luminosity: [m^-2] integrated luminosity per bunch crossing for one turn
     """
     _xofields = {
-      '_index': xt.RecordIndex,
-      'at_element': xo.Int64[:],
-      'luminosity': xo.Float64[:],
-        }
+        '_index': xt.RecordIndex,
+        'at_element': xo.Int64[:],
+        'luminosity': xo.Float64[:],
+    }
 
 
 class BeamBeamBiGaussian3DRecord(xo.HybridClass):
@@ -108,7 +107,7 @@ class BeamBeamBiGaussian3DRecord(xo.HybridClass):
         'beamstrahlungtable': BeamstrahlungTable,
         'bhabhatable': BhabhaTable,
         'lumitable': LumiTable,
-       }
+    }
 
 class BeamBeamBiGaussian3D(xt.BeamElement):
 
@@ -195,25 +194,9 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _depends_on = [xt.RandomUniform]
 
-    _extra_c_sources= [
-        _pkg_root.joinpath('headers/constants.h'),
-        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
-        _pkg_root.joinpath('headers/sincos.h'),
-        _pkg_root.joinpath('headers/power_n.h'),
-        _pkg_root.joinpath('headers','particle_states.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_transport_sigmas.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
-
-        # beamstrahlung
-        _pkg_root.joinpath('headers/beamstrahlung_spectrum.h'),
-        _pkg_root.joinpath('headers/bhabha_spectrum.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d.h'),
-        _pkg_root.joinpath(
-            'beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h'),
-
-   ]
+    _extra_c_sources = [
+        '#include "xfields/beam_elements/beambeam_src/beambeam3d_methods_for_strongstrong.h"'
+    ]
 
     _per_particle_kernels={
         'synchro_beam_kick': xo.Kernel(

@@ -6,6 +6,9 @@
 #ifndef XFIELDS_LINEAR_INTERPOLATORS_H
 #define XFIELDS_LINEAR_INTERPOLATORS_H
 
+#include "xobjects/headers/common.h"
+
+
 typedef struct{
     int64_t ix;
     int64_t iy;
@@ -24,7 +27,7 @@ typedef struct{
 }IndicesAndWeights;
 
 
-/*gpufun*/
+GPUFUN
 IndicesAndWeights TriLinearInterpolatedFieldMap_compute_indeces_and_weights(
 	TriLinearInterpolatedFieldMapData fmap,
 	double x, double y, double z){
@@ -78,9 +81,9 @@ IndicesAndWeights TriLinearInterpolatedFieldMap_compute_indeces_and_weights(
 
 }	
 
-/*gpufun*/
+GPUFUN
 double TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(
-	/*gpuglmem*/ const double* map,
+	GPUGLMEM const double* map,
 	   const IndicesAndWeights iw){
 	
     double val;
@@ -103,30 +106,27 @@ double TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(
     return val;
 }
 
-/*gpukern*/
+GPUKERN
 void TriLinearInterpolatedFieldMap_interpolate_3d_map_vector(
     TriLinearInterpolatedFieldMapData  fmap,
                         const int64_t  n_points,
-           /*gpuglmem*/ const double*  x,
-           /*gpuglmem*/ const double*  y,
-           /*gpuglmem*/ const double*  z,
+           GPUGLMEM const double*  x,
+           GPUGLMEM const double*  y,
+           GPUGLMEM const double*  z,
                         const int64_t  n_quantities,
-           /*gpuglmem*/ const int8_t*  buffer_mesh_quantities,
-           /*gpuglmem*/ const int64_t* offsets_mesh_quantities,
-           /*gpuglmem*/       double*  particles_quantities) {
+           GPUGLMEM const int8_t*  buffer_mesh_quantities,
+           GPUGLMEM const int64_t* offsets_mesh_quantities,
+           GPUGLMEM       double*  particles_quantities) {
 
-    #pragma omp parallel for //only_for_context cpu_openmp 
-    for (int pidx=0; pidx<n_points; pidx++){ //vectorize_over pidx n_points
-
-	const IndicesAndWeights iw = 
-		TriLinearInterpolatedFieldMap_compute_indeces_and_weights(
+    VECTORIZE_OVER(pidx, n_points);
+        const IndicesAndWeights iw = TriLinearInterpolatedFieldMap_compute_indeces_and_weights(
 	                                      fmap, x[pidx], y[pidx], z[pidx]);
-    	for (int iq=0; iq<n_quantities; iq++){
-	    particles_quantities[iq*n_points + pidx] = 
-		TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(
-	           (/*gpuglmem*/ double*)(buffer_mesh_quantities + offsets_mesh_quantities[iq]),
-		   iw);
-	}
-    }//end_vectorize
+    	for (int iq=0; iq < n_quantities; iq++) {
+            particles_quantities[iq*n_points + pidx] =
+            TriLinearInterpolatedFieldMap_interpolate_3d_map_scalar(
+                   (GPUGLMEM double*)(buffer_mesh_quantities + offsets_mesh_quantities[iq]),
+               iw);
+	    }
+    END_VECTORIZE;
 }
 #endif

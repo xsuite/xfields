@@ -6,13 +6,17 @@
 #ifndef XFIELDS_CUBIC_INTERPOLATORS_H
 #define XFIELDS_CUBIC_INTERPOLATORS_H
 
-/*gpufun*/
+#include "xobjects/headers/common.h"
+#include "xfields/fieldmaps/interpolated_src/tricubic_coefficients.h"
+
+
+GPUFUN
 void TriCubicInterpolatedFieldMap_construct_b(
 	TriCubicInterpolatedFieldMapData fmap,
 	   const int64_t ix, const int64_t iy, const int64_t iz, 
        double* b_vector){
 
-    /*gpuglmem*/ double* phi_taylor = TriCubicInterpolatedFieldMapData_getp1_phi_taylor(fmap, 0);
+    GPUGLMEM double* phi_taylor = TriCubicInterpolatedFieldMapData_getp1_phi_taylor(fmap, 0);
     // Optimization TODO: change int64 to int for less register pressure?
     const int64_t nx = TriCubicInterpolatedFieldMapData_get_nx(fmap);
     const int64_t ny = TriCubicInterpolatedFieldMapData_get_ny(fmap);
@@ -33,7 +37,7 @@ void TriCubicInterpolatedFieldMap_construct_b(
     return ;
 }
 
-/*gpufun*/
+GPUFUN
 int TriCubicInterpolatedFieldMap_interpolate_grad(
 	TriCubicInterpolatedFieldMapData fmap,
 	   const double x, const double y, const double z, 

@@ -7,13 +7,9 @@ import numpy as np
 
 import xobjects as xo
 import xtrack as xt
-import xpart as xp
-
+from ..fieldmaps import TriCubicInterpolatedFieldMap
 from ..fieldmaps import TriLinearInterpolatedFieldMap
-from ..fieldmaps import TriCubicInterpolatedFieldMap
 
-from ..fieldmaps import TriCubicInterpolatedFieldMap
-from ..general import _pkg_root
 
 class ElectronLensInterpolated(xt.BeamElement):
 
@@ -25,11 +21,7 @@ class ElectronLensInterpolated(xt.BeamElement):
               }
 
     _extra_c_sources = [
-        _pkg_root.joinpath('headers','particle_states.h'),
-        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
-        _pkg_root.joinpath('beam_elements/electronlens_src/electronlens_interpolated.h'),
+        '#include "xfields/beam_elements/electronlens_src/electronlens_interpolated.h"'
     ]
 
     def __init__(self,
