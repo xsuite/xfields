@@ -4,9 +4,12 @@
 // ########################################### //
 
 #ifndef XFIELDS_QGAUSSIAN 
-#define XFIELDS_QGAUSSIAN 
+#define XFIELDS_QGAUSSIAN
 
-/*gpufun*/
+#include "xobjects/headers/common.h"
+
+
+GPUFUN
 double LongitudinalProfileQGaussian_line_density_scalar(
 		LongitudinalProfileQGaussianData prof, double z){
 
@@ -36,20 +39,21 @@ double LongitudinalProfileQGaussian_line_density_scalar(
     }
     else{
     	double exponent = 1./(1.-q);
-	if (z<z_max && z>z_min){
-	    double z_m_z0 = z - z0;
-    		double q_exp_arg =  -(beta_param*z_m_z0*z_m_z0 );
-    		double q_exp_res = pow(
-	    	 (1.+(1.-q)*q_exp_arg), exponent );
-    		return factor*q_exp_res;
-	}
-	else{
-		return 0; 
-	}
+        if (z<z_max && z>z_min){
+            double z_m_z0 = z - z0;
+                double q_exp_arg =  -(beta_param*z_m_z0*z_m_z0 );
+                double q_exp_res = pow(
+                 (1.+(1.-q)*q_exp_arg), exponent );
+                return factor*q_exp_res;
+        }
+        else{
+            return 0;
+        }
     }
 }
 
-/*gpufun*/
+
+GPUFUN
 double LongitudinalProfileQGaussian_line_density_derivative_scalar(
 		LongitudinalProfileQGaussianData prof, double z){
 
@@ -92,34 +96,27 @@ double LongitudinalProfileQGaussian_line_density_derivative_scalar(
 }
 
 
-
-/*gpukern*/
+GPUKERN
 void line_density_qgauss(LongitudinalProfileQGaussianData prof,
 		               const int64_t n,
-		  /*gpuglmem*/ const double* z, 
-		  /*gpuglmem*/       double* res){
+		  GPUGLMEM const double* z, 
+		  GPUGLMEM       double* res){
 
-   #pragma omp parallel for //only_for_context cpu_openmp 
-   for(int ii; ii<n; ii++){ //vectorize_over ii n 
-
-       res[ii] = LongitudinalProfileQGaussian_line_density_scalar(prof, z[ii]);
-  
-   }//end_vectorize
+    VECTORIZE_OVER(ii, n);
+        res[ii] = LongitudinalProfileQGaussian_line_density_scalar(prof, z[ii]);
+    END_VECTORIZE;
 }
 
 
-/*gpukern*/
+GPUKERN
 void line_derivative_qgauss(LongitudinalProfileQGaussianData prof,
 		               const int64_t n,
-		  /*gpuglmem*/ const double* z, 
-		  /*gpuglmem*/       double* res){
+		  GPUGLMEM const double* z, 
+		  GPUGLMEM       double* res){
 
-   #pragma omp parallel for //only_for_context cpu_openmp 
-   for(int ii; ii<n; ii++){ //vectorize_over ii n 
-
-       res[ii] = LongitudinalProfileQGaussian_line_density_derivative_scalar(prof, z[ii]);
-  
-   }//end_vectorize
+    VECTORIZE_OVER(ii, n);
+        res[ii] = LongitudinalProfileQGaussian_line_density_derivative_scalar(prof, z[ii]);
+    END_VECTORIZE;
 }
 
 #endif

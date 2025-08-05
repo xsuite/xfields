@@ -26,7 +26,6 @@ from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
 
-from .general import _pkg_root
 from .config_tools import replace_spacecharge_with_quasi_frozen
 from .config_tools import replace_spacecharge_with_PIC
 from .config_tools import configure_orbit_dependent_parameters_for_bb

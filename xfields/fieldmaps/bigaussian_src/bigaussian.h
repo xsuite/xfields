@@ -6,15 +6,20 @@
 #ifndef XFIELDS_BIGAUSSIAN_H
 #define XFIELDS_BIGAUSSIAN_H
 
+#if defined(XO_CONTEXT_CPU) || defined(XO_CONTEXT_CL) || defined(XO_CONTEXT_CUDA)
+    #include "xobjects/headers/common.h"
+    #include "xfields/fieldmaps/bigaussian_src/faddeeva.h"
+    #include "xfields/fieldmaps/bigaussian_src/compute_gx_gy.h"
+#else
+    // For quick testing outside of the Xfields package
+    #include "constants.h"
+    #include "faddeeva.h"
+    #include "complex_error_function.h"
+    #include "compute_gx_gy.h"
+#endif
 
-// for quick test with gcc
-#include "constants.h" //only_for_context none
-#include "faddeeva.h" //only_for_context none
-#include "complex_error_function.h" //only_for_context none
-#include "compute_gx_gy.h" //only_for_context none
-//include_file compute_gx_gy.h for_context cpu_serial opencl cuda cpu_openmp
 
-/*gpufun*/
+GPUFUN
 void get_charge_density(const double x,
                       const double y,
                       const double sigma_x,
@@ -29,7 +34,7 @@ void get_charge_density(const double x,
   *rho = factor * exp_x * exp_y;  // [m^-2]
 }
 
-/*gpufun*/
+GPUFUN
 void get_transv_field_gauss_round(
     double sigma, double Delta_x, double Delta_y,
     double x, double y,
@@ -48,7 +53,7 @@ void get_transv_field_gauss_round(
   (*Ey) = temp * (y-Delta_y);
 }
 
-/*gpufun*/
+GPUFUN
 void get_transv_field_gauss_ellip(
         double sigma_x,  double sigma_y,
         double Delta_x,  double Delta_y,
@@ -127,7 +132,7 @@ void get_transv_field_gauss_ellip(
   (*Ey_out) = Ey;
 }
 
-/*gpufun*/
+GPUFUN
 void get_Ex_Ey_gauss(
              const double  x,
              const double  y,

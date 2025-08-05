@@ -47,8 +47,7 @@ class CompressedProfile(xt.BeamElement):
         'data': xo.Float64[:,:,:],
     }
 
-    pkg_root = xf.general._pkg_root
-    _extra_c_sources = [pkg_root.joinpath('headers/compressed_profile.h')]
+    _extra_c_sources = ['#include "xfields/slicers/slicers_src/compressed_profile.h"']
 
     _per_particle_kernels = {
         '_interp_result': xo.Kernel(

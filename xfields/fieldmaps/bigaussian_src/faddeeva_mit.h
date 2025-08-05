@@ -152,6 +152,9 @@
 #ifndef XFIELDS_FADDEEVA_MIT_H
 #define XFIELDS_FADDEEVA_MIT_H
 
+#include "xobjects/headers/common.h"
+
+
 #ifdef HAVE_CONFIG_H
 #  include "config.h"
 #endif
@@ -219,8 +222,8 @@ double complex Faddeeva_MIT_Dawson(double complex z, double relerr);
 double Faddeeva_MIT_Dawson_re(double x); // special case for real x
 
 
-/*gpufun*/ void faddeeva_w( double x, double y,
-    double* /*restrict*/ out_x, double* /*restrict*/ out_y )
+GPUFUN void faddeeva_w( double x, double y,
+    double* RESTRICT out_x, double* RESTRICT out_y )
 {
     double complex z, W;
     z = x + I * y;
@@ -229,8 +232,8 @@ double Faddeeva_MIT_Dawson_re(double x); // special case for real x
     *out_y = cimag(W);
 }
 
-/*gpufun*/ void faddeeva_w_q1( double x, double y,
-    double* /*restrict*/ out_x, double* /*restrict*/ out_y )
+GPUFUN void faddeeva_w_q1( double x, double y,
+    double* RESTRICT out_x, double* RESTRICT out_y )
 {
     faddeeva_w(x, y, out_x, out_y);
 }
