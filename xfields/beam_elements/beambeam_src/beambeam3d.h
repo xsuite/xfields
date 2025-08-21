@@ -103,9 +103,11 @@ void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
       py_photon = py_slice_star;
       pzeta_photon = pzeta_slice_star;
 
+      const double compt_scale = BeamBeamBiGaussian3DData_get_compt_scale(el); // [1] can be used to scale up photon generation for tests
+
       // for each virtual photon get compton scatterings; updates pzeta and energy vars inside
       compt_do(part, bhabha_record, bhabha_table_index, bhabha_table,
-               e_photon, compt_x_min, q2,
+               e_photon, compt_x_min, compt_scale, q2,
                x_photon, y_photon, S, px_photon, py_photon, pzeta_photon,
                *wgt, px_star, py_star, pzeta_star, q0);
 
