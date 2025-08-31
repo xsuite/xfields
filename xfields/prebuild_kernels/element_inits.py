@@ -5,6 +5,7 @@
 
 import numpy as np
 
+
 XFIELDS_ELEMENTS_INIT_DEFAULTS = {
     'BeamBeamBiGaussian2D': {
         'other_beam_Sigma_11': 1.,

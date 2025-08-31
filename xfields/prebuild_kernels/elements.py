@@ -5,8 +5,8 @@
 
 from ..beam_elements import *
 
-# Xfields elements
-DEFAULT_XF_ELEMENTS = [
+
+DEFAULT_XFIELDS_ELEMENTS = [
     BeamBeamBiGaussian2D,
     BeamBeamBiGaussian3D,
     SpaceChargeBiGaussian,
