@@ -133,7 +133,7 @@ class TouschekScattering(xt.BeamElement):
 
     def _configure(self, **kwargs):
         config_allowed = {
-            "_particle_ref", "_bunch_population",
+            "_s", "_particle_ref", "_bunch_population",
             "_gemitt_x", "_gemitt_y",
             "_alfx", "_betx", "_alfy", "_bety",
             "_dx", "_dpx", "_dy", "_dpy",

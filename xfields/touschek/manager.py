@@ -258,6 +258,7 @@ class TouschekManager:
 
         # Helper to assign all fields to a single TouschekScattering
         def _assign(nn: str):
+            s = tab.rows[nn].s[0]
             alfx = twiss["alfx", nn]; betx = twiss["betx", nn]
             alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
             dx   = twiss["dx",   nn]; dpx = twiss["dpx",  nn]
@@ -270,6 +271,7 @@ class TouschekManager:
             elem = line[nn] # xf.TouschekScattering
 
             elem._configure(
+                _s=s,
                 _particle_ref=self.particle_ref,
                 _bunch_population=self.bunch_population,
                 _gemitt_x=self.gemitt_x,
