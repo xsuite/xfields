@@ -192,11 +192,11 @@ class TouschekScattering(xt.BeamElement):
                             weight=weight_out[:n],
                             s=getattr(self, '_s', 0.0))
         
-        self.total_mc_rate = totalMCRate_out
+        self.total_mc_rate = totalMCRate_out[0]
         self.ignored_rate = self._ignored_portion * self.total_mc_rate
 
         return part
 
-    
+
     def track(self, particles):
         super().track(particles)
