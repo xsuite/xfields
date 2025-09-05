@@ -153,7 +153,7 @@ class TouschekManager:
                  sigma_z=None, sigma_delta=None, bunch_population=None,
                  n_simulated=None, gemitt_x=None, gemitt_y=None,
                  momentum_aperture_scale=0.85, ignored_portion=0.01,
-                 nx=3, ny=3, nz=3, **kwargs):
+                 seed=1997, nx=3, ny=3, nz=3, **kwargs):
 
         # Input validation
         if line is None:
@@ -206,6 +206,7 @@ class TouschekManager:
         self.n_simulated = n_simulated
         self.momentum_aperture_scale = momentum_aperture_scale
         self.ignored_portion = ignored_portion
+        self.seed = seed
         self.nx = nx
         self.ny = ny
         self.nz = nz
@@ -256,8 +257,8 @@ class TouschekManager:
 
         self.touschek._compute_integrated_piwinski_rates()
 
-        # Helper to assign all fields to a single TouschekScattering
-        def _assign(nn: str):
+        # Helper to config all fields to a single TouschekScattering
+        def _config(nn):
             s = tab.rows[nn].s[0]
             alfx = twiss["alfx", nn]; betx = twiss["betx", nn]
             alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
@@ -287,12 +288,13 @@ class TouschekManager:
                 _nx=self.nx, _ny=self.ny, _nz=self.nz,
                 _ignored_portion=self.ignored_portion,
                 piwinski_rate=piwinski_rate,
+                _seed=self.seed, _inhibit_permute=0
             )
 
         if element is None:
             for nn in tab.name[:-1]: # Avoid the last tab.name which is _end_point
                 if isinstance(line[nn], xf.TouschekScattering):
-                    _assign(nn)
+                    _config(nn)
         else:
             if not isinstance(element, str):
                 raise TypeError(f"`element` must be a string (got {type(element).__name__}).")
@@ -304,4 +306,4 @@ class TouschekManager:
                 raise TypeError(
                     f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
                 )
-            _assign(element)
+            _config(element)

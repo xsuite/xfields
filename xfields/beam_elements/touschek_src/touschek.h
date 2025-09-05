@@ -5,6 +5,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdint.h>
+#include <string.h>
 
 static inline double sqr(double x){ return x*x; }
 
@@ -13,19 +14,6 @@ void TouschekScattering_track_local_particle(TouschekScatteringData el, LocalPar
   (void)el; (void)part0;
   return;
 }
-
-/*gpufun*/
-void shuffle_double_array(double* a, int n, LocalParticle* part) {
-  for (int i = n - 1; i > 0; --i) {
-      // Option A: use floating RNG
-      int j = (int)floor(RandomUniformAccurate_generate(part) * (i + 1));
-
-      double tmp = a[i];
-      a[i] = a[j];
-      a[j] = tmp;
-  }
-}
-
 
 void selectPartGauss(double *p1, double *p2,
                      double *dens1, double *dens2,
@@ -312,6 +300,14 @@ void TouschekScatter(TouschekScatteringData el,
     double *zetatemp   = (double*)malloc(sizeof(double) * n_simulated);
     double *deltatemp  = (double*)malloc(sizeof(double) * n_simulated);
 
+    static int seeded_once = 0;
+    if (!seeded_once){
+        long  seed = TouschekScatteringData_get__seed(el);
+        short inhibit = (short)TouschekScatteringData_get__inhibit_permute(el);
+        seedElegantRandomNumbers(seed, inhibit);
+        seeded_once = 1;
+    }
+
     i = 0;
     j = 0;
     total_event = 0;
@@ -322,10 +318,23 @@ void TouschekScatter(TouschekScatteringData el,
           break;
 
         /* Select 11 random numbers, then mix them. */
+
+        // These 11 random numbers are assigned to:
+        // particle 1 (p1) as: { x, y, px, py, zeta, delta}
+        // particle 2 (p2) as: { -, -, px, py, -, delta}
+        // scattering angles in the cm frame: theta and phi
+
+        // In ELEGANT the 11 random numbers are assigned to:
+        // particle 1 (p1) as: { x, y, xp, yp, zeta, delta}
+        // particle 2 (p2) as: { -, -, xp, yp, -, delta}
+        // scattering angles in the cm frame: theta and phi
+
+        // NOTE: ELEGANT uses slopes xp=dx/ds, yp=dy/ds instead of the normalized momentum components px=Px/p0c, py=Py/p0c
         for (j = 0; j < 11; j++) {
-          ran1[j] = RandomUniformAccurate_generate(part0); // replaces random_1_elegant
+          // ran1[j] = RandomUniformAccurate_generate(part0); // Does not match with ELEGANT
+          ran1[j] = random_1_elegant(1);
         }
-        // shuffle_double_array(ran1, 11, part0);  // may replace ELEGANT's randomizeOrder ?
+        randomizeOrder((char*)ran1, sizeof(ran1[0]), 11, 0, random_4); // like ELEGANT
 
         total_event++;
 
@@ -334,7 +343,9 @@ void TouschekScatter(TouschekScatteringData el,
         if (!dens1 || !dens2) {
           continue;
         }
-        /* Change from slope to momentum */
+        /* Here ELEGANT changes from slopes to momentum components */
+        // Since we use already the normalized momentum components {px, py} instead of the slopes {xp, yp}
+        // here we just unormalize the momentum components: Px=px*p0c, Py=py*p0c
         for (j = 3; j < 5; j++) {
           p1[j] *= p0c;
           p2[j] *= p0c;
@@ -401,25 +412,6 @@ void TouschekScatter(TouschekScatteringData el,
             i++;
           }
         }
-      // ELEGANT warnings
-      //   if (total_event * 11 > (long)2e9) {
-      //     printWarning("TouschekScatter: the total number of random numbers used exceeded 2e9.",
-      //                  "Use smaller n_simulated or smaller delta.");
-      //     break;
-      //   }
-      // }
-      // if (verbosity)
-      //   report_stats(stdout, "After particle generation: ");
-      // if (simuCount == 0)
-      //   bombElegant("It appears that the Touschek lifetime is extremely wrong and there is no need to perform Touschek simulation.\n If you think this is a wrong statement, send input to developers for evaluation.\n", NULL);
-
-      // if (total_event / tsptr->simuCount > 20) {
-      //   if (distribution_cutoff[0] < 5 || distribution_cutoff[1] < 5)
-      //     printWarning("touschek_scatter: scattering rate is low.",
-      //                  "Please use >=5 sigma beam for better simulation.");
-      //   else
-      //     printWarning("touschek_scatter: Sscattering rate is very low.",
-      //                  "Please ignore the rate from Monte Carlo simulation. Use Piwinski's rate only.");
       }
       factor = factor / (double)(total_event);
       totalMCRate = totalWeight * factor;

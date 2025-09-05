@@ -2,18 +2,8 @@ import xobjects as xo
 import xtrack as xt
 
 import numpy as np
-from scipy.integrate import quad
-from scipy.special import i0
-from scipy.constants import physical_constants
 
 from ..general import _pkg_root
-
-# ===========================================
-# Constants
-# ===========================================
-ELECTRON_MASS_EV = xt.ELECTRON_MASS_EV
-C_LIGHT_VACUUM = physical_constants['speed of light in vacuum'][0]
-CLASSICAL_ELECTRON_RADIUS = physical_constants['classical electron radius'][0]
 
 class TouschekScattering(xt.BeamElement):
 
@@ -43,6 +33,8 @@ class TouschekScattering(xt.BeamElement):
         '_nz': xo.Float64,
         '_ignored_portion': xo.Float64,
         '_integrated_piwinski_rate': xo.Float64,
+        '_seed': xo.Int64,
+        '_inhibit_permute': xo.Int64
     }
 
     # allow_track = False
@@ -50,6 +42,7 @@ class TouschekScattering(xt.BeamElement):
 
     _extra_c_sources = [
         _pkg_root.joinpath('headers/constants.h'),
+        _pkg_root.joinpath('headers/elegant_rng.h'),
         _pkg_root.joinpath('beam_elements/touschek_src/touschek.h'),
     ]
 
@@ -79,8 +72,7 @@ class TouschekScattering(xt.BeamElement):
         ),
     }
 
-    def __init__(self,
-                s=0.0,
+    def __init__(self, s=0.0,
                 particle_ref=xt.Particles(),
                 bunch_population=0.0,
                 alfx=0.0, betx=0.0, alfy=0.0, bety=0.0,
@@ -92,6 +84,8 @@ class TouschekScattering(xt.BeamElement):
                 piwinski_rate=0.0,
                 ignored_portion=0.0,
                 integrated_piwinski_rate=0.0,
+                seed=1997,
+                inhibit_permute=0,
                 **kwargs):
         
         # This gives AttributeError: 'TouschekScattering' object has no attribute '_xobject'
@@ -127,8 +121,9 @@ class TouschekScattering(xt.BeamElement):
         self._nz = nz
         self._ignored_portion = ignored_portion
         self._integrated_piwinski_rate = integrated_piwinski_rate
-
         self.piwinski_rate = piwinski_rate
+        self._seed = seed
+        self._inhibit_permute = inhibit_permute
 
 
     def _configure(self, **kwargs):
@@ -141,7 +136,8 @@ class TouschekScattering(xt.BeamElement):
             "_sigma_z", "_sigma_delta",
             "_n_simulated", "_nx", "_ny", "_nz",
             "_ignored_portion", "piwinski_rate",
-            "_integrated_piwinski_rate"
+            "_integrated_piwinski_rate",
+            "_seed", "_inhibit_permute"
         }
 
         unknown = set(kwargs) - config_allowed
