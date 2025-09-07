@@ -1,6 +1,6 @@
 # Monte Carlo simulation of Touschek scattering
 
-The Monte-Carlo Touschek scattering routine in this package is based on the implementation by A. Xiao and M. Borland developed for [ELEGANT](https://github.com/rtsoliday/elegant).
+The Monte Carlo Touschek scattering routine in this package is based on the implementation by A. Xiao and M. Borland developed for [ELEGANT](https://github.com/rtsoliday/elegant).
 
 If you publish results obtained with this routine, please cite:
 
@@ -12,6 +12,9 @@ If you publish results obtained with this routine, please cite:
 ## RNG compatibility with ELEGANT
 
 For reproducibility with ELEGANT, this routine uses the same RNG conventions; see `xfields/xfields/headers/elegant_rng.h`.
+
+The uniform RNG core is LAPACK’s DLARAN (48-bit LCG, modified BSD license) as used by Elegant.
+See `xfields/third_party/LAPACK/LICENSE`.
 
 ## Third-party notice and licenses
 
