@@ -1,4 +1,49 @@
 // elegant_rng.h  (C99)
+/*
+ * Portions adapted from Elegant/SDDS.
+ * Copyright (c) 2002 University of Chicago. All rights reserved.
+ * Modifications: C99 refactor, static-state consolidation, MPI modes omitted,
+ * randomizeOrder safety checks, bit-mask fix, and comments.
+ * (c) 2025 <Giacomo Broggi / CERN>. All rights reserved.
+ */
+//
+// This file mirrors algorithms and seeding conventions from:
+//  - Elegant: M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,”
+//    Advanced Photon Source LS-287, September 2000.
+//  - SDDS: see the SDDS and Elegant source distributions and their LICENSE files.
+//
+// Please retain upstream copyright and license notices where code/logic
+// has been adapted, and also cite LS-287 when publishing results produced with this RNG.
+//
+// -----------------------------------------------------------------------------
+// Purpose
+// -------
+// Re-implements the random-number utilities used by Elegant/SDDS so that
+// C-kernels compiled via xobjects can reproduce *bitwise-identical*
+// sequences to Elegant. This file exposes:
+//
+//   - A LAPACK-compatible 48-bit LCG core (DLARAN) working on 4×12-bit chunks
+//   - Six RNG streams random_1..random_6 with Elegant-compatible seeding rules
+//   - Seed-bit permutation with Elegant’s “inhibit” switch and special seed
+//     behavior (987654321)
+//   - randomizeOrder() that shuffles buffers using the same qsort+random-key
+//     scheme used by Elegant to match sequence consumption
+//
+// Notes
+// -----
+// * Based on the DLARAN routine from LAPACK and the RNG/seeding conventions from
+//   SDDS/Elegant (e.g., drand.c and friends in the Elegant/SDDS sources).
+// * This is a single-threaded, static-state implementation.
+//   If you call these from multiple threads, guard access yourself.
+// * MPI-related seed diversification is (for now) intentionally omitted here.
+// * “Negative seed” calls *reinitialize* the stream; “non-negative” consume.
+//
+// Attribution
+// -----------
+// - DLARAN: LAPACK auxiliary RNG (48-bit LCG with multiplier 33952834046453).
+// - Seeding conventions and the 987654321 “inhibit permutation” behavior mirror
+//   SDDS/Elegant (random_1..random_6, randomizeOrder).
+// -----------------------------------------------------------------------------
 
 #ifndef ELEGANT_RNG_H
 #define ELEGANT_RNG_H
@@ -8,6 +53,14 @@
 #include <string.h>
 #include <math.h>
 
+// -----------------------------------------------------------------------------
+// LAPACK-style DLARAN core
+// ------------------------
+// This is the 48-bit multiplicative LCG used by DLARAN, with the 48-bit state
+// stored in 4 integers of 12 bits each. The last chunk (iseed[3]) must be odd.
+// Returns a uniform double in (0,1). The recurrence and normalization constants
+// reproduce LAPACK DLARAN bit-for-bit.
+// -----------------------------------------------------------------------------
 static inline double dlaran_core(int32_t iseed[4]) {
     // Seed chunks: iseed[0..3], iseed[3] must be odd
     int32_t it1, it2, it3, it4;
@@ -34,7 +87,16 @@ static inline double dlaran_core(int32_t iseed[4]) {
            ) * twoneg12; // in (0,1)
 }
 
-/* --------- seed permutation control ---------- */
+/* -----------------------------------------------------------------------------
+   Seed permutation control (Elegant-compatible)
+   --------------------------------------------
+   Elegant permutes the bit order of integer seeds before packing 12-bit chunks.
+   This helps decorrelate “close” seeds. A global flag can inhibit this step.
+
+   - inhibitRandomSeedPermutation(state>=0) sets the global flag.
+   - permuteSeedBitOrder(x) permutes bit positions unless inhibited.
+   - Elegant disables permutation when random_number_seed == 987654321.
+----------------------------------------------------------------------------- */
 static short g_inhibitPermute = 0;
 static inline short inhibitRandomSeedPermutation(short state){
     if (state >= 0) g_inhibitPermute = state;
@@ -67,7 +129,10 @@ static inline uint32_t permuteSeedBitOrder(uint32_t input0){
     return newValue;
 }
 
-/* --------- RNG streams 1..6 (LAPACK DLARAN core) ---------- */
+/* -----------------------------------------------------------------------------
+   Packing helper: split a 32-bit integer into 4×12-bit chunks (DLARAN format).
+   The last chunk must be odd for DLARAN to work correctly (Elegant behavior).
+----------------------------------------------------------------------------- */
 static inline void seed_from_long(int32_t seed[4], long iseed_in, int force_odd_last){
     uint32_t s = (uint32_t)(iseed_in < 0 ? -iseed_in : iseed_in);
     s = permuteSeedBitOrder(s);
@@ -79,6 +144,20 @@ static inline void seed_from_long(int32_t seed[4], long iseed_in, int force_odd_
     seed[0] = (int32_t)(s & 4095u);
 }
 
+/* -----------------------------------------------------------------------------
+   RNG streams random_1 .. random_6
+   --------------------------------
+   These reproduce the SDDS/Elegant API and seeding semantics:
+
+   - Calling with a *negative* iseed re-initializes that stream from |iseed|.
+   - Calling with a non-negative iseed consumes the next variate.
+   - random_1 (on (re)seed) also re-seeds streams 2..6 using |base|+{2,4,6,8,10}.
+   - All streams use the same DLARAN core, independent 48-bit states.
+
+   Important:
+   * This file intentionally omits MPI diversification (modes 1..4 in Elegant).
+   * Keep static state: not thread-safe by design (matches Elegant).
+----------------------------------------------------------------------------- */
 double random_2(long iseed);
 double random_3(long iseed);
 double random_4(long iseed);
@@ -91,13 +170,13 @@ double random_1(long iseed){
     if (!initialized || iseed < 0){
         long base = (iseed < 0) ? -iseed : iseed;        // abs
         base = (long)permuteSeedBitOrder((uint32_t)base); // permute
-        // reseed degli altri stream come in SDDS (argomento NEGATIVO)
+        // SDDS-like reseed
         random_2(-(base + 2));
         random_3(-(base + 4));
         random_4(-(base + 6));
         random_5(-(base + 8));
         random_6(-(base + 10));
-        // forza odd e spezza in 4×12 bit
+        // force odd and split in 4×12 bit
         base = (base/2)*2 + 1;
         uint32_t s = (uint32_t)base;
         seed[3] = (int32_t)(s & 4095u); s >>= 12;
@@ -160,10 +239,35 @@ double random_6(long iseed){
     return dlaran_core(seed);
 }
 
-/* comodo alias se nel tuo codice usi random_1_elegant */
-static inline double random_1_elegant(long iseed){ return random_1(iseed); }
+static inline double random_1_elegant(long iseed) {
+    static int initialized = 0;
+    static int32_t seed[4] = {0,0,0,0};
+    if (!initialized || iseed < 0){
+        long base = (iseed < 0) ? -iseed : iseed;          // abs
+        // Respect current inhibit flag (seedElegantRandomNumbers sets it)
+        base = (long)permuteSeedBitOrder((uint32_t)base);  // no-op if inhibited
+        base = (base/2)*2 + 1;                             // force odd
+        uint32_t s = (uint32_t)base;
+        seed[3] = (int32_t)(s & 4095u); s >>= 12;
+        seed[2] = (int32_t)(s & 4095u); s >>= 12;
+        seed[1] = (int32_t)(s & 4095u); s >>= 12;
+        seed[0] = (int32_t)(s & 4095u);
+        initialized = 1;
+    }
+    return dlaran_core(seed);
+}
 
-/* --------- randomizeOrder stile Elegant (qsort) ---------- */
+/* -----------------------------------------------------------------------------
+   randomizeOrder
+   ------------------------------
+   Elegant shuffles arrays by:
+     1) creating an array of (buffer copy, random key) pairs,
+     2) sorting by the random key (qsort),
+     3) copying buffers back in sorted order.
+
+   This consumes RNG like Elegant does and matches its order exactly.
+   It allocates O(N*size) memory.
+----------------------------------------------------------------------------- */
 typedef struct RANDOMIZATION_HOLDER_ {
     void*   buffer;
     double  randomValue;
@@ -179,22 +283,28 @@ static int randomizeOrderCmp(const void *p1, const void *p2) {
 
 static long randomizeOrder(char *ptr, long size, long length,
                            long iseed, double (*urandom)(long iseed1)) {
-    if (!ptr || size<=0 || length<=1 || !urandom) return 0;
+    if (!ptr || size<=0 || !urandom) return 0;
+    if (length < 2) return 1;
     if (iseed < 0) urandom(iseed);
-    RANDOMIZATION_HOLDER *rh = (RANDOMIZATION_HOLDER*)malloc(sizeof(*rh)* (size_t)length);
+
+    RANDOMIZATION_HOLDER *rh =
+        (RANDOMIZATION_HOLDER*)malloc(sizeof(*rh) * (size_t)length);
     if (!rh) return 0;
-    for (long i=0;i<length;i++){
+
+    for (long i=0; i<length; i++) {
         rh[i].buffer = malloc((size_t)size);
-        if (!rh[i].buffer){ // clean up and fail
-            for (long k=0;k<i;k++) free(rh[k].buffer);
+        if (!rh[i].buffer) {
+            for (long k=0; k<i; k++) free(rh[k].buffer);
             free(rh);
             return 0;
         }
         memcpy(rh[i].buffer, ptr + i*size, (size_t)size);
         rh[i].randomValue = urandom(0);
     }
+
     qsort((void*)rh, (size_t)length, sizeof(*rh), randomizeOrderCmp);
-    for (long i=0;i<length;i++){
+
+    for (long i=0; i<length; i++) {
         memcpy(ptr + i*size, rh[i].buffer, (size_t)size);
         free(rh[i].buffer);
     }
@@ -202,13 +312,23 @@ static long randomizeOrder(char *ptr, long size, long length,
     return 1;
 }
 
-static inline void seedElegantRandomNumbers(long seed, short inhibit_permute){
-    long s0 = labs(seed);
-    long s1 = labs(seed + 2);
-    long s2 = labs(seed + 4);
-    long s3 = labs(seed + 6);
+/* -----------------------------------------------------------------------------
+   seedElegantRandomNumbers
+   ------------------------
+   Drop-in replacement for Elegant’s global RNG seeding (without MPI modes):
+     - random_1 gets -|seed|
+     - random_2 gets -|seed+2|
+     - random_3 gets -|seed+4|
+     - random_4 gets -|seed+6|
+   Also applies Elegant’s “inhibit permutation” convention:
+     if seed == 987654321 -> inhibit permutation globally.
 
-    /* ELEGANT: if seed==987654321 inhibit seed permutation */
+   Call this exactly once (per process) before any RNG use to mimic Elegant’s
+   &run_setup random_number_seed behavior.
+----------------------------------------------------------------------------- */
+static inline void seedElegantRandomNumbers(long seed, short inhibit_permute){
+    long s0 = labs(seed), s1 = labs(seed + 2), s2 = labs(seed + 4), s3 = labs(seed + 6);
+
     if (s0 == 987654321) inhibitRandomSeedPermutation(1);
     else                 inhibitRandomSeedPermutation(inhibit_permute ? 1 : 0);
 

@@ -1,3 +1,43 @@
+/*  touschek.h  — Touschek scattering routine (C99, header-only kernel)
+
+    Portions adapted from Elegant/SDDS.
+
+    Original notice (preserved as required):
+    ----------------------------------------------------------------------
+    Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+    National Laboratory.
+    Copyright (c) 2002 The Regents of the University of California, as
+    Operator of Los Alamos National Laboratory.
+    This file is distributed subject to a Software License Agreement found
+    in the file LICENSE that is included with this distribution.
+    ----------------------------------------------------------------------
+
+    This derivative file is distributed with the same notice; see
+      third_party/elegant/LICENSE   (Elegant)
+      third_party/sdds/LICENSE      (SDDS)
+    included in this source tree.
+
+    Modifications (c) 2025 Giacomo Broggi / CERN.
+    Prominent changes from Elegant’s `touschekScatter.c`:
+      - Converted to a header-only C99 kernel and simplified API (no SDDS I/O).
+        Which has been made compatible with `xobjects` via the `xobjects` API.
+      - Uses `elegant_rng.h` for RNG with Elegant-identical streams:
+        draws via `random_1_elegant` and shuffling via `random_4` + `randomizeOrder`,
+        matching Elegant’s RNG consumption.
+      - Works in terms of normalized momentum (px,py) and then un-normalizes to eV,
+        documenting the slope (xp,yp) vs momentum difference used in Elegant.
+      - Small safety/cleanup changes (bounds checks, allocations, comments).
+      - Kept physics and selection logic identical.
+
+    Attribution / citation:
+      If you publish results produced with this routines, please also cite:
+        M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,”
+        Advanced Photon Source LS-287, September 2000.
+
+    SPDX (license identifiers for scanners):
+      SPDX-License-Identifier: LicenseRef-ELEGANT
+      SPDX-License-Identifier: LicenseRef-SDDS
+*/
 #ifndef XTRACK_TOUSCHEK_H
 #define XTRACK_TOUSCHEK_H
 
@@ -15,6 +55,7 @@ void TouschekScattering_track_local_particle(TouschekScatteringData el, LocalPar
   return;
 }
 
+/* Adapted from Elegant touschekScatter.c: selectPartGauss (logic unchanged). */
 void selectPartGauss(double *p1, double *p2,
                      double *dens1, double *dens2,
                      const double *ran1,
@@ -66,6 +107,7 @@ void selectPartGauss(double *p1, double *p2,
   return;
 }
 
+/* From Elegant touschekScatter.c: bunch2cm */
 void bunch2cm(double *p1, double *p2, double *q, double *beta, double *gamma) {
   double pp1, pp2, e1, e2, ee;
   int i;
@@ -99,7 +141,9 @@ void bunch2cm(double *p1, double *p2, double *q, double *beta, double *gamma) {
   return;
 }
 
+
 /* Rotate scattered p in c.o.m system */
+/* From Elegant touschekScatter.c: eulertrans*/
 void eulertrans(double *v0, double theta, double phi, double *v1, double *v) {
   double th, ph, s1, s2, c1, c2;
   double x0, y0, z0;
@@ -124,6 +168,7 @@ void eulertrans(double *v0, double theta, double phi, double *v1, double *v) {
   return;
 }
 
+/* From Elegant touschekScatter.c: cm2bunch*/
 void cm2bunch(double *p1, double *p2, double *q, double *beta, double *gamma) {
   int i;
   double pq, e, betaq, bb, factor;
@@ -151,6 +196,7 @@ void cm2bunch(double *p1, double *p2, double *q, double *beta, double *gamma) {
   return;
 }
 
+/* From Elegant touschekScatter.c: moeller */
 double moeller(double beta0, double theta) {
   double cross;
   double beta2, st2;
@@ -163,6 +209,7 @@ double moeller(double beta0, double theta) {
   return cross;
 }
 
+/* From Elegant touschekScatter.c: pickPart */
 void pickPart(double *weight, long *index, long start, long end,
               long *iTotal, double *wTotal, double weight_limit, double weight_ave) {
   long i, i1, i2, N;
@@ -226,7 +273,7 @@ void pickPart(double *weight, long *index, long start, long end,
   return;
 }
 
-/*gpufun*/
+/* Adapted from Elegant touschekScatter.c: TouschekDistribution (logic unchanged) */
 void TouschekScatter(TouschekScatteringData el,
                      LocalParticle* part0,
                      double* x_out,
