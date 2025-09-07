@@ -20,6 +20,7 @@ External contributors:
 
 The Particle In Cell implementation is largely based on the PyPIC package (https://github.com/pycomplete/pypic)
 
-The Touschek scattering routine in this package contains code adapted from Elegant and SDDS.
+The Touschek scattering routine contains portions adapted from Elegant and the SDDS Toolkit.
 © 2002 The University of Chicago; © 2002 The Regents of the University of California.
 Distributed subject to their Software License Agreements. See third_party/elegant/LICENSE and third_party/SDDS/LICENSE.
+The RNG core used in the Touschek scattering routine incorporates LAPACK’s DLARAN (modified BSD license). See third_party/lapack/LICENSE.
