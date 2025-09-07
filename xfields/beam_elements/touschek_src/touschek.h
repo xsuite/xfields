@@ -1,43 +1,58 @@
-/*  touschek.h  — Touschek scattering routine (C99, header-only kernel)
-
-    Portions adapted from Elegant/SDDS.
-
-    Original notice (preserved as required):
-    ----------------------------------------------------------------------
-    Copyright (c) 2002 The University of Chicago, as Operator of Argonne
-    National Laboratory.
-    Copyright (c) 2002 The Regents of the University of California, as
-    Operator of Los Alamos National Laboratory.
-    This file is distributed subject to a Software License Agreement found
-    in the file LICENSE that is included with this distribution.
-    ----------------------------------------------------------------------
-
-    This derivative file is distributed with the same notice; see
-      third_party/elegant/LICENSE   (Elegant)
-      third_party/sdds/LICENSE      (SDDS)
-    included in this source tree.
-
-    Modifications (c) 2025 Giacomo Broggi / CERN.
-    Changes from Elegant’s `touschekScatter.c`:
-      - Converted to a header-only C99 kernel and simplified API (no SDDS I/O).
-        Which has been made compatible with `xobjects` via the `xobjects` API.
-      - Uses `elegant_rng.h` for RNG with Elegant-identical streams:
-        draws via `random_1_elegant` and shuffling via `random_4` + `randomizeOrder`,
-        matching Elegant’s RNG consumption.
-      - Works in terms of normalized momentum (px,py) and then un-normalizes to eV,
-        documenting the slope (xp,yp) vs momentum difference used in Elegant.
-      - Small safety/cleanup changes (bounds checks, allocations, comments).
-      - Kept physics and selection logic identical.
-
-    Attribution / citation:
-      If you publish results produced with this routine, please also cite:
-        M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,”
-        Advanced Photon Source LS-287, September 2000.
-
-    SPDX (license identifiers for scanners):
-      SPDX-License-Identifier: LicenseRef-ELEGANT
-      SPDX-License-Identifier: LicenseRef-SDDS
-*/
+/*************************************************************************\
+* Copyright (c) 2002 The University of Chicago, as Operator of Argonne
+* National Laboratory.
+* Copyright (c) 2002 The Regents of the University of California, as
+* Operator of Los Alamos National Laboratory.
+* This file is distributed subject to a Software License Agreement found
+* in the file LICENSE that is included with this distribution.
+\*************************************************************************/
+/*
+ *  touschek.h — Touschek scattering kernel (C99, header-only)
+ *
+ *  Overview
+ *  --------
+ *  Header-only C99 implementation of the Monte Carlo Touschek scattering
+ *  routine for Xsuite/xfields. The physics and selection logic follow the
+ *  Elegant implementation by A. Xiao and M. Borland (PRSTAB 13, 074201, 2010),
+ *  with a simplified API suitable for xobjects; SDDS I/O is omitted.
+ *
+ *  Provenance (portions adapted from)
+ *  ----------------------------------
+ *  - Elegant: src/touschekScatter.c  (A. Xiao, M. Borland)
+ *  - SDDS Toolkit utilities: mdbmth/drand.c, mdbmth/dlaran.c
+ *  - LAPACK DLARAN (48-bit LCG RNG core)
+ *
+ *  Licenses & Notices
+ *  ------------------
+ *  - Upstream notice preserved above (Elegant/SDDS).
+ *  - See license texts in:
+ *      xfields/third_party/elegant/LICENSE
+ *      xfields/third_party/SDDS/LICENSE
+ *      xfields/third_party/lapack/LICENSE
+ *  - This file is a derivative work.
+ *    Modifications © 2025 Giacomo Broggi / CERN.
+ *
+ *  RNG compatibility
+ *  -----------------
+ *  RNG streams are chosen to reproduce Elegant’s sequences.
+ *  See: xfields/xfields/headers/elegant_rng.h
+ *  (uses random_1_elegant, random_4, randomizeOrder, and DLARAN).
+ *
+ *  Summary of modifications vs Elegant
+ *  -----------------------------------
+ *  - Converted to a header-only C99 kernel; simplified API; no SDDS I/O.
+ *  - Integrated with xobjects; clarified slope (xp, yp) vs momentum usage.
+ *  - Minor safety/cleanup (bounds checks, allocations, comments).
+ *  - Physics and selection logic preserved.
+ *
+ *  Citation
+ *  --------
+ *  If you publish results obtained with this routine, please cite:
+ *    - M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator
+ *      Simulation,” APS LS-287 (2000).
+ *    - A. Xiao and M. Borland, “Monte Carlo simulation of Touschek effect,”
+ *      Phys. Rev. ST Accel. Beams 13, 074201 (2010). DOI: 10.1103/PhysRevSTAB.13.074201
+ */
 #ifndef XTRACK_TOUSCHEK_H
 #define XTRACK_TOUSCHEK_H
 
@@ -397,8 +412,11 @@ void TouschekScatter(TouschekScatteringData el,
           p1[j] *= p0c;
           p2[j] *= p0c;
         }
-        p1[5] = (p1[5] + 1) * p0c;
-        p2[5] = (p2[5] + 1) * p0c;
+        // p1[5] = (p1[5] + 1) * p0c;
+        // p2[5] = (p2[5] + 1) * p0c;
+        // Use exact formula to compute p1[5]=Pz1 and p2[5]=Pz2
+        p1[5] = sqrt(sqr(p0c)*sqr(1. + p1[5]) - sqr(p1[3]) - sqr(p1[4]));
+        p2[5] = sqrt(sqr(p0c)*sqr(1. + p2[5]) - sqr(p2[3]) - sqr(p2[4]));
 
         bunch2cm(p1, p2, qa, beta, &gamma);
 
@@ -408,8 +426,11 @@ void TouschekScatter(TouschekScatteringData el,
         temp = dens1 * dens2 * sin(theta);
         eulertrans(qa, theta, phi, qb, &qabs);
         cm2bunch(p1, p2, qb, beta, &gamma);
-        p1[5] = (p1[5] - p0c) / p0c;
-        p2[5] = (p2[5] - p0c) / p0c;
+        // p1[5] = (p1[5] - p0c) / p0c;
+        // p2[5] = (p2[5] - p0c) / p0c;
+        // Use exact formula to compute p1[5]=delta1 and p2[5]=delta2
+        p1[5] = (sqrt(sqr(p1[3]) + sqr(p1[4]) + sqr(p1[5])) - p0c) / p0c;
+        p2[5] = (sqrt(sqr(p2[3]) + sqr(p2[4]) + sqr(p2[5])) - p0c) / p0c;
 
         if (p1[5] > p2[5]) {
           for (j = 0; j < 6; j++) {

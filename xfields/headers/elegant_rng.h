@@ -1,50 +1,59 @@
-// elegant_rng.h  (C99)
+/*************************************************************************\
+* Portions adapted from Elegant and the SDDS Toolkit.
+* Copyright (c) 2002 The University of Chicago.
+* Copyright (c) 2002 The Regents of the University of California.
+* This file is distributed subject to a Software License Agreement found
+* in the file LICENSE that is included with this distribution.
+\*************************************************************************/
 /*
- * Portions adapted from Elegant/SDDS.
- * Copyright (c) 2002 University of Chicago. All rights reserved.
- * Modifications: C99 refactor, static-state consolidation, MPI modes omitted,
- * randomizeOrder safety checks, bit-mask fix, and comments.
- * (c) 2025 <Giacomo Broggi / CERN>. All rights reserved.
+ *  elegant_rng.h — Elegant-compatible RNG utilities (C99)
+ *
+ *  Overview
+ *  --------
+ *  Re-implements the random-number utilities used by Elegant/SDDS so that
+ *  kernels compiled via xobjects can reproduce (where applicable) the same
+ *  sequences in Xsuite/xfields. Includes the LAPACK DLARAN core (48-bit LCG)
+ *  and the streams random_1..random_6 with Elegant-compatible seeding rules.
+ *  Provides random_1_elegant, randomizeOrder, and related helpers.
+ *
+ *  Provenance (portions adapted from)
+ *  ----------------------------------
+ *  - SDDS: mdbmth/drand.c            (random_* streams, randomizeOrder, seeding)
+ *  - SDDS: mdbmth/dlaran.c           (C translation of LAPACK's DLARAN, via f2c)
+ *  - Elegant: src/drand_oag.c        (random_1_elegant and seed behavior)
+ *  - LAPACK: DLARAN (48-bit LCG RNG core)
+ *
+ *  Licenses & Notices
+ *  ------------------
+ *  - Upstream notice preserved above (Elegant/SDDS).
+ *  - License texts:
+ *      xfields/third_party/elegant/LICENSE
+ *      xfields/third_party/SDDS/LICENSE
+ *      xfields/third_party/lapack/LICENSE
+ *  - This file is a derivative work.
+ *    Modifications © 2025 Giacomo Broggi / CERN.
+ *
+ *  Purpose / Exposed API
+ *  ---------------------
+ *  - LAPACK-compatible DLARAN core (48-bit, 4×12-bit seed)
+ *  - Streams: random_1 .. random_6 (Elegant-style seeding conventions)
+ *  - random_1_elegant() and seedElegantRandomNumbers() (for Elegant compatibility)
+ *  - permuteSeedBitOrder(), inhibitRandomSeedPermutation()
+ *  - randomizeOrder() (qsort + random keys to match Elegant’s consumption)
+ *
+ *  Usage Notes
+ *  -----------
+ *  - Single-threaded, static state; synchronize if used from multiple threads.
+ *  - Calls with negative seeds reinitialize the stream; non-negative seeds consume.
+ *  - MPI seed diversification is intentionally omitted here.
+ *  - Special behavior for seed 987654321 (permute inhibition) is preserved.
+ *  - Goal: reproduce Elegant sequences (bitwise where possible).
+ *
+ *  References
+ *  ----------
+ *  - M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,”
+ *    APS LS-287 (2000).
  */
-//
-// This file mirrors algorithms and seeding conventions from:
-//  - Elegant: M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,”
-//    Advanced Photon Source LS-287, September 2000.
-//  - SDDS: see the SDDS and Elegant source distributions and their LICENSE files.
-//
-// Please retain upstream copyright and license notices where code/logic
-// has been adapted, and also cite LS-287 when publishing results produced with this RNG.
-//
-// -----------------------------------------------------------------------------
-// Purpose
-// -------
-// Re-implements the random-number utilities used by Elegant/SDDS so that
-// C-kernels compiled via xobjects can reproduce *bitwise-identical*
-// sequences to Elegant. This file exposes:
-//
-//   - A LAPACK-compatible 48-bit LCG core (DLARAN) working on 4×12-bit chunks
-//   - Six RNG streams random_1..random_6 with Elegant-compatible seeding rules
-//   - Seed-bit permutation with Elegant’s “inhibit” switch and special seed
-//     behavior (987654321)
-//   - randomizeOrder() that shuffles buffers using the same qsort+random-key
-//     scheme used by Elegant to match sequence consumption
-//
-// Notes
-// -----
-// * Based on the DLARAN routine from LAPACK and the RNG/seeding conventions from
-//   SDDS/Elegant (e.g., drand.c and friends in the Elegant/SDDS sources).
-// * This is a single-threaded, static-state implementation.
-//   If you call these from multiple threads, guard access yourself.
-// * MPI-related seed diversification is (for now) intentionally omitted here.
-// * “Negative seed” calls *reinitialize* the stream; “non-negative” consume.
-//
-// Attribution
-// -----------
-// - DLARAN: LAPACK auxiliary RNG (48-bit LCG with multiplier 33952834046453).
-// - Seeding conventions and the 987654321 “inhibit permutation” behavior mirror
-//   SDDS/Elegant (random_1..random_6, randomizeOrder).
-// -----------------------------------------------------------------------------
-
 #ifndef ELEGANT_RNG_H
 #define ELEGANT_RNG_H
 
