@@ -1,6 +1,10 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2021.                   #
+# ########################################### #
+
 import xobjects as xo
 import xtrack as xt
-
 import numpy as np
 
 from ..general import _pkg_root
@@ -8,9 +12,6 @@ from ..general import _pkg_root
 class TouschekScattering(xt.BeamElement):
 
     _xofields = {
-        # All these are handled by the manager for now
-
-        # Everything that need to be accessed with TouschekElementData_get in C
         '_p0c': xo.Float64,
         '_bunch_population': xo.Float64,
         '_gemitt_x': xo.Float64,
@@ -50,15 +51,6 @@ class TouschekScattering(xt.BeamElement):
         '_scatter': xo.Kernel(
             c_name='TouschekScatter',
             args=[
-                # xo.Arg(xo.Int64,   name='n_simulated'),
-                # xo.Arg(xo.Float64, name='nx'),
-                # xo.Arg(xo.Float64, name='ny'),
-                # xo.Arg(xo.Float64, name='nz'),
-                # xo.Arg(xo.Float64, name='ignored_portion'),
-
-                # These are variables that we will get out from the C kernel
-                # We will need to pre-allocate memory for them in Python
-                # Then the C kernel will fill them in
                 xo.Arg(xo.Float64, name='x_out', pointer=True),
                 xo.Arg(xo.Float64, name='px_out', pointer=True),
                 xo.Arg(xo.Float64, name='y_out', pointer=True),
@@ -125,7 +117,6 @@ class TouschekScattering(xt.BeamElement):
         self._seed = seed
         self._inhibit_permute = inhibit_permute
 
-
     def _configure(self, **kwargs):
         config_allowed = {
             "_s", "_particle_ref", "_bunch_population",
@@ -150,7 +141,6 @@ class TouschekScattering(xt.BeamElement):
             if kk == "_particle_ref":
                 self._p0c = self._particle_ref.p0c[0]
 
-        
     def scatter(self):
         context = self._context
         particles = xt.Particles(_context=context)
@@ -177,6 +167,8 @@ class TouschekScattering(xt.BeamElement):
                       n_selected_out=n_selected_out)
         
         n = n_selected_out[0]
+        # Create particle object for tracking
+        # TODO: add at_element, start_tracking_at_element, ...
         part = xt.Particles(_capacity=2*n, 
                             p0c=self._p0c,
                             mass0=self._particle_ref.mass0,
@@ -192,7 +184,6 @@ class TouschekScattering(xt.BeamElement):
         self.ignored_rate = self._ignored_portion * self.total_mc_rate
 
         return part
-
 
     def track(self, particles):
         super().track(particles)

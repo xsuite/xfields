@@ -1,3 +1,8 @@
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2021.                   #
+# ########################################### #
+
 import xtrack as xt
 import xfields as xf
 
@@ -6,9 +11,6 @@ from scipy.integrate import quad
 from scipy.special import i0
 from scipy.constants import physical_constants
 
-# ===========================================
-# Constants
-# ===========================================
 ELECTRON_MASS_EV = xt.ELECTRON_MASS_EV
 C_LIGHT_VACUUM = physical_constants['speed of light in vacuum'][0]
 CLASSICAL_ELECTRON_RADIUS = physical_constants['classical electron radius'][0]
@@ -19,6 +21,15 @@ class TouschekCalculator:
         self.twiss = None
 
     def _compute_piwinski_integral(self, tm, B1, B2):
+        """
+        Compute Piwinski integral for Touschek scattering rate calculation.
+
+        Reference:
+            A. Piwinski,
+            "The Touschek Effect in Strong Focusing Storage Rings",
+            arXiv:physics/9903034, 1999.
+            URL: https://arxiv.org/abs/physics/9903034
+        """
         km = np.arctan(np.sqrt(tm))
 
         def int_piwinski(k, km, B1, B2):
@@ -52,6 +63,15 @@ class TouschekCalculator:
         return val
 
     def _compute_piwinski_scattering_rate(self, element):
+        """
+        Compute Piwinski Touschek scattering rate.
+
+        Reference:
+            A. Piwinski,
+            "The Touschek Effect in Strong Focusing Storage Rings",
+            arXiv:physics/9903034, 1999.
+            URL: https://arxiv.org/abs/physics/9903034
+        """
         p0c = self.manager.particle_ref.p0c[0]
         bunch_population = self.manager.bunch_population
         gemitt_x = self.manager.gemitt_x
@@ -111,8 +131,13 @@ class TouschekCalculator:
 
     def _compute_integrated_piwinski_rates(self):
         """
-        Integrate Piwinski Touschek scattering rate along s using trapezoidal rule and
-        store the per-TouschekElelement the integrated rate per bunch.
+        Integrate the Piwinski Touschek scattering rate along the line using
+        the trapezoidal rule, between successive TouschekScattering elements.
+
+        For each TouschekScattering element, the method stores the integrated
+        rate per bunch over the preceding section of the line. This per-bunch
+        rate is later used to assign the correct weights to Touschek-scattered
+        particles at the corresponding element.
         """
         line = self.manager.line
         tab = line.get_table()
@@ -139,7 +164,7 @@ class TouschekCalculator:
                 rate_before = rate
 
             if ii_current < len(ii_t) and ii == ii_t[ii_current]:
-                # divide by c and by T_rev0 -> per-bunch rate
+                # divide by c and by T_rev0 --> per-bunch rate
                 integrated_piwinski_rate = integrated / C_LIGHT_VACUUM / T_rev0
                 elem = line[nn] # xf.TouschekScattering
                 elem._configure(_integrated_piwinski_rate=integrated_piwinski_rate)
