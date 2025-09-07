@@ -18,7 +18,7 @@
     included in this source tree.
 
     Modifications (c) 2025 Giacomo Broggi / CERN.
-    Prominent changes from Elegant’s `touschekScatter.c`:
+    Changes from Elegant’s `touschekScatter.c`:
       - Converted to a header-only C99 kernel and simplified API (no SDDS I/O).
         Which has been made compatible with `xobjects` via the `xobjects` API.
       - Uses `elegant_rng.h` for RNG with Elegant-identical streams:
@@ -30,7 +30,7 @@
       - Kept physics and selection logic identical.
 
     Attribution / citation:
-      If you publish results produced with this routines, please also cite:
+      If you publish results produced with this routine, please also cite:
         M. Borland, “elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,”
         Advanced Photon Source LS-287, September 2000.
 
