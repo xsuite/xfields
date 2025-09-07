@@ -1,6 +1,6 @@
 # Monte Carlo simulation of Touschek scattering
 
-The Monte-Carlo Touschek scattering routine in this package is based on the work by A. Xiao and M. Borland developed for **ELEGANT**.
+The Monte-Carlo Touschek scattering routine in this package is based on the work by A. Xiao and M. Borland developed for [ELEGANT](https://github.com/rtsoliday/elegant).
 
 If you publish results obtained with this routine, please cite:
 
