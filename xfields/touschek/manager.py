@@ -90,8 +90,9 @@ class TouschekCalculator:
         dpy = self.twiss['dpy', element]
         dyt = alfy * dy + bety * dpy # dyt: dy tilde
 
-        deltaN = self.manager.momentum_aperture.at[element, "deltaN"]
-        deltaP = self.manager.momentum_aperture.at[element, "deltaP"]
+        s = self.twiss.rows[element].s[0]
+        deltaN = np.interp(s, self.manager.momentum_aperture.s, self.manager.momentum_aperture.deltan)
+        deltaP = np.interp(s, self.manager.momentum_aperture.s, self.manager.momentum_aperture.deltap)
 
         sigmab_x = np.sqrt(gemitt_x * betx) # Horizontal betatron beam size
         sigma_x = np.sqrt(gemitt_x * betx + dx**2 * sigma_delta**2) # Horizontal beam size
@@ -197,15 +198,15 @@ class TouschekManager:
             raise ValueError("`n_simulated` is required.")
 
         # Momentum aperture validation
-        required_cols = {"s", "name", "deltaN", "deltaP"}
+        required_cols = {"s", "deltan", "deltap"}
         if not hasattr(momentum_aperture, "columns") or not hasattr(momentum_aperture, "__getitem__"):
             raise TypeError("`momentum_aperture` must be a DataFrame-like object with columns "
-                            "'s', 'name', 'deltaN', 'deltaP'.")
+                            "'s', 'deltan', 'deltap'.")
         missing = required_cols - set(momentum_aperture.columns)
         if missing:
             raise ValueError(f"`momentum_aperture` missing columns: {sorted(missing)}")
 
-        for col in ("s", "deltaN", "deltaP"):
+        for col in ("s", "deltan", "deltap"):
             try:
                 vals = momentum_aperture[col].astype(float)
             except Exception:
@@ -221,9 +222,8 @@ class TouschekManager:
         self.particle_ref = line.particle_ref
 
         momentum_aperture = momentum_aperture.copy()
-        momentum_aperture['deltaN'] *= momentum_aperture_scale
-        momentum_aperture['deltaP'] *= momentum_aperture_scale
-        self.momentum_aperture= momentum_aperture.set_index("name")
+        momentum_aperture['deltan'] *= momentum_aperture_scale
+        momentum_aperture['deltap'] *= momentum_aperture_scale
 
         self.sigma_z = sigma_z
         self.sigma_delta = sigma_delta
@@ -289,8 +289,8 @@ class TouschekManager:
             alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
             dx   = twiss["dx",   nn]; dpx = twiss["dpx",  nn]
             dy   = twiss["dy",   nn]; dpy = twiss["dpy",  nn]
-            dN = self.momentum_aperture.at[nn, "deltaN"]
-            dP = self.momentum_aperture.at[nn, "deltaP"]
+            dN = np.interp(s, self.momentum_aperture.s, self.momentum_aperture.deltan)
+            dP = np.interp(s, self.momentum_aperture.s, self.momentum_aperture.deltap)
 
             piwinski_rate = self.touschek._compute_piwinski_scattering_rate(nn)
 
