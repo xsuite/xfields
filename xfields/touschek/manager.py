@@ -90,7 +90,10 @@ class TouschekCalculator:
         dpy = self.twiss['dpy', element]
         dyt = alfy * dy + bety * dpy # dyt: dy tilde
 
-        s = self.twiss.rows[element].s[0]
+        s = self.manager.line.get_s_position(element)
+        # The following would be better (or line table):
+        # s = self.twiss.rows[element].s[0]
+        # However, sequencename$start and sequencename$end do not have s in the tables!
         deltaN = np.interp(s, self.manager.momentum_aperture.s, self.manager.momentum_aperture.deltan)
         deltaP = np.interp(s, self.manager.momentum_aperture.s, self.manager.momentum_aperture.deltap)
 
@@ -224,6 +227,7 @@ class TouschekManager:
         momentum_aperture = momentum_aperture.copy()
         momentum_aperture['deltan'] *= momentum_aperture_scale
         momentum_aperture['deltap'] *= momentum_aperture_scale
+        self.momentum_aperture = momentum_aperture
 
         self.sigma_z = sigma_z
         self.sigma_delta = sigma_delta
