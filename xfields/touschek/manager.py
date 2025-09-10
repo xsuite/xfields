@@ -159,7 +159,7 @@ class TouschekCalculator:
         ii_current = 0
 
         for ii, nn in enumerate(tab.name):
-            s = tab.rows[nn].s[0]
+            s = self.manager.line.get_s_position(nn)
             ds = s - s_before
             if ds > 0.0:
                 rate = self._compute_piwinski_scattering_rate(nn)
@@ -288,7 +288,7 @@ class TouschekManager:
 
         # Helper to config all fields to a single TouschekScattering
         def _config(nn):
-            s = tab.rows[nn].s[0]
+            s = self.line.get_s_position(nn)
             alfx = twiss["alfx", nn]; betx = twiss["betx", nn]
             alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
             dx   = twiss["dx",   nn]; dpx = twiss["dpx",  nn]
