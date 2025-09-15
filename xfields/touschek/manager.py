@@ -7,6 +7,7 @@ import xtrack as xt
 import xfields as xf
 
 import numpy as np
+import pandas as pd
 from scipy.integrate import quad
 from scipy.special import i0
 from scipy.constants import physical_constants
@@ -76,26 +77,28 @@ class TouschekCalculator:
         bunch_population = self.manager.bunch_population
         gemitt_x = self.manager.gemitt_x
         gemitt_y = self.manager.gemitt_y
-        alfx = self.twiss['alfx', element]
-        betx = self.twiss['betx', element]
-        alfy = self.twiss['alfy', element]
-        bety = self.twiss['bety', element]
+        twiss = self.twiss
+        alfx = twiss['alfx', element]
+        betx = twiss['betx', element]
+        alfy = twiss['alfy', element]
+        bety = twiss['bety', element]
         sigma_z = self.manager.sigma_z
         sigma_delta = self.manager.sigma_delta
-        delta = self.twiss['delta', element]
-        dx = self.twiss['dx', element]
-        dpx = self.twiss['dpx', element]
+        delta = twiss['delta', element]
+        dx = twiss['dx', element]
+        dpx = twiss['dpx', element]
         dxt = alfx * dx + betx * dpx # dxt: dx tilde
-        dy = self.twiss['dy', element]
-        dpy = self.twiss['dpy', element]
+        dy = twiss['dy', element]
+        dpy = twiss['dpy', element]
         dyt = alfy * dy + bety * dpy # dyt: dy tilde
 
-        s = self.manager.line.get_s_position(element)
-        # The following would be better (or line table):
-        # s = self.twiss.rows[element].s[0]
-        # However, sequencename$start and sequencename$end do not have s in the tables!
-        deltaN = np.interp(s, self.manager.momentum_aperture.s, self.manager.momentum_aperture.deltan)
-        deltaP = np.interp(s, self.manager.momentum_aperture.s, self.manager.momentum_aperture.deltap)
+        try:
+            s = self.twiss.rows[element].s[0]
+        except:
+            s = self.manager.line.get_s_position(element)
+        
+        deltaN = self.manager.momentum_aperture.at[s, "deltan"]
+        deltaP = self.manager.momentum_aperture.at[s, "deltap"]
 
         sigmab_x = np.sqrt(gemitt_x * betx) # Horizontal betatron beam size
         sigma_x = np.sqrt(gemitt_x * betx + dx**2 * sigma_delta**2) # Horizontal beam size
@@ -133,7 +136,7 @@ class TouschekCalculator:
 
         return rate
 
-    def _compute_integrated_piwinski_rates(self):
+    def _compute_integrated_piwinski_rates(self, element):
         """
         Integrate the Piwinski Touschek scattering rate along the line using
         the trapezoidal rule, between successive TouschekScattering elements.
@@ -143,6 +146,22 @@ class TouschekCalculator:
         rate is later used to assign the correct weights to Touschek-scattered
         particles at the corresponding element.
         """
+        def _get_s(name):
+            try:
+                return tab.rows[name].s[0]
+            except (KeyError, AttributeError, IndexError, TypeError):
+                return self.manager.line.get_s_position(name)
+            
+        def _step(name, s_before, rate_before, integrated):
+            s = _get_s(name)
+            ds = s - s_before
+            if ds > 0.0:
+                rate = self._compute_piwinski_scattering_rate(name)
+                integrated += 0.5 * (rate_before + rate) * ds
+                return s, rate, integrated
+            else:
+                return s_before, rate_before, integrated
+
         line = self.manager.line
         tab = line.get_table()
         T_rev0 = float(self.twiss.T_rev0)
@@ -151,34 +170,54 @@ class TouschekCalculator:
         ii_t = [ii for ii, nn in enumerate(tab.name[:-1]) if isinstance(line[nn], xf.TouschekScattering)]
 
         integrated = 0.0
-        s0 = 0.0
-        r0 = self._compute_piwinski_scattering_rate(tab.name[0])
+
+        if element is None:
+            ii_current = 0
+            s0 = 0.0
+            r0 = self._compute_piwinski_scattering_rate(tab.name[0])
+        else:
+            import re
+            ii_current = int(re.search(r'\d+', element).group())
+            tscatter_before = tab.name[ii_t[ii_current - 1]] if ii_current != 0 else tab.name[0]
+            s0 = _get_s(tscatter_before)
+            r0 = self._compute_piwinski_scattering_rate(tscatter_before)
 
         s_before = s0
         rate_before = r0
-        ii_current = 0
 
-        for ii, nn in enumerate(tab.name):
-            s = self.manager.line.get_s_position(nn)
-            ds = s - s_before
-            if ds > 0.0:
-                rate = self._compute_piwinski_scattering_rate(nn)
-                integrated += 0.5 * (rate_before + rate) * ds
-                s_before = s
-                rate_before = rate
+        if element is None:
+            # Configure all the TouschekScattering elements
+            for ii, nn in enumerate(tab.name):
+                s_before, rate_before, integrated = _step(nn, s_before, rate_before, integrated)
 
-            if ii_current < len(ii_t) and ii == ii_t[ii_current]:
-                # divide by c and by T_rev0 --> per-bunch rate
-                integrated_piwinski_rate = integrated / C_LIGHT_VACUUM / T_rev0
-                elem = line[nn] # xf.TouschekScattering
-                elem._configure(_integrated_piwinski_rate=integrated_piwinski_rate)
-                integrated = 0.0
-                ii_current += 1
-                if ii_current >= len(ii_t):
+                if ii == ii_t[ii_current]:
+                    # divide by c and by T_rev0 --> per-bunch rate
+                    integrated_piwinski_rate = integrated / C_LIGHT_VACUUM / T_rev0
+                    elem = line[nn] # xf.TouschekScattering
+                    # print(f'Integrated Piwinski rate at {nn}: {integrated_piwinski_rate*1e-3} [kHz]')
+                    elem._configure(_integrated_piwinski_rate=integrated_piwinski_rate)
+                    integrated = 0.0
+                    ii_current += 1
+                    if ii_current == len(ii_t):
+                        break
+        else:
+            # Configure only the TouschekScattering element named `element`
+            subtab = tab.rows[tscatter_before:element]
+            for nn in subtab.name:
+                s_before, rate_before, integrated = _step(nn, s_before, rate_before, integrated)
+
+                if nn == element:
+                    # divide by c and by T_rev0 --> per-bunch rate
+                    integrated_piwinski_rate = integrated / C_LIGHT_VACUUM / T_rev0
+                    elem = line[nn] # xf.TouschekScattering
+                    # print(f'Integrated Piwinski rate at {nn}: {integrated_piwinski_rate*1e-3} [kHz]')
+                    elem._configure(_integrated_piwinski_rate=integrated_piwinski_rate)
                     break
 
+
 class TouschekManager:
-    def __init__(self, line, momentum_aperture, nemitt_x=None, nemitt_y=None,
+    def __init__(self, line=None, twiss=None, momentum_aperture=None,
+                 nemitt_x=None, nemitt_y=None,
                  sigma_z=None, sigma_delta=None, bunch_population=None,
                  n_simulated=None, gemitt_x=None, gemitt_y=None,
                  momentum_aperture_scale=0.85, ignored_portion=0.01,
@@ -223,10 +262,34 @@ class TouschekManager:
 
         self.line = line
         self.particle_ref = line.particle_ref
+        self.twiss = twiss
 
-        momentum_aperture = momentum_aperture.copy()
-        momentum_aperture['deltan'] *= momentum_aperture_scale
-        momentum_aperture['deltap'] *= momentum_aperture_scale
+        # Check that the line contains TouschekScatterings
+        tab = line.get_table()
+        try:
+            has = "TouschekScattering" in set(np.unique(tab.element_type))
+        except Exception:
+            has = "TouschekScattering" in set(getattr(tab, "element_type", []))
+        if not has:
+            raise ValueError("The line does not contain any TouschekScattering. "
+                             "Please add them before initializing the TouschekManager.")
+
+        # Momentum aperture
+        ap = momentum_aperture.copy()
+        ap['deltan'] *= momentum_aperture_scale
+        ap['deltap'] *= momentum_aperture_scale
+
+        deltan = np.interp(tab.s, ap.s, ap.deltan)
+        deltap = np.interp(tab.s, ap.s, ap.deltap)
+
+        momentum_aperture = pd.DataFrame({
+            "s": tab.s,
+            "deltan": deltan,
+            "deltap": deltap,
+        }, index=tab.s)
+
+        # Remove duplicates
+        momentum_aperture = momentum_aperture[~momentum_aperture.index.duplicated(keep="first")]
         self.momentum_aperture = momentum_aperture
 
         self.sigma_z = sigma_z
@@ -264,37 +327,36 @@ class TouschekManager:
 
         self.touschek = TouschekCalculator(self)
 
-        # Check that the line contains TouschekScatterings
-        tab = self.line.get_table()
-        try:
-            has = "TouschekScattering" in set(np.unique(tab.element_type))
-        except Exception:
-            has = "TouschekScattering" in set(getattr(tab, "element_type", []))
-        if not has:
-            raise ValueError("The line does not contain any TouschekScattering. "
-                             "Please add them before initializing the TouschekManager.")
-
-
     def initialise_touschek(self, element=None):
         line = self.line
         tab = line.get_table()
 
-        twiss_method = self.kwargs.get("method", "6d")
-        twiss = self.line.twiss(method=twiss_method)
-        # Pass the twiss to the TouschekCalculator
-        self.touschek.twiss = twiss
+        if self.twiss is None:
+            twiss_method = self.kwargs.get("method", "6d")
+            self.twiss = self.line.twiss(method=twiss_method)
 
-        self.touschek._compute_integrated_piwinski_rates()
+        # Pass the twiss to the TouschekCalculator
+        self.touschek.twiss = self.twiss
+
+        # import time
+        # t0 = time.time()
+        self.touschek._compute_integrated_piwinski_rates(element)
+        # print(f"Computed integrated piwinski rates in {time.time() - t0:.2f} s.")
 
         # Helper to config all fields to a single TouschekScattering
         def _config(nn):
-            s = self.line.get_s_position(nn)
+            try:
+                s = tab.rows[nn].s[0]
+            except Exception:
+                s = self.line.get_s_position(nn)
+
+            twiss = self.twiss
             alfx = twiss["alfx", nn]; betx = twiss["betx", nn]
             alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
             dx   = twiss["dx",   nn]; dpx = twiss["dpx",  nn]
             dy   = twiss["dy",   nn]; dpy = twiss["dpy",  nn]
-            dN = np.interp(s, self.momentum_aperture.s, self.momentum_aperture.deltan)
-            dP = np.interp(s, self.momentum_aperture.s, self.momentum_aperture.deltap)
+            dN = self.momentum_aperture.at[s, "deltan"]
+            dP = self.momentum_aperture.at[s, "deltap"]
 
             piwinski_rate = self.touschek._compute_piwinski_scattering_rate(nn)
 
@@ -323,6 +385,7 @@ class TouschekManager:
         if element is None:
             for nn in tab.name[:-1]: # Avoid the last tab.name which is _end_point
                 if isinstance(line[nn], xf.TouschekScattering):
+                    print(f'Initialising TouschekScattering for {nn}')
                     _config(nn)
         else:
             if not isinstance(element, str):
@@ -335,4 +398,5 @@ class TouschekManager:
                 raise TypeError(
                     f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
                 )
+            print(f'Initialising TouschekScattering for {element}')
             _config(element)
