@@ -30,34 +30,34 @@ class TouschekCalculator:
             arXiv:physics/9903034, 1999.
             URL: https://arxiv.org/abs/physics/9903034
         """
-        km = np.arctan(np.sqrt(tm))
+        from math import atan, tan, sqrt, exp, log, pi
 
-        def int_piwinski(k, km, B1, B2):
+        km = atan(sqrt(tm))
+        tm 
+
+        def int_piwinski(k):
             t = np.tan(k) ** 2
-            tm = np.tan(km) ** 2
             fact = (
-                (2*t + 1)**2 * (t/tm / (1+t) - 1) / t + t - np.sqrt(t*tm * (1 + t))
-                - (2 + 1 / (2*t)) * np.log(t/tm / (1+t))
+                (2*t + 1)**2 * (t/tm / (1+t) - 1) / t + t - sqrt(t*tm * (1 + t))
+                - (2 + 1 / (2*t)) * log(t/tm / (1+t))
             )
             if B2 * t < 500:
-                intp = fact * np.exp(-B1*t) * i0(B2*t) * np.sqrt(1+t)
+                intp = fact * exp(-B1*t) * i0(B2*t) * sqrt(1+t)
             else:
                 intp = (
                     fact
-                    * np.exp(B2*t - B1*t)
-                    / np.sqrt(2*np.pi * B2*t)
-                    * np.sqrt(1+t)
+                    * exp(B2*t - B1*t)
+                    / sqrt(2*pi * B2*t)
+                    * sqrt(1+t)
                 )
             return intp
 
-        args = (km, B1, B2)
         val, _ =  quad(
             int_piwinski,
             km,
-            np.pi / 2,
-            args=args,
-            epsabs=1e-16,
-            epsrel=1e-12
+            pi / 2,
+            epsabs=1e-12,
+            epsrel=1e-8
         )
 
         return val
