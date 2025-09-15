@@ -524,6 +524,27 @@ void TouschekScatter(TouschekScatteringData el,
           }
       }
 
+      // printf("Total number of random numbers used: %ld\n", total_event * 11);
+      // fflush(stdout);
+      if (total_event * 11 > (long)2e9) {
+        printf("The total number of random numbers used exceeded 2e9. Use smaller n_simulated or smaller delta.");
+        fflush(stdout);
+      }
+
+      // if (simuCount == 0) {
+      //   printf("It appears that the Touschek lifetime is extremely wrong and there is no need to perform Touschek simulation.\n If you think this is a wrong statement, send input to developers for evaluation.\n");
+      // }
+
+      if (total_event / simuCount > 20) {
+        if (nx < 5 || ny < 5) {
+          printf("The Touschek scattering rate is low. Please use >=5 sigma beam for better simulation.");
+          fflush(stdout);
+        } else {
+          printf("The Touschek scattering rate is very low. Please ignore the rate from Monte Carlo simulation. Use Piwinski rate only.");
+          fflush(stdout);
+        }
+      }
+
       printf("%ld of %ld particles selected for tracking\n", iTotal, simuCount);
       fflush(stdout);
 
