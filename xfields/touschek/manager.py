@@ -34,7 +34,6 @@ class TouschekCalculator:
         from math import atan, tan, sqrt, exp, log, pi
 
         km = atan(sqrt(tm))
-        tm 
 
         def int_piwinski(k):
             t = np.tan(k) ** 2
