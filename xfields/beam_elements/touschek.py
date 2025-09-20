@@ -32,6 +32,8 @@ class TouschekScattering(xt.BeamElement):
         '_nx': xo.Float64,
         '_ny': xo.Float64,
         '_nz': xo.Float64,
+        '_theta_min': xo.Float64,
+        '_theta_max': xo.Float64,
         '_ignored_portion': xo.Float64,
         '_integrated_piwinski_rate': xo.Float64,
         '_seed': xo.Int64,
@@ -57,6 +59,7 @@ class TouschekScattering(xt.BeamElement):
                 xo.Arg(xo.Float64, name='py_out', pointer=True),
                 xo.Arg(xo.Float64, name='zeta_out', pointer=True),
                 xo.Arg(xo.Float64, name='delta_out', pointer=True),
+                xo.Arg(xo.Float64, name='theta_out', pointer=True),
                 xo.Arg(xo.Float64, name='weight_out', pointer=True),
                 xo.Arg(xo.Float64, name='totalMCRate_out', pointer=True),
                 xo.Arg(xo.Int64,   name='n_selected_out', pointer=True),
@@ -73,6 +76,7 @@ class TouschekScattering(xt.BeamElement):
                 gemitt_x=0.0, gemitt_y=0.0,
                 sigma_z=0.0, sigma_delta=0.0,
                 n_simulated=0, nx=0.0, ny=0.0, nz=0.0,
+                theta_min=0.0, theta_max=0.0,
                 piwinski_rate=0.0,
                 ignored_portion=0.0,
                 integrated_piwinski_rate=0.0,
@@ -111,6 +115,8 @@ class TouschekScattering(xt.BeamElement):
         self._nx = nx
         self._ny = ny
         self._nz = nz
+        self._theta_min = theta_min
+        self._theta_max = theta_max
         self._ignored_portion = ignored_portion
         self._integrated_piwinski_rate = integrated_piwinski_rate
         self.piwinski_rate = piwinski_rate
@@ -126,6 +132,7 @@ class TouschekScattering(xt.BeamElement):
             "_deltaN", "_deltaP",
             "_sigma_z", "_sigma_delta",
             "_n_simulated", "_nx", "_ny", "_nz",
+            "_theta_min", "_theta_max",
             "_ignored_portion", "piwinski_rate",
             "_integrated_piwinski_rate",
             "_seed", "_inhibit_permute"
@@ -154,6 +161,7 @@ class TouschekScattering(xt.BeamElement):
         py_out     = context.zeros(shape=(self._n_simulated,), dtype=np.float64)
         zeta_out   = context.zeros(shape=(self._n_simulated,), dtype=np.float64)
         delta_out  = context.zeros(shape=(self._n_simulated,), dtype=np.float64)
+        theta_out  = context.zeros(shape=(self._n_simulated,), dtype=np.float64)
         weight_out = context.zeros(shape=(self._n_simulated,), dtype=np.float64)
         totalMCRate_out = context.zeros(shape=(1,), dtype=np.float64)
         n_selected_out  = context.zeros(shape=(1,), dtype=np.int64)
@@ -162,6 +170,7 @@ class TouschekScattering(xt.BeamElement):
                       x_out=x_out, px_out=px_out,
                       y_out=y_out, py_out=py_out,
                       zeta_out=zeta_out, delta_out=delta_out,
+                      theta_out=theta_out,
                       weight_out=weight_out,
                       totalMCRate_out=totalMCRate_out,
                       n_selected_out=n_selected_out)
@@ -180,6 +189,9 @@ class TouschekScattering(xt.BeamElement):
                             weight=weight_out[:n],
                             s=getattr(self, '_s', 0.0))
         
+        part_ids = part.filter(part.state == 1).particle_id
+        self.theta_log = dict(zip(part_ids.astype(int), theta_out[:n].astype(float)))
+
         self.total_mc_rate = totalMCRate_out[0]
         self.ignored_rate = self._ignored_portion * self.total_mc_rate
 

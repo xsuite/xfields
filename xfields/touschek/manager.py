@@ -221,7 +221,8 @@ class TouschekManager:
                  sigma_z=None, sigma_delta=None, bunch_population=None,
                  n_simulated=None, gemitt_x=None, gemitt_y=None,
                  momentum_aperture_scale=0.85, ignored_portion=0.01,
-                 seed=1997, nx=3, ny=3, nz=3, **kwargs):
+                 seed=1997, nx=3, ny=3, nz=3,
+                 theta_min=0.00005*np.pi, theta_max=0.99995*np.pi, **kwargs):
 
         # Input validation
         if line is None:
@@ -291,6 +292,9 @@ class TouschekManager:
         self.nx = nx
         self.ny = ny
         self.nz = nz
+
+        self.theta_min = theta_min
+        self.theta_max = theta_max
 
         # Emittance validation
         nemitt_given = nemitt_x is not None and nemitt_y is not None
@@ -368,6 +372,7 @@ class TouschekManager:
                 _sigma_delta=self.sigma_delta,
                 _n_simulated=self.n_simulated,
                 _nx=self.nx, _ny=self.ny, _nz=self.nz,
+                _theta_min=self.theta_min, _theta_max=self.theta_max,
                 _ignored_portion=self.ignored_portion,
                 piwinski_rate=piwinski_rate,
                 _seed=self.seed, _inhibit_permute=0

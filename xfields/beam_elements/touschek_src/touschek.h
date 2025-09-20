@@ -297,6 +297,7 @@ void TouschekScatter(TouschekScatteringData el,
                      double* py_out,
                      double* zeta_out,
                      double* delta_out,
+                     double* theta_out,
                      double* weight_out,
                      double* totalMCRate_out,
                      int64_t* n_selected_out){
@@ -321,6 +322,8 @@ void TouschekScatter(TouschekScatteringData el,
     const double nx = TouschekScatteringData_get__nx(el);
     const double ny = TouschekScatteringData_get__ny(el);
     const double nz = TouschekScatteringData_get__nz(el);
+    const double theta_min = TouschekScatteringData_get__theta_min(el);
+    const double theta_max = TouschekScatteringData_get__theta_max(el);
     const double ignoredPortion = TouschekScatteringData_get__ignored_portion(el);
     const double integrated_piwinski_rate = TouschekScatteringData_get__integrated_piwinski_rate(el);
 
@@ -361,6 +364,7 @@ void TouschekScatter(TouschekScatteringData el,
     double *pytemp     = (double*)malloc(sizeof(double) * n_simulated);
     double *zetatemp   = (double*)malloc(sizeof(double) * n_simulated);
     double *deltatemp  = (double*)malloc(sizeof(double) * n_simulated);
+    double *thetatemp  = (double*)malloc(sizeof(double) * n_simulated);
 
     static int seeded_once = 0;
     if (!seeded_once){
@@ -420,7 +424,7 @@ void TouschekScatter(TouschekScatteringData el,
 
         bunch2cm(p1, p2, qa, beta, &gamma);
 
-        theta = (ran1[9] * 0.9999 + 0.00005) * PI;
+        theta = theta_min + (theta_max - theta_min) * ran1[9];
         phi = ran1[10] * PI;
 
         temp = dens1 * dens2 * sin(theta);
@@ -457,6 +461,7 @@ void TouschekScatter(TouschekScatteringData el,
             pytemp[i] = p1[4];
             zetatemp[i] = p1[2];
             deltatemp[i] = p1[5];
+            thetatemp[i] = theta;
             weight[i] = temp;
             i++;
           }
@@ -476,6 +481,7 @@ void TouschekScatter(TouschekScatteringData el,
             pytemp[i] = p2[4];
             zetatemp[i] = p2[2];
             deltatemp[i] = p2[5];
+            thetatemp[i] = theta;
             weight[i] = temp;
             i++;
           }
@@ -501,6 +507,7 @@ void TouschekScatter(TouschekScatteringData el,
               py_out[k]     = pytemp[k];
               zeta_out[k]   = zetatemp[k];
               delta_out[k]  = deltatemp[k];
+              theta_out[k]  = thetatemp[k];
               weight_out[k] = weight[k];
           }
       } else {
@@ -520,6 +527,7 @@ void TouschekScatter(TouschekScatteringData el,
               py_out[k]     = pytemp[src];
               zeta_out[k]   = zetatemp[src];
               delta_out[k]  = deltatemp[src];
+              theta_out[k]  = thetatemp[src];
               weight_out[k] = weight[src];
           }
       }
@@ -557,6 +565,7 @@ void TouschekScatter(TouschekScatteringData el,
       *totalMCRate_out = totalMCRate;
 
       free(index);
+      free(thetatemp);
       free(weight);
       free(xtemp);
       free(pxtemp);
