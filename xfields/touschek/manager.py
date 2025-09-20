@@ -74,6 +74,7 @@ class TouschekCalculator:
         """
         p0c = self.manager.particle_ref.p0c[0]
         bunch_population = self.manager.bunch_population
+        momentum_aperture = self.manager.momentum_aperture
         gemitt_x = self.manager.gemitt_x
         gemitt_y = self.manager.gemitt_y
         twiss = self.twiss
@@ -95,9 +96,9 @@ class TouschekCalculator:
             s = self.twiss.rows[element].s[0]
         except:
             s = self.manager.line.get_s_position(element)
-        
-        deltaN = self.manager.momentum_aperture.at[s, "deltan"]
-        deltaP = self.manager.momentum_aperture.at[s, "deltap"]
+
+        deltaN = np.interp(s, momentum_aperture.s, momentum_aperture.deltan)
+        deltaP = np.interp(s, momentum_aperture.s, momentum_aperture.deltap)
 
         sigmab_x = np.sqrt(gemitt_x * betx) # Horizontal betatron beam size
         sigma_x = np.sqrt(gemitt_x * betx + dx**2 * sigma_delta**2) # Horizontal beam size
@@ -277,18 +278,7 @@ class TouschekManager:
         ap = momentum_aperture.copy()
         ap['deltan'] *= momentum_aperture_scale
         ap['deltap'] *= momentum_aperture_scale
-
-        deltan = np.interp(tab.s, ap.s, ap.deltan)
-        deltap = np.interp(tab.s, ap.s, ap.deltap)
-
-        momentum_aperture = pd.DataFrame({
-            "s": tab.s,
-            "deltan": deltan,
-            "deltap": deltap,
-        }, index=tab.s)
-
-        # Remove duplicates
-        momentum_aperture = momentum_aperture[~momentum_aperture.index.duplicated(keep="first")]
+        momentum_aperture = ap
         self.momentum_aperture = momentum_aperture
 
         self.sigma_z = sigma_z
@@ -330,6 +320,8 @@ class TouschekManager:
         line = self.line
         tab = line.get_table()
 
+        momentum_aperture = self.momentum_aperture
+
         if self.twiss is None:
             twiss_method = self.kwargs.get("method", "6d")
             self.twiss = self.line.twiss(method=twiss_method)
@@ -337,10 +329,10 @@ class TouschekManager:
         # Pass the twiss to the TouschekCalculator
         self.touschek.twiss = self.twiss
 
-        # import time
-        # t0 = time.time()
+        import time
+        t0 = time.time()
         self.touschek._compute_integrated_piwinski_rates(element)
-        # print(f"Computed integrated piwinski rates in {time.time() - t0:.2f} s.")
+        print(f"Computed integrated piwinski rates in {time.time() - t0:.2f} s.")
 
         # Helper to config all fields to a single TouschekScattering
         def _config(nn):
@@ -354,8 +346,8 @@ class TouschekManager:
             alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
             dx   = twiss["dx",   nn]; dpx = twiss["dpx",  nn]
             dy   = twiss["dy",   nn]; dpy = twiss["dpy",  nn]
-            dN = self.momentum_aperture.at[s, "deltan"]
-            dP = self.momentum_aperture.at[s, "deltap"]
+            dN = np.interp(s, momentum_aperture.s, momentum_aperture.deltan)
+            dP = np.interp(s, momentum_aperture.s, momentum_aperture.deltap)
 
             piwinski_rate = self.touschek._compute_piwinski_scattering_rate(nn)
 
