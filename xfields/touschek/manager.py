@@ -379,12 +379,12 @@ class TouschekManager:
             # To eliminate these spurious contributions, we dynamically reduce
             # the longitudinal cutoff at each TouschekScattering element:
             #
-            #     nz_eff = min(nz, 0.9 * min(|δN|, δP) / σδ)
+            #     nz_eff = min(nz, 0.85 * min(|δN|, δP) / σδ)
             #
             # where δN, δP are the negative/positive momentum aperture limits
             # (scaled by momentum_aperture_scale). This ensures that the sampled
             # longitudinal range ±nz_eff*σδ always lies strictly inside the local
-            # momentum aperture, with a small safety factor (0.9). As a result,
+            # momentum aperture, with a small safety factor (0.85). As a result,
             # only pathological large-weight events are avoided, and the Monte Carlo
             # rate remains consistent with the Piwinski formula.
             #
@@ -392,7 +392,7 @@ class TouschekManager:
             # so tighter cutoffs are applied only where the local momentum aperture
             # is restrictive, while wider cutoffs are retained elsewhere.
             min_dNdP = min(abs(dN), dP)
-            nz_eff = min(self.nz, 0.9 * min_dNdP / self.sigma_delta)
+            nz_eff = min(self.nz, 0.85 * min_dNdP / self.sigma_delta)
 
             if nz_eff < self.nz:
                 print(f"""
