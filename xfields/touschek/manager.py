@@ -221,8 +221,7 @@ class TouschekManager:
                  sigma_z=None, sigma_delta=None, bunch_population=None,
                  n_simulated=None, gemitt_x=None, gemitt_y=None,
                  momentum_aperture_scale=0.85, ignored_portion=0.01,
-                 seed=1997, nx=3, ny=3, nz=3,
-                 theta_min=0.00005*np.pi, theta_max=0.99995*np.pi, **kwargs):
+                 seed=1997, nx=3, ny=3, nz=3, **kwargs):
 
         # Input validation
         if line is None:
@@ -286,15 +285,15 @@ class TouschekManager:
         self.sigma_delta = sigma_delta
         self.bunch_population = bunch_population
         self.n_simulated = n_simulated
-        self.momentum_aperture_scale = momentum_aperture_scale
         self.ignored_portion = ignored_portion
         self.seed = seed
         self.nx = nx
         self.ny = ny
         self.nz = nz
 
-        self.theta_min = theta_min
-        self.theta_max = theta_max
+        # Limits from ELEGANT
+        self._theta_min = 0.00005*np.pi
+        self._theta_max = 0.99995*np.pi
 
         # Emittance validation
         nemitt_given = nemitt_x is not None and nemitt_y is not None
