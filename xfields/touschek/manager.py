@@ -352,6 +352,10 @@ class TouschekManager:
             dN = np.interp(s, momentum_aperture.s, momentum_aperture.deltan)
             dP = np.interp(s, momentum_aperture.s, momentum_aperture.deltap)
 
+            x_co = twiss["x", nn]; px_co = twiss["px", nn]
+            y_co = twiss["y", nn]; py_co = twiss["py", nn]
+            zeta_co = twiss["zeta", nn]; delta_co = twiss["delta", nn]
+
             # Adjust the effective longitudinal sampling cutoff (nz_eff) to prevent
             # generation of initial particles that are already outside
             # the local momentum aperture (LMA) before Touschek scattering.
@@ -407,10 +411,12 @@ class TouschekManager:
             piwinski_rate = self.touschek._compute_piwinski_scattering_rate(nn)
 
             elem = line[nn] # xf.TouschekScattering
+            element_index = line.element_names.index(nn)
 
             elem._configure(
                 _s=s,
                 _particle_ref=self.particle_ref,
+                _element_index=element_index,
                 _bunch_population=self.bunch_population,
                 _gemitt_x=self.gemitt_x,
                 _gemitt_y=self.gemitt_y,
@@ -418,6 +424,9 @@ class TouschekManager:
                 _alfy=alfy, _bety=bety,
                 _dx=dx, _dpx=dpx,
                 _dy=dy, _dpy=dpy,
+                _x_co=x_co, _px_co=px_co,
+                _y_co=y_co, _py_co=py_co,
+                _zeta_co=zeta_co, _delta_co=delta_co,
                 _deltaN=dN, _deltaP=dP,
                 _sigma_z=self.sigma_z,
                 _sigma_delta=self.sigma_delta,

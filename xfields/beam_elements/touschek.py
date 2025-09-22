@@ -69,9 +69,12 @@ class TouschekScattering(xt.BeamElement):
 
     def __init__(self, s=0.0,
                 particle_ref=xt.Particles(),
+                element_index=0,
                 bunch_population=0.0,
                 alfx=0.0, betx=0.0, alfy=0.0, bety=0.0,
                 dx=0.0, dpx=0.0, dy=0.0, dpy=0.0,
+                x_co=0.0, px_co=0.0, y_co=0.0, py_co=0.0,
+                zeta_co=0.0, delta_co=0.0,
                 deltaN=0.0, deltaP=0.0,
                 gemitt_x=0.0, gemitt_y=0.0,
                 sigma_z=0.0, sigma_delta=0.0,
@@ -96,6 +99,7 @@ class TouschekScattering(xt.BeamElement):
 
         self._s = s
         self._particle_ref = particle_ref
+        self._element_index = element_index
         self._bunch_population = bunch_population
         self._alfx = alfx
         self._betx = betx
@@ -105,6 +109,12 @@ class TouschekScattering(xt.BeamElement):
         self._dpx = dpx
         self._dy = dy
         self._dpy = dpy
+        self._x_co = x_co
+        self._px_co = px_co
+        self._y_co = y_co
+        self._py_co = py_co
+        self._zeta_co = zeta_co
+        self._delta_co = delta_co
         self._deltaN = deltaN
         self._deltaP = deltaP
         self._gemitt_x = gemitt_x
@@ -125,10 +135,13 @@ class TouschekScattering(xt.BeamElement):
 
     def _configure(self, **kwargs):
         config_allowed = {
-            "_s", "_particle_ref", "_bunch_population",
+            "_s", "_particle_ref", "_element_index",
+            "_bunch_population",
             "_gemitt_x", "_gemitt_y",
             "_alfx", "_betx", "_alfy", "_bety",
             "_dx", "_dpx", "_dy", "_dpy",
+            "_x_co", "_px_co", "_y_co", "_py_co",
+            "_zeta_co", "_delta_co",
             "_deltaN", "_deltaP",
             "_sigma_z", "_sigma_delta",
             "_n_simulated", "_nx", "_ny", "_nz",
@@ -188,6 +201,19 @@ class TouschekScattering(xt.BeamElement):
                             zeta=zeta_out[:n], delta=delta_out[:n],
                             weight=weight_out[:n],
                             s=getattr(self, '_s', 0.0))
+        
+        # Shift Touschek scattered particles around the closed orbit
+        part.x[:n] += self._x_co
+        part.px[:n] += self._px_co
+        part.y[:n] += self._y_co
+        part.py[:n] += self._py_co
+        part.zeta[:n] += self._zeta_co
+
+        delta_temp = part.delta.copy()
+        delta_temp[:n] += self._delta_co
+        part.update_delta(delta_temp)
+        
+        part.at_element = self._element_index
         
         part_ids = part.filter(part.state == 1).particle_id
         self.theta_log = dict(zip(part_ids.astype(int), theta_out[:n].astype(float)))
