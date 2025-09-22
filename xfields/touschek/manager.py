@@ -352,6 +352,58 @@ class TouschekManager:
             dN = np.interp(s, momentum_aperture.s, momentum_aperture.deltan)
             dP = np.interp(s, momentum_aperture.s, momentum_aperture.deltap)
 
+            # Adjust the effective longitudinal sampling cutoff (nz_eff) to prevent
+            # generation of initial particles that are already outside
+            # the local momentum aperture (LMA) before Touschek scattering.
+            #
+            # Background:
+            # In the Touschek Monte Carlo routine, initial particle coordinates
+            # are drawn from a truncated Gaussian distribution with cutoffs
+            # {nx, ny, nz} in the transverse and longitudinal planes. The longitudinal
+            # cutoff nz sets the maximum |δ| ≈ nz*σδ. If nz*σδ exceeds the local
+            # momentum acceptance at this location, some particles
+            # are sampled outside the LMA (|δ| > LMA) even before any scattering event occurs.
+            #
+            # These particles create a pathological situation:
+            #   • For very small scattering angles (θ* --> 0 in the CM frame),
+            #     such particles are flagged as "candidates for loss" and passed to tracking,
+            #     even though their state is essentially unchanged by scattering.
+            #   • Because the Møller differential cross-section diverges at
+            #     θ* --> 0, the corresponding particle weights become extremely large.
+            #   • The pickPart routine then tends to select a handful of these
+            #     high-weight pathological particles, distorting both the local
+            #     scattering rate (RMC/RP diverges) and the overall Touschek
+            #     lifetime estimate.
+            #
+            # Mitigation:
+            # To eliminate these spurious contributions, we dynamically reduce
+            # the longitudinal cutoff at each TouschekScattering element:
+            #
+            #     nz_eff = min(nz, 0.9 * min(|δN|, δP) / σδ)
+            #
+            # where δN, δP are the negative/positive momentum aperture limits
+            # (scaled by momentum_aperture_scale). This ensures that the sampled
+            # longitudinal range ±nz_eff*σδ always lies strictly inside the local
+            # momentum aperture, with a small safety factor (0.9). As a result,
+            # only pathological large-weight events are avoided, and the Monte Carlo
+            # rate remains consistent with the Piwinski formula.
+            #
+            # NOTE: nz_eff is determined independently at each scattering element,
+            # so tighter cutoffs are applied only where the local momentum aperture
+            # is restrictive, while wider cutoffs are retained elsewhere.
+            min_dNdP = min(abs(dN), dP)
+            nz_eff = min(self.nz, 0.9 * min_dNdP / self.sigma_delta)
+
+            if nz_eff < self.nz:
+                print(f"""
+            ***********************************************************************************************
+            [TouschekManager] Warning: longitudinal cutoff reduced at element '{nn}' (s={s:.2f} m).
+
+            Using nz_eff={nz_eff:.2f} instead of nz={self.nz:.2f}.
+            This ensures that particles are sampled strictly within the local momentum aperture.
+            ***********************************************************************************************
+            """)
+
             piwinski_rate = self.touschek._compute_piwinski_scattering_rate(nn)
 
             elem = line[nn] # xf.TouschekScattering
@@ -370,8 +422,8 @@ class TouschekManager:
                 _sigma_z=self.sigma_z,
                 _sigma_delta=self.sigma_delta,
                 _n_simulated=self.n_simulated,
-                _nx=self.nx, _ny=self.ny, _nz=self.nz,
-                _theta_min=self.theta_min, _theta_max=self.theta_max,
+                _nx=self.nx, _ny=self.ny, _nz=nz_eff,
+                _theta_min=self._theta_min, _theta_max=self._theta_max,
                 _ignored_portion=self.ignored_portion,
                 piwinski_rate=piwinski_rate,
                 _seed=self.seed, _inhibit_permute=0
