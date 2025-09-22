@@ -346,7 +346,6 @@ void TouschekScatter(TouschekScatteringData el,
 
     double totalWeight = 0.0;
     double totalMCRate = 0.0;
-    double ignoredRate = 0.0;
 
     double pTemp[6], p1[6], p2[6], dens1, dens2;
     double theta, phi, qa[3], qb[3], beta[3], qabs, gamma;
@@ -489,7 +488,6 @@ void TouschekScatter(TouschekScatteringData el,
       }
       factor = factor / (double)(total_event);
       totalMCRate = totalWeight * factor;
-      ignoredRate = totalMCRate * ignoredPortion;
 
       /* Pick tracking particles from the simulated scattered particles */
       index = (long *)malloc(sizeof(long) * simuCount);
