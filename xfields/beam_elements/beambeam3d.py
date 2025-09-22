@@ -181,6 +181,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
          #bhabha
          'flag_bhabha': xo.Int64,
          'compt_x_min': xo.Float64,
+         'compt_scale': xo.Float64,
          'flag_beamsize_effect': xo.Int64,
 
          #lumi
@@ -251,6 +252,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
                     flag_bhabha=0,
                     compt_x_min=1e-4,
+                    compt_scale=1.,
                     flag_beamsize_effect=1,
 
                     flag_luminosity=0,
@@ -330,6 +332,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
              slices_other_beam_sqrtSigma_{135}{135}_beamstrahlung (float array): Array storing the per-slice standard deviations of x (=1), y (=3) and zeta (=5) of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. Used for beamstrahlung only. 
              flag_bhabha (int): Flag to simulate small angle radiative Bhabha scattering. 1: ON (quantum), 0: OFF
              compt_x_min (float): Low energy cut on virtual photon spectrum, used for Bhabha, in units of [gamma^-2] where gamma is the rel. Lorentz factor.
+             compt_scale (float): Scaling factor to scale up photon generation, used for Bhabha.
              flag_beamsize_effect (int): Flag to simulate beamsize effect, used for Bhabha. 1: ON, 0: OFF. Results in ~factor 2 reduction in cross section.
              flag_luminosity (int): Flag to record soft-Gaussian luminosity per bunch crossing in a buffer. Luminosity will be in units of [m^-2].
              slices_other_beam_{x,px,y,py,zeta,pzeta}_center_star (float array): Array storing the per-slice centroid variables of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. 
@@ -465,7 +468,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         )
 
         # initialize bhabha
-        self._init_bhabha(flag_bhabha, compt_x_min, flag_beamsize_effect)
+        self._init_bhabha(flag_bhabha, compt_x_min, compt_scale, flag_beamsize_effect)
 
         self._init_luminosity(flag_luminosity)
 
@@ -635,9 +638,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     'needs to be correctly set')
         self._flag_beamstrahlung = flag_beamstrahlung
 
-    def _init_bhabha(self, flag_bhabha, compt_x_min, flag_beamsize_effect):
+    def _init_bhabha(self, flag_bhabha, compt_x_min, compt_scale, flag_beamsize_effect):
         self.flag_beamsize_effect = flag_beamsize_effect
         self.compt_x_min = compt_x_min
+        self.compt_scale = compt_scale
         self.flag_bhabha = flag_bhabha # Trigger property setter
 
     @property
@@ -649,6 +653,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
         if flag_bhabha == 1:
             if self.compt_x_min <= 0:
                 raise ValueError('compt_x_min must be larger than 0')
+            if self.compt_scale <= 0:
+                raise ValueError('compt_scale must be larger than 0')
         self._flag_bhabha = flag_bhabha
 
     def _init_luminosity(self, flag_luminosity):

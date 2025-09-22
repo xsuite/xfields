@@ -250,6 +250,7 @@ double compt_select(LocalParticle *part,
 void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record, RecordIndex bhabha_table_index, BhabhaTableData bhabha_table,
               double e_photon,           // [GeV] single equivalent virtual photon energy before Compton scattering
               const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff
+              double compt_scale,        // [1] can be used to scale up photon generation for tests
               double q2,                 // [GeV^2] single equivalent virtual photon virtuality
               double x_photon, double y_photon, double z_photon,  // [m] (boosted) coords of the virtual photon
               double vx_photon,          // [1] transverse x momentum component of virtual photon (vx = dx/ds/p0)
@@ -284,7 +285,6 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
     double e_photon_prime, px_photon_prime, py_photon_prime;      // [GeV, GeV/c] scattered (real) Compton photon momenta
     double e_loss_primary;            // [GeV] energy lost from one photon emission
     double eps = 0.0;                 // 1e-5 in guinea, used due to limited resolution of RNG in the past
-    const double compt_scale = 1;     // [1] can be used to scale up photon generation for tests
     const double compt_emax = 200;    // [GeV] upper cutoff on e_e_prime from guineapig
     const double pair_ecut = 0.005;   // [GeV] lower cutoff on e_e_prime from guineapig
     double r1, r2;  // [1] uniform random numbers
