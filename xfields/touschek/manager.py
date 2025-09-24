@@ -56,8 +56,8 @@ class TouschekCalculator:
             int_piwinski,
             km,
             pi / 2,
-            epsabs=1e-12,
-            epsrel=1e-8
+            epsabs=1e-16,
+            epsrel=1e-12
         )
 
         return val
