@@ -92,7 +92,7 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
         rtol=0, atol=1e-12)
 
     xo.assert_allclose(slicer2.zeta_centers,
-        np.array([[-0.9,  -0.7,  -0.5,  -0.3,  -0.1,   0.1,   0.3,   0.5,   0.7,   0.9]]),
+        np.array([-0.9,  -0.7,  -0.5,  -0.3,  -0.1,   0.1,   0.3,   0.5,   0.7,   0.9]),
         rtol=0, atol=1e-12)
 
     xo.assert_allclose(slicer.zeta_range[0], -1, rtol=0, atol=1e-12)
@@ -117,8 +117,8 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
 
     xo.assert_allclose(slicer2.num_particles,
         np.array([
-            [ 5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.],
-            ]),
+            5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.,  5000.],
+            ),
         rtol=0, atol=1e-12)
 
     z_prof, prof = ele.moments_data.get_moment_profile('num_particles', i_turn=0)
