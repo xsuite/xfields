@@ -1,5 +1,4 @@
 from typing import Tuple
-
 import numpy as np
 
 from scipy.constants import c as clight
@@ -51,6 +50,9 @@ class WakeTracker(ElementWithSlicer):
                  filling_scheme=None,
                  bunch_selection=None,
                  num_turns=1,
+                 fake_coupled_bunch_phase_x = None,
+                 fake_coupled_bunch_phase_y = None,
+                 beta_x = None, beta_y = None,
                  circumference=None,
                  log_moments=None,
                  _flatten=False,
@@ -61,10 +63,29 @@ class WakeTracker(ElementWithSlicer):
         self.components = components
         self.pipeline_manager = None
 
+        self.fake_coupled_bunch_phases = {}
+        self.betas = {}
+        if fake_coupled_bunch_phase_x is not None:
+            self.fake_coupled_bunch_phases['x'] = fake_coupled_bunch_phase_x
+            assert beta_x is not None and beta_x > 0
+            self.betas['x'] = beta_x
+        if fake_coupled_bunch_phase_y is not None:
+            self.fake_coupled_bunch_phases['y'] = fake_coupled_bunch_phase_y
+            assert beta_y is not None and beta_y > 0
+            self.betas['y'] = beta_y
+        if self.fake_coupled_bunch_phases:
+            assert bunch_selection is not None and filling_scheme is not None
+            assert bunch_selection, "When faking a coupled bunch mode, only one bunch should be selected as ref."
+
         all_slicer_moments = []
         for cc in self.components:
             assert not hasattr(cc, 'moments_data') or cc.moments_data is None
             all_slicer_moments += cc.source_moments
+
+        if self.fake_coupled_bunch_phases:
+            for moment_name in self.fake_coupled_bunch_phases.keys():
+                if moment_name in all_slicer_moments:
+                    all_slicer_moments.append('p'+moment_name)
 
         self.all_slicer_moments = list(set(all_slicer_moments))
 
@@ -79,18 +100,18 @@ class WakeTracker(ElementWithSlicer):
             num_turns=num_turns,
             circumference=circumference,
             with_compressed_profile=True,
-            _context=self.context)
+            _context=self._context)
 
         self._initialize_moments(
             zeta_range=zeta_range,  # These are [a, b] in the paper
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
             filling_scheme=filling_scheme,
+            bunch_selection=bunch_selection,
             num_turns=num_turns,
             circumference=circumference)
 
         self._flatten = _flatten
-        all_slicer_moments = list(set(all_slicer_moments))
 
     def init_pipeline(self, pipeline_manager, element_name, partner_names):
 
@@ -99,12 +120,11 @@ class WakeTracker(ElementWithSlicer):
                               partner_names=partner_names)
 
     def track(self, particles):
-
         # Find first active particle to get beta0
         if particles.state[0] > 0:
             beta0 = particles.beta0[0]
         else:
-            i_alive = np.where(particles.state > 0)[0]
+            i_alive = self._context.nplike_lib.where(particles.state > 0)[0]
             if len(i_alive) == 0:
                 return
             i_first = i_alive[0]
@@ -122,18 +142,34 @@ class WakeTracker(ElementWithSlicer):
             cc._conv_data._initialize_conv_data(_flatten=self._flatten,
                                                 moments_data=self.moments_data,
                                                 beta0=beta0)
-
         # Use common slicer from parent class to measure all moments
         status = super().track(particles)
-
         if status and status.on_hold == True:
             return status
+
+        if self.fake_coupled_bunch_phases:
+            self._compute_fake_bunch_moments()
 
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_slot_particles=self.i_slot_particles,
                      i_slice_particles=self.i_slice_particles,
                      moments_data=self.moments_data)
+
+    def _compute_fake_bunch_moments(self):
+        conjugate_names = {'x':'px','y':'py'}
+        n_slots = int(self._context.nplike_lib.max(self.slicer.filled_slots))+1
+        for moment_name in self.fake_coupled_bunch_phases.keys():
+            z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,self.bunch_selection[0])
+            z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,self.bunch_selection[0])
+            complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
+            slots = self._context.nplike_lib.transpose(self._context.nplike_lib.tile(self.slicer.filled_slots,(len(complex_normalised_moments),1)))
+            complex_normalised_moments = self._context.nplike_lib.tile(complex_normalised_moments,(n_slots,1))
+            all_beam_moments = self._context.nplike_lib.real(complex_normalised_moments*self._context.nplike_lib.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slots)))
+            self.moments_data.set_all_beam_moments(moment_name,0,all_beam_moments)
+        z_dummy,mom = self.moments_data.get_source_moment_profile('num_particles',0,self.bunch_selection[0])
+        all_beam_num_particles = self._context.nplike_lib.tile(mom,(n_slots,1))
+        self.moments_data.set_all_beam_moments('num_particles',0,all_beam_num_particles)
 
     @property
     def zeta_range(self):
@@ -158,7 +194,7 @@ class WakeTracker(ElementWithSlicer):
     @property
     def circumference(self):
         return self.moments_data.circumference
-
+        
     def __add__(self, other):
 
         if other == 0:

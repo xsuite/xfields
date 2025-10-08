@@ -220,3 +220,39 @@ class CompressedProfile(xt.BeamElement):
                           i_start_in_moments_data:i_end_in_moments_data])
 
         return z_out, moment_out
+        
+    def get_source_moment_profile(self, moment_name, i_turn,i_source):
+        """
+        Get the moment profile for a given turn.
+
+        Parameters
+        ----------
+        moment_name : str
+            The name of the moment to get
+        i_turn : int
+            The turn index, 0 <= i_turn < self.num_turns
+
+        Returns
+        -------
+        z_out : np.ndarray
+            The z positions within the moment profile
+        moment_out : np.ndarray
+            The moment profile
+        """
+
+        z_out = self._arr2ctx(np.zeros(self._N_1))
+        moment_out = self._arr2ctx(np.zeros(self._N_1))
+        i_moment = self.moments_names.index(moment_name)
+        _z_P = self._z_P or 0
+
+        z_out = (
+            self._z_a + self.dz / 2
+            - i_source * _z_P + self.dz * self._arr2ctx(np.arange(self._N_1)))
+
+        i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
+        i_end_in_moments_data = i_start_in_moments_data + self._N_1
+        moment_out = (
+            self.data[i_moment, i_turn,
+                      i_start_in_moments_data:i_end_in_moments_data])
+
+        return z_out, moment_out
