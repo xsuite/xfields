@@ -277,6 +277,7 @@ def replace_spacecharge_with_PIC(
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
         solver='FFTSolver2p5D',
+        apply_z_kick=None,
         _context=None,
         _buffer=None):
 
@@ -303,6 +304,7 @@ def replace_spacecharge_with_PIC(
         Number different limits in y for which PIC need to be generated.
     z_range : float
         Range of the longitudinal grid.
+    apply_z_kick (bool): If ``True``, the longitudinal kick on the particles is applied. Default is ``True`` if provided solver is ``FFTSolver3D``, otherwhise ``False`.`
     _context : xtrack.Context (optional)
         Context in which the PIC elements are created.
     _buffer : xtrack.Buffer (optional)
@@ -338,6 +340,9 @@ def replace_spacecharge_with_PIC(
     y_lim_min = np.min(all_sigma_y) * (n_sigmas_range_pic_y - 0.5)
     y_lim_max = np.max(all_sigma_y) * (n_sigmas_range_pic_y + 0.5)
 
+    if apply_z_kick is None:
+        apply_z_kick = (solver == "FFTSolver3D")
+
     pic_collection = PICCollection(
         _context=_context,
         _buffer=_buffer,
@@ -346,6 +351,7 @@ def replace_spacecharge_with_PIC(
         y_lim_min=y_lim_min, y_lim_max=y_lim_max, n_lims_y=n_lims_y,
         z_range=z_range,
         solver=solver,
+        apply_z_kick=apply_z_kick,
         gamma0=line.particle_ref.gamma0[0])
 
     all_pics = []
