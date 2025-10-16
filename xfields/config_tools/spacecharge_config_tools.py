@@ -355,7 +355,8 @@ def replace_spacecharge_with_PIC(
         base_sc = pic_collection.get_pic(xlim, ylim)
         sc = base_sc.copy(_buffer=base_sc._buffer)
         sc.length = ee.length
-        line.element_dict[nn] = sc
+        line.env.remove(nn)
+        line.env.elements[nn] = sc
         all_pics.append(sc)
 
     return pic_collection, all_pics
