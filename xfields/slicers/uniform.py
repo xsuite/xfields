@@ -85,7 +85,7 @@ class UniformBinSlicer(xt.BeamElement):
     ]
 
     _per_particle_kernels = {
-            '_slice_kernel_all': xo.Kernel(
+            '_slice_kernel': xo.Kernel(
                 c_name='UniformBinSlicer_slice',
                 args=[
                     xo.Arg(xo.Int64, name='use_bunch_index_array'),
@@ -99,8 +99,6 @@ class UniformBinSlicer(xt.BeamElement):
                  zeta_slice_edges=None, num_bunches=None, filling_scheme=None,
                  bunch_selection=None, bunch_spacing_zeta=None,
                  moments='all', **kwargs):
-
-        self._slice_kernel = self._slice_kernel_all
 
         if '_xobject' in kwargs:
             self.xoinitialize(_xobject=kwargs['_xobject'])
