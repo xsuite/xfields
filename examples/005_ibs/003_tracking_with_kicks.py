@@ -16,7 +16,7 @@ context = xo.ContextCpu(omp_num_threads="auto")
 # This is SPS line with proton as particle ref
 fname_line_particles = "../../../xtrack/test_data/sps_w_spacecharge/"\
                        "line_no_spacecharge_and_particle.json"
-line: xt.Line = xt.Line.from_json(fname_line_particles)
+line = xt.load(fname_line_particles)
 line.build_tracker(_context=context)
 
 #######################################
@@ -56,7 +56,6 @@ particles = xp.generate_matched_gaussian_bunch(
     nemitt_y=nemitt_y,
     sigma_z=bunch_length,
     line=line,
-    _context=context,
 )
 
 ##############################################

@@ -3,22 +3,14 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-import json
-
 import xtrack as xt
 
 ##########################
 # Load xt.Line from file #
 ##########################
 
-fname_line_particles = "../../../xtrack/test_data/lhc_no_bb/" \
-                       "line_and_particle.json"
-
-with open(fname_line_particles, "r") as fid:
-    input_data = json.load(fid)
-
-line = xt.Line.from_json(fname_line_particles)
-line.particle_ref = xt.Particles.from_dict(input_data["particle"])
+line = xt.load( "../../../xtrack/test_data/lhc_no_bb/line_and_particle.json")
+line.set_particle_ref('proton', p0c=7e12)
 tw = line.twiss(method="4d")
 
 #####################

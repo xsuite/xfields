@@ -10,9 +10,7 @@ from scipy.constants import e
 # Load xt.Line from file #
 ##########################
 
-fname_line_particles = "../../../xtrack/test_data/bessy3/bessy3.json"
-line = xt.Line.from_json(fname_line_particles)  # has particle_ref
-line.build_tracker()
+line = xt.load("../../../xtrack/test_data/bessy3/bessy3.json")
 
 ########################
 # Twiss with Radiation #
