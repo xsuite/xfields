@@ -9,8 +9,7 @@ import xtrack as xt
 # Load xt.Line from file #
 ##########################
 
-fname_line_particles = "../../../xtrack/test_data/sps_ions/line_and_particle.json"
-line = xt.Line.from_json(fname_line_particles)
+line = xt.load("../../../xtrack/test_data/sps_ions/line_and_particle.json")
 tw = line.twiss(method="4d")
 
 #####################

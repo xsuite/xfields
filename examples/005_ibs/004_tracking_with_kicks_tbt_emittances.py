@@ -10,16 +10,11 @@ from xfields.ibs._formulary import _gemitt_x, _gemitt_y, _sigma_delta, _bunch_le
 import numpy as np
 import matplotlib.pyplot as plt
 
-# context = xo.ContextCupy()
-context = xo.ContextCpu(omp_num_threads="auto")
-
 ##########################
 # Load xt.Line from file #
 ##########################
 
-fname_line_particles = "../../../xtrack/test_data/clic_dr/line.json"
-line: xt.Line = xt.Line.from_json(fname_line_particles)
-line.build_tracker(_context=context)
+line = xt.load("../../../xtrack/test_data/clic_dr/line.json")
 cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
 for cavity in cavities:
     cavity.lag = 180
@@ -49,10 +44,10 @@ particles = xp.generate_matched_gaussian_bunch(
     nemitt_y=3.7e-9,
     sigma_z=1.58e-3,
     line=line,
-    _context=context,
 )
 
 for turn in range(nturns):
+    print(f"Tracking turn {turn+1}/{nturns}     ", end="\r", flush=True)    
     line.track(particles, num_turns=1)
     epsx.append(_gemitt_x(particles, tw.betx[0], tw.dx[0]))
     epsy.append(_gemitt_y(particles, tw.bety[0], tw.dy[0]))
