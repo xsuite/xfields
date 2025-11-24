@@ -7,9 +7,9 @@
 #define XFIELDS_FADDEEVA_H
 
 #ifdef XO_CONTEXT_CPU_SERIAL
-    #include "xfields/fieldmaps/bigaussian_src/faddeeva_cernlib.h"
-#else
     #include "xfields/fieldmaps/bigaussian_src/faddeeva_mit.h"
+#else
+    #include "xfields/fieldmaps/bigaussian_src/faddeeva_cernlib.h"
 #endif
 
 #endif /* XFIELDS_FADDEEVA_H */

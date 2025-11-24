@@ -6,7 +6,7 @@
 #ifndef XFIELDS_BIGAUSSIAN_H
 #define XFIELDS_BIGAUSSIAN_H
 
-#if defined(XO_CONTEXT_CPU) || defined(XO_CONTEXT_OPENCL) || defined(XO_CONTEXT_CUDA)
+#if defined(XO_CONTEXT_CPU) || defined(XO_CONTEXT_CL) || defined(XO_CONTEXT_CUDA)
     #include "xobjects/headers/common.h"
     #include "xfields/fieldmaps/bigaussian_src/faddeeva.h"
     #include "xfields/fieldmaps/bigaussian_src/compute_gx_gy.h"
