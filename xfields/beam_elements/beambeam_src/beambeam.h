@@ -42,7 +42,7 @@ void BeamBeamBiGaussian2D_track_local_particle(
 
         LocalParticle_add_to_px(part, factor*dphi_dx-bb_d_px);
         LocalParticle_add_to_py(part, factor*dphi_dy-bb_d_py);
-    END_START_PER_PARTICLE_BLOCK;
+    END_PER_PARTICLE_BLOCK;
 }
 
 #endif

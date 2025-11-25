@@ -9,7 +9,7 @@ name = "xfields"
 dynamic = ["version"]
 description = "Field Maps and Particle In Cell"
 readme = "README.md"
-license = {text = "Apache 2.0"}
+license = "Apache-2.0"
 authors = [
     {name = "G. Iadarola et al."}
 ]

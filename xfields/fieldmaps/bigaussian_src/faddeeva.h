@@ -8,7 +8,7 @@
 
 #ifdef XO_CONTEXT_CPU_SERIAL
     #include "xfields/fieldmaps/bigaussian_src/faddeeva_mit.h"
-#else
+#else /* XO_CONTEXT_{CPU_OPENMP, CUDA, CL} */
     #include "xfields/fieldmaps/bigaussian_src/faddeeva_cernlib.h"
 #endif
 

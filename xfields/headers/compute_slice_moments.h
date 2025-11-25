@@ -47,7 +47,7 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
     int n_first_moments = 7;
     int n_second_moments = 10;
     int n_moments = n_first_moments+n_second_moments;
-    for(int i = 0; i<n_slices*n_moments; ++i) {
+    for(int i = 0; i < n_slices * n_moments; ++i) {
         moments[i] = 0.0;
     }
     int n_part = ParticlesData_get__capacity(particles);
@@ -57,10 +57,13 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
     #endif // XO_CONTEXT_CPU_OPENMP
     {
         double tmpSliceM[n_slices*n_first_moments];
-        for(int i = 0; i<n_slices*n_first_moments; ++i) {
+        for(int i = 0; i < n_slices * n_first_moments; ++i) {
             tmpSliceM[i] = 0.0;
         }
-        VECTORIZE_OVER(i, n_part);
+        #ifdef XO_CONTEXT_CPU_OPENMP
+        _Pragma("omp for")
+        #endif // XO_CONTEXT_CPU_OPENMP
+        for(int i = 0;i<n_part;++i) {
             int i_slice = particles_slice[i];
             if(i_slice >= 0 && i_slice < n_slices && ParticlesData_get_state(particles,i)>0) {
                 tmpSliceM[i_slice] += 1.0;
@@ -71,8 +74,7 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
                 tmpSliceM[5*n_slices + i_slice] += ParticlesData_get_zeta(particles,i);
                 tmpSliceM[6*n_slices + i_slice] += ParticlesData_get_delta(particles,i);
             }
-        END_VECTORIZE;
-
+        }
         //reduction
         #ifdef XO_CONTEXT_CPU_OPENMP
         _Pragma("omp critical")
@@ -85,7 +87,7 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
             }
         }
     }
-    for (int i_slice = 0; i_slice<n_slices; ++i_slice) {
+    for (int i_slice = 0; i_slice < n_slices; ++i_slice) {
         if(moments[i_slice] > threshold_n_macroparticles) {
             for(int j = 1; j<n_first_moments; ++j) {
                 moments[j*n_slices+i_slice] /= moments[i_slice];
@@ -105,7 +107,10 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
         for(int i = 0; i<n_slices*n_second_moments; ++i) {
             tmpSliceM2[i] = 0.0;
         }
-        VECTORIZE_OVER(i, n_part);
+        #ifdef XO_CONTEXT_CPU_OPENMP
+        _Pragma("omp for")
+        #endif // XO_CONTEXT_CPU_OPENMP
+        for(int i = 0;i<n_part;++i) {
             int i_slice = particles_slice[i];
             if(i_slice >=0 && i_slice < n_slices && ParticlesData_get_state(particles,i)>0) {
                 tmpSliceM2[i_slice] += ParticlesData_get_x(particles,i)*ParticlesData_get_x(particles,i); //Sigma_11
@@ -119,7 +124,7 @@ void compute_slice_moments(ParticlesData particles, int64_t* particles_slice, do
                 tmpSliceM2[8*n_slices + i_slice] += ParticlesData_get_y(particles,i)*ParticlesData_get_py(particles,i); //Sigma_34
                 tmpSliceM2[9*n_slices + i_slice] += ParticlesData_get_py(particles,i)*ParticlesData_get_py(particles,i); //Sigma_44
             }
-        END_VECTORIZE;
+        }
 
         #ifdef XO_CONTEXT_CPU_OPENMP
         _Pragma("omp critical")
