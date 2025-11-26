@@ -6,11 +6,20 @@
 #ifndef XFIELDS_BEAMBEAM3D_H
 #define XFIELDS_BEAMBEAM3D_H
 
+#include "xtrack/headers/track.h"
+#include "xfields/beam_elements/beambeam_src/beambeam3d_transport_sigmas.h"
+#include "xfields/beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h"
+#include "xfields/headers/beamstrahlung_spectrum.h"
+#include "xfields/headers/bhabha_spectrum.h"
+#include "xfields/fieldmaps/bigaussian_src/bigaussian.h"
+
+
 #ifndef min
 #define min(a,b) ((a) <= (b) ? (a) : (b))
 #endif
 
-/*gpufun*/
+
+GPUFUN
 void do_luminosity(BeamBeamBiGaussian3DData el, LocalParticle *part,
                double* rho, double* wgt,
                double const x_bar_hat_star, double const y_bar_hat_star,
@@ -29,12 +38,13 @@ void do_luminosity(BeamBeamBiGaussian3DData el, LocalParticle *part,
         lumi_table       = BeamBeamBiGaussian3DRecordData_getp_lumitable(lumi_record);
 
     const int at_turn = LocalParticle_get_at_turn(part);
-    /*gpuglmem*/ double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
+    GPUGLMEM double* lumi_address = LumiTableData_getp1_luminosity(lumi_table, at_turn);  // double pointer
     atomicAdd(lumi_address, *wgt);
     }
 }
 
-/*gpufun*/
+
+GPUFUN
 void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
                double* rho, double* wgt,
                const int64_t flag_luminosity, double const q0,
@@ -115,7 +125,7 @@ void do_bhabha(BeamBeamBiGaussian3DData el, LocalParticle *part,
 }
 
 
-/*gpufun*/
+GPUFUN
 void do_beamstrahlung(BeamBeamBiGaussian3DData el, LocalParticle *part,
                       double Fx_star, double Fy_star,
                       double* pzeta_star, const int i_slice, double const num_part_slice,
@@ -152,7 +162,7 @@ void do_beamstrahlung(BeamBeamBiGaussian3DData el, LocalParticle *part,
 }
 
 
-/*gpufun*/
+GPUFUN
 void synchrobeam_kick(
         BeamBeamBiGaussian3DData el, LocalParticle *part,
         const int i_slice,
@@ -205,7 +215,6 @@ void synchrobeam_kick(
     #else
     const double S = 0.5*(*zeta_star - zeta_slice_star);
     #endif
-    //fflush(stdout);
 
     // Propagate sigma matrix
     double Sig_11_hat_star, Sig_33_hat_star, costheta, sintheta;
@@ -313,7 +322,7 @@ void synchrobeam_kick(
 }
 
 
-/*gpufun*/
+GPUFUN
 void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, LocalParticle* part0){
 
     // Get data from memory
@@ -346,7 +355,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, Loca
     const double post_subtract_zeta = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_zeta(el);
     const double post_subtract_pzeta = scale_strength*BeamBeamBiGaussian3DData_get_post_subtract_pzeta(el);
 
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
         double y = LocalParticle_get_y(part);
@@ -393,8 +402,7 @@ void BeamBeamBiGaussian3D_track_local_particle(BeamBeamBiGaussian3DData el, Loca
         LocalParticle_set_py(part, py);
         LocalParticle_set_zeta(part, zeta);
         LocalParticle_update_pzeta(part, pzeta);
-
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 }
 
 

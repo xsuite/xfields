@@ -7,9 +7,7 @@ import numpy as np
 
 import xobjects as xo
 import xtrack as xt
-
 from ..solvers.fftsolvers import FFTSolver3D, FFTSolver2p5D, FFTSolver2p5DAveraged
-from ..general import _pkg_root
 
 _TriLinearInterpolatedFielmap_kernels = {
     'central_diff': xo.Kernel(
@@ -156,12 +154,10 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
     _rename = {nn: '_'+nn for nn in _xofields}
 
     _extra_c_sources = [
-        _pkg_root.joinpath('headers/constants.h'),
-        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
-        ]
+        '#include "xfields/fieldmaps/interpolated_src/central_diff.h"',
+        '#include "xfields/fieldmaps/interpolated_src/linear_interpolators.h"',
+        '#include "xfields/fieldmaps/interpolated_src/charge_deposition.h"',
+    ]
 
     _depends_on = [xt.Particles]
 
