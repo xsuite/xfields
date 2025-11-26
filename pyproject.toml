@@ -1,7 +1,7 @@
 [build-system]
 build-backend = 'setuptools.build_meta'
 requires = [
-    'setuptools >= 61.0.0',
+    'setuptools>=77.0.0',
 ]
 
 [project]
@@ -47,3 +47,8 @@ include-package-data = true
 
 [project.entry-points.xobjects]
 include = "xfields"
+
+[pytest]
+markers = [
+    "context_dependent: marks test as one that depends on the execution context",
+]
