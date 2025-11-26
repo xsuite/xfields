@@ -5,14 +5,12 @@
 
 import numpy as np
 
-from xfields import BiGaussianFieldMap, mean_and_std
-from xfields import TriLinearInterpolatedFieldMap
-from ..longitudinal_profiles import LongitudinalProfileQGaussian
-from ..fieldmaps import BiGaussianFieldMap
-from ..general import _pkg_root
-
 import xobjects as xo
 import xtrack as xt
+from xfields import TriLinearInterpolatedFieldMap
+from xfields import mean_and_std
+from ..fieldmaps import BiGaussianFieldMap
+from ..longitudinal_profiles import LongitudinalProfileQGaussian
 
 
 class SpaceCharge3D(xt.BeamElement):
@@ -77,10 +75,7 @@ class SpaceCharge3D(xt.BeamElement):
         }
 
     _extra_c_sources = [
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('headers','particle_states.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/linear_interpolators.h'),
-        _pkg_root.joinpath('beam_elements/spacecharge_src/spacecharge3d.h'),
+        '#include "xfields/beam_elements/spacecharge_src/spacecharge3d.h"'
     ]
 
     def copy(self, _context=None, _buffer=None, _offset=None):
@@ -196,14 +191,7 @@ class SpaceChargeBiGaussian(xt.BeamElement):
     }
 
     _extra_c_sources = [
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('headers/sincos.h'),
-        _pkg_root.joinpath('headers/power_n.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian_fieldmap.h'),
-        _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h'),
-        _pkg_root.joinpath('beam_elements/spacecharge_src/spacechargebigaussian.h'),
+        '#include "xfields/beam_elements/spacecharge_src/spacechargebigaussian.h"'
     ]
 
     def to_dict(self):

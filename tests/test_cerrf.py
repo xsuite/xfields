@@ -8,17 +8,19 @@ from scipy.special import wofz as wofz_scipy
 import pytest
 import xobjects as xo
 from xobjects.context import available
-from xfields.general import _pkg_root
 from xobjects.test_helpers import for_all_test_contexts
 
 
 @pytest.fixture
 def faddeeva_calculator():
-    source = '''
-        /*gpukern*/ void FaddeevaCalculator_compute(FaddeevaCalculatorData data) {
+    source = """
+        #include "xobjects/headers/common.h"
+        #include "xfields/fieldmaps/bigaussian_src/faddeeva.h"
+
+        GPUKERN void FaddeevaCalculator_compute(FaddeevaCalculatorData data) {
             int64_t len = FaddeevaCalculatorData_len_z_re(data);
 
-            for (int64_t ii = 0; ii < len; ii++) {  //vectorize_over ii len
+            VECTORIZE_OVER(ii, len);
                 double z_re = FaddeevaCalculatorData_get_z_re(data, ii);
                 double z_im = FaddeevaCalculatorData_get_z_im(data, ii);
                 double w_re, w_im;
@@ -27,9 +29,9 @@ def faddeeva_calculator():
 
                 FaddeevaCalculatorData_set_w_re(data, ii, w_re);
                 FaddeevaCalculatorData_set_w_im(data, ii, w_im);
-            } //end_vectorize
+            END_VECTORIZE;
         }
-    '''
+    """
 
     class FaddeevaCalculator(xo.HybridClass):
         _xofields = {
@@ -39,13 +41,7 @@ def faddeeva_calculator():
             'w_im': xo.Float64[:],
         }
 
-        _extra_c_sources = [
-            _pkg_root.joinpath("headers/constants.h"),
-            _pkg_root.joinpath("headers/sincos.h"),
-            _pkg_root.joinpath("headers/power_n.h"),
-            _pkg_root.joinpath("fieldmaps/bigaussian_src/faddeeva.h"),
-            source,
-        ]
+        _extra_c_sources = [source]
 
         _kernels = {
             'FaddeevaCalculator_compute': xo.Kernel(
