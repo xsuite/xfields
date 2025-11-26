@@ -37,7 +37,7 @@ tests = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["xfields"]
+include = ["xfields*"]
 
 [tool.setuptools.dynamic]
 version = { attr = "xfields._version.__version__" }
