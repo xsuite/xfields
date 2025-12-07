@@ -238,15 +238,22 @@ class PICCollection:
         self._fftplan = None
 
 
-    def get_pic(self, x_lim, y_lim):
+    def get_pic(self, x_lim, y_lim, 
+                fixed_grid_x=False, fixed_grid_y=False):
 
-        assert x_lim < self.x_lims[-1]
-        assert x_lim > self.x_lims[0]
-        assert y_lim < self.y_lims[-1]
-        assert y_lim > self.y_lims[0]
-
-        ix = np.argmin(np.abs(x_lim - self.x_lims))
-        iy = np.argmin(np.abs(y_lim - self.y_lims))
+        if fixed_grid_x==False:
+            assert x_lim < self.x_lims[-1]
+            assert x_lim > self.x_lims[0]
+            ix = np.argmin(np.abs(x_lim - self.x_lims))
+        else:
+            ix = 0
+        
+        if fixed_grid_y==False:
+            assert y_lim < self.y_lims[-1]
+            assert y_lim > self.y_lims[0]
+            iy = np.argmin(np.abs(y_lim - self.y_lims))
+        else:
+            iy = 0
 
         if (ix, iy) not in self._existing_pics.keys():
             print(f'Creating PIC ({ix}, {iy})')
@@ -277,6 +284,7 @@ def replace_spacecharge_with_PIC(
         n_sigmas_range_pic_x, n_sigmas_range_pic_y,
         nx_grid, ny_grid, nz_grid, n_lims_x, n_lims_y, z_range,
         solver='FFTSolver2p5D',
+        grid_extend_in_x=None, grid_extend_in_y=None,
         _context=None,
         _buffer=None):
 
@@ -303,6 +311,12 @@ def replace_spacecharge_with_PIC(
         Number different limits in y for which PIC need to be generated.
     z_range : float
         Range of the longitudinal grid.
+    grid_extend_in_x : float
+        Extend of the horizontal grid in meters in both positive and negative x-values (fixed grid).
+        If provided, it will be used instead of n_sigmas_range_pic_x and n_lims_x.
+    grid_extend_in_y : float
+        Extend of the vertical grid in meters in both positive and negative y-values (fixed grid). 
+        If provided, it will be used instead of n_sigmas_range_pic_y and n_lims_y.
     _context : xtrack.Context (optional)
         Context in which the PIC elements are created.
     _buffer : xtrack.Buffer (optional)
@@ -333,10 +347,22 @@ def replace_spacecharge_with_PIC(
             all_sigma_x.append(ee.sigma_x)
             all_sigma_y.append(ee.sigma_y)
 
-    x_lim_min = np.min(all_sigma_x) * (n_sigmas_range_pic_x - 0.5)
-    x_lim_max = np.max(all_sigma_x) * (n_sigmas_range_pic_x + 0.5)
-    y_lim_min = np.min(all_sigma_y) * (n_sigmas_range_pic_y - 0.5)
-    y_lim_max = np.max(all_sigma_y) * (n_sigmas_range_pic_y + 0.5)
+    if grid_extend_in_x is not None:
+        x_lim_min = grid_extend_in_x
+        x_lim_max = grid_extend_in_x
+        fixed_grid_x = True
+    else:
+        x_lim_min = np.min(all_sigma_x) * (n_sigmas_range_pic_x - 0.5)
+        x_lim_max = np.max(all_sigma_x) * (n_sigmas_range_pic_x + 0.5)
+        fixed_grid_x = False
+    if grid_extend_in_y is not None:
+        y_lim_min = grid_extend_in_y
+        y_lim_max = grid_extend_in_y
+        fixed_grid_y = True
+    else:
+        y_lim_min = np.min(all_sigma_y) * (n_sigmas_range_pic_y - 0.5)
+        y_lim_max = np.max(all_sigma_y) * (n_sigmas_range_pic_y + 0.5)
+        fixed_grid_y = False
 
     pic_collection = PICCollection(
         _context=_context,
@@ -352,7 +378,7 @@ def replace_spacecharge_with_PIC(
     for nn, ee in zip(name_sc_elems, all_sc_elems):
         xlim = n_sigmas_range_pic_x*ee.sigma_x
         ylim = n_sigmas_range_pic_y*ee.sigma_y
-        base_sc = pic_collection.get_pic(xlim, ylim)
+        base_sc = pic_collection.get_pic(xlim, ylim, fixed_grid_x, fixed_grid_y)
         sc = base_sc.copy(_buffer=base_sc._buffer)
         sc.length = ee.length
         line.env.remove(nn)
