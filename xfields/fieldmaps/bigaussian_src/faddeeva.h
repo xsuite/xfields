@@ -6,8 +6,10 @@
 #ifndef XFIELDS_FADDEEVA_H
 #define XFIELDS_FADDEEVA_H
 
-//include_file faddeeva_cernlib.h for_context opencl cuda cpu_openmp
-//include_file faddeeva_mit.h for_context cpu_serial
+#ifdef XO_CONTEXT_CPU_SERIAL
+    #include "xfields/fieldmaps/bigaussian_src/faddeeva_mit.h"
+#else /* XO_CONTEXT_{CPU_OPENMP, CUDA, CL} */
+    #include "xfields/fieldmaps/bigaussian_src/faddeeva_cernlib.h"
+#endif
 
 #endif /* XFIELDS_FADDEEVA_H */
-

@@ -3,14 +3,12 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-import xobjects as xo
-import xtrack as xt
-
 import numpy as np
 from numpy import sqrt, pi
 from scipy.special import gamma
 
-from ..general import _pkg_root
+import xobjects as xo
+
 
 class LongitudinalProfileQGaussian(xo.HybridClass):
 
@@ -28,8 +26,8 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
     }
 
     _extra_c_sources = [
-        _pkg_root.joinpath('longitudinal_profiles/qgaussian_src/qgaussian.h')
-        ]
+        '#include "xfields/longitudinal_profiles/qgaussian_src/qgaussian.h"',
+    ]
 
     _kernels = {'line_density_qgauss':
         xo.Kernel(args=[xo.Arg(xo.ThisClass, name='prof'),

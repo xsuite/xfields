@@ -6,36 +6,41 @@
 #ifndef XFIELDS_BEAMBEAMPIC_METHODS_H
 #define XFIELDS_BEAMBEAMPIC_METHODS_H
 
-/*gpufun*/
+#include "xtrack/headers/track.h"
+#include "xfields/headers/beamstrahlung_spectrum_pic.h"
+#include "xfields/beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h"
+
+
+GPUFUN
 void do_beamstrahlung_pic(BeamBeamPIC3DData el, LocalParticle *part,
                       double Fx_star, double Fy_star,
                       double* pzeta_star, double const dz,
                       const int64_t flag_beamstrahlung){
 
-        // init record table
-        BeamBeamPIC3DRecordData beamstrahlung_record = NULL;
-        BeamstrahlungTableData beamstrahlung_table   = NULL;
-        RecordIndex beamstrahlung_table_index        = NULL;
-        beamstrahlung_record = BeamBeamPIC3DData_getp_internal_record(el, part);
-        if (beamstrahlung_record){
-            beamstrahlung_table       = BeamBeamPIC3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-            beamstrahlung_table_index =               BeamstrahlungTableData_getp__index(beamstrahlung_table);
-        }
+    // init record table
+    BeamBeamPIC3DRecordData beamstrahlung_record = NULL;
+    BeamstrahlungTableData beamstrahlung_table   = NULL;
+    RecordIndex beamstrahlung_table_index        = NULL;
+    beamstrahlung_record = BeamBeamPIC3DData_getp_internal_record(el, part);
+    if (beamstrahlung_record){
+        beamstrahlung_table       = BeamBeamPIC3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
+        beamstrahlung_table_index =               BeamstrahlungTableData_getp__index(beamstrahlung_table);
+    }
 
-        LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
+    LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
 
 	if(flag_beamstrahlung==1){
-            // no average beamstrahlung implemented
+        // no average beamstrahlung implemented
 	} else if (flag_beamstrahlung==2){
-            double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
-            beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
-        }
+        double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
+        beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
+    }
 
-        *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
+    *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick
 }
 
 
-/*gpufun*/
+GPUFUN
 void BeamBeamPIC3D_change_ref_frame_local_particle(
         BeamBeamPIC3DData el, LocalParticle* part0){
 
@@ -59,7 +64,7 @@ void BeamBeamPIC3D_change_ref_frame_local_particle(
     const double shift_pzeta = BeamBeamPIC3DData_get_ref_shift_pzeta(el)
                             + BeamBeamPIC3DData_get_other_beam_shift_pzeta(el);
 
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
         double y = LocalParticle_get_y(part);
@@ -80,11 +85,10 @@ void BeamBeamPIC3D_change_ref_frame_local_particle(
         LocalParticle_set_py(part, py);
         LocalParticle_set_zeta(part, zeta);
         LocalParticle_update_pzeta(part, pzeta);
-
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 }
 
-/*gpufun*/
+GPUFUN
 void BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle(
         BeamBeamPIC3DData el, LocalParticle* part0){
 
@@ -115,7 +119,7 @@ void BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle(
     const double post_subtract_zeta = BeamBeamPIC3DData_get_post_subtract_zeta(el);
     const double post_subtract_pzeta = BeamBeamPIC3DData_get_post_subtract_pzeta(el);
 
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
         double x = LocalParticle_get_x(part);
         double px = LocalParticle_get_px(part);
         double y = LocalParticle_get_y(part);
@@ -140,18 +144,16 @@ void BeamBeamPIC3D_change_back_ref_frame_and_subtract_dipolar_local_particle(
         LocalParticle_set_py(part, py);
         LocalParticle_set_zeta(part, zeta);
         LocalParticle_update_pzeta(part, pzeta);
-
-
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 
 }
 
 
-/*gpufun*/
+GPUFUN
 void BeamBeamPIC3D_propagate_transverse_coords_at_step(
         BeamBeamPIC3DData el, LocalParticle* part0, double z_step_other)
 {
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
         if (LocalParticle_get_state(part) <= 0) return;
 
         double x = LocalParticle_get_x(part);
@@ -168,11 +170,11 @@ void BeamBeamPIC3D_propagate_transverse_coords_at_step(
 
         LocalParticle_set_x(part, x);
         LocalParticle_set_y(part, y);
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 }
 
 
-/*gpufun*/
+GPUFUN
 void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
         BeamBeamPIC3DData el, LocalParticle* part0,
         const double* dphi_dx, const double* dphi_dy, const double* dphi_dz,
@@ -182,7 +184,7 @@ void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
     const double mass0 = LocalParticle_get_mass0(part0);
     const double dz = BeamBeamPIC3DData_get_fieldmap_self_dz(el);
 
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
         if (LocalParticle_get_state(part) <= 0) return;
 
         double x = LocalParticle_get_x(part);
@@ -198,11 +200,6 @@ void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
         // Compute factor for the kick, assume Assume ultrarelativistic for now
         double pp_beta0 = 1.;
         double beta0_other = 1.;
-        // double charge_mass_ratio = chi * QELEM * q0 / (mass0 * QELEM / (C_LIGHT * C_LIGHT));
-        // double factor = -(charge_mass_ratio
-        //         / (gamma0 * pp_beta0 * pp_beta0 * C_LIGHT * C_LIGHT)
-        //         * (1 + beta0_other * pp_beta0));
-        // Simplified:
         double factor = - (chi * q0 * (1 + beta0_other * pp_beta0)) / (gamma0 * pp_beta0 * pp_beta0 * mass0);
 
         // Compute kick
@@ -235,15 +232,14 @@ void BeamBeamPIC3D_kick_and_propagate_transverse_coords_back(
 
         LocalParticle_set_x(part, x);
         LocalParticle_set_y(part, y);
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 }
 
 
-/*gpufun*/
-void BeamBeamPIC3D_track_local_particle(BeamBeamPIC3DData el, LocalParticle* part0){
-
-// Dummy, to avoid error    on compilation
-
+GPUFUN
+void BeamBeamPIC3D_track_local_particle(BeamBeamPIC3DData el, LocalParticle* part0)
+{
+    // Dummy, to avoid error on compilation
 }
 
 #endif

@@ -35,9 +35,6 @@ def test_digitize(test_context):
 
 @for_all_test_contexts(excluding="ContextPyopencl")
 def test_compute_moments_1(test_context):
-
-    print(repr(test_context))
-
     ###########
     # ttbar 2 #
     ###########

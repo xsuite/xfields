@@ -1,12 +1,14 @@
 #ifndef XFIELDS_BHABHA_SPECTRUM_H
 #define XFIELDS_BHABHA_SPECTRUM_H
 
+#include "xtrack/headers/track.h"
+
 /************************************************************************************/
 /* Subroutines for the generation of the equivalent virtual photons for one primary */
 /* Adapted from GUINEA-PIG                                                          */
 /************************************************************************************/
 
-/*gpufun*/
+GPUFUN
 double rndm_sincos(LocalParticle *part, double *theta)
 {
     const double twopi=2.0*PI;
@@ -20,7 +22,7 @@ double rndm_sincos(LocalParticle *part, double *theta)
 }
 
 
-/*gpufun*/
+GPUFUN
 float requiv(LocalParticle *part, const double e_primary, const double compt_x_min){
     /*
     Based on:
@@ -51,7 +53,7 @@ float requiv(LocalParticle *part, const double e_primary, const double compt_x_m
 }
 
 
-/*gpufun*/
+GPUFUN
 void mequiv (LocalParticle *part,
              const double e_primary,    // [GeV] other beam slice energy
              const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff
@@ -107,7 +109,7 @@ void mequiv (LocalParticle *part,
   
 }
 
-/*gpufun*/
+GPUFUN
 double compt_tot(double s  // [GeV^2] center of mass energy of the macroparticle - virtual photon Compton scattering
 ){
     /*
@@ -119,7 +121,7 @@ double compt_tot(double s  // [GeV^2] center of mass energy of the macroparticle
     ----
     Total Compton cross section.
     */
-    const double sig0 = PI*RE*RE;
+    const double sig0 = PI * RADIUS_ELECTRON * RADIUS_ELECTRON;
     double xi, xp, xip, ln, sigc, x_compt;
 
     x_compt = s/(MELECTRON_GEV*MELECTRON_GEV);
@@ -134,7 +136,7 @@ double compt_tot(double s  // [GeV^2] center of mass energy of the macroparticle
 }
 
 
-/*gpufun*/
+GPUFUN
 double compt_diff(double y,              // [1] virtual photon energy fraction compared to primary energy
                   const double x_compt   // [1] normalized cm energy of virtual photon - electron compton scattering
 ){
@@ -152,7 +154,7 @@ double compt_diff(double y,              // [1] virtual photon energy fraction c
 }
 
 
-/*gpufun*/
+GPUFUN
 double compt_int(double y,             // [1] virtual photon energy fraction compared to primary energy
                  const double x_compt  // [1] normalized cm energy of virtual photon - electron compton scattering
 ){
@@ -178,7 +180,7 @@ double compt_int(double y,             // [1] virtual photon energy fraction com
 /* Adapted from GUINEA-PIG                                                         */
 /***********************************************************************************/
 
-/*gpufun*/
+GPUFUN
 void equal_newton(
                   double xmin,              // left boundary of domain
                   double xmax,              // right boundary of domain
@@ -217,7 +219,7 @@ void equal_newton(
 
 
 
-/*gpufun*/
+GPUFUN
 double compt_select(LocalParticle *part,
                     double s  // [GeV^2] center of mass energy of the macroparticle - virtual photon Compton scattering
 ){
@@ -246,7 +248,7 @@ double compt_select(LocalParticle *part,
     return y;  // [1]
 }
 
-/*gpufun*/
+GPUFUN
 void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record, RecordIndex bhabha_table_index, BhabhaTableData bhabha_table,
               double e_photon,           // [GeV] single equivalent virtual photon energy before Compton scattering
               const double compt_x_min,  // [1] scaling factor in the minimum energy cutoff

@@ -6,8 +6,10 @@
 #ifndef XFIELDS_BEAMBEAM3D_REF_FRAME_CHANGES_H
 #define XFIELDS_BEAMBEAM3D_REF_FRAME_CHANGES_H
 
+#include "xobjects/headers/common.h"
 
-/*gpufun*/
+
+GPUFUN
 void boost_coordinates(
         double const sphi,
         double const cphi,
@@ -65,10 +67,10 @@ void boost_coordinates(
     *py_star = py_st;
     *sigma_star = sigma_st;
     *delta_star = delta_st;
-
 }
 
-/*gpufun*/
+
+GPUFUN
 void boost_coordinates_inv(
         double const sphi,
         double const cphi,
@@ -137,10 +139,10 @@ void boost_coordinates_inv(
     *py = py_i;
     *sigma = sigma_i;
     *delta = delta_i;
-
 }
 
-/*gpufun*/
+
+GPUFUN
 void change_ref_frame_coordinates(
         double* x, double* px, double* y, double* py, double* zeta, double* pzeta,
         double const shift_x, double const shift_px,
@@ -169,9 +171,10 @@ void change_ref_frame_coordinates(
     *py = py_star;
     *zeta = zeta_star;
     *pzeta = pzeta_star;
-    }
+}
 
-/*gpufun*/
+
+GPUFUN
 void change_back_ref_frame_and_subtract_dipolar_coordinates(
         double* x, double* px,
         double* y, double* py,
@@ -198,6 +201,6 @@ void change_back_ref_frame_and_subtract_dipolar_coordinates(
     *zeta =  *zeta  + shift_zeta  - post_subtract_zeta;
     *pzeta = *pzeta + shift_pzeta - post_subtract_pzeta;
 
-    }
+}
 
 #endif

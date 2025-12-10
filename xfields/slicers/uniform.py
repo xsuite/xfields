@@ -1,6 +1,4 @@
-from pathlib import Path
 import numpy as np
-from ..general import _pkg_root
 
 import xfields as xf
 import xobjects as xo
@@ -80,8 +78,7 @@ class UniformBinSlicer(xt.BeamElement):
     iscollective = True
 
     _extra_c_sources = [
-        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
-        _pkg_root.joinpath('slicers/slicers_src/uniform_bin_slicer.h')
+        '#include "xfields/slicers/slicers_src/uniform_bin_slicer.h"'
     ]
 
     _per_particle_kernels = {

@@ -1,7 +1,7 @@
 import numpy as np
 
-import xtrack as xt
 import xfields as xf
+import xtrack as xt
 from xfields.slicers.compressed_profile import CompressedProfile
 
 

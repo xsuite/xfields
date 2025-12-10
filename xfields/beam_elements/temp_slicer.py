@@ -3,7 +3,6 @@ from scipy import special
 import xobjects as xo
 import xpart as xp
 import xtrack as xt
-from ..general import _pkg_root
 
 _digitize_kernel = xo.Kernel(
             c_name="digitize",
@@ -62,8 +61,7 @@ class TempSlicer(xo.HybridClass):
     # properties
     _rename = {nn: '_'+nn for nn in _xofields}
 
-    _extra_c_sources = [_pkg_root.joinpath('headers/compute_slice_moments.h'),
-                        ]
+    _extra_c_sources = ['#include "xfields/headers/compute_slice_moments.h"']
 
     _depends_on = [xp.Particles]
 
@@ -129,11 +127,11 @@ class TempSlicer(xo.HybridClass):
 
         # these are units of sigma_z
         z_k_arr_unicharge = np.zeros(n_slices)  # should be n_slices long, ordered from + to -
-        l_k_arr_unicharge = np.zeros(n_slices+1)  # bin edges, n_slices+1 long
+        l_k_arr_unicharge = np.zeros(n_slices+1)  # bin edges, n_slices+1 long
         w_k_arr_unicharge = np.zeros(n_slices)  # bin weights, used for bunch intensity normalization
         half = int((n_slices + 1) / 2)
         n_odd = n_slices % 2
-        w_k_arr_unicharge[:half] = 1 / n_slices  # fill up initial values, e.g. n_slices=300-> fill up elements [0,149]; 301: [0,150]
+        w_k_arr_unicharge[:half] = 1 / n_slices  # fill up initial values, e.g. n_slices=300-> fill up elements [0,149]; 301: [0,150]
         l_k_arr_unicharge[0] = -5  # leftmost bin edge
         w_k_sum = 0 # sum of weights: integral of gaussian up to l_k
         rho_upper = 0 # start from top of distribution (positive end, l_upper=inf)
@@ -162,7 +160,7 @@ class TempSlicer(xo.HybridClass):
         z_k_arr_unicharge[half:] = -z_k_arr_unicharge[n_slices-half-1::-1]  # bin centers
         w_k_arr_unicharge[half:] =  w_k_arr_unicharge[n_slices-half-1::-1]  # bin weights, used for bunch intensity normalization
         l_k_arr_unicharge[half:] = -l_k_arr_unicharge[n_slices-half::-1]  # bin edges
-        dz_k_arr_unicharge       = np.diff(l_k_arr_unicharge)  # for beamstrahlung
+        dz_k_arr_unicharge       = np.diff(l_k_arr_unicharge)  # for beamstrahlung
         l_k_arr_unicharge        = l_k_arr_unicharge[::-1]
 
         return z_k_arr_unicharge, l_k_arr_unicharge, w_k_arr_unicharge, dz_k_arr_unicharge
@@ -201,11 +199,11 @@ class TempSlicer(xo.HybridClass):
 
         # these are units of sigma_z
         z_k_arr_shatilov = np.zeros(n_slices)  # should be n_slices long, ordered from + to -
-        l_k_arr_shatilov = np.zeros(n_slices+1)  # bin edges, n_slices+1 long
+        l_k_arr_shatilov = np.zeros(n_slices+1)  # bin edges, n_slices+1 long
         w_k_arr_shatilov = np.zeros(n_slices)  # bin weights, used for bunch intensity normalization
         half = int((n_slices + 1) / 2)
         n_odd = n_slices % 2
-        w_k_arr_shatilov[:half] = 1 / n_slices  # fill up initial values, e.g. n_slices=300-> fill up elements [0,149]; 301: [0,150]
+        w_k_arr_shatilov[:half] = 1 / n_slices  # fill up initial values, e.g. n_slices=300-> fill up elements [0,149]; 301: [0,150]
         l_k_arr_shatilov[0] = -5  # leftmost bin edge
 
         k_max = min(1000, 20*n_slices)  # max iterations for l_k
@@ -248,7 +246,7 @@ class TempSlicer(xo.HybridClass):
         z_k_arr_shatilov[half:] = -z_k_arr_shatilov[n_slices-half-1::-1]  # bin centers
         w_k_arr_shatilov[half:] =  w_k_arr_shatilov[n_slices-half-1::-1]  # bin weights, used for bunch intensity normalization
         l_k_arr_shatilov[half:] = -l_k_arr_shatilov[n_slices-half::-1]  # bin edges
-        dz_k_arr_shatilov       = np.diff(l_k_arr_shatilov)  # for beamstrahlung
+        dz_k_arr_shatilov       = np.diff(l_k_arr_shatilov)  # for beamstrahlung
         l_k_arr_shatilov        = l_k_arr_shatilov[::-1]
 
         return z_k_arr_shatilov, l_k_arr_shatilov, w_k_arr_shatilov, dz_k_arr_shatilov
@@ -300,12 +298,12 @@ class TempSlicer(xo.HybridClass):
                                                            weight=particles.weight.get()[0], threshold_num_macroparticles=np.int64(threshold_num_macroparticles))
             return slice_moments[int(self.num_slices*16):]
 
-        # context CPU with OpenMP
+        # context CPU with OpenMP
         else:
 
             slice_moments = self._context.zeros(self.num_slices*(1+6+10),dtype=np.float64)
 
-            # np.cumsum[-1] =/= np.sum due to different order of summation
+            # np.cumsum[-1] =/= np.sum due to different order of summation
             # use np.isclose instead of ==; np.sum does pariwise sum which orders values differently thus causing a numerical error
             # see: https://stackoverflow.com/questions/69610452/why-does-the-last-entry-of-numpy-cumsum-not-necessarily-equal-numpy-sum
             self._context.kernels.compute_slice_moments(particles=particles, particles_slice=particles.slice,

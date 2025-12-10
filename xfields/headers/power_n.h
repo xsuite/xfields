@@ -6,10 +6,13 @@
 #ifndef XFIELDS_HEADERS_POWER_H_H__
 #define XFIELDS_HEADERS_POWER_H_H__
 
+#include "xobjects/headers/common.h"
+
+
 /** \file power_n.h
  *  \note always include constants first!!! */
 
-/*gpufun*/ double power_n( double x, unsigned int n )
+GPUFUN double power_n( double x, unsigned int n )
 {
     #if defined( __OPENCL_VERSION__ )
     return pown( x, n );

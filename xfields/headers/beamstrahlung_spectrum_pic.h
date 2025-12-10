@@ -1,11 +1,13 @@
 #ifndef XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H
 #define XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H
 
-#define SQRT3 1.732050807568877
-#define ALPHA_EM 0.0072973525693
+#include "xobjects/headers/common.h"
+#include "xfields/headers/constants.h"
+#include "xfields/headers/particle_states.h"
+#include "xfields/headers/beamstrahlung_spectrum.h"
 
 
-/*gpufun*/
+GPUFUN
 int beamstrahlung_0(LocalParticle *part,
              double energy,     // [eV] primary electron energy
              double dz,         // [m] z slice half width
@@ -83,7 +85,7 @@ int beamstrahlung_0(LocalParticle *part,
 }
 
 
-/*gpufun*/
+GPUFUN
 double beamstrahlung(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
      	double Fr,  // [1] radial force sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	double dz   // [m] z slice half width: step between 2 slices ((z_max - z_min) / 2)

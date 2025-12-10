@@ -6,7 +6,10 @@
 #ifndef XFIELDS_CHARGE_DEPOSITION_H
 #define XFIELDS_CHARGE_DEPOSITION_H
 
-/*gpufun*/ void p2m_rectmesh3d_one_particle(
+#include "xobjects/headers/common.h"
+
+
+GPUFUN void p2m_rectmesh3d_one_particle(
         // INPUTS:
         const double x, 
 	const double y, 
@@ -20,7 +23,7 @@
           // mesh dimension (number of cells)
         const int nx, const int ny, const int nz,
         // OUTPUTS:
-        /*gpuglmem*/ double *grid1d
+        GPUGLMEM double *grid1d
 ) {
 
     double vol_m1 = 1/(dx*dy*dz);
@@ -61,17 +64,17 @@
 }
 
 
-/*gpukern*/ void p2m_rectmesh3d(
+GPUKERN void p2m_rectmesh3d(
         // INPUTS:
           // length of x, y, z arrays
         const int nparticles,
           // particle positions
-        /*gpuglmem*/ const double* x, 
-	/*gpuglmem*/ const double* y, 
-	/*gpuglmem*/ const double* z,
+        GPUGLMEM const double* x, 
+	GPUGLMEM const double* y, 
+	GPUGLMEM const double* z,
 	  // particle weights and stat flags
-	/*gpuglmem*/ const double* part_weights,
-	/*gpuglmem*/ const int64_t* part_state,
+	GPUGLMEM const double* part_weights,
+	GPUGLMEM const int64_t* part_state,
           // mesh origin
         const double x0, const double y0, const double z0,
           // mesh distances per cell
@@ -79,25 +82,24 @@
           // mesh dimension (number of cells)
         const int nx, const int ny, const int nz,
         // OUTPUTS:
-        /*gpuglmem*/ int8_t*  grid1d_buffer,
+        GPUGLMEM int8_t*  grid1d_buffer,
 	             int64_t  grid1d_offset){
 
-    /*gpuglmem*/ double* grid1d = 
-		(/*gpuglmem*/ double*)(grid1d_buffer + grid1d_offset);
+    GPUGLMEM double* grid1d = 
+		(GPUGLMEM double*)(grid1d_buffer + grid1d_offset);
 
-    #pragma omp parallel for //only_for_context cpu_openmp 
-    for (int pidx=0; pidx<nparticles; pidx++){ //vectorize_over pidx nparticles
+    VECTORIZE_OVER(pidx, nparticles);
         if (part_state[pidx] > 0){
     	    double pwei = part_weights[pidx];
 
             p2m_rectmesh3d_one_particle(x[pidx], y[pidx], z[pidx], pwei,
                                         x0, y0, z0, dx, dy, dz, nx, ny, nz,
                                         grid1d);
-	}
-    }//end_vectorize
+	    }
+    END_VECTORIZE;
 }
 
-/*gpukern*/ void p2m_rectmesh3d_xparticles(
+GPUKERN void p2m_rectmesh3d_xparticles(
         // INPUTS:
           // length of x, y, z arrays
         const int nparticles,
@@ -109,32 +111,31 @@
           // mesh dimension (number of cells)
         const int nx, const int ny, const int nz,
         // OUTPUTS:
-        /*gpuglmem*/ int8_t*  grid1d_buffer,
+        GPUGLMEM int8_t*  grid1d_buffer,
 	             int64_t  grid1d_offset){
 
-    /*gpuglmem*/ double* grid1d = 
-    	(/*gpuglmem*/ double*)(grid1d_buffer + grid1d_offset);
+    GPUGLMEM double* grid1d = 
+    	(GPUGLMEM double*)(grid1d_buffer + grid1d_offset);
     
-    /*gpuglmem*/ const double* x = ParticlesData_getp1_x(particles, 0); 
-    /*gpuglmem*/ const double* y = ParticlesData_getp1_y(particles, 0); 
-    /*gpuglmem*/ const double* z = ParticlesData_getp1_zeta(particles, 0);
-    /*gpuglmem*/ const double* part_weights = ParticlesData_getp1_weight(
+    GPUGLMEM const double* x = ParticlesData_getp1_x(particles, 0); 
+    GPUGLMEM const double* y = ParticlesData_getp1_y(particles, 0); 
+    GPUGLMEM const double* z = ParticlesData_getp1_zeta(particles, 0);
+    GPUGLMEM const double* part_weights = ParticlesData_getp1_weight(
     		                                             particles, 0);
-    /*gpuglmem*/ const int64_t* part_state = ParticlesData_getp1_state(
+    GPUGLMEM const int64_t* part_state = ParticlesData_getp1_state(
     		                                             particles, 0);
     // TODO I am forgetting about charge_ratio and mass_ratio
     const double q0_coulomb = QELEM * ParticlesData_get_q0(particles);
 
-    #pragma omp parallel for //only_for_context cpu_openmp 
-    for (int pidx=0; pidx<nparticles; pidx++){ //vectorize_over pidx nparticles
+    VECTORIZE_OVER(pidx, nparticles);
         if (part_state[pidx] > 0){
     	    double pwei = part_weights[pidx] * q0_coulomb;
 
             p2m_rectmesh3d_one_particle(x[pidx], y[pidx], z[pidx], pwei,
                                         x0, y0, z0, dx, dy, dz, nx, ny, nz,
                                         grid1d);
-	}
-    }//end_vectorize
+	    }
+    END_VECTORIZE;
 
 }
 #endif

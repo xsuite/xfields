@@ -6,7 +6,12 @@
 #ifndef XFIELDS_SPACECHARGEBIGAUSSIAN_H
 #define XFIELDS_SPACECHARGEBIGAUSSIAN_H
 
-/*gpufun*/
+#include "xtrack/headers/track.h"
+#include "xfields/fieldmaps/bigaussian_src/bigaussian_fieldmap.h"
+#include "xfields/longitudinal_profiles/qgaussian_src/qgaussian.h"
+
+
+GPUFUN
 void SpaceChargeBiGaussian_track_local_particle(
 		 SpaceChargeBiGaussianData el, LocalParticle* part0){
 
@@ -18,7 +23,7 @@ void SpaceChargeBiGaussian_track_local_particle(
 	const int64_t z_kick_num_integ_per_sigma =
 		SpaceChargeBiGaussianData_get_z_kick_num_integ_per_sigma(el);
 
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
 		double const x = LocalParticle_get_x(part);
 		double const y = LocalParticle_get_y(part);
 		double const z = LocalParticle_get_zeta(part);
@@ -88,8 +93,7 @@ void SpaceChargeBiGaussian_track_local_particle(
 				LocalParticle_get_delta(part) + factor*lam_prime*phi);
 
 		}
-
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 }
 
 

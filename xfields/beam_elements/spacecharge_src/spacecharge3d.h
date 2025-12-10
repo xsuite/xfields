@@ -6,7 +6,12 @@
 #ifndef XFIELDS_SPACECHARGE3D_H
 #define XFIELDS_SPACECHARGE3D_H
 
-/*gpufun*/
+#include "xtrack/headers/track.h"
+#include "xfields/headers/particle_states.h"
+#include "xfields/fieldmaps/interpolated_src/linear_interpolators.h"
+
+
+GPUFUN
 void SpaceCharge3D_track_local_particle(
 		 SpaceCharge3DData el, LocalParticle* part0){
 
@@ -14,12 +19,12 @@ void SpaceCharge3D_track_local_particle(
     const double length = SpaceCharge3DData_get_length(el);
 	const int64_t apply_z_kick = SpaceCharge3DData_get_apply_z_kick(el);
 
-    /*gpuglmem*/ double* dphi_dx_map = SpaceCharge3DData_getp1_fieldmap_dphi_dx(el, 0);
-    /*gpuglmem*/ double* dphi_dy_map = SpaceCharge3DData_getp1_fieldmap_dphi_dy(el, 0);
-	/*gpuglmem*/ double* dphi_dz_map = SpaceCharge3DData_getp1_fieldmap_dphi_dz(el, 0);
+    GPUGLMEM double* dphi_dx_map = SpaceCharge3DData_getp1_fieldmap_dphi_dx(el, 0);
+    GPUGLMEM double* dphi_dy_map = SpaceCharge3DData_getp1_fieldmap_dphi_dy(el, 0);
+	GPUGLMEM double* dphi_dz_map = SpaceCharge3DData_getp1_fieldmap_dphi_dz(el, 0);
     TriLinearInterpolatedFieldMapData fmap = SpaceCharge3DData_getp_fieldmap(el);
 
-    //start_per_particle_block (part0->part)
+    START_PER_PARTICLE_BLOCK(part0, part);
 		double const x = LocalParticle_get_x(part);
 		double const y = LocalParticle_get_y(part);
 		double const z = LocalParticle_get_zeta(part);
@@ -53,8 +58,7 @@ void SpaceCharge3D_track_local_particle(
 			LocalParticle_update_delta(part,
 				LocalParticle_get_delta(part) + factor*dphi_dz);
 		}
-
-    //end_per_particle_block
+    END_PER_PARTICLE_BLOCK;
 }
 
 #endif

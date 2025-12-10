@@ -8,7 +8,6 @@ import numpy as np
 import xobjects as xo
 import xtrack as xt
 
-from ..general import _pkg_root
 
 class BeamBeamBiGaussian2D(xt.BeamElement):
 
@@ -40,13 +39,7 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
     }
 
     _extra_c_sources= [
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('headers/sincos.h'),
-        _pkg_root.joinpath('headers/power_n.h'),
-        _pkg_root.joinpath('headers','particle_states.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/faddeeva.h'),
-        _pkg_root.joinpath('fieldmaps/bigaussian_src/bigaussian.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam2d.h'),
+        '#include "xfields/beam_elements/beambeam_src/beambeam2d.h"',
     ]
 
     def __init__(self,

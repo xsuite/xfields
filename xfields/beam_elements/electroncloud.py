@@ -3,11 +3,9 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from ..fieldmaps import TriCubicInterpolatedFieldMap
-from ..general import _pkg_root
-
 import xobjects as xo
 import xtrack as xt
+from ..fieldmaps import TriCubicInterpolatedFieldMap
 
 
 class ElectronCloud(xt.BeamElement):
@@ -54,15 +52,11 @@ class ElectronCloud(xt.BeamElement):
         'dipolar_py_kick': xo.Float64,
         'dipolar_pzeta_kick': xo.Float64,
         'length': xo.Float64,
-        #'fieldmap': TriCubicInterpolatedFieldMapData,
         'fieldmap': xo.Ref(TriCubicInterpolatedFieldMap._XoStruct),
         }
 
     _extra_c_sources = [
-        _pkg_root.joinpath('headers','particle_states.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
-        _pkg_root.joinpath('beam_elements/electroncloud_src/electroncloud.h'),
+        '#include "xfields/beam_elements/electroncloud_src/electroncloud.h"'
     ]
 
     def __init__(self,

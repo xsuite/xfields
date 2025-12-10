@@ -10,7 +10,6 @@ import xobjects as xo
 import xtrack as xt
 from xfields import TriLinearInterpolatedFieldMap
 from .beambeam3d import _init_alpha_phi
-from ..general import _pkg_root
 
 
 class BeamstrahlungTable(xo.HybridClass):
@@ -122,18 +121,8 @@ class BeamBeamPIC3D(xt.BeamElement):
 
     _depends_on = [xt.RandomUniform]
 
-    _extra_c_sources= [
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('headers/sincos.h'),
-        _pkg_root.joinpath('headers/power_n.h'),
-        _pkg_root.joinpath('headers','particle_states.h'),
-        _pkg_root.joinpath('beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h'),
-
-        # beamstrahlung
-        _pkg_root.joinpath(
-            'headers/beamstrahlung_spectrum_pic.h'), # merge two headers using a template
-        _pkg_root.joinpath(
-            'beam_elements/beambeam_src/beambeampic_methods.h'),
+    _extra_c_sources = [
+        '#include "xfields/beam_elements/beambeam_src/beambeampic_methods.h"',
    ]
 
     _per_particle_kernels={

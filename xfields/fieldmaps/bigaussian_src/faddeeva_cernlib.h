@@ -6,12 +6,15 @@
 #ifndef XFIELDS_FADDEEVA_CERNLIB_H
 #define XFIELDS_FADDEEVA_CERNLIB_H
 
-/** \file complex_error_function.h
-  * \note always include headers/constants.h, headers/power_n.h, and
-  *       headers/sincos.h first! */
+#include "xobjects/headers/common.h"
+#include "xfields/headers/constants.h"
+#include "xfields/headers/sincos.h"
+#include "xfields/headers/power_n.h"
 
-#include <stdbool.h>  //only_for_context cpu_serial cpu_openmp
-#include <math.h>     //only_for_context cpu_serial cpu_openmp
+#ifdef XO_CONTEXT_CPU
+    #include <stdbool.h>
+    #include <math.h>
+#endif
 
 /* These parameters correspond to the original algorithm developed by Gautschi
  * with a target accuracy of < 0.5 x 10^{-10} in the *absolute* error. Upstream
@@ -75,10 +78,10 @@
  *           pages 187-198, https://epubs.siam.org/doi/10.1137/0707012
  */
 
-/*gpufun*/ void faddeeva_w_q1(
+GPUFUN void faddeeva_w_q1(
     double const x, double const y,
-    double* /*restrict*/ out_x,
-    double* /*restrict*/ out_y )
+    double* RESTRICT out_x,
+    double* RESTRICT out_y )
 {
     /* This implementation corresponds closely to the previously used
      * "CERNLib C" version, translated from the FORTRAN function written at
@@ -138,11 +141,11 @@
     /* If h(z) is so close to 0 that it is practically 0, there is no
      * point in doing the extra work for the Taylor series -> in that
      * very unlikely case, use the continuos fraction & verify result! */
-    use_taylor_sum &= ( h2_n > ( double )REAL_EPSILON );
+    use_taylor_sum &= ( h2_n > ( double )DBL_EPSILON );
 
     Rx = 0;
     #ifdef FADDEEVA_SPECIAL_Y_0
-    Rx = ( y > ( double )REAL_EPSILON )
+    Rx = ( y > ( double )DBL_EPSILON )
        ? ( double )0.0 : exp( -x * x ) / ( double )TWO_OVER_SQRT_PI;
     #endif
 
@@ -211,8 +214,8 @@
  *
  */
 
-/*gpufun*/ void faddeeva_w( double x, double y,
-    double* /*restrict*/ out_x, double* /*restrict*/ out_y )
+GPUFUN void faddeeva_w( double x, double y,
+    double* RESTRICT out_x, double* RESTRICT out_y )
 {
     double const sign_x = ( double )( ( x >= ( double )0. ) - ( x < ( double )0. ) );
     double const sign_y = ( double )( ( y >= ( double )0. ) - ( y < ( double )0. ) );
