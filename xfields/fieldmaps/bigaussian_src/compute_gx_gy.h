@@ -6,7 +6,10 @@
 #ifndef XFIELDS_COMPUTE_GX_GY
 #define XFIELDS_COMPUTE_GX_GY
 
-/*gpufun*/ void compute_Gx_Gy(
+#include "xobjects/headers/common.h"
+
+
+GPUFUN void compute_Gx_Gy(
         const double x,
         const double y,
         const double sigma_x,

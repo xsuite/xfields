@@ -6,7 +6,11 @@
 #ifndef XFIELDS_SINCOS_H__
 #define XFIELDS_SINCOS_H__
 
-#include <math.h> //only_for_context cpu_serial cpu_openmp
+#include "xobjects/headers/common.h"
+
+#ifdef XO_CONTEXT_CPU
+#include <math.h>
+#endif
 
 /* Define XSUITE_NO_SINCOS as a compiler parameter to never use the inline
  * wrapper function below (the compiler may still decide to use sincos - like
@@ -19,8 +23,8 @@
  */
 
 #if ( !defined( XSUITE_NO_SINCOS ) ) && ( defined( __OPENCL_C_VERSION__ ) )
-/*gpufun*/ void xsuite_sincos( double const arg,
-    double* /*restrict*/ sin_result, double* /*restrict*/ cos_result ) {
+GPUFUN void xsuite_sincos( double const arg,
+    double* RESTRICT sin_result, double* RESTRICT cos_result ) {
     *sin_result = sincos( arg, cos_result ); }
 
 #elif ( !defined( XSUITE_NO_SINCOS ) ) && \
@@ -28,13 +32,13 @@
         ( defined( __GNUC__ ) && !defined( __clang__ ) && \
          !defined( __STRICT_ANSI__ ) && !defined( __INTEL_COMPILER ) && \
          defined( __NO_MATH_ERRNO__ ) ) )
-/*gpufun*/ void xsuite_sincos( double const arg,
-    double* /*restrict*/ sin_result, double* /*restrict*/ cos_result ) {
+GPUFUN void xsuite_sincos( double const arg,
+    double* RESTRICT sin_result, double* RESTRICT cos_result ) {
     sincos( arg, sin_result, cos_result ); }
 
 #else
-/*gpufun*/ void xsuite_sincos( double const arg,
-    double* /*restrict*/ sin_result, double* /*restrict*/ cos_result ) {
+GPUFUN void xsuite_sincos( double const arg,
+    double* RESTRICT sin_result, double* RESTRICT cos_result ) {
     *sin_result = sin( arg );
     *cos_result = cos( arg ); }
 

@@ -1,10 +1,10 @@
-import xobjects as xo
-from xfields import _pkg_root
-
 import time
-import numpy as np
+
 import matplotlib.pyplot as plt
+import numpy as np
 from scipy.special import wofz
+
+import xobjects as xo
 
 mode = 'special_y_0'
 mode = 'standard'
@@ -12,16 +12,17 @@ mode = 'standard'
 ctx = xo.ContextCpu(omp_num_threads=0)
 
 src_code = """
-    /*gpukern*/ void eval_faddeeva_w_q1(
-        const int n,
-        /*gpuglmem*/ double const* /*restrict*/ re,
-        /*gpuglmem*/ double const* /*restrict*/ im,
-        /*gpuglmem*/ double* /*restrict*/ wz_re,
-        /*gpuglmem*/ double* /*restrict*/ wz_im )
-    {
-        int tid = 0;
-        for( ; tid < n ; ++tid ) { //autovectorized
+    #include "xobjects/headers/common.h"
+    #include "xfields/fieldmaps/bigaussian_src/faddeeva.h"
 
+    GPUKERN void eval_faddeeva_w_q1(
+        const int n,
+        GPUGLMEM double const* RESTRICT re,
+        GPUGLMEM double const* RESTRICT im,
+        GPUGLMEM double* RESTRICT wz_re,
+        GPUGLMEM double* RESTRICT wz_im )
+    {
+        VECTORIZE_OVER(tid, n);
             if( tid < n )
             {
                 double const x = re[ tid ];
@@ -33,7 +34,7 @@ src_code = """
                 wz_re[ tid ] = wz_x;
                 wz_im[ tid ] = wz_y;
             }
-        }
+        END_VECTORIZE;
     }
     """
 
@@ -50,16 +51,11 @@ kernel_descriptions = {
     ),
 }
 
-headers = [
-    _pkg_root.joinpath("headers/constants.h"),
-    _pkg_root.joinpath("headers/sincos.h"),
-    _pkg_root.joinpath("headers/power_n.h"),
-    _pkg_root.joinpath("fieldmaps/bigaussian_src/faddeeva.h"),
-]
+headers = []
 
 assert mode in ['special_y_0', 'standard']
 if mode == "special_y_0":
-    headers = ["#define FADDEEVA_SPECIAL_Y_0"] + headers
+    headers = ["#define FADDEEVA_SPECIAL_Y_0"]
 
 ctx.add_kernels(
     sources=headers + [src_code], kernels=kernel_descriptions)

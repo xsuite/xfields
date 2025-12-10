@@ -6,11 +6,14 @@
 #ifndef XFIELDS_BEAMBEAM3D_TRASPORT_SIGMAS_H
 #define XFIELDS_BEAMBEAM3D_TRASPORT_SIGMAS_H
 
+#include "xobjects/headers/common.h"
+
+
 #if !defined(mysign)
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
 
-/*gpufun*/
+GPUFUN
 void Sigmas_propagate(
         double const Sig_11_0,
         double const Sig_12_0,

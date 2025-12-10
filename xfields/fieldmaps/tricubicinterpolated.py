@@ -8,9 +8,7 @@ import numpy as np
 import xobjects as xo
 import xpart as xp
 import xtrack as xt
-
 from .interpolated import _configure_grid
-from ..general import _pkg_root
 
 _TriCubicInterpolatedFieldMap_kernels = {
     'central_diff': xo.Kernel(
@@ -150,18 +148,16 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
         'phi_taylor': xo.Float64[:],
     }
 
-    # I add undescores in front of the names so that I can define custom
+    # I add underscores in front of the names so that I can define custom
     # properties
     _rename = {nn: '_'+nn for nn in _xofields}
 
     _extra_c_sources = [
-        xt.general._pkg_root.joinpath('headers/atomicadd.h'),
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/tricubic_coefficients.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/cubic_interpolators.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/central_diff.h'),
-        _pkg_root.joinpath('fieldmaps/interpolated_src/charge_deposition.h'),
-        ]
+        '#include "xfields/fieldmaps/interpolated_src/tricubic_coefficients.h"',
+        '#include "xfields/fieldmaps/interpolated_src/cubic_interpolators.h"',
+        '#include "xfields/fieldmaps/interpolated_src/central_diff.h"',
+        '#include "xfields/fieldmaps/interpolated_src/charge_deposition.h"',
+    ]
 
     _depends_on = [xp.Particles]
 

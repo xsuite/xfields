@@ -6,7 +6,11 @@
 #ifndef XFIELDS_BIGAUSSIAN_H_FIELDMAP
 #define XFIELDS_BIGAUSSIAN_H_FIELDMAP
 
-/*gpufun*/
+#include "xobjects/headers/common.h"
+#include "xfields/fieldmaps/bigaussian_src/bigaussian.h"
+
+
+GPUFUN
 void BiGaussianFieldMap_get_dphi_dx_dphi_dy(
            BiGaussianFieldMapData fmap,
                     const double  x,

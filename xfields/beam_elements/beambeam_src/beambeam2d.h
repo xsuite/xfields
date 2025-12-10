@@ -6,11 +6,16 @@
 #ifndef XFIELDS_BEAMBEAM_H
 #define XFIELDS_BEAMBEAM_H
 
+#include "xtrack/headers/track.h"
+#include "xfields/fieldmaps/bigaussian_src/bigaussian.h"
+
+
 #if !defined(mysign)
     #define mysign(a) (((a) >= 0) - ((a) < 0))
 #endif
 
-/*gpufun*/
+
+GPUFUN
 void BeamBeamBiGaussian2D_track_local_particle(
         BeamBeamBiGaussian2DData el, LocalParticle* part0){
 
@@ -35,8 +40,7 @@ void BeamBeamBiGaussian2D_track_local_particle(
 
     double const min_sigma_diff = BeamBeamBiGaussian2DData_get_min_sigma_diff(el);
 
-    //start_per_particle_block (part0->part)
-
+    START_PER_PARTICLE_BLOCK(part0, part);
         double const x = LocalParticle_get_x(part);
         double const y = LocalParticle_get_y(part);
         double const part_q0 = LocalParticle_get_q0(part);
@@ -96,9 +100,7 @@ void BeamBeamBiGaussian2D_track_local_particle(
 
         LocalParticle_add_to_px(part, dpx - post_subtract_px);
         LocalParticle_add_to_py(part, dpy - post_subtract_py);
-
-    //end_per_particle_block
-
+    END_PER_PARTICLE_BLOCK;
 }
 
 #endif

@@ -1,6 +1,54 @@
 [build-system]
 build-backend = 'setuptools.build_meta'
 requires = [
-    'setuptools >= 43.0.0',
-    'numpy',
-    ]
+    'setuptools>=77.0.0',
+]
+
+[project]
+name = "xfields"
+dynamic = ["version"]
+description = "Field Maps and Particle In Cell"
+readme = "README.md"
+license = "Apache-2.0"
+authors = [
+    {name = "G. Iadarola et al."}
+]
+dependencies = [
+    "numpy>=1.0",
+    "scipy",
+    "pandas",
+    "xobjects>=0.0.4",
+    "xtrack>=0.0.1",
+]
+requires-python = ">=3.10"
+
+[project.urls]
+Homepage = "https://xsuite.readthedocs.io/"
+Documentation = "https://xsuite.readthedocs.io/"
+Source = "https://github.com/xsuite/xfields"
+"Bug Tracker" = "https://github.com/xsuite/xsuite/issues"
+Download = "https://pypi.python.org/pypi/xfields"
+
+[project.optional-dependencies]
+tests = [
+    "pytest",
+    "h5py"
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["xfields*"]
+
+[tool.setuptools.dynamic]
+version = { attr = "xfields._version.__version__" }
+
+[tool.setuptools]
+include-package-data = true
+
+[project.entry-points.xobjects]
+include = "xfields"
+
+[pytest]
+markers = [
+    "context_dependent: marks test as one that depends on the execution context",
+]
