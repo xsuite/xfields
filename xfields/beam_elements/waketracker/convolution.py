@@ -62,7 +62,7 @@ class _ConvData:
 
     def my_rfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            if hasattr(self._context,'omp_num_threads') and self._context.omp_num_threads > 1:
+            if hasattr(self._context,'omp_num_threads') and int(self._context.omp_num_threads) > 1:
                 kwargs['workers'] = self._context.omp_num_threads
             return self._context.splike_lib.fft.rfft(data, **kwargs)
         else:
