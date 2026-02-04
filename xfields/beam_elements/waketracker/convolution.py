@@ -64,7 +64,7 @@ class _ConvData:
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
             if hasattr(self._context,'omp_num_threads'):
                 if self._context.omp_num_threads == 'auto':
-                    n_cpu = os.process_cpu_count()
+                    n_cpu = len(os.sched_getaffinity(0))
                     if n_cpu > 1:
                         kwargs['workers'] = n_cpu
                 elif self._context.omp_num_threads > 1:
@@ -75,8 +75,13 @@ class _ConvData:
 
     def my_irfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            if hasattr(self._context,'omp_num_threads') and self._context.omp_num_threads > 1:
-                kwargs['workers'] = self._context.omp_num_threads
+            if hasattr(self._context,'omp_num_threads'):
+                if self._context.omp_num_threads == 'auto':
+                    n_cpu = len(os.sched_getaffinity(0))
+                    if n_cpu > 1:
+                        kwargs['workers'] = n_cpu
+                elif self._context.omp_num_threads > 1:
+                    kwargs['workers'] = self._context.omp_num_threads
             return self._context.splike_lib.fft.irfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
