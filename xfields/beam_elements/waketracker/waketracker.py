@@ -25,6 +25,14 @@ class WakeTracker(ElementWithSlicer):
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
+    fake_coupled_bunch_phase_x : float
+        Phase [rad] between the horizontal positon and momentum of consecutive
+        bunches used when applying the wakefields of 'fake' bunches participating
+        to a coupled mode assuming a uniformly filled machine
+    fake_coupled_bunch_phase_y : float
+        Phase [rad] between the vertical positon and momentum of consecutive
+        bunches used when applying the wakefields of 'fake' bunches participating 
+        to a coupled mode assuming a uniformly filled machine
     bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling scheme are
         used (not all the bunches are used when using multi-processing)
