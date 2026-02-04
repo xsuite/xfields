@@ -1,4 +1,4 @@
-import time
+import time, os
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.constants import e as qe
@@ -62,8 +62,13 @@ class _ConvData:
 
     def my_rfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            if hasattr(self._context,'omp_num_threads') and int(self._context.omp_num_threads) > 1:
-                kwargs['workers'] = self._context.omp_num_threads
+            if hasattr(self._context,'omp_num_threads'):
+                if self._context.omp_num_threads == 'auto':
+                    n_cpu = os.process_cpu_count()
+                    if n_cpu > 1:
+                        kwargs['workers'] = n_cpu
+                elif self._context.omp_num_threads > 1:
+                    kwargs['workers'] = self._context.omp_num_threads
             return self._context.splike_lib.fft.rfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
