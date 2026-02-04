@@ -3,7 +3,6 @@ import xobjects as xo
 import xtrack as xt
 import xfields as xf
 
-
 class CompressedProfile(xt.BeamElement):
     """
     An object holding a compressed version of the beam data. This allows to
@@ -146,6 +145,29 @@ class CompressedProfile(xt.BeamElement):
     def z_period(self):
         return self._z_P
 
+    def set_all_beam_moments(self,moment_name,i_turn,all_beam_moments):
+        """
+        Set the moments for a all sources at a given turn.
+
+        Parameters
+        ----------
+        moment_name : str
+            item in self.moments_names
+        i_turn : int
+            The turn index, 0 <= i_turn < self.num_turns
+        all_beam_moments : array
+            Array with with slice moments with shape (n_sources, n_slices)
+        """
+        assert self._context.nplike_lib.shape(all_beam_moments)[0] == self._N_S
+        assert self._context.nplike_lib.shape(all_beam_moments)[1] == self._N_1
+        assert moment_name in self.moments_names
+        assert np.isscalar(i_turn)
+        i_moment = self.moments_names.index(moment_name)
+        all_beam_moments = self._context.nplike_lib.hstack([all_beam_moments,self._context.nplike_lib.zeros((self._context.nplike_lib.shape(all_beam_moments)[0],self._N_aux-self._N_1))])
+        all_beam_moments = self._context.nplike_lib.flip(all_beam_moments,axis=0)
+        all_beam_moments = self._context.nplike_lib.ravel(all_beam_moments)
+        self.data[i_moment, i_turn, :] = all_beam_moments
+
     def set_moments(self, i_source, i_turn, moments):
         """
         Set the moments for a given source and turn.
@@ -160,7 +182,6 @@ class CompressedProfile(xt.BeamElement):
             A dictionary of the form {moment_name: moment_value}
 
         """
-
         assert np.isscalar(i_source)
         assert np.isscalar(i_turn)
 
@@ -178,7 +199,6 @@ class CompressedProfile(xt.BeamElement):
             i_moment = self.moments_names.index(nn)
             i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
             i_end_in_moments_data = i_start_in_moments_data + self._N_1
-
             self.data[i_moment, i_turn,
                     i_start_in_moments_data:i_end_in_moments_data] = vv
 
@@ -201,8 +221,8 @@ class CompressedProfile(xt.BeamElement):
             The moment profile
         """
 
-        z_out = self._arr2ctx(np.zeros(self._N_S * self._N_1))
-        moment_out = self._arr2ctx(np.zeros(self._N_S * self._N_1))
+        z_out = self._context.nplike_lib.zeros(self._N_S * self._N_1)
+        moment_out = self._context.nplike_lib.zeros(self._N_S * self._N_1)
         i_moment = self.moments_names.index(moment_name)
         _z_P = self._z_P or 0
         for i_source in range(self._N_S):
@@ -210,7 +230,7 @@ class CompressedProfile(xt.BeamElement):
             i_end_out = i_start_out + self._N_1
             z_out[i_start_out:i_end_out] = (
                 self._z_a + self.dz / 2
-                - i_source * _z_P + self.dz * self._arr2ctx(np.arange(self._N_1)))
+                - i_source * _z_P + self.dz * self._context.nplike_lib.arange(self._N_1))
 
             i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
             i_end_in_moments_data = i_start_in_moments_data + self._N_1
@@ -219,7 +239,7 @@ class CompressedProfile(xt.BeamElement):
                           i_start_in_moments_data:i_end_in_moments_data])
 
         return z_out, moment_out
-        
+
     def get_source_moment_profile(self, moment_name, i_turn,i_source):
         """
         Get the moment profile for a given turn.
@@ -239,14 +259,14 @@ class CompressedProfile(xt.BeamElement):
             The moment profile
         """
 
-        z_out = self._arr2ctx(np.zeros(self._N_1))
-        moment_out = self._arr2ctx(np.zeros(self._N_1))
+        z_out = self._context.nplike_lib.zeros(self._N_1)
+        moment_out = self._context.nplike_lib.zeros(self._N_1)
         i_moment = self.moments_names.index(moment_name)
         _z_P = self._z_P or 0
 
         z_out = (
             self._z_a + self.dz / 2
-            - i_source * _z_P + self.dz * self._arr2ctx(np.arange(self._N_1)))
+            - i_source * _z_P + self.dz * self._context.nplike_lib.arange(self._N_1))
 
         i_start_in_moments_data = (self._N_S - i_source - 1) * self._N_aux
         i_end_in_moments_data = i_start_in_moments_data + self._N_1
