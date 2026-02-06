@@ -114,7 +114,8 @@ class CollectiveMonitor(ElementWithSlicer):
                  stats_to_store=None,
                  stats_to_store_particles=None,
                  backend='hdf5',
-                 _flatten=False):
+                 _flatten=False,
+                 **kwargs):
 
         slicer_moments = []
         if stats_to_store is not None:
@@ -187,7 +188,8 @@ class CollectiveMonitor(ElementWithSlicer):
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
             filling_scheme=filling_scheme,
             bunch_selection=bunch_selection,
-            with_compressed_profile=False
+            with_compressed_profile=False,
+           **kwargs
         )
 
     def _reconfigure_for_parallel(self, n_procs, my_rank):
@@ -206,7 +208,8 @@ class CollectiveMonitor(ElementWithSlicer):
             zeta_range=self.slicer.zeta_range,
             num_slices=self.slicer.num_slices,
             bunch_spacing_zeta=self.slicer.bunch_spacing_zeta,
-            moments=self.slicer.moments
+            moments=self.slicer.moments,
+           _context=self.slicer._context
         )
 
     def track(self, particles, _slice_result=None, _other_bunch_slicers=None):
@@ -279,7 +282,7 @@ class CollectiveMonitor(ElementWithSlicer):
         buf = {}
 
         for stat in self.stats_to_store_particles:
-            buf[stat] = np.zeros((self.flush_data_every, num_particles))
+            buf[stat] = np.zeros((self.flush_data_every, int(num_particles)))
 
         return buf
 
@@ -317,7 +320,7 @@ class CollectiveMonitor(ElementWithSlicer):
                     else:
                         raise ValueError('Unknown statistics f{stat}')
 
-                self.bunch_buffer[bid][stat][self.i_turn %
+                self.bunch_buffer[int(bid)][stat][self.i_turn %
                                              self.flush_data_every] = val
 
     def _update_slice_buffer(self, particles):
@@ -366,9 +369,8 @@ class CollectiveMonitor(ElementWithSlicer):
                         val = self.slicer.num_particles
                 else:
                     raise ValueError('Unknown statistics f{stat}')
-
-                self.slice_buffer[bid][stat][self.i_turn %
-                                             self.flush_data_every, :] = val
+                self.slice_buffer[int(bid)][stat][self.i_turn %
+                                             self.flush_data_every, :] = self._context.nparray_from_context_array(val)
 
     def _update_particle_buffer(self, particles):
         for stat in self.stats_to_store_particles:
@@ -378,7 +380,7 @@ class CollectiveMonitor(ElementWithSlicer):
                                  'different from the number of particles being tracked')
             val = getattr(particles, stat)[self.particle_monitor_mask]
             self.particle_buffer[stat][self.i_turn %
-                                       self.flush_data_every, :] = val
+                                       self.flush_data_every, :] = self._context.nparray_from_context_array(val)
 
 
 def flush_buffer_to_file_hdf5(buffer, filename):

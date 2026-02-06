@@ -73,6 +73,7 @@ def test_bunch_monitor_hdf5(test_context):
         zeta_range=zeta_range,
         filling_scheme=filling_scheme,
         bunch_spacing_zeta=bunch_spacing_zeta,
+        _context=test_context
     )
 
     # track for twice flush_data_every turns so that we test the reshaping
@@ -192,6 +193,7 @@ def test_bunch_monitor_json(test_context):
         zeta_range=zeta_range,
         filling_scheme=filling_scheme,
         bunch_spacing_zeta=bunch_spacing_zeta,
+        _context=test_context
     )
 
     # track for twice flush_data_every turns so that we test the reshaping
@@ -284,6 +286,7 @@ def test_slice_monitor_hdf5(test_context):
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
         filling_scheme=filling_scheme,
+        _context=test_context
     )
 
     particles = xt.Particles(
@@ -441,6 +444,7 @@ def test_slice_monitor_json(test_context):
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
         filling_scheme=filling_scheme,
+        _context=test_context
     )
 
     particles = xt.Particles(
@@ -591,6 +595,7 @@ def test_particle_monitor_hdf5(test_context):
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
         particle_monitor_mask=particle_monitor_mask,
+        _context=test_context
     )
 
     # track for twice flush_data_every turns so that we test the reshaping
@@ -635,6 +640,7 @@ def test_particle_monitor_json(test_context):
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
         particle_monitor_mask=particle_monitor_mask,
+        _context=test_context
     )
 
     # track for twice flush_data_every turns so that we test the reshaping
