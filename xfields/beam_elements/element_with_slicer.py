@@ -52,6 +52,8 @@ class ElementWithSlicer(xt.BeamElement):
 
         self.xoinitialize(**kwargs)
 
+        self.iscollective = True
+
         self.with_compressed_profile = with_compressed_profile
         self.pipeline_manager = None
 
