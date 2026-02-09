@@ -346,10 +346,9 @@ class UniformBinSlicer(xt.BeamElement):
             return data.reshape(self.num_bunches, self.num_slices)
 
     def _to_npbuffer(self):
-        #assert isinstance(self._context, xo.ContextCpu)
-        assert self._buffer.buffer.dtype == np.int8
-        return self._buffer.buffer[self._offset:
+        tmp_buffer = self._buffer.buffer[self._offset:
                                    self._offset + self._xobject._size]
+        return self._context.nparray_from_context_array(tmp_buffer)
 
     @classmethod
     def _from_npbuffer(cls, buffer):
