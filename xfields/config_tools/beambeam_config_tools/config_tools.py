@@ -165,8 +165,8 @@ def install_dummy_bb_lenses(bb_df, line):
     s_insertions = []
     for nn in bb_df.index:
         s_insertions.append(s_ips[bb_df.loc[nn, 'ip_name']] + bb_df.loc[nn, 'atPosition'])
-    line.cut_at_s(s_insertions)
 
+    insertions = []
     for nn in bb_df.index:
         print(f'Insert: {nn}     ', end='\r', flush=True)
         ll = bb_df.loc[nn, 'label']
@@ -194,10 +194,11 @@ def install_dummy_bb_lenses(bb_df, line):
         else:
             raise ValueError('Unknown label')
 
-        line.insert_element(element=new_bb,
-                                    at_s=(s_ips[bb_df.loc[nn, 'ip_name']]
-                                        + bb_df.loc[nn, 'atPosition']),
-                                    name=nn)
+        line.env.elements[nn] = new_bb
+        insertions.append(line.env.place(nn,
+                at=s_ips[bb_df.loc[nn, 'ip_name']]+ bb_df.loc[nn, 'atPosition']))
+
+    line.insert(insertions)
 
 _sigma_names = [11, 12, 13, 14, 22, 23, 24, 33, 34, 44]
 
