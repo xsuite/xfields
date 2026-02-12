@@ -203,8 +203,8 @@ class ElementWithSlicer(xt.BeamElement):
         for i_bunch_in_slicer, bunch_number in enumerate(slicer._xobject.bunch_selection):
             moments_bunch = {}
             for nn in means.keys():
-                moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]
-            moments_bunch['num_particles'] = np.atleast_2d(slicer.num_particles)[i_bunch_in_slicer, :]
+                moments_bunch[nn] = self._context.nplike_lib.atleast_2d(means[nn])[i_bunch_in_slicer, :]
+            moments_bunch['num_particles'] = self._context.nplike_lib.atleast_2d(slicer.num_particles)[i_bunch_in_slicer, :]
             self.moments_data.set_moments(
                 moments=moments_bunch,
                 i_turn=0,
