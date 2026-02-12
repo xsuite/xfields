@@ -10,7 +10,7 @@ import xpart as xp
 from xobjects.test_helpers import for_all_test_contexts
 
 
-exclude_contexts = ['ContextPyopencl', 'ContextCupy']
+exclude_contexts = ['ContextPyopencl']
 
 @for_all_test_contexts(excluding=exclude_contexts)
 def test_transverse_damper(test_context):
