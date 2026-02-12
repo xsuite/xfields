@@ -59,6 +59,7 @@ def test_transverse_damper(test_context):
         longitudinal_mode=longitudinal_mode,
         voltage_rf=v_rf, frequency_rf=f_rf, lag_rf=180,
         momentum_compaction_factor=momentum_compaction,
+        _context=test_context
     )
 
     gain_x = 0.01
@@ -71,7 +72,7 @@ def test_transverse_damper(test_context):
         num_slices=n_slices,
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
         circumference=circumference,
-        mode='bunch-by-bunch'
+        _context=test_context
     )
 
     line = xt.Line(elements=[[one_turn_map, transverse_damper][0]],
