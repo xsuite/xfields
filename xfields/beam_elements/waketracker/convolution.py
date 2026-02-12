@@ -1,6 +1,5 @@
 import time, os
 import numpy as np
-from matplotlib import pyplot as plt
 from scipy.constants import e as qe
 
 import xobjects as xo
@@ -98,9 +97,9 @@ class _ConvData:
             # (for now we assume that B=0 is the first bunch in time and the
             # last one in zeta)
             self._AA = self._BB - self._N_S
-            self._DD = -1*np.min(self.waketracker.slicer.bunch_selection)+1
+            self._DD = 1-moments_data._first_target_slot
             self._CC = self._DD - self._N_T
-
+            
             # Build wake matrix
             self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,
                                         moments_data.num_turns,
@@ -165,6 +164,8 @@ class _ConvData:
         self._compute_convolution(moment_names=self.component.source_moments,
                                   moment_exponents=self.component._source_moment_exponents,
                                   moments_data=moments_data)
+
+
         # Apply kicks
         interpolated_result = particles.zeta * 0
         assert moments_data.moments_names[-1] == 'result'
@@ -178,6 +179,7 @@ class _ConvData:
             i_slot_particles=i_slot_particles,
             i_slice_particles=i_slice_particles,
             out=interpolated_result)
+            
         # interpolated result will be zero for lost particles (so nothing to
         # do for them)
         scaling_constant = particles.q0**2 * qe**2 / (

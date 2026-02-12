@@ -41,7 +41,8 @@ class CompressedProfile(xt.BeamElement):
 
     _xofields = {
         '_N_aux': xo.Int64,
-        '_N_S': xo.Int64,
+        '_N_T': xo.Int64,
+        '_first_target_slot': xo.Int64,
         'num_turns': xo.Int64,
         'data': xo.Float64[:,:,:],
     }
@@ -69,6 +70,7 @@ class CompressedProfile(xt.BeamElement):
                  bunch_spacing_zeta=None,  # This is P in the paper
                  num_periods=None,
                  num_turns=1,
+                 first_target_slot = 0,
                  num_targets=None,
                  num_slices_target=None,
                  circumference=None,
@@ -84,7 +86,6 @@ class CompressedProfile(xt.BeamElement):
                 'circumference must be specified if num_turns > 1')
 
         self.circumference = circumference
-
         # the following needs to be generalized when the first bucket is not filled
         self.dz = (np.atleast_2d(zeta_range)[0, 1] -
                    np.atleast_2d(zeta_range)[0, 0]) / num_slices  # h in the paper
@@ -93,7 +94,7 @@ class CompressedProfile(xt.BeamElement):
 
         self._N_1 = num_slices  # N_1 in the
         self._z_P = bunch_spacing_zeta  # P in the paper
-        _N_S = num_periods  # N_S in the paper
+        self._N_S = num_periods  # N_S in the paper
 
         if num_slices_target is not None:
             self._N_2 = num_slices_target
@@ -101,24 +102,24 @@ class CompressedProfile(xt.BeamElement):
             self._N_2 = self._N_1
 
         if num_targets is not None:
-            self._N_T = num_targets
+            _N_T = num_targets
         else:
-            self._N_T = _N_S
+            _N_T = self._N_S
 
         self._BB = 1  # B in the paper
         # (for now we assume that B=0 is the first bunch in time
         # and the last one in zeta)
-        self._AA = self._BB - _N_S
+        self._AA = self._BB - self._N_S
 
         _N_aux = self._N_1 + self._N_2  # n_aux in the paper
 
         # Compute m_aux
-        self._M_aux = (_N_S +
-                       self._N_T - 1) * _N_aux  # m_aux in the paper
+        self._M_aux = (self._N_S +
+                       _N_T - 1) * _N_aux  # m_aux in the paper
 
         self.moments_names = moments
 
-        self.xoinitialize(_N_S=_N_S, _N_aux=_N_aux, num_turns=num_turns, 
+        self.xoinitialize(_N_T=_N_T,_first_target_slot=first_target_slot, _N_aux=_N_aux, num_turns=num_turns, 
                           data=(len(moments), num_turns, self._M_aux),
                           **kwargs)
 

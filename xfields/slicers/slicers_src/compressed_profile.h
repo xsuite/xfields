@@ -21,7 +21,8 @@ void CompressedProfile_interp_result(
     GPUGLMEM int64_t* i_slice_particles,
     GPUGLMEM double* out
 ) {
-	int64_t const _N_S = CompressedProfileData_get__N_S(el);
+	int64_t const _N_T = CompressedProfileData_get__N_T(el);
+	int64_t const _first_target_slot = CompressedProfileData_get__first_target_slot(el);
 	int64_t const _N_aux = CompressedProfileData_get__N_aux(el);
 	int64_t const num_turns = CompressedProfileData_get_num_turns(el);
 
@@ -32,7 +33,7 @@ void CompressedProfile_interp_result(
 
         if (i_slice >= 0) {
 
-            const int64_t i_start_in_moments_data = (_N_S - i_bunch - 1) * _N_aux;
+            const int64_t i_start_in_moments_data = (_N_T+_first_target_slot - i_bunch - 1) * _N_aux;
 
             double rr = 0;
             for(int i_turn=0; i_turn<num_turns; i_turn++) {

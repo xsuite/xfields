@@ -153,7 +153,7 @@ class WakeTracker(ElementWithSlicer):
 
         if self.fake_coupled_bunch_phases:
             self._compute_fake_bunch_moments()
-
+        
         for wf in self.components:
             wf._conv_data.track(particles,
                      i_slot_particles=self.i_slot_particles,

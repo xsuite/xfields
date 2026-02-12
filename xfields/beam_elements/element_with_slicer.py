@@ -133,14 +133,19 @@ class ElementWithSlicer(xt.BeamElement):
             
         if bunch_selection is None:
             num_targets = num_periods
+            first_target_slot = 0
         else:
-            num_targets = 1+ np.max(bunch_selection)-np.min(bunch_selection)
+            slots_in_slicer = self.slicer.filled_slots[bunch_selection]
+            first_target_slot = np.min(slots_in_slicer)
+            num_targets = 1+ np.max(slots_in_slicer)-first_target_slot
+
             
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
+                first_target_slot = first_target_slot,
                 num_targets = num_targets,
                 num_periods=num_periods,
                 num_turns=num_turns,
@@ -199,9 +204,7 @@ class ElementWithSlicer(xt.BeamElement):
             moments_bunch = {}
             for nn in means.keys():
                 moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]
-
             moments_bunch['num_particles'] = np.atleast_2d(slicer.num_particles)[i_bunch_in_slicer, :]
-
             self.moments_data.set_moments(
                 moments=moments_bunch,
                 i_turn=0,
