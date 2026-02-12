@@ -119,8 +119,8 @@ class CompressedProfile(xt.BeamElement):
 
         self.moments_names = moments
 
-        self.xoinitialize(_N_T=_N_T,_first_target_slot=first_target_slot, _N_aux=_N_aux, num_turns=num_turns, 
-                          data=(len(moments), num_turns, self._M_aux),
+        self.xoinitialize(_N_T=int(_N_T),_first_target_slot=int(first_target_slot), _N_aux=int(_N_aux), num_turns=int(num_turns), 
+                          data=(len(moments), int(num_turns), int(self._M_aux)),
                           **kwargs)
 
 

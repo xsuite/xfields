@@ -348,7 +348,7 @@ class UniformBinSlicer(xt.BeamElement):
     def _to_npbuffer(self):
         tmp_buffer = self._buffer.buffer[self._offset:
                                    self._offset + self._xobject._size]
-        return self._context.nparray_from_context_array(tmp_buffer)
+        return self._context.nparray_from_context_array(tmp_buffer).astype(np.int8)
 
     @classmethod
     def _from_npbuffer(cls, buffer):

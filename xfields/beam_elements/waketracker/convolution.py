@@ -118,8 +118,8 @@ class _ConvData:
 
             # only positive frequencies because we are using rfft
             phase_term = self._context.nparray_to_context_array(np.exp(
-                1j * 2 * np.pi * np.arange(self._M_aux//2 + 1) *
-                ((self._N_S - 1) * self._N_aux + self._N_1) / self._M_aux))
+                1j * 2 * np.pi * np.arange(int(self._M_aux)//2 + 1) *
+                ((int(self._N_S) - 1) * int(self._N_aux) + int(self._N_1)) / int(self._M_aux)))
 
         else:
             raise NotImplementedError('Flattened wakes are not implemented yet')
@@ -253,7 +253,7 @@ def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
 
     z_c = z_a  # For wakefield, z_c = z_a
     z_d = z_b  # For wakefield, z_d = z_b
-    z_wake = np.zeros((num_turns, m_aux))
+    z_wake = np.zeros((int(num_turns), int(m_aux)))
     for tt in range(num_turns):
         z_a_turn = z_a + tt * circumference
         z_b_turn = z_b + tt * circumference
