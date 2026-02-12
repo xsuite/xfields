@@ -35,8 +35,6 @@ class TransverseDamper(xt.BeamElement):
 
     """
 
-    iscollective = True
-
     def __init__(self, gain_x, gain_y, zeta_range, num_slices,
                  circumference=None, bunch_spacing_zeta=None, filling_scheme=None,
                  bunch_selection=None, **kwargs):
@@ -44,6 +42,10 @@ class TransverseDamper(xt.BeamElement):
             'px': gain_x,
             'py': gain_y,
         }
+        
+        self.iscollective = True
+        
+        self.xoinitialize(**kwargs)
 
         self.slicer = xf.UniformBinSlicer(
             filling_scheme=filling_scheme,
@@ -51,7 +53,8 @@ class TransverseDamper(xt.BeamElement):
             zeta_range=zeta_range,
             num_slices=num_slices,
             bunch_spacing_zeta=bunch_spacing_zeta,
-            moments=['px', 'py']
+            moments=['px', 'py'],
+            _context=self._context
         )
 
         if filling_scheme is not None:
@@ -88,7 +91,8 @@ class TransverseDamper(xt.BeamElement):
             zeta_range=self.slicer.zeta_range,
             num_slices=self.slicer.num_slices,
             bunch_spacing_zeta=self.slicer.bunch_spacing_zeta,
-            moments=['px', 'py']
+            moments=['px', 'py'],
+            _context=self._context
         )
 
     def track(self, particles, i_turn=0):
