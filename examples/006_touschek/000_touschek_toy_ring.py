@@ -70,7 +70,6 @@ line.configure_bend_model(core='full', edge=None)
 tab = line.get_table()
 tab_bends_quads = tab.rows[(tab.element_type == 'Bend') | (tab.element_type == 'Quadrupole')]
 
-# Would be good to have env.new for xf.TouschekScattering
 for ii, nn in enumerate(tab_bends_quads.name):
     tscatter_name = f'TScatter_{ii}'
     env.elements[tscatter_name] = xf.TouschekScattering()
@@ -80,7 +79,6 @@ for ii, nn in enumerate(tab_bends_quads.name):
 tscatter_name = f'TScatter_{ii+1}'
 env.elements[tscatter_name] = xf.TouschekScattering()
 line.insert(tscatter_name, at=tab.s[-1])
-
 
 ######################################################
 # Install apertures
@@ -116,10 +114,6 @@ line.insert(placements)
 ######################################################
 # Evaluate momentum aperture profile
 ######################################################
-# Norlamized emittance
-nemitt_x = 1e-5
-nemitt_y = 1e-7
-
 # Evaluate local momentum aperture at the touschek scattering centers
 momentum_aperture = line.momentum_aperture(
     # twiss=tw,
