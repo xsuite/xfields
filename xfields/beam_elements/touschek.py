@@ -7,8 +7,6 @@ import xobjects as xo
 import xtrack as xt
 import numpy as np
 
-from ..general import _pkg_root
-
 class TouschekScattering(xt.BeamElement):
 
     _xofields = {
@@ -44,9 +42,7 @@ class TouschekScattering(xt.BeamElement):
     _depends_on = [xt.RandomUniformAccurate]
 
     _extra_c_sources = [
-        _pkg_root.joinpath('headers/constants.h'),
-        _pkg_root.joinpath('headers/elegant_rng.h'),
-        _pkg_root.joinpath('beam_elements/touschek_src/touschek.h'),
+        '#include "xfields/beam_elements/touschek_src/touschek.h"'
     ]
 
     _per_particle_kernels = {

@@ -56,6 +56,9 @@
 #ifndef XTRACK_TOUSCHEK_H
 #define XTRACK_TOUSCHEK_H
 
+#include "xtrack/headers/track.h"
+#include "xfields/headers/elegant_rng.h"
+
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -134,8 +137,8 @@ void bunch2cm(double *p1, double *p2, double *q, double *beta, double *gamma) {
     pp1 = pp1 + sqr(p1[i]);
     pp2 = pp2 + sqr(p2[i]);
   }
-  e1 = sqrt(MELECTRON_EV * MELECTRON_EV + pp1);
-  e2 = sqrt(MELECTRON_EV * MELECTRON_EV + pp2);
+  e1 = sqrt(ELECTRON_MASS_EV * ELECTRON_MASS_EV + pp1);
+  e2 = sqrt(ELECTRON_MASS_EV * ELECTRON_MASS_EV + pp2);
   ee = e1 + e2;
 
   betap1 = 0.0;
@@ -193,7 +196,7 @@ void cm2bunch(double *p1, double *p2, double *q, double *beta, double *gamma) {
     pq = pq + q[i] * q[i];
   }
 
-  e = sqrt(MELECTRON_EV * MELECTRON_EV + pq);
+  e = sqrt(ELECTRON_MASS_EV * ELECTRON_MASS_EV + pq);
 
   betaq = 0.0;
   bb = 0.0;
@@ -354,7 +357,7 @@ void TouschekScatter(TouschekScatteringData el,
     double weight_limit, weight_ave, wTotal;
 
     const double sigxyz = sqrt(twissBeta[0]*gemitt[0]) * sqrt(twissBeta[1]*gemitt[1]) * sigma_z;
-    temp = sqr(bunch_population) * sqr(PI) * sqr(RE) * C_LIGHT / 4.;
+    temp = sqr(bunch_population) * sqr(PI) * sqr(RADIUS_ELECTRON) * C_LIGHT / 4.;
     double factor = temp * pow(range[0], 3.0) * pow(range[1], 3.0) * pow(range[2], 3.0) / pow(2 * PI, 6.0) / sigxyz;
 
     double *xtemp      = (double*)malloc(sizeof(double) * n_simulated);
@@ -444,7 +447,7 @@ void TouschekScatter(TouschekScatteringData el,
         }
 
         if (p1[5] < deltaN || p2[5] > deltaP) {
-          beta0 = qabs / sqrt(qabs * qabs + MELECTRON_EV * MELECTRON_EV);
+          beta0 = qabs / sqrt(qabs * qabs + ELECTRON_MASS_EV * ELECTRON_MASS_EV);
           cross = moeller(beta0, theta);
           temp *= cross * beta0 / gamma / gamma;
 
