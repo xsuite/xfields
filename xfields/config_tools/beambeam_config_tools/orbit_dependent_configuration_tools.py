@@ -78,4 +78,4 @@ def configure_orbit_dependent_parameters_for_bb(line, particle_on_co):
             temp_particles.px -= ee.post_subtract_px
             temp_particles.py -= ee.post_subtract_py
         else:
-            ee.track(temp_particles)
+            line.track(temp_particles, ele_start=ii, num_elements=1)

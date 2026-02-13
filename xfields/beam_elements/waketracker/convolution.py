@@ -55,12 +55,8 @@ class _ConvData:
         source_moments = ['num_particles']
         if source_exponents[0] != 0:
             source_moments.append('x')
-            if source_exponents[0] > 1:
-                raise NotImplementedError('Higher order moments not implemented yet')
         if source_exponents[1] != 0:
             source_moments.append('y')
-            if source_exponents[1] > 1:
-                raise NotImplementedError('Higher order moments not implemented yet')
 
     def my_rfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
@@ -150,6 +146,7 @@ class _ConvData:
 
         # Compute convolution
         self._compute_convolution(moment_names=self.component.source_moments,
+                                  moment_exponents=self.component._source_moment_exponents,
                                   moments_data=moments_data)
         # Apply kicks
         interpolated_result = particles.zeta * 0
@@ -181,16 +178,19 @@ class _ConvData:
         getattr(particles, self.component.kick)[:] += (scaling_constant *
                                              interpolated_result)
 
-    def _compute_convolution(self, moment_names, moments_data):
+    def _compute_convolution(self, moment_names, moments_data, moment_exponents=None):
 
         if isinstance(moment_names, str):
             moment_names = [moment_names]
 
+        if moment_exponents is None:
+            moment_exponents = [1] * len(moment_names)
+
         rho_aux = self._context.nplike_lib.ones(
             shape=moments_data['result'].shape, dtype=np.float64)
 
-        for nn in moment_names:
-            rho_aux *= moments_data[nn]
+        for nn, ee in zip(moment_names, moment_exponents):
+            rho_aux *= moments_data[nn]**ee
 
         if not self._flatten:
             rho_hat = self.my_rfft(rho_aux, axis=1)
