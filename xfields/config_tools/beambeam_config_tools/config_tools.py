@@ -333,7 +333,7 @@ def generate_set_of_bb_encounters_1beam(
     # assuming a sequence rotated in IR3
 
     myBB=pd.concat([myBBHO, myBBLR],sort=False)
-    myBB = myBB.set_index('elementName', drop=False, verify_integrity=True).sort_index()
+    myBB = myBB.set_index('elementName', drop=False).sort_index()
 
 
     for ww in ['self', 'other']:

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 from logging import getLogger
 from typing import TYPE_CHECKING
+from warnings import warn
 
 import numpy as np
 
@@ -175,7 +176,10 @@ def configure_intrabeam_scattering(
             line.discard_tracker()
         else:
             _buffer = None
-        line.insert_element(element=element, **kwargs)
+        if 'name' in kwargs:
+            # Support the previous API that used the deprecated `insert_element(name=...)`
+            kwargs['what'] = kwargs.pop('name')
+        line.insert(obj=element, **kwargs)
         if _buffer is not None:
             line.build_tracker(_buffer=_buffer)
     # ----------------------------------------------------------------------------------------------
