@@ -3,14 +3,14 @@
 # Copyright (c) CERN, 2025.                 #
 # ######################################### #
 
-from ..beam_elements.beambeam2d import BeamBeamBiGaussian2D
-from ..beam_elements.beambeam3d import BeamBeamBiGaussian3D
-from ..beam_elements.spacecharge import SpaceChargeBiGaussian
-
+import xfields as xf
 
 DEFAULT_XFIELDS_ELEMENTS = [
-    BeamBeamBiGaussian2D,
-    BeamBeamBiGaussian3D,
-    SpaceChargeBiGaussian,
+    xf.BeamBeamBiGaussian2D,
+    xf.BeamBeamBiGaussian3D,
+    xf.SpaceChargeBiGaussian,
 ]
 
+NON_TRACKING_ELEMENTS = [
+    xf.beam_elements.temp_slicer.TempSlicer
+]
