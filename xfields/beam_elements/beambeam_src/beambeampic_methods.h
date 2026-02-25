@@ -33,7 +33,7 @@ void do_beamstrahlung_pic(BeamBeamPIC3DData el, LocalParticle *part,
         // no average beamstrahlung implemented
 	} else if (flag_beamstrahlung==2){
         double const Fr = hypot(Fx_star, Fy_star) * LocalParticle_get_rpp(part); // radial kick [1]
-        beamstrahlung(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
+        beamstrahlung_pic(part, beamstrahlung_record, beamstrahlung_table_index, beamstrahlung_table, Fr, dz);
     }
 
     *pzeta_star = LocalParticle_get_pzeta(part);  // BS rescales energy vars, so load again before kick

@@ -9,6 +9,7 @@
 #include "xtrack/headers/track.h"
 #include "xfields/beam_elements/beambeam_src/beambeam3d_ref_frame_changes.h"
 #include "xfields/beam_elements/beambeam_src/beambeam3d.h"
+#include "xfields/beam_elements/beambeam_src/beambeam3d.h"
 
 
 GPUFUN

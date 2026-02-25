@@ -9,39 +9,8 @@ from scipy.constants import e as qe
 import xobjects as xo
 import xtrack as xt
 from xfields import TriLinearInterpolatedFieldMap
-from .beambeam3d import _init_alpha_phi
+from .beambeam3d import _init_alpha_phi, BeamstrahlungTable
 
-
-class BeamstrahlungTable(xo.HybridClass):
-    """
-    Buffer size should be larger than the number of expected BS photons emitted. Test on single collision for estimate.
-    If more photons are emitted than the buffer size, the surplus data will be dropped.
-    Photons from multiple turns and beambeam elements are stored in the same buffer.
-    Photons are 'macro' i.e. represent the dynamics of bunch_intensity/n_macroparticles real BS photons.
-    This implies that the number of emitted BS photons scales linearly with n_macroparticles.
-
-    Fields:
-     _index: custom C struct for metadata
-     at_element: [1] element index in the xtrack.Line object, starts with 0
-     at_turn: [1] turn index, starts with 0
-     particle_id: [1] array index in the xpart.Particles object of the primary macroparticle emitting the photon
-     primary_energy: [eV] total energy of primary macroparticle before emission of this photon
-     photon_id: [1] counter for photons emitted from the same primary in the same collision with a single slice
-     photon_energy: [eV] total energy of a beamstrahlung photon
-     photon_critical_energy (with quantum BS only): [eV] critical energy of a beamstrahlung photon
-     rho_inv (with quantum BS only): [m^-1] (Fr/dz) inverse bending radius of the primary macroparticle
-    """
-    _xofields = {
-      '_index': xt.RecordIndex,
-      'at_element': xo.Int64[:],
-      'at_turn': xo.Int64[:],
-      'particle_id': xo.Int64[:],
-      'primary_energy': xo.Float64[:],
-      'photon_id': xo.Float64[:],
-      'photon_energy': xo.Float64[:],
-      'photon_critical_energy': xo.Float64[:],
-      'rho_inv': xo.Float64[:],
-    }
 
 class LumiTable(xo.HybridClass):
     """

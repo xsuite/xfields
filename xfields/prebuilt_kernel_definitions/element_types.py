@@ -9,8 +9,10 @@ DEFAULT_XFIELDS_ELEMENTS = [
     xf.BeamBeamBiGaussian2D,
     xf.BeamBeamBiGaussian3D,
     xf.SpaceChargeBiGaussian,
+    xf.BeamBeamPIC3D,
 ]
 
 NON_TRACKING_ELEMENTS = [
-    xf.beam_elements.temp_slicer.TempSlicer
+    xf.beam_elements.temp_slicer.TempSlicer,
+    xf.TriLinearInterpolatedFieldMap,
 ]

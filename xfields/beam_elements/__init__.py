@@ -4,3 +4,6 @@
 # ########################################### #
 
 from .spacecharge import SpaceCharge3D
+from .beambeam2d import *
+from .beambeam3d import *
+from .beambeam3dpic import *

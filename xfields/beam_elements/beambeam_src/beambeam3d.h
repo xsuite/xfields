@@ -12,6 +12,7 @@
 #include "xfields/headers/beamstrahlung_spectrum.h"
 #include "xfields/headers/bhabha_spectrum.h"
 #include "xfields/fieldmaps/bigaussian_src/bigaussian.h"
+#include "xfields/beam_elements/beambeam_src/beambeam3d.h"
 
 
 #ifndef min

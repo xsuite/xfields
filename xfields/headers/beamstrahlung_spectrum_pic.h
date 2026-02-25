@@ -1,5 +1,5 @@
-#ifndef XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H
-#define XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H
+#ifndef XFIELDS_BEAMSTRAHLUNG_SPECTRUM_PIC_H
+#define XFIELDS_BEAMSTRAHLUNG_SPECTRUM_PIC_H
 
 #include "xobjects/headers/common.h"
 #include "xfields/headers/constants.h"
@@ -8,7 +8,7 @@
 
 
 GPUFUN
-int beamstrahlung_0(LocalParticle *part,
+int beamstrahlung_0_pic(LocalParticle *part,
              double energy,     // [eV] primary electron energy
              double dz,         // [m] z slice half width
              double rho_inv,    // [1/m] inverse local bending radius, changes after each photon emission
@@ -86,7 +86,7 @@ int beamstrahlung_0(LocalParticle *part,
 
 
 GPUFUN
-double beamstrahlung(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
+double beamstrahlung_pic(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
      	double Fr,  // [1] radial force sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	double dz   // [m] z slice half width: step between 2 slices ((z_max - z_min) / 2)
 ){
