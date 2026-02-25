@@ -19,12 +19,12 @@ void do_beamstrahlung_pic(BeamBeamPIC3DData el, LocalParticle *part,
 
     // init record table
     BeamBeamPIC3DRecordData beamstrahlung_record = NULL;
-    BeamstrahlungTableData beamstrahlung_table   = NULL;
+    BeamstrahlungTablePICData beamstrahlung_table   = NULL;
     RecordIndex beamstrahlung_table_index        = NULL;
     beamstrahlung_record = BeamBeamPIC3DData_getp_internal_record(el, part);
     if (beamstrahlung_record){
         beamstrahlung_table       = BeamBeamPIC3DRecordData_getp_beamstrahlungtable(beamstrahlung_record);
-        beamstrahlung_table_index =               BeamstrahlungTableData_getp__index(beamstrahlung_table);
+        beamstrahlung_table_index =               BeamstrahlungTablePICData_getp__index(beamstrahlung_table);
     }
 
     LocalParticle_update_pzeta(part, *pzeta_star);  // update energy vars with boost and/or last kick
