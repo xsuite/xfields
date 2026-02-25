@@ -33,5 +33,13 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
             'number_of_particles': 1,
             'sigma_z': 0,
         }
+    },
+    'SpaceCharge3D': {
+        'x_range': (-1.,1.),
+        'y_range': (-1.,1.),
+        'z_range': (-1, 1),
+        'dx': 0.1,
+        'dy': 0.1,
+        'dz': 0.1
     }
 }
