@@ -105,13 +105,6 @@ class TempSlicer(xo.HybridClass):
 
         self.compile_kernels(only_if_needed=False)
 
-    def compile_kernels(self, *args, **kwargs):
-        extra_compile_args = kwargs.pop('extra_compile_args', [])
-        extra_compile_args.append(f'-I{xt.__path__[0]}')
-        kwargs['extra_compile_args'] = extra_compile_args
-
-        return super().compile_kernels(*args, **kwargs)
-
     def rho(self, z):
         """
         Gaussian charge density.
