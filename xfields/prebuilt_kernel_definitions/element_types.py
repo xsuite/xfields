@@ -9,7 +9,7 @@ DEFAULT_XFIELDS_ELEMENTS = [
     xf.BeamBeamBiGaussian2D,
     xf.BeamBeamBiGaussian3D,
     xf.SpaceChargeBiGaussian,
-    xf.SpaceCharge3D,
+    # xf.SpaceCharge3D,
 ]
 
 NON_TRACKING_ELEMENTS = [
