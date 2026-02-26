@@ -40,6 +40,16 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
         'dx': 0.1,
         'dy': 0.1,
         'z_range': (-1., 1.),
-        'dz': 0.1
+        'dz': 0.1,
+        '_prebuilding_kernels': True, # # Otherwise becomes collective and does not go in the tracker
     },
+    'SpaceCharge3D': {
+        'x_range': (-1.,1.),
+        'y_range': (-1.,1.),
+        'z_range': (-1, 1),
+        'dx': 0.1,
+        'dy': 0.1,
+        'dz': 0.1,
+        'update_on_track': False, # Otherwise becomes collective and does not go in the tracker
+    }
 }

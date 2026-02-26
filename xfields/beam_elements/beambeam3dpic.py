@@ -207,6 +207,9 @@ class BeamBeamPIC3D(xt.BeamElement):
                 'both flag_luminosity and flag_lumigrid have to be enabled '
                 'to record lumigrid')
 
+        if kwargs.get('_prebuilding_kernels', False):
+            self.iscollective = False  # I need to make it part of the general tracker
+
     def track(self, particles):
 
         pp = particles
