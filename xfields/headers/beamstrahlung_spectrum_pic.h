@@ -4,7 +4,6 @@
 #include "xobjects/headers/common.h"
 #include "xfields/headers/constants.h"
 #include "xfields/headers/particle_states.h"
-#include "xfields/headers/beamstrahlung_spectrum.h"
 
 
 GPUFUN
@@ -112,7 +111,7 @@ double beamstrahlung_pic(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahl
     for (int i=0; i<max_photons; i++){
 
         double e_photon, ecrit;  // [GeV] BS photon energy and critical energy
-        if (beamstrahlung_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if quantum photon can be emitted
+        if (beamstrahlung_0_pic(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if quantum photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
            
             if (beamstrahlung_record){
