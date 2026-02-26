@@ -51,5 +51,9 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
         'dy': 0.1,
         'dz': 0.1,
         'update_on_track': False, # Otherwise becomes collective and does not go in the tracker
-    }
+    },
+    'UniformBinSlicer': {
+        'zeta_range': (-1., 1.),
+        'dzeta': 0.1,
+    },
 }

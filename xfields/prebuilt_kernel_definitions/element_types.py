@@ -16,4 +16,5 @@ DEFAULT_XFIELDS_ELEMENTS = [
 NON_TRACKING_ELEMENTS = [
     xf.beam_elements.temp_slicer.TempSlicer,
     xf.TriLinearInterpolatedFieldMap,
+    xf.UniformBinSlicer
 ]
