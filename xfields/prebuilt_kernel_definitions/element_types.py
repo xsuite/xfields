@@ -12,6 +12,7 @@ DEFAULT_XFIELDS_ELEMENTS = [
     xf.BeamBeamPIC3D,
     xf.SpaceCharge3D,
     xf.ElectronCloud,
+    xf.ElectronLensInterpolated,
 ]
 
 NON_TRACKING_ELEMENTS = [

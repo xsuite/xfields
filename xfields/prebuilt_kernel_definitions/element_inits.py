@@ -86,4 +86,8 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
             '_prebuilding_kernels': True, # Avoid unnecessary compilation
         }
     },
+    'ElectronLensInterpolated': {
+        'x_grid': np.array([-1., 0., 1.]),
+        'y_grid': np.array([-1., 0., 1.]),
+    },
 }
