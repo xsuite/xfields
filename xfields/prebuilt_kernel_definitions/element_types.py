@@ -17,5 +17,6 @@ NON_TRACKING_ELEMENTS = [
     xf.LongitudinalProfileQGaussian,
     xf.beam_elements.temp_slicer.TempSlicer,
     xf.TriLinearInterpolatedFieldMap,
-    xf.UniformBinSlicer
+    xf.UniformBinSlicer,
+    xf.slicers.CompressedProfile,
 ]
