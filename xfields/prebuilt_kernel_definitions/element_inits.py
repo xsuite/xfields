@@ -66,4 +66,24 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
         'num_slices': 10,
         'num_periods': 3,
     },
+    'TriCubicInterpolatedFieldMap': {
+        'x_range': (-1., 1.),
+        'y_range': (-1., 1.),
+        'z_range': (-1., 1.),
+        'nx': 3,
+        'ny': 3,
+        'nz': 3,
+        '_prebuilding_kernels': True, # Avoid unnecessary compilation
+    },
+    'ElectronCloud': {
+        'fieldmap': {
+            'x_range': (-1., 1.),
+            'y_range': (-1., 1.),
+            'z_range': (-1., 1.),
+            'nx': 3,
+            'ny': 3,
+            'nz': 3,
+            '_prebuilding_kernels': True, # Avoid unnecessary compilation
+        }
+    },
 }

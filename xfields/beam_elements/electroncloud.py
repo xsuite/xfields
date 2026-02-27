@@ -84,6 +84,12 @@ class ElectronCloud(xt.BeamElement):
         if _context is None:
             _context = xo.context_default
 
+        if _buffer is None:
+            _buffer = _context.new_buffer()
+
+        if isinstance(fieldmap, dict):
+            fieldmap = TriCubicInterpolatedFieldMap(_buffer=_buffer, **fieldmap)
+
         assert fieldmap is not None
 
         self.xoinitialize(

@@ -179,6 +179,7 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
                  phi_taylor=None,
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
+                 _prebuilding_kernels=False,
                  ):
 
         if _xobject is not None:
@@ -212,6 +213,10 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
                  mirror_z = mirror_z,
                  phi_taylor = nelem
                  )
+
+        # Avoid unnecessary compilation
+        if _prebuilding_kernels:
+            return
 
         self.compile_kernels(only_if_needed=True)
 
