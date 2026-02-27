@@ -176,12 +176,12 @@ class LongitudinalProfileQGaussian(xo.HybridClass):
         res = context.zeros(len(z), dtype=np.float64)
 
         if 'line_density_q_gauss' not in context.kernels.keys():
-            self.compile_kernels()
+            self.compile_kernels(only_if_needed=True)
 
         context.kernels.line_density_qgauss(prof=self._xobject, n=len(z), z=z, res=res)
 
         return res
-    
+
     def line_derivative(self, z):
         context = self._buffer.context
         res = context.zeros(len(z), dtype=np.float64)

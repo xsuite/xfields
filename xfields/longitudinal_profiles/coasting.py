@@ -3,6 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
+import xobjects as xo
 
 class LongitudinalProfileCoasting(object):
 
@@ -10,7 +11,8 @@ class LongitudinalProfileCoasting(object):
     def __init__(self, context=None, beam_line_density=None):
 
         if context is None:
-            context = ContextDefault()
+            context = xo.context_default
+        self._context = context
 
         assert beam_line_density is not None
 

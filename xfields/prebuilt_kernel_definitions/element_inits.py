@@ -56,4 +56,8 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
         'zeta_range': (-1., 1.),
         'dzeta': 0.1,
     },
+    'LongitudinalProfileQGaussian': {
+        'number_of_particles': 10.,
+        'sigma_z': 0.1,
+    },
 }
