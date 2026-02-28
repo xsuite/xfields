@@ -177,6 +177,48 @@ class SpaceCharge3D(xt.BeamElement):
         # call C tracking kernel
         super().track(particles)
 
+    def set_xy_mesh(self, x_range, y_range, *, zero_fields=True):
+        """
+        Retile the underlying fieldmap in x/y while
+        keeping the grid counts unchanged.
+
+        Args:
+            x_range (tuple[float, float]): New ``(xmin, xmax)`` in
+                meters.
+            y_range (tuple[float, float]): New ``(ymin, ymax)`` in
+                meters.
+            zero_fields (bool): If ``True``, zero stored
+                ``rho``, ``phi`` and their derivatives after retiling.
+        """
+        (xmin, xmax) = map(float, x_range)
+        (ymin, ymax) = map(float, y_range)
+        self.fieldmap.retile_xy(
+            xmin, xmax, ymin, ymax, zero_fields=zero_fields
+        )
+
+    def set_xyz_mesh(self, *, x_range, y_range, z_range,
+                     zero_fields=True):
+        """
+        Retile the underlying fieldmap in x/y/z while
+        keeping the grid counts unchanged.
+
+        Args:
+            x_range (tuple[float, float]): New ``(xmin, xmax)`` in
+                meters.
+            y_range (tuple[float, float]): New ``(ymin, ymax)`` in
+                meters.
+            z_range (tuple[float, float]): New ``(zmin, zmax)`` in
+                meters.
+            zero_fields (bool): If ``True``, zero stored
+                ``rho``, ``phi``, and their derivatives after retiling.
+        """
+        (xmin, xmax) = map(float, x_range)
+        (ymin, ymax) = map(float, y_range)
+        (zmin, zmax) = map(float, z_range)
+        self.fieldmap.retile_xyz(
+            xmin, xmax, ymin, ymax, zmin, zmax, zero_fields=zero_fields
+        )
+
 class SpaceChargeBiGaussian(xt.BeamElement):
 
     _xofields = {

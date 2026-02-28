@@ -539,6 +539,116 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
         return solver
 
+    def retile_xy(self, xmin, xmax, ymin, ymax, *, zero_fields=True):
+        """
+        Retile the x/y mesh in-place while keeping the
+        number of cells unchanged.
+
+        Args:
+            xmin (float): New minimum x coordinate in meters.
+            xmax (float): New maximum x coordinate in meters.
+            ymin (float): New minimum y coordinate in meters.
+            ymax (float): New maximum y coordinate in meters.
+            zero_fields (bool): If ``True``, zero stored
+                ``rho``, ``phi`` and their derivatives after retiling.
+        """
+        nx, ny = len(self._x_grid), len(self._y_grid)
+
+        self._x_grid = np.linspace(float(xmin), float(xmax), nx,
+                                   dtype=np.float64)
+        self._y_grid = np.linspace(float(ymin), float(ymax), ny,
+                                   dtype=np.float64)
+
+        if zero_fields:
+            self._rho[...] = 0.0
+            self._phi[...] = 0.0
+            self._dphi_dx[...] = 0.0
+            self._dphi_dy[...] = 0.0
+            self._dphi_dz[...] = 0.0
+
+        self._dx = (xmax - xmin) / (nx - 1)
+        self._dy = (ymax - ymin) / (ny - 1)
+        self._x_min = float(xmin)
+        self._y_min = float(ymin)
+
+        # Update derived volume quantities (dz unchanged)
+        self._cell_volume = self._dx * self._dy * self._dz
+        self._inv_cell_volume = 1.0 / self._cell_volume
+
+        # Refresh the solver geometry
+        scale_dx, scale_dy, scale_dz = self.scale_coordinates_in_solver
+        self.solver.refresh_geometry(
+            self._x_grid * scale_dx,
+            self._y_grid * scale_dy,
+            self._z_grid * scale_dz)
+
+    def retile_xyz(
+            self,
+            xmin,
+            xmax,
+            ymin,
+            ymax,
+            zmin,
+            zmax,
+            *,
+            zero_fields=True
+    ):
+        """
+        Retile the full x/y/z mesh in-place while
+        keeping the number of cells unchanged.
+
+        Args:
+            xmin (float): New minimum x coordinate in meters.
+            xmax (float): New maximum x coordinate in meters.
+            ymin (float): New minimum y coordinate in meters.
+            ymax (float): New maximum y coordinate in meters.
+            zmin (float): New minimum z coordinate in meters.
+            zmax (float): New maximum z coordinate in meters.
+            zero_fields (bool): If ``True``, zero stored
+                ``rho``, ``phi`` and their derivatives after retiling.
+        """
+        nx, ny, nz = self._x_grid.size, self._y_grid.size, self._z_grid.size
+
+        self._x_grid = np.linspace(
+            float(xmin),
+            float(xmax),
+            nx,
+            dtype=np.float64)
+        self._y_grid = np.linspace(
+            float(ymin),
+            float(ymax),
+            ny,
+            dtype=np.float64)
+        self._z_grid = np.linspace(
+            float(zmin),
+            float(zmax),
+            nz,
+            dtype=np.float64)
+
+        if zero_fields:
+            self._rho[...] = 0.0
+            self._phi[...] = 0.0
+            self._dphi_dx[...] = 0.0
+            self._dphi_dy[...] = 0.0
+            self._dphi_dz[...] = 0.0
+
+        self._dx = (xmax - xmin) / (nx - 1)
+        self._dy = (ymax - ymin) / (ny - 1)
+        self._dz = (zmax - zmin) / (nz - 1)
+        self._x_min = float(xmin)
+        self._y_min = float(ymin)
+        self._z_min = float(zmin)
+
+        self._cell_volume = self._dx * self._dy * self._dz
+        self._inv_cell_volume = 1.0 / self._cell_volume
+
+        # Refresh the solver geometry
+        scale_dx, scale_dy, scale_dz = self.scale_coordinates_in_solver
+        self.solver.refresh_geometry(
+            self._x_grid * scale_dx,
+            self._y_grid * scale_dy,
+            self._z_grid * scale_dz)
+
     @property
     def x_grid(self):
         """
@@ -559,6 +669,27 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
         Array with the longitudinal grid points (cell centers).
         """
         return self._z_grid
+
+    @property
+    def x_range(self):
+        """
+        Horizontal range.
+        """
+        return (float(self._x_grid[0]), float(self._x_grid[-1]))
+
+    @property
+    def y_range(self):
+        """
+        Vertical range.
+        """
+        return (float(self._y_grid[0]), float(self._y_grid[-1]))
+
+    @property
+    def z_range(self):
+        """
+        Longitudinal range.
+        """
+        return (float(self._z_grid[0]), float(self._z_grid[-1]))
 
     @property
     def nx(self):
@@ -661,5 +792,3 @@ def _configure_grid(vname, v_grid, dv, v_range, nv):
             v_grid = np.linspace(v_range[0], v_range[1], nv)
 
     return v_grid
-
-
