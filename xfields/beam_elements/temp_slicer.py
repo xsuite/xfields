@@ -103,14 +103,7 @@ class TempSlicer(xo.HybridClass):
                  _buffer=_buffer,
                  _offset=_offset)
 
-        self.compile_kernels(only_if_needed=False)
-
-    def compile_kernels(self, *args, **kwargs):
-        extra_compile_args = kwargs.pop('extra_compile_args', [])
-        extra_compile_args.append(f'-I{xt.__path__[0]}')
-        kwargs['extra_compile_args'] = extra_compile_args
-
-        return super().compile_kernels(*args, **kwargs)
+        self.compile_kernels(only_if_needed=True)
 
     def rho(self, z):
         """
