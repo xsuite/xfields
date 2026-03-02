@@ -16,6 +16,10 @@
     #define MELECTRON_GEV (0.00051099895000)
 #endif
 
+#if !defined( MELECTRON_EV )
+    #define MELECTRON_EV (510998.95)
+#endif
+
 #if !defined( MELECTRON_KG )
     #define MELECTRON_KG (9.1093837015e-31)
 #endif

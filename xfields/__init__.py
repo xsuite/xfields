@@ -16,6 +16,8 @@ from .slicers import UniformBinSlicer
 
 from .solvers.fftsolvers import FFTSolver3D
 
+from .touschek.manager import TouschekManager
+
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
 from .beam_elements.beambeam2d import ConfigForUpdateBeamBeamBiGaussian2D
@@ -25,6 +27,7 @@ from .beam_elements.beambeam3dpic import BeamBeamPIC3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
+from .beam_elements.touschek import TouschekScattering
 
 from .config_tools import replace_spacecharge_with_quasi_frozen
 from .config_tools import replace_spacecharge_with_PIC
