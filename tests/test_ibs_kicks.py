@@ -4,7 +4,7 @@ import xtrack as xt
 from cpymad.madx import Madx
 from ibs_conftest import XTRACK_TEST_DATA, get_ref_particle_from_madx_beam
 from numpy.testing import assert_allclose
-from xobjects.test_helpers import for_all_test_contexts, fix_random_seed
+from xobjects.test_helpers import fix_random_seed, for_all_test_contexts
 
 from xfields.ibs import IBSAnalyticalKick, IBSKineticKick
 from xfields.ibs._formulary import _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
@@ -236,7 +236,7 @@ def test_track_analytical_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.lag = 180
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=0, update_every=100)
+    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=line.get_length(), update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=2000,
@@ -286,7 +286,7 @@ def test_track_kinetic_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.lag = 180
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=0, update_every=100)
+    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=line.get_length(), update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=2000,
