@@ -2,10 +2,11 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
-import xfields as xf
 import xobjects as xo
 import xpart as xp
 import xtrack as xt
+
+import xfields as xf
 
 context = xo.ContextCpu(omp_num_threads="auto")
 
@@ -35,7 +36,7 @@ ibs_kick = xf.IBSKineticKick(num_slices=50)
 # the kick at the end of the line and configure it. This internally
 # provides the necessary information to the element
 line.configure_intrabeam_scattering(
-    element=ibs_kick, name="ibskick", index=-1, update_every=50
+    element=ibs_kick, name="ibskick", at=line.get_length(), update_every=50
 )
 
 ############################################

@@ -2,13 +2,13 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
-import xfields as xf
-import xobjects as xo
+import matplotlib.pyplot as plt
+import numpy as np
 import xpart as xp
 import xtrack as xt
-from xfields.ibs._formulary import _gemitt_x, _gemitt_y, _sigma_delta, _bunch_length
-import numpy as np
-import matplotlib.pyplot as plt
+
+import xfields as xf
+from xfields.ibs._formulary import _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
 
 ##########################
 # Load xt.Line from file #
@@ -27,7 +27,7 @@ tw = line.twiss(method="4d")
 # ibs_kick = xf.IBSKineticKick(num_slices=50)
 ibs_kick = xf.IBSAnalyticalKick(formalism="nagaitsev", num_slices=50)
 line.configure_intrabeam_scattering(
-    element=ibs_kick, name="ibskick", index=-1, update_every=50
+    element=ibs_kick, name="ibskick", at=line.get_length(), update_every=50
 )
 
 ################################
@@ -47,7 +47,7 @@ particles = xp.generate_matched_gaussian_bunch(
 )
 
 for turn in range(nturns):
-    print(f"Tracking turn {turn+1}/{nturns}     ", end="\r", flush=True)    
+    print(f"Tracking turn {turn+1}/{nturns}     ", end="\r", flush=True)
     line.track(particles, num_turns=1)
     epsx.append(_gemitt_x(particles, tw.betx[0], tw.dx[0]))
     epsy.append(_gemitt_y(particles, tw.bety[0], tw.dy[0]))
