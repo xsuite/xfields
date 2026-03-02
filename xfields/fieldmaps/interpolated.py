@@ -213,7 +213,6 @@ class TriLinearInterpolatedFieldMap(xo.HybridClass):
 
         self.compile_kernels(
             only_if_needed=True,
-            extra_compile_args=[f"-I{xt.__path__[0]}"],
         )
 
         if isinstance(solver, str):

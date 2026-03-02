@@ -1,14 +1,13 @@
-#ifndef XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H
-#define XFIELDS_BEAMSTRAHLUNG_SPECTRUM_H
+#ifndef XFIELDS_BEAMSTRAHLUNG_SPECTRUM_PIC_H
+#define XFIELDS_BEAMSTRAHLUNG_SPECTRUM_PIC_H
 
 #include "xobjects/headers/common.h"
 #include "xfields/headers/constants.h"
 #include "xfields/headers/particle_states.h"
-#include "xfields/headers/beamstrahlung_spectrum.h"
 
 
 GPUFUN
-int beamstrahlung_0(LocalParticle *part,
+int beamstrahlung_0_pic(LocalParticle *part,
              double energy,     // [eV] primary electron energy
              double dz,         // [m] z slice half width
              double rho_inv,    // [1/m] inverse local bending radius, changes after each photon emission
@@ -86,7 +85,7 @@ int beamstrahlung_0(LocalParticle *part,
 
 
 GPUFUN
-double beamstrahlung(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTableData beamstrahlung_table,
+double beamstrahlung_pic(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_record, RecordIndex beamstrahlung_table_index, BeamstrahlungTablePICData beamstrahlung_table,
      	double Fr,  // [1] radial force sqrt[(px' - px)^2 + (py' - py)^2]/Dt, Dt=1
 	double dz   // [m] z slice half width: step between 2 slices ((z_max - z_min) / 2)
 ){
@@ -110,9 +109,9 @@ double beamstrahlung(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_
     int j = 0;
     double e_photon_array[1000];
     for (int i=0; i<max_photons; i++){
-   
+
         double e_photon, ecrit;  // [GeV] BS photon energy and critical energy
-        if (beamstrahlung_0(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if quantum photon can be emitted
+        if (beamstrahlung_0_pic(part, energy, dz, rho_inv, &e_photon, &ecrit)){  // see if quantum photon can be emitted
             e_photon_array[j] = e_photon;  // [GeV]
            
             if (beamstrahlung_record){
@@ -122,14 +121,14 @@ double beamstrahlung(LocalParticle *part, BeamBeamPIC3DRecordData beamstrahlung_
 
                 // The returned slot id is negative if record is NULL or if record is full
                 if (i_slot>=0){
-                    BeamstrahlungTableData_set_at_element(            beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
-                    BeamstrahlungTableData_set_at_turn(               beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part));
-		    BeamstrahlungTableData_set_particle_id(           beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
-                    BeamstrahlungTableData_set_primary_energy(        beamstrahlung_table, i_slot, energy);
-		    BeamstrahlungTableData_set_photon_id(             beamstrahlung_table, i_slot, j);
-		    BeamstrahlungTableData_set_photon_energy(         beamstrahlung_table, i_slot, e_photon*1e9);
-                    BeamstrahlungTableData_set_photon_critical_energy(beamstrahlung_table, i_slot, ecrit*1e9);
-                    BeamstrahlungTableData_set_rho_inv(               beamstrahlung_table, i_slot, rho_inv);
+                    BeamstrahlungTablePICData_set_at_element(            beamstrahlung_table, i_slot, LocalParticle_get_at_element(part));
+                    BeamstrahlungTablePICData_set_at_turn(               beamstrahlung_table, i_slot, LocalParticle_get_at_turn(part));
+		            BeamstrahlungTablePICData_set_particle_id(           beamstrahlung_table, i_slot, LocalParticle_get_particle_id(part));
+                    BeamstrahlungTablePICData_set_primary_energy(        beamstrahlung_table, i_slot, energy);
+		            BeamstrahlungTablePICData_set_photon_id(             beamstrahlung_table, i_slot, j);
+		            BeamstrahlungTablePICData_set_photon_energy(         beamstrahlung_table, i_slot, e_photon*1e9);
+                    BeamstrahlungTablePICData_set_photon_critical_energy(beamstrahlung_table, i_slot, ecrit*1e9);
+                    BeamstrahlungTablePICData_set_rho_inv(               beamstrahlung_table, i_slot, rho_inv);
                 }
             }
 

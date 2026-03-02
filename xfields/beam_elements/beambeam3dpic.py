@@ -12,7 +12,28 @@ from xfields import TriLinearInterpolatedFieldMap
 from .beambeam3d import _init_alpha_phi
 
 
-class BeamstrahlungTable(xo.HybridClass):
+class LumiTablePIC(xo.HybridClass):
+    """
+    Buffer size should be equal to the number of tracking turns.
+    If more turns are tracked than the buffer size, the surplus data will be dropped.
+    Luminosity contributions from multiple beambeam elements in the same tracking turn are aggregated in the same buffer element.
+
+    Fields:
+     _index: custom C struct for metadata
+     at_element: [1] element index in the xtrack.Line object, starts with 0
+     at_turn: [1] turn index, starts with 0
+     lumigrid: [1] 3D grid of the macroparticle density distribution, obtained from the numerical solver. Dimension of buffer is: (nt=nz, 2, nx, ny, nz),
+     where 0: fieldmap_self, 1: fieldmap_other, and (nx, ny, nz) are the number of cells (+1) in the PIC grid, and nt is the number of timesteps which is =dz here
+     luminosity: [m^-2] integrated luminosity per bunch crossing for one turn, obtained from the charge density grid. Turn by turn lumi. This is overwritten at every call.
+    """
+    _xofields = {
+        '_index': xt.RecordIndex,
+        'at_turn': xo.Int64[:],
+        'at_element': xo.Int64[:],  # size: n_turns
+        'luminosity': xo.Float64[:],  # size: n_turns
+    }
+
+class BeamstrahlungTablePIC(xo.HybridClass):
     """
     Buffer size should be larger than the number of expected BS photons emitted. Test on single collision for estimate.
     If more photons are emitted than the buffer size, the surplus data will be dropped.
@@ -43,33 +64,12 @@ class BeamstrahlungTable(xo.HybridClass):
       'rho_inv': xo.Float64[:],
     }
 
-class LumiTable(xo.HybridClass):
-    """
-    Buffer size should be equal to the number of tracking turns.
-    If more turns are tracked than the buffer size, the surplus data will be dropped.
-    Luminosity contributions from multiple beambeam elements in the same tracking turn are aggregated in the same buffer element.
-
-    Fields:
-     _index: custom C struct for metadata
-     at_element: [1] element index in the xtrack.Line object, starts with 0
-     at_turn: [1] turn index, starts with 0
-     lumigrid: [1] 3D grid of the macroparticle density distribution, obtained from the numerical solver. Dimension of buffer is: (nt=nz, 2, nx, ny, nz),
-     where 0: fieldmap_self, 1: fieldmap_other, and (nx, ny, nz) are the number of cells (+1) in the PIC grid, and nt is the number of timesteps which is =dz here
-     luminosity: [m^-2] integrated luminosity per bunch crossing for one turn, obtained from the charge density grid. Turn by turn lumi. This is overwritten at every call.
-    """
-    _xofields = {
-        '_index': xt.RecordIndex,
-        'at_turn': xo.Int64[:],
-        'at_element': xo.Int64[:],  # size: n_turns
-        'luminosity': xo.Float64[:],  # size: n_turns
-    }
-
 # currently not possible to have a record table with elements of different size so lumigrid is an attribute
 
 class BeamBeamPIC3DRecord(xo.HybridClass):
     _xofields = {
-        'beamstrahlungtable': BeamstrahlungTable,
-        'lumitable': LumiTable,
+        'beamstrahlungtable': BeamstrahlungTablePIC,
+        'lumitable': LumiTablePIC,
     }
 
 class BeamBeamPIC3D(xt.BeamElement):
@@ -206,6 +206,9 @@ class BeamBeamPIC3D(xt.BeamElement):
             raise ValueError(
                 'both flag_luminosity and flag_lumigrid have to be enabled '
                 'to record lumigrid')
+
+        if kwargs.get('_prebuilding_kernels', False):
+            self.iscollective = False  # I need to make it part of the general tracker
 
     def track(self, particles):
 

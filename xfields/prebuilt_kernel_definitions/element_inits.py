@@ -33,5 +33,61 @@ XFIELDS_ELEMENTS_INIT_DEFAULTS = {
             'number_of_particles': 1,
             'sigma_z': 0,
         }
-    }
+    },
+    'BeamBeamPIC3D': {
+        'x_range': (-1., 1.),
+        'y_range': (-1., 1.),
+        'dx': 0.1,
+        'dy': 0.1,
+        'z_range': (-1., 1.),
+        'dz': 0.1,
+        '_prebuilding_kernels': True, # # Otherwise becomes collective and does not go in the tracker
+    },
+    'SpaceCharge3D': {
+        'x_range': (-1.,1.),
+        'y_range': (-1.,1.),
+        'z_range': (-1, 1),
+        'dx': 0.1,
+        'dy': 0.1,
+        'dz': 0.1,
+        'update_on_track': False, # Otherwise becomes collective and does not go in the tracker
+    },
+    'UniformBinSlicer': {
+        'zeta_range': (-1., 1.),
+        'dzeta': 0.1,
+    },
+    'LongitudinalProfileQGaussian': {
+        'number_of_particles': 10.,
+        'sigma_z': 0.1,
+    },
+    'CompressedProfile': {
+        'moments': ['x'],
+        'zeta_range': (-1., 1.),
+        'num_slices': 10,
+        'num_periods': 3,
+    },
+    'TriCubicInterpolatedFieldMap': {
+        'x_range': (-1., 1.),
+        'y_range': (-1., 1.),
+        'z_range': (-1., 1.),
+        'nx': 3,
+        'ny': 3,
+        'nz': 3,
+        '_prebuilding_kernels': True, # Avoid unnecessary compilation
+    },
+    'ElectronCloud': {
+        'fieldmap': {
+            'x_range': (-1., 1.),
+            'y_range': (-1., 1.),
+            'z_range': (-1., 1.),
+            'nx': 3,
+            'ny': 3,
+            'nz': 3,
+            '_prebuilding_kernels': True, # Avoid unnecessary compilation
+        }
+    },
+    'ElectronLensInterpolated': {
+        'x_grid': np.array([-1., 0., 1.]),
+        'y_grid': np.array([-1., 0., 1.]),
+    },
 }

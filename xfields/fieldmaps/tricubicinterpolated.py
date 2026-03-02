@@ -179,6 +179,7 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
                  phi_taylor=None,
                  scale_coordinates_in_solver=(1.,1.,1.),
                  updatable=True,
+                 _prebuilding_kernels=False,
                  ):
 
         if _xobject is not None:
@@ -213,6 +214,10 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
                  phi_taylor = nelem
                  )
 
+        # Avoid unnecessary compilation
+        if _prebuilding_kernels:
+            return
+
         self.compile_kernels(only_if_needed=True)
 
         if phi_taylor is not None:
@@ -228,13 +233,6 @@ class TriCubicInterpolatedFieldMap(xo.HybridClass):
             else:
                 if solver is not None and rho is not None:
                     self.update_phi_from_rho()
-
-    def compile_kernels(self, *args, **kwargs):
-        extra_compile_args = kwargs.pop('extra_compile_args', [])
-        extra_compile_args.append(f'-I{xt.__path__[0]}')
-        kwargs['extra_compile_args'] = extra_compile_args
-
-        return super().compile_kernels(*args, **kwargs)
 
     def _assert_updatable(self):
         assert self.updatable, 'This FieldMap is not updatable!'
