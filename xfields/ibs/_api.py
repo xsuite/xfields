@@ -140,8 +140,8 @@ def configure_intrabeam_scattering(
     element : IBSKick, optional
         If provided, the element is first inserted in the line,
         before proceeding to configuration. In this case the keyword
-        arguments are passed on to the `line.insert_element` method.
-        This will also discard and rebuild the line tracker.
+        arguments are passed on to the `line.insert` method. This will
+        also discard and rebuild the line tracker.
     update_every : int
         The frequency at which to recompute the kick coefficients, in
         number of turns. They will be computed at the first turn of
@@ -149,8 +149,8 @@ def configure_intrabeam_scattering(
 
     **kwargs : dict, optional
         Required if an element is provided. Keyword arguments are
-        passed to the `line.insert_element()` method according to
-        `line.insert_element(element=element, **kwargs)`.
+        passed to the `line.insert()` method according to
+        `line.insert(obj=element, what=name, **kwargs)`.
 
     Raises
     ------
