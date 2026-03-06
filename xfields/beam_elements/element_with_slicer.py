@@ -52,6 +52,8 @@ class ElementWithSlicer(xt.BeamElement):
 
         self.xoinitialize(**kwargs)
 
+        self.iscollective = True
+
         self.with_compressed_profile = with_compressed_profile
         self.pipeline_manager = None
 
@@ -77,8 +79,22 @@ class ElementWithSlicer(xt.BeamElement):
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper
                 bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
                 filling_scheme=filling_scheme,
+                bunch_selection=bunch_selection,
                 num_turns=num_turns,
                 circumference=circumference)
+
+    @staticmethod
+    def _check_filling_scheme_info(filling_scheme, bunch_numbers, num_slots):
+        if filling_scheme is None and bunch_numbers is None:
+            if num_slots is None:
+                num_slots = 1
+            filling_scheme = np.ones(num_slots, dtype=np.int64)
+            bunch_numbers = np.arange(num_slots, dtype=np.int64)
+        else:
+            assert (num_slots is None and filling_scheme is not None and
+                    bunch_numbers is not None)
+
+        return filling_scheme, bunch_numbers
 
     def init_slicer(self, zeta_range, num_slices, filling_scheme,
                     bunch_selection, bunch_spacing_zeta, slicer_moments):
@@ -104,19 +120,33 @@ class ElementWithSlicer(xt.BeamElement):
             num_slices=None,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=None,  # This is P in the paper
             filling_scheme=None,
+            bunch_selection=None,
             num_turns=1,
             circumference=None):
+
 
         if filling_scheme is not None:
             i_last_bunch = np.where(filling_scheme)[0][-1]
             num_periods = i_last_bunch + 1
         else:
             num_periods = 1
+            
+        if bunch_selection is None:
+            num_targets = num_periods
+            first_target_slot = 0
+        else:
+            slots_in_slicer = self.slicer.filled_slots[bunch_selection]
+            first_target_slot = np.min(slots_in_slicer)
+            num_targets = 1+ np.max(slots_in_slicer)-first_target_slot
+
+            
         self.moments_data = CompressedProfile(
                 moments=self.source_moments + ['result'],
                 zeta_range=zeta_range,
                 num_slices=num_slices,
                 bunch_spacing_zeta=bunch_spacing_zeta,
+                first_target_slot = first_target_slot,
+                num_targets = num_targets,
                 num_periods=num_periods,
                 num_turns=num_turns,
                 circumference=circumference,
@@ -173,10 +203,8 @@ class ElementWithSlicer(xt.BeamElement):
         for i_bunch_in_slicer, bunch_number in enumerate(slicer._xobject.bunch_selection):
             moments_bunch = {}
             for nn in means.keys():
-                moments_bunch[nn] = np.atleast_2d(means[nn])[i_bunch_in_slicer, :]
-
-            moments_bunch['num_particles'] = np.atleast_2d(slicer.num_particles)[i_bunch_in_slicer, :]
-
+                moments_bunch[nn] = self._context.nplike_lib.atleast_2d(means[nn])[i_bunch_in_slicer, :]
+            moments_bunch['num_particles'] = self._context.nplike_lib.atleast_2d(slicer.num_particles)[i_bunch_in_slicer, :]
             self.moments_data.set_moments(
                 moments=moments_bunch,
                 i_turn=0,

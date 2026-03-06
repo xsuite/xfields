@@ -1,3 +1,4 @@
+import time, os
 import numpy as np
 from scipy.constants import e as qe
 
@@ -60,13 +61,27 @@ class _ConvData:
 
     def my_rfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            return self._context.nplike_lib.fft.rfft(data, **kwargs)
+            if hasattr(self._context,'omp_num_threads'):
+                if self._context.omp_num_threads == 'auto':
+                    n_cpu = len(os.sched_getaffinity(0))
+                    if n_cpu > 1:
+                        kwargs['workers'] = n_cpu
+                elif self._context.omp_num_threads > 1:
+                    kwargs['workers'] = self._context.omp_num_threads
+            return self._context.splike_lib.fft.rfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
 
     def my_irfft(self, data, **kwargs):
         if type(self._context) in (xo.ContextCpu, xo.ContextCupy):
-            return self._context.nplike_lib.fft.irfft(data, **kwargs)
+            if hasattr(self._context,'omp_num_threads'):
+                if self._context.omp_num_threads == 'auto':
+                    n_cpu = len(os.sched_getaffinity(0))
+                    if n_cpu > 1:
+                        kwargs['workers'] = n_cpu
+                elif self._context.omp_num_threads > 1:
+                    kwargs['workers'] = self._context.omp_num_threads
+            return self._context.splike_lib.fft.irfft(data, **kwargs)
         else:
             raise NotImplementedError('Waketacker implemented only for CPU and Cupy')
 
@@ -77,14 +92,14 @@ class _ConvData:
             self._M_aux = moments_data._M_aux
             self._N_1 = moments_data._N_1
             self._N_S = moments_data._N_S
-            self._N_T = moments_data._N_S
+            self._N_T = moments_data._N_T
             self._BB = 1  # B in the paper
             # (for now we assume that B=0 is the first bunch in time and the
             # last one in zeta)
             self._AA = self._BB - self._N_S
-            self._CC = self._AA
-            self._DD = self._BB
-
+            self._DD = 1-moments_data._first_target_slot
+            self._CC = self._DD - self._N_T
+            
             # Build wake matrix
             self.z_wake = _build_z_wake(moments_data._z_a, moments_data._z_b,
                                         moments_data.num_turns,
@@ -93,6 +108,7 @@ class _ConvData:
                                         moments_data.dz, self._AA,
                                         self._BB, self._CC, self._DD,
                                         moments_data._z_P)
+
             assert beta0 is not None
             # here below I had to add float() to beta0 because when using Cupy
             # context particles.beta0[0] turns out to be a 0d array. To be checked
@@ -102,8 +118,8 @@ class _ConvData:
 
             # only positive frequencies because we are using rfft
             phase_term = self._context.nparray_to_context_array(np.exp(
-                1j * 2 * np.pi * np.arange(self._M_aux//2 + 1) *
-                ((self._N_S - 1) * self._N_aux + self._N_1) / self._M_aux))
+                1j * 2 * np.pi * np.arange(int(self._M_aux)//2 + 1) *
+                ((int(self._N_S) - 1) * int(self._N_aux) + int(self._N_1)) / int(self._M_aux)))
 
         else:
             raise NotImplementedError('Flattened wakes are not implemented yet')
@@ -148,6 +164,8 @@ class _ConvData:
         self._compute_convolution(moment_names=self.component.source_moments,
                                   moment_exponents=self.component._source_moment_exponents,
                                   moments_data=moments_data)
+
+
         # Apply kicks
         interpolated_result = particles.zeta * 0
         assert moments_data.moments_names[-1] == 'result'
@@ -161,6 +179,7 @@ class _ConvData:
             i_slot_particles=i_slot_particles,
             i_slice_particles=i_slice_particles,
             out=interpolated_result)
+            
         # interpolated result will be zero for lost particles (so nothing to
         # do for them)
         scaling_constant = particles.q0**2 * qe**2 / (
@@ -234,7 +253,7 @@ def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
 
     z_c = z_a  # For wakefield, z_c = z_a
     z_d = z_b  # For wakefield, z_d = z_b
-    z_wake = np.zeros((num_turns, m_aux))
+    z_wake = np.zeros((int(num_turns), int(m_aux)))
     for tt in range(num_turns):
         z_a_turn = z_a + tt * circumference
         z_b_turn = z_b + tt * circumference
@@ -246,6 +265,6 @@ def _build_z_wake(z_a, z_b, num_turns, n_aux, m_aux, circumference, dz,
             z_p = 0
 
         for ii, ll in enumerate(range(
-                cc - bb + 1, dd - aa)):
+                int(cc - bb + 1), int(dd - aa))):
             z_wake[tt, ii * n_aux:(ii + 1) * n_aux] = temp_z + ll * z_p
     return z_wake
