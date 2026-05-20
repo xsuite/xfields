@@ -101,6 +101,83 @@ class FFTSolver3D(Solver):
         self._gint_rep_transf_dev = gint_rep_dev
         self.fftplan = fftplan
 
+    def refresh_geometry(self, x_grid, y_grid, z_grid):
+        """
+        Rebuild the 3D Green's function used by the solver.
+
+        The number of cells in each direction must match the original
+        solver.
+
+        Args:
+            x_grid (array-like): Monotonic array of x cell centers in
+                meters.
+            y_grid (array-like): Monotonic array of y cell centers in
+                meters.
+            z_grid (array-like): Monotonic array of z cell centers in
+                meters.
+        """
+        nx, ny, nz = len(x_grid), len(y_grid), len(z_grid)
+        assert (nx, ny, nz) == (self.nx, self.ny, self.nz), (
+            "refresh_geometry requires unchanged (nx, ny, nz)"
+        )
+
+        dx = float(x_grid[1] - x_grid[0])
+        dy = float(y_grid[1] - y_grid[0])
+        dz = float(z_grid[1] - z_grid[0])
+
+        xg_F = np.arange(0, nx + 2) * dx - dx / 2.0
+        yg_F = np.arange(0, ny + 2) * dy - dy / 2.0
+        zg_F = np.arange(0, nz + 2) * dz - dz / 2.0
+        XX_F, YY_F, ZZ_F = np.meshgrid(xg_F, yg_F, zg_F, indexing='ij')
+
+        F_temp = primitive_func_3d(XX_F, YY_F, ZZ_F)
+
+        gint_rep = np.zeros(
+            (2 * nx, 2 * ny, 2 * nz),
+            dtype=np.complex128,
+            order='F')
+
+        gint_rep[:nx + 1, :ny + 1, :nz + 1] = (
+            F_temp[1:, 1:, 1:]
+            - F_temp[:-1, 1:, 1:]
+            - F_temp[1:, :-1, 1:]
+            + F_temp[:-1, :-1, 1:]
+            - F_temp[1:, 1:, :-1]
+            + F_temp[:-1, 1:, :-1]
+            + F_temp[1:, :-1, :-1]
+            - F_temp[:-1, :-1, :-1]
+        )
+
+        gint_rep[nx + 1:, :ny + 1, :nz + 1] = gint_rep[nx - 1:0:-1,
+                                                       :ny + 1,
+                                                       :nz + 1]
+        gint_rep[:nx + 1, ny + 1:, :nz + 1] = gint_rep[:nx + 1,
+                                                       ny - 1:0:-1,
+                                                       :nz + 1]
+        gint_rep[nx + 1:, ny + 1:, :nz + 1] = gint_rep[nx - 1:0:-1,
+                                                       ny - 1:0:-1,
+                                                       :nz + 1]
+        gint_rep[:nx + 1, :ny + 1, nz + 1:] = gint_rep[:nx + 1,
+                                                       :ny + 1,
+                                                       nz - 1:0:-1]
+        gint_rep[nx + 1:, :ny + 1, nz + 1:] = gint_rep[nx - 1:0:-1,
+                                                       :ny + 1,
+                                                       nz - 1:0:-1]
+        gint_rep[:nx + 1, ny + 1:, nz + 1:] = gint_rep[:nx + 1,
+                                                       ny - 1:0:-1,
+                                                       nz - 1:0:-1]
+        gint_rep[nx + 1:, ny + 1:, nz + 1:] = gint_rep[nx - 1:0:-1,
+                                                       ny - 1:0:-1,
+                                                       nz - 1:0:-1]
+
+        gint_rep_dev = self.context.nparray_to_context_array(gint_rep)
+        self.fftplan.transform(gint_rep_dev)
+
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        self._gint_rep_transf_dev = gint_rep_dev
+
     #@profile
     def solve(self, rho):
 
@@ -212,6 +289,57 @@ class FFTSolver2p5D(FFTSolver3D):
         self.nz = nz
         self._gint_rep_transf_dev = gint_rep_transf_dev
         self.fftplan = fftplan
+
+    def refresh_geometry(self, x_grid, y_grid, z_grid):
+        """
+        Rebuild the 2D Green's function used by the solver.
+
+        The number of cells in each direction must match the original
+        solver.
+
+        Args:
+            x_grid (array-like): Monotonic array of x cell centers in
+                meters.
+            y_grid (array-like): Monotonic array of y cell centers in
+                meters.
+            z_grid (array-like): Monotonic array of z cell centers in
+                meters.
+        """
+        nx, ny, nz = len(x_grid), len(y_grid), len(z_grid)
+        assert (nx, ny, nz) == (self.nx, self.ny, self.nz), (
+            "refresh_geometry requires unchanged (nx, ny, nz)"
+        )
+
+        dx = float(x_grid[1] - x_grid[0])
+        dy = float(y_grid[1] - y_grid[0])
+        dz = float(z_grid[1] - z_grid[0])
+
+        xg_F = np.arange(0, nx + 2) * dx - dx / 2.0
+        yg_F = np.arange(0, ny + 2) * dy - dy / 2.0
+        XX_F, YY_F = np.meshgrid(xg_F, yg_F, indexing='ij')
+
+        F_temp = primitive_func_2p5d(XX_F, YY_F)
+
+        gint_rep = np.zeros((2 * nx, 2 * ny), dtype=np.complex128, order='F')
+        gint_rep[:nx + 1, :ny + 1] = (
+            F_temp[1:, 1:]
+            - F_temp[:-1, 1:]
+            - F_temp[1:, :-1]
+            + F_temp[:-1, :-1]
+        )
+        gint_rep[nx + 1:, :ny + 1] = gint_rep[nx - 1:0:-1, :ny + 1]
+        gint_rep[:nx + 1, ny + 1:] = gint_rep[:nx + 1, ny - 1:0:-1]
+        gint_rep[nx + 1:, ny + 1:] = gint_rep[nx - 1:0:-1, ny - 1:0:-1]
+
+        gint_rep_transf = np.fft.fftn(gint_rep, axes=(0, 1))
+        gint_rep_transf_dev = self.context.nparray_to_context_array(
+            np.atleast_3d(gint_rep_transf)
+        )
+
+        self.dx = dx
+        self.dy = dy
+        self.dz = dz
+        self._gint_rep_transf_dev = gint_rep_transf_dev
 
 class FFTSolver2p5DAveraged(Solver):
 
