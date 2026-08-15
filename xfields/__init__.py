@@ -22,6 +22,7 @@ from .line_tools import XfieldsLineAPI
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
 from .beam_elements.beambeam2d import ConfigForUpdateBeamBeamBiGaussian2D
+from .beam_elements.beambeam_multibunch_2d import BeamBeamBiGaussianMultibunch2D
 from .beam_elements.beambeam3d import BeamBeamBiGaussian3D
 from .beam_elements.beambeam3d import ConfigForUpdateBeamBeamBiGaussian3D
 from .beam_elements.beambeam3dpic import BeamBeamPIC3D
