@@ -6,8 +6,7 @@
 #ifndef XFIELDS_BEAMBEAM_MULTIBUNCH_2D_H
 #define XFIELDS_BEAMBEAM_MULTIBUNCH_2D_H
 
-#include "xtrack/headers/track.h"
-#include "xfields/fieldmaps/bigaussian_src/bigaussian.h"
+#include "xfields/beam_elements/beambeam_src/beambeam2d_kick.h"
 
 
 // Find, in a zeta-SORTED bunch array `zeta_arr` of length `n`, the bunch
@@ -96,11 +95,6 @@ void BeamBeamBiGaussianMultibunch2D_track_local_particle(
         double const x = LocalParticle_get_x(part);
         double const y = LocalParticle_get_y(part);
         double const zeta = LocalParticle_get_zeta(part);
-        double const part_q0 = LocalParticle_get_q0(part);
-        double const part_mass0 = LocalParticle_get_mass0(part);
-        double const part_chi = LocalParticle_get_chi(part);
-        double const part_beta0 = LocalParticle_get_beta0(part);
-        double const part_gamma0 = LocalParticle_get_gamma0(part);
 
         // This particle (bunch) at `zeta` encounters the opposing bunch located
         // at `zeta + zeta_offset` (indexing of the OTHER beam), found by the
@@ -143,26 +137,19 @@ void BeamBeamBiGaussianMultibunch2D_track_local_particle(
         double const x_bar = x - other_beam_shift_x;
         double const y_bar = y - other_beam_shift_y;
 
-        // Get transverse fields
-        double Ex, Ey; // Ex = -dphi/dx, Ey = -dphi/dy
-        get_Ex_Ey_gauss(x_bar, y_bar,
-            sigma_x, sigma_y,
+        BeamBeamBiGaussian2D_apply_kick(
+            part,
+            x_bar,
+            y_bar,
+            other_beam_num_particles,
+            other_beam_q0,
+            other_beam_beta0,
+            sigma_x*sigma_x,
+            0.,
+            sigma_y*sigma_y,
             min_sigma_diff,
-            &Ex, &Ey);
-
-        const double charge_mass_ratio = part_chi*QELEM*part_q0
-                    /(part_mass0*QELEM/(C_LIGHT*C_LIGHT));
-        const double factor = (charge_mass_ratio
-                    * other_beam_num_particles * other_beam_q0 * QELEM
-                    / (part_gamma0*part_beta0*C_LIGHT*C_LIGHT)
-                    * (1+other_beam_beta0 * part_beta0)
-                    / (other_beam_beta0 + part_beta0));
-
-        double const dpx = factor * Ex;
-        double const dpy = factor * Ey;
-
-        LocalParticle_add_to_px(part, dpx);
-        LocalParticle_add_to_py(part, dpy);
+            0.,
+            0.);
     END_PER_PARTICLE_BLOCK;
 }
 
