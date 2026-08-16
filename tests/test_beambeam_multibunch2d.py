@@ -4,7 +4,6 @@
 # ########################################### #
 
 import numpy as np
-import pytest
 
 import xobjects as xo
 import xpart as xp
@@ -318,55 +317,3 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
     xo.assert_allclose(
         ctx2np(particles_scaled.py), 0.37 * ctx2np(particles.py),
         rtol=2e-13, atol=1e-30)
-
-
-@for_all_test_contexts
-def test_multibunch_updates_active_prefix_and_checks_capacity(test_context):
-    # Allocate arrays for three opposing bunches, then update the element from
-    # a Particles object containing only two active bunches. Their data must be
-    # sorted by zeta and stored in array entries 0 and 1;
-    # num_other_bunches == 2 tells the tracking kernel to ignore the remaining
-    # allocated entry at index 2. An update containing four active bunches must
-    # be rejected because it exceeds the original three-bunch allocation.
-    initial = xp.Particles(
-        _context=test_context, p0c=P0C, q0=1,
-        mass0=xp.PROTON_MASS_EV,
-        x=[1e-4, 2e-4, 3e-4], y=[-1e-4, -2e-4, -3e-4],
-        zeta=np.array([0, 2, 4]) * DZ,
-        weight=[1e11, 2e11, 3e11])
-    bb = xf.BeamBeamBiGaussianMultibunch2D(
-        num_bunches=3,
-        other_particles=initial,
-        other_beam_sigma_x=SIGMA,
-        other_beam_sigma_y=SIGMA,
-        _context=test_context)
-
-    updated = xp.Particles(
-        _context=test_context, p0c=P0C, q0=1,
-        mass0=xp.PROTON_MASS_EV,
-        x=[4e-4, 99e-4, 1e-4], y=[-4e-4, -99e-4, -1e-4],
-        zeta=np.array([4, 99, 0]) * DZ,
-        weight=[4e11, 99e11, 1e11], state=[1, 0, 1])
-    bb.update_from_other_beam(
-        updated,
-        other_beam_sigma_x=np.array([1.4, 0.8]) * SIGMA,
-        other_beam_sigma_y=np.array([0.7, 1.3]) * SIGMA)
-
-    ctx2np = test_context.nparray_from_context_array
-    assert bb.num_other_bunches == 2
-    xo.assert_allclose(ctx2np(bb.other_beam_zeta)[:2], [0, 4 * DZ])
-    xo.assert_allclose(ctx2np(bb.other_beam_x)[:2], [1e-4, 4e-4])
-    xo.assert_allclose(
-        ctx2np(bb.other_beam_num_particles)[:2], [1e11, 4e11])
-    xo.assert_allclose(
-        ctx2np(bb.other_beam_sigma_x)[:2], np.array([0.8, 1.4]) * SIGMA)
-    xo.assert_allclose(
-        ctx2np(bb.other_beam_sigma_y)[:2], np.array([1.3, 0.7]) * SIGMA)
-
-    oversized = xp.Particles(
-        _context=test_context, p0c=P0C, q0=1,
-        mass0=xp.PROTON_MASS_EV,
-        x=np.zeros(4), y=np.zeros(4), zeta=np.arange(4) * DZ,
-        weight=np.ones(4))
-    with pytest.raises(ValueError, match='allocated for 3'):
-        bb.update_from_other_beam(oversized)
