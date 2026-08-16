@@ -4,7 +4,9 @@
 # ########################################### #
 
 import numpy as np
+import pytest
 
+import xobjects as xo
 import xpart as xp
 import xfields as xf
 
@@ -233,3 +235,138 @@ def test_multibunch_zeta_period(test_context):
     # stored sizes follow the zeta ordering
     assert np.allclose(bb_shuffled.other_beam_sigma_x, sig_arr, rtol=1e-15)
     assert np.allclose(bb_shuffled.other_beam_sigma_y, sig_arr[::-1], rtol=1e-15)
+
+
+@for_all_test_contexts
+def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
+    # Check that a multibunch element selects the centroid, population and
+    # elliptical sizes of each matched opposing bunch and gives the same kick
+    # as the corresponding scalar BB2D. Also check that a tracked bunch paired
+    # with an empty opposing slot receives no kick, and cover partial strength
+    # scaling.
+    slots = np.array([3, 8, 14])
+    centroids_x = np.array([0.2e-3, -0.5e-3, 0.9e-3])
+    centroids_y = np.array([-0.7e-3, 0.4e-3, 0.1e-3])
+    populations = np.array([0.8e11, 1.7e11, 2.6e11])
+    sigma_x = np.array([0.7, 1.2, 1.8]) * SIGMA
+    sigma_y = np.array([1.6, 0.9, 1.3]) * SIGMA
+    opposing = xp.Particles(
+        _context=test_context, p0c=P0C, q0=1,
+        mass0=xp.PROTON_MASS_EV,
+        x=centroids_x, y=centroids_y, zeta=slots * DZ,
+        weight=populations)
+    bb = xf.BeamBeamBiGaussianMultibunch2D(
+        other_particles=opposing,
+        zeta_match_tol=0.4 * DZ,
+        zeta_period=N_SLOTS * DZ,
+        other_beam_q0=1,
+        other_beam_beta0=BETA0,
+        other_beam_sigma_x=sigma_x,
+        other_beam_sigma_y=sigma_y,
+        min_sigma_diff=1e-12,
+        _context=test_context)
+
+    probe_slots = np.append(slots, 20)
+    particles = xp.Particles(
+        _context=test_context, p0c=P0C, q0=1,
+        mass0=xp.PROTON_MASS_EV,
+        x=np.array([1.1e-3, -0.2e-3, 0.6e-3, 1.4e-3]),
+        y=np.array([0.3e-3, 1.0e-3, -0.8e-3, 0.5e-3]),
+        zeta=probe_slots * DZ)
+    particles_initial = particles.copy()
+    bb.track(particles)
+
+    expected_px = np.zeros(len(probe_slots))
+    expected_py = np.zeros(len(probe_slots))
+    for ii in range(len(slots)):
+        particle_ref = xp.Particles(
+            _context=test_context, p0c=P0C, q0=1,
+            mass0=xp.PROTON_MASS_EV,
+            x=float(test_context.nparray_from_context_array(
+                particles_initial.x)[ii]),
+            y=float(test_context.nparray_from_context_array(
+                particles_initial.y)[ii]))
+        reference = xf.BeamBeamBiGaussian2D(
+            other_beam_q0=1,
+            other_beam_beta0=BETA0,
+            other_beam_num_particles=populations[ii],
+            other_beam_Sigma_11=sigma_x[ii]**2,
+            other_beam_Sigma_33=sigma_y[ii]**2,
+            other_beam_shift_x=centroids_x[ii],
+            other_beam_shift_y=centroids_y[ii],
+            min_sigma_diff=1e-12,
+            _context=test_context)
+        reference.track(particle_ref)
+        expected_px[ii] = test_context.nparray_from_context_array(
+            particle_ref.px)[0]
+        expected_py[ii] = test_context.nparray_from_context_array(
+            particle_ref.py)[0]
+
+    ctx2np = test_context.nparray_from_context_array
+    xo.assert_allclose(
+        ctx2np(particles.px), expected_px, rtol=2e-13, atol=1e-30)
+    xo.assert_allclose(
+        ctx2np(particles.py), expected_py, rtol=2e-13, atol=1e-30)
+
+    bb_scaled = bb.copy(_context=test_context)
+    bb_scaled.scale_strength = 0.37
+    particles_scaled = particles_initial.copy()
+    bb_scaled.track(particles_scaled)
+    xo.assert_allclose(
+        ctx2np(particles_scaled.px), 0.37 * ctx2np(particles.px),
+        rtol=2e-13, atol=1e-30)
+    xo.assert_allclose(
+        ctx2np(particles_scaled.py), 0.37 * ctx2np(particles.py),
+        rtol=2e-13, atol=1e-30)
+
+
+@for_all_test_contexts
+def test_multibunch_updates_active_prefix_and_checks_capacity(test_context):
+    # Allocate arrays for three opposing bunches, then update the element from
+    # a Particles object containing only two active bunches. Their data must be
+    # sorted by zeta and stored in array entries 0 and 1;
+    # num_other_bunches == 2 tells the tracking kernel to ignore the remaining
+    # allocated entry at index 2. An update containing four active bunches must
+    # be rejected because it exceeds the original three-bunch allocation.
+    initial = xp.Particles(
+        _context=test_context, p0c=P0C, q0=1,
+        mass0=xp.PROTON_MASS_EV,
+        x=[1e-4, 2e-4, 3e-4], y=[-1e-4, -2e-4, -3e-4],
+        zeta=np.array([0, 2, 4]) * DZ,
+        weight=[1e11, 2e11, 3e11])
+    bb = xf.BeamBeamBiGaussianMultibunch2D(
+        num_bunches=3,
+        other_particles=initial,
+        other_beam_sigma_x=SIGMA,
+        other_beam_sigma_y=SIGMA,
+        _context=test_context)
+
+    updated = xp.Particles(
+        _context=test_context, p0c=P0C, q0=1,
+        mass0=xp.PROTON_MASS_EV,
+        x=[4e-4, 99e-4, 1e-4], y=[-4e-4, -99e-4, -1e-4],
+        zeta=np.array([4, 99, 0]) * DZ,
+        weight=[4e11, 99e11, 1e11], state=[1, 0, 1])
+    bb.update_from_other_beam(
+        updated,
+        other_beam_sigma_x=np.array([1.4, 0.8]) * SIGMA,
+        other_beam_sigma_y=np.array([0.7, 1.3]) * SIGMA)
+
+    ctx2np = test_context.nparray_from_context_array
+    assert bb.num_other_bunches == 2
+    xo.assert_allclose(ctx2np(bb.other_beam_zeta)[:2], [0, 4 * DZ])
+    xo.assert_allclose(ctx2np(bb.other_beam_x)[:2], [1e-4, 4e-4])
+    xo.assert_allclose(
+        ctx2np(bb.other_beam_num_particles)[:2], [1e11, 4e11])
+    xo.assert_allclose(
+        ctx2np(bb.other_beam_sigma_x)[:2], np.array([0.8, 1.4]) * SIGMA)
+    xo.assert_allclose(
+        ctx2np(bb.other_beam_sigma_y)[:2], np.array([1.3, 0.7]) * SIGMA)
+
+    oversized = xp.Particles(
+        _context=test_context, p0c=P0C, q0=1,
+        mass0=xp.PROTON_MASS_EV,
+        x=np.zeros(4), y=np.zeros(4), zeta=np.arange(4) * DZ,
+        weight=np.ones(4))
+    with pytest.raises(ValueError, match='allocated for 3'):
+        bb.update_from_other_beam(oversized)
