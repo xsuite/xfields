@@ -74,8 +74,6 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
     ]
 
     def __init__(self,
-                    num_bunches=None,
-
                     scale_strength=1.,
 
                     zeta_offset=0.,
@@ -86,7 +84,6 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
                     other_beam_beta0=1,
 
                     coherent=False,
-                    num_own_bunches=None,
                     own_beam_zeta=None,
                     sigma_x=None,
                     sigma_y=None,
@@ -102,9 +99,6 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
 
         """
         Args:
-            num_bunches (int): Maximum number of bunches of the opposing beam.
-                Used to allocate the internal arrays. Inferred from
-                ``other_particles`` if not given.
             scale_strength (float): Used to scale the beam-beam force strength.
                 Scales ``other_beam_q0``.
             zeta_offset (float): A particle of this beam at ``zeta`` interacts
@@ -126,9 +120,6 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
                 model) the effective size is the convolution
                 ``sqrt(sigma_own**2 + sigma_other**2)`` and ``sigma_x``/
                 ``sigma_y`` are required.
-            num_own_bunches (int): Number of bunches of THIS (the tracked) beam,
-                to allocate the own per-bunch arrays. Inferred from
-                ``own_beam_zeta`` (or 1) if not given.
             own_beam_zeta (float array): Longitudinal positions (bunch labels)
                 of this beam's bunches, one per bunch, used by the kernel to
                 match each tracked particle to its own bunch (and hence its own
@@ -147,8 +138,8 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
                 beam in which each active macroparticle represents one bunch.
                 Its centroids (``x``, ``y``), longitudinal positions (``zeta``)
                 and populations (``weight``) are loaded into the element (as by
-                :meth:`update_from_other_beam`). Also used to infer
-                ``num_bunches`` when not given explicitly.
+                :meth:`update_from_other_beam`). The active particles determine
+                the exact lengths of the opposing-bunch arrays.
             other_beam_sigma_x, other_beam_sigma_y (float or float array):
                 Transverse sizes of each opposing bunch (aligned with the
                 active particles of ``other_particles``). A scalar is
@@ -162,27 +153,41 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
             self.xoinitialize(**kwargs)
             return
 
-        # Determine the number of active bunches in the opposing beam
-        n_active = 0
-        if other_particles is not None:
-            state = other_particles._context.nparray_from_context_array(
-                other_particles.state)
-            n_active = int((state > 0).sum())
+        # Dictionary/JSON restoration already contains the exactly sized
+        # arrays and active counts, so no representative Particles is needed.
+        if other_particles is None and 'other_beam_zeta' in kwargs:
+            self.xoinitialize(
+                scale_strength=scale_strength,
+                zeta_offset=zeta_offset,
+                zeta_match_tol=zeta_match_tol,
+                zeta_period=zeta_period,
+                other_beam_q0=other_beam_q0,
+                other_beam_beta0=other_beam_beta0,
+                coherent=coherent,
+                own_beam_zeta=own_beam_zeta,
+                sigma_x=sigma_x,
+                sigma_y=sigma_y,
+                other_beam_sigma_x=other_beam_sigma_x,
+                other_beam_sigma_y=other_beam_sigma_y,
+                min_sigma_diff=min_sigma_diff,
+                **kwargs)
+            return
 
-        if num_bunches is None:
-            num_bunches = n_active
+        if other_particles is None:
+            raise ValueError(
+                '`other_particles` is required to infer the opposing filling '
+                'and allocate its arrays.')
+        state = other_particles._context.nparray_from_context_array(
+            other_particles.state)
+        num_bunches = int((state > 0).sum())
         if num_bunches == 0:
             raise ValueError(
-                'Specify `num_bunches` or `other_particles` to allocate the '
-                'element.')
-        assert num_bunches >= n_active, (
-            '`num_bunches` must be >= the number of bunches in `other_particles`')
+                '`other_particles` must contain at least one active bunch.')
 
-        # Own beam allocation (this beam's bunches: own zeta grid + own sizes)
-        if num_own_bunches is None:
-            num_own_bunches = (len(np.atleast_1d(own_beam_zeta))
-                               if own_beam_zeta is not None else 1)
-        num_own_bunches = max(int(num_own_bunches), 1)
+        # The own filling determines the exact own-array lengths. With no
+        # explicit grid, one entry represents a size common to all own bunches.
+        num_own_bunches = (len(np.atleast_1d(own_beam_zeta))
+                           if own_beam_zeta is not None else 1)
 
         self.xoinitialize(
             own_beam_zeta=num_own_bunches,
@@ -227,29 +232,20 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
 
         self.min_sigma_diff = min_sigma_diff
 
-        self.num_other_bunches = 0
-        if other_particles is not None:
-            self.update_from_other_beam(
-                other_particles,
-                other_beam_sigma_x=other_beam_sigma_x,
-                other_beam_sigma_y=other_beam_sigma_y)
-        else:
-            # sizes stored now, loaded bunches later (update_from_other_beam)
-            if other_beam_sigma_x is not None:
-                self._set_per_bunch('other_beam_sigma_x', other_beam_sigma_x,
-                                    num_bunches)
-            if other_beam_sigma_y is not None:
-                self._set_per_bunch('other_beam_sigma_y', other_beam_sigma_y,
-                                    num_bunches)
+        self.num_other_bunches = num_bunches
+        self.update_from_other_beam(
+            other_particles,
+            other_beam_sigma_x=other_beam_sigma_x,
+            other_beam_sigma_y=other_beam_sigma_y)
 
     def _set_per_bunch(self, name, value, num_bunches):
         value = np.atleast_1d(np.asarray(value, dtype=float))
         if value.size == 1:
             value = np.full(num_bunches, value[0])
-        assert value.size <= num_bunches, (
+        assert value.size == num_bunches, (
             f'`{name}` has {value.size} entries but the element was allocated '
             f'for {num_bunches} bunches.')
-        getattr(self, name)[:value.size] = self._arr2ctx(value)
+        getattr(self, name)[:] = self._arr2ctx(value)
 
     def update_from_own_beam(self, zeta=None, sigma_x=None, sigma_y=None):
         """Set THIS (the tracked) beam's per-bunch data. With ``zeta`` given, set
@@ -262,17 +258,16 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
         dynamic-beta sizes each iteration. A scalar size is broadcast. The
         OWN-beam analogue of :meth:`update_from_other_beam`; here x/y/population
         come from the tracked particles, so only zeta and the sizes are stored.
-        Writes to a prefix, so it is robust to the array capacity exceeding the
-        active bunch count (a setup sized for a larger filling than the solved
-        one)."""
+        A change in the number of bunches requires element reconfiguration."""
         if zeta is not None:
             zeta = np.atleast_1d(np.asarray(zeta, dtype=float))
             n = len(zeta)
             capacity = len(self.own_beam_zeta)
-            if n > capacity:
+            if n != capacity:
                 raise ValueError(
-                    f'This beam has {n} bunches but the element was allocated '
-                    f'for {capacity}. Increase `num_own_bunches`.')
+                    f'This beam has {n} bunches but the element has arrays for '
+                    f'{capacity}; reconfigure the element when the filling '
+                    'changes.')
             order = np.argsort(zeta, kind='stable')
             self.num_own_bunches = n
             self.own_beam_zeta[:n] = self._arr2ctx(zeta[order])
@@ -322,10 +317,11 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
 
         n = len(x)
         capacity = len(self.other_beam_zeta)
-        if n > capacity:
+        if n != capacity:
             raise ValueError(
-                f'The opposing beam has {n} bunches but the element was '
-                f'allocated for {capacity}. Increase `num_bunches`.')
+                f'The opposing beam has {n} bunches but the element has '
+                f'arrays for {capacity}; reconfigure the element when the '
+                'filling changes.')
 
         # The tracking kernel finds the encounter partner by binary search, so
         # the bunches are stored sorted in zeta.

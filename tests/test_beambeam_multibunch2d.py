@@ -4,6 +4,7 @@
 # ########################################### #
 
 import numpy as np
+import pytest
 
 import xobjects as xo
 import xpart as xp
@@ -110,7 +111,8 @@ def test_multibunch_coherent(test_context):
     # own sizes are required in the coherent mode
     try:
         xf.BeamBeamBiGaussianMultibunch2D(
-            num_bunches=1, other_beam_q0=1.0, other_beam_beta0=BETA0,
+            other_particles=opp,
+            other_beam_q0=1.0, other_beam_beta0=BETA0,
             coherent=True, _context=test_context)
         raise AssertionError('coherent=True without sigma_x/y must raise')
     except ValueError:
@@ -307,6 +309,17 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
     xo.assert_allclose(
         ctx2np(particles.py), expected_py, rtol=2e-13, atol=1e-30)
 
+    restored = xf.BeamBeamBiGaussianMultibunch2D.from_dict(
+        bb.to_dict(), _context=test_context)
+    particles_restored = particles_initial.copy()
+    restored.track(particles_restored)
+    xo.assert_allclose(
+        ctx2np(particles_restored.px), ctx2np(particles.px),
+        rtol=0, atol=0)
+    xo.assert_allclose(
+        ctx2np(particles_restored.py), ctx2np(particles.py),
+        rtol=0, atol=0)
+
     bb_scaled = bb.copy(_context=test_context)
     bb_scaled.scale_strength = 0.37
     particles_scaled = particles_initial.copy()
@@ -317,3 +330,15 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
     xo.assert_allclose(
         ctx2np(particles_scaled.py), 0.37 * ctx2np(particles.py),
         rtol=2e-13, atol=1e-30)
+
+    # The three active representative particles determine arrays of length
+    # three. A different bunch count is a filling change and requires the
+    # caller to construct a newly sized element.
+    assert len(bb.other_beam_zeta) == len(slots)
+    opposing_with_different_filling = xp.Particles(
+        _context=test_context, p0c=P0C, q0=1,
+        mass0=xp.PROTON_MASS_EV,
+        x=centroids_x[:2], y=centroids_y[:2], zeta=slots[:2] * DZ,
+        weight=populations[:2])
+    with pytest.raises(ValueError, match='reconfigure the element'):
+        bb.update_from_other_beam(opposing_with_different_filling)
