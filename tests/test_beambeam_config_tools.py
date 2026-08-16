@@ -11,8 +11,10 @@ import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
     _compute_delays,
+    find_bb_separations,
     generate_set_of_bb_encounters_1beam,
 )
+from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
 
 
 def test_generate_beambeam_encounter_table():
@@ -99,6 +101,7 @@ def _make_conventional_toy_ring(suffix, shared_ips):
     names = []
     kick_x = 1e-6 if suffix == 'cw' else -2e-6
     kick_y = -0.5e-6 if suffix == 'cw' else 1.5e-6
+    bend_angle = 2e-3 if suffix == 'cw' else 1e-3
     for ii in range(8):
         if ii == 2:
             marker_name = 'ip1'
@@ -112,16 +115,24 @@ def _make_conventional_toy_ring(suffix, shared_ips):
             xt.Multipole(
                 knl=[kick_x if ii == 0 else 0, 0.05],
                 ksl=[kick_y if ii == 0 else 0]),
-            xt.Drift(length=5.0),
+            xt.Drift(length=2.0),
+            xt.Bend(length=1.0, angle=bend_angle),
+            xt.Drift(length=2.0),
             xt.Multipole(knl=[0, -0.05]),
-            xt.Drift(length=5.0),
+            xt.Drift(length=2.0),
+            xt.Bend(length=1.0, angle=-bend_angle),
+            xt.Drift(length=2.0),
         ])
         names.extend([
             marker_name,
             f'qf{ii}_{suffix}',
-            f'drift_a{ii}_{suffix}',
+            f'drift_a0{ii}_{suffix}',
+            f'bend_a{ii}_{suffix}',
+            f'drift_a1{ii}_{suffix}',
             f'qd{ii}_{suffix}',
-            f'drift_b{ii}_{suffix}',
+            f'drift_b0{ii}_{suffix}',
+            f'bend_b{ii}_{suffix}',
+            f'drift_b1{ii}_{suffix}',
         ])
 
     line = xt.Line(
@@ -192,8 +203,9 @@ def test_conventional_install_and_configure_characterization():
         element_names_cw=df_cw.index,
         element_names_acw=df_cw['other_elementName'],
         nemitt_x=2e-6, nemitt_y=2.5e-6,
-        survey_separation=False,
-        twiss_cw=tw_cw, twiss_acw=tw_acw)
+        survey_separation=True,
+        twiss_cw=tw_cw, twiss_acw=tw_acw,
+        acw_is_reversed=True)
     for orientation, twiss in (('cw', tw_cw), ('acw', tw_acw)):
         names = shared_geometry[f'element_name_{orientation}']
         for coordinate in ('x', 'px', 'y', 'py'):
@@ -201,6 +213,38 @@ def test_conventional_install_and_configure_characterization():
                 shared_geometry[f'{coordinate}_{orientation}'].to_numpy(),
                 [twiss[coordinate, name] for name in names],
                 rtol=0, atol=0)
+
+    surveys_cw = {
+        ip: env.cw.survey(element0=ip, reverse=False)
+        for ip in ('ip1', 'ip2')}
+    surveys_acw = {
+        ip: env.acw.survey(element0=ip, reverse=False).reverse()
+        for ip in ('ip1', 'ip2')}
+    legacy_separation_cw = {}
+    legacy_separation_acw = {}
+    for row in shared_geometry.itertuples(index=False):
+        point_cw = MadPoint(
+            row.element_name_cw, use_twiss=True, use_survey=True,
+            xsuite_survey=surveys_cw[row.ip_name], xsuite_twiss=tw_cw)
+        point_acw = MadPoint(
+            row.element_name_acw, use_twiss=True, use_survey=True,
+            xsuite_survey=surveys_acw[row.ip_name], xsuite_twiss=tw_acw)
+        sep_x_cw, sep_y_cw = find_bb_separations(
+            points_weak=[point_cw], points_strong=[point_acw])
+        sep_x_acw, sep_y_acw = find_bb_separations(
+            points_weak=[point_acw], points_strong=[point_cw])
+        legacy_separation_cw[row.element_name_cw] = (
+            sep_x_cw[0], sep_y_cw[0])
+        legacy_separation_acw[row.element_name_acw] = (
+            sep_x_acw[0], sep_y_acw[0])
+        xo.assert_allclose(row.separation_x_cw, sep_x_cw[0],
+                           rtol=0, atol=1e-14)
+        xo.assert_allclose(row.separation_y_cw, sep_y_cw[0],
+                           rtol=0, atol=1e-14)
+        xo.assert_allclose(row.separation_x_acw, sep_x_acw[0],
+                           rtol=0, atol=1e-14)
+        xo.assert_allclose(row.separation_y_acw, sep_y_acw[0],
+                           rtol=0, atol=1e-14)
 
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
@@ -218,11 +262,11 @@ def test_conventional_install_and_configure_characterization():
         cov_acw['Sigma33', 'bb_lr.r1b2_01'], rtol=1e-14)
     xo.assert_allclose(
         lr_cw.other_beam_shift_x,
-        tw_acw['x', 'bb_lr.r1b2_01'] - tw_cw['x', 'bb_lr.r1b1_01'],
+        legacy_separation_cw['bb_lr.r1b1_01'][0],
         rtol=0, atol=1e-14)
     xo.assert_allclose(
         lr_cw.other_beam_shift_y,
-        tw_acw['y', 'bb_lr.r1b2_01'] - tw_cw['y', 'bb_lr.r1b1_01'],
+        legacy_separation_cw['bb_lr.r1b1_01'][1],
         rtol=0, atol=1e-14)
     xo.assert_allclose(
         lr_cw.ref_shift_x, tw_cw['x', 'bb_lr.r1b1_01'], rtol=0, atol=1e-14)
@@ -245,11 +289,11 @@ def test_conventional_install_and_configure_characterization():
         assert getattr(ho_cw, f'slices_other_beam_Sigma_{sigma_name}')[0] == 0
     xo.assert_allclose(
         ho_cw.other_beam_shift_x,
-        tw_acw['x', 'bb_ho.c1b2_00'] - tw_cw['x', 'bb_ho.c1b1_00'],
+        legacy_separation_cw['bb_ho.c1b1_00'][0],
         rtol=0, atol=1e-14)
     xo.assert_allclose(
         ho_cw.other_beam_shift_y,
-        tw_acw['y', 'bb_ho.c1b2_00'] - tw_cw['y', 'bb_ho.c1b1_00'],
+        legacy_separation_cw['bb_ho.c1b1_00'][1],
         rtol=0, atol=1e-14)
     delta_px = (tw_cw['px', 'bb_ho.c1b1_00']
                 - tw_acw['px', 'bb_ho.c1b2_00'])
@@ -276,8 +320,34 @@ def test_conventional_install_and_configure_characterization():
         lr_acw.other_beam_Sigma_11,
         cov_cw['Sigma11', 'bb_lr.r1b1_01'], rtol=1e-14)
     xo.assert_allclose(
+        lr_acw.other_beam_shift_x,
+        -legacy_separation_acw['bb_lr.r1b2_01'][0],
+        rtol=0, atol=1e-14)
+    xo.assert_allclose(
+        lr_acw.other_beam_shift_y,
+        legacy_separation_acw['bb_lr.r1b2_01'][1],
+        rtol=0, atol=1e-14)
+    xo.assert_allclose(
         ho_acw.slices_other_beam_Sigma_33[0],
         cov_cw['Sigma33', 'bb_ho.c1b1_00'], rtol=1e-14)
+    xo.assert_allclose(
+        ho_acw.other_beam_shift_x,
+        -legacy_separation_acw['bb_ho.c1b2_00'][0],
+        rtol=0, atol=1e-14)
+    xo.assert_allclose(
+        ho_acw.other_beam_shift_y,
+        legacy_separation_acw['bb_ho.c1b2_00'][1],
+        rtol=0, atol=1e-14)
+    delta_px_acw = (tw_acw['px', 'bb_ho.c1b2_00']
+                    - tw_cw['px', 'bb_ho.c1b1_00'])
+    delta_py_acw = -(tw_acw['py', 'bb_ho.c1b2_00']
+                     - tw_cw['py', 'bb_ho.c1b1_00'])
+    xo.assert_allclose(
+        2 * ho_acw.phi * np.cos(ho_acw.alpha), delta_px_acw,
+        rtol=0, atol=1e-14)
+    xo.assert_allclose(
+        2 * ho_acw.phi * np.sin(ho_acw.alpha), delta_py_acw,
+        rtol=0, atol=1e-14)
 
     assert env['beambeam_scale'] == 1
     env['beambeam_scale'] = 0.37

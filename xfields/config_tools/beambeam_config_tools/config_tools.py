@@ -88,8 +88,9 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             element_names_cw=bb_df_cw.index,
             element_names_acw=bb_df_cw['other_elementName'],
             nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-            survey_separation=False,
-            twiss_cw=twiss_cw, twiss_acw=twiss_acw)
+            survey_separation=True,
+            twiss_cw=twiss_cw, twiss_acw=twiss_acw,
+            acw_is_reversed=True)
 
     for bb_df, line, orientation in zip(
         [bb_df_cw, bb_df_acw], [line_cw, line_acw], ['cw', 'acw']):
@@ -106,16 +107,19 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                 twiss = twiss.reverse()
             twisses[orientation] = twiss
 
-        surveys = {}
-
-        for ip_name in ip_names:
-            sv_ip = line.survey(element0=ip_name, reverse=False) # Ignore twiss_default for reverse
-            if orientation == 'acw':
-                sv_ip = sv_ip.reverse()
-            surveys[ip_name] = sv_ip
-            assert sv_ip['X', ip_name] == 0
-            assert sv_ip['Y', ip_name] == 0
-            assert sv_ip['Z', ip_name] == 0
+        surveys = None
+        if shared_geometry is None:
+            surveys = {}
+            for ip_name in ip_names:
+                sv_ip = line.survey(
+                    element0=ip_name,
+                    reverse=False)  # Ignore twiss_default for reverse
+                if orientation == 'acw':
+                    sv_ip = sv_ip.reverse()
+                surveys[ip_name] = sv_ip
+                assert sv_ip['X', ip_name] == 0
+                assert sv_ip['Y', ip_name] == 0
+                assert sv_ip['Z', ip_name] == 0
 
         sigmas = None
         if shared_geometry is None:
@@ -139,7 +143,8 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
     # Get geometry and optics at the partner encounter
     if not use_antisymmetry:
         get_partner_position_and_optics(bb_df_cw, bb_df_acw,
-                                        crab_strong_beam=crab_strong_beam)
+            crab_strong_beam=crab_strong_beam,
+            include_lab_positions=shared_geometry is None)
     else:
         if line_cw is not None:
             get_partner_position_and_optics_antisymmetry(bb_df_cw,
@@ -151,17 +156,26 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
                                     separation_bumps=separation_bumps)
 
     # Compute separation, crossing plane rotation, crossing angle and xma
-    for bb_df in [bb_df_cw, bb_df_acw]:
+    for bb_df, orientation in zip(
+            [bb_df_cw, bb_df_acw], ['cw', 'acw']):
 
         if bb_df is None:
             continue
 
-        bb_df['separation_x'], bb_df['separation_y'] = find_bb_separations(
-             points_weak=bb_df['self_lab_position'].values,
-             points_strong=bb_df['other_lab_position'].values,
-             names=bb_df.index.values)
-
-        compute_dpx_dpy(bb_df)
+        if shared_geometry is not None:
+            shared_by_element = shared_geometry.set_index(
+                f'element_name_{orientation}')
+            for field in ('separation_x', 'separation_y', 'dpx', 'dpy'):
+                bb_df[field] = [
+                    shared_by_element.loc[name][f'{field}_{orientation}']
+                    for name in bb_df.index]
+        else:
+            bb_df['separation_x'], bb_df['separation_y'] = \
+                find_bb_separations(
+                    points_weak=bb_df['self_lab_position'].values,
+                    points_strong=bb_df['other_lab_position'].values,
+                    names=bb_df.index.values)
+            compute_dpx_dpy(bb_df)
         compute_local_crossing_angle_and_plane(bb_df)
 
         if crab_strong_beam:
@@ -584,10 +598,11 @@ def compute_geometry_and_optics(
     for ele_name in bb_df.index.values:
         ip_name = bb_df['ip_name'][ele_name]
 
-        bb_df.loc[ele_name, 'self_lab_position'] = MadPoint(ele_name, None,
-                        use_twiss=True, use_survey=True,
-                        xsuite_survey=xsuite_survey[ip_name],
-                        xsuite_twiss=xsuite_twiss)
+        if shared_geometry is None:
+            bb_df.loc[ele_name, 'self_lab_position'] = MadPoint(
+                ele_name, None, use_twiss=True, use_survey=True,
+                xsuite_survey=xsuite_survey[ip_name],
+                xsuite_twiss=xsuite_twiss)
 
         bb_df.loc[ele_name, 's'] = xsuite_twiss['s', ele_name]
         bb_df.loc[ele_name, 's_ip'] = xsuite_twiss['s', ip_name]
@@ -611,7 +626,7 @@ def compute_beambeam_geometry(
         encounter_table, line_cw, line_acw,
         element_names_cw, element_names_acw,
         nemitt_x, nemitt_y, survey_separation=True,
-        twiss_cw=None, twiss_acw=None):
+        twiss_cw=None, twiss_acw=None, acw_is_reversed=False):
     """Compute element-independent optics and survey encounter geometry.
 
     ``encounter_table`` has one row per paired observation instance. A
@@ -622,10 +637,11 @@ def compute_beambeam_geometry(
     kick conventions deliberately remain outside this helper.
 
     Precomputed Twiss tables can be supplied when a caller needs explicit
-    orientation conventions. Returns a copy of the encounter table augmented
-    with element names, closed-orbit coordinates, Twiss beta functions,
-    transverse beam covariances and reference-trajectory separation, together
-    with the two Twiss tables.
+    orientation conventions. Set ``acw_is_reversed`` when ``twiss_acw`` has
+    been reversed from the stored B4 line to the physical ACW convention.
+    Returns a copy of the encounter table augmented with element names,
+    closed-orbit coordinates, Twiss beta functions, transverse beam
+    covariances and separation geometry, together with the two Twiss tables.
     """
     geometry = encounter_table.reset_index(drop=True).copy()
     element_names_cw = list(element_names_cw)
@@ -665,9 +681,28 @@ def compute_beambeam_geometry(
                 float(covariance[f'Sigma{sigma_name}', name])
                 for name in names]
 
+    # Rigid-bunch convention: CW reference trajectory minus ACW reference
+    # trajectory, expressed in the CW encounter frame.
     separation_x = np.zeros(n_encounters)
     separation_y = np.zeros(n_encounters)
+
+    # Conventional weak-strong convention: strong beam minus weak beam,
+    # including the design closed orbits, expressed in each weak-beam frame.
+    separation_x_cw = (
+        geometry['x_acw'] - geometry['x_cw']).to_numpy(copy=True)
+    separation_y_cw = (
+        geometry['y_acw'] - geometry['y_cw']).to_numpy(copy=True)
+    separation_x_acw = -separation_x_cw
+    separation_y_acw = -separation_y_cw
+    geometry['dpx_cw'] = geometry['px_cw'] - geometry['px_acw']
+    geometry['dpy_cw'] = geometry['py_cw'] - geometry['py_acw']
+    geometry['dpx_acw'] = -geometry['dpx_cw']
+    geometry['dpy_acw'] = -geometry['dpy_cw']
+
     if survey_separation:
+        reverse_global = np.diag([-1., 1., -1.])
+        reverse_local = (np.diag([-1., 1., -1.])
+                         if acw_is_reversed else np.eye(3))
         for ip_name in geometry['ip_name'].unique():
             at_ip = geometry['ip_name'] == ip_name
             row_indices = np.flatnonzero(at_ip.to_numpy())
@@ -679,17 +714,41 @@ def compute_beambeam_geometry(
             for row_index, name_cw, name_acw in zip(
                     row_indices, names_cw, names_acw):
                 position_cw, frame_cw = frames_cw[name_cw]
-                position_acw, _ = frames_acw[name_acw]
-                # The ACW line is stored in its direction of travel. Rotate its
-                # local frame by 180 degrees about the vertical before taking
-                # the separation in the CW encounter frame.
-                delta = position_cw - np.array([
-                    -position_acw[0], position_acw[1], -position_acw[2]])
-                separation_x[row_index] = delta @ frame_cw[:, 0]
-                separation_y[row_index] = delta @ frame_cw[:, 1]
+                position_acw_stored, frame_acw_stored = frames_acw[name_acw]
+                position_acw = reverse_global @ position_acw_stored
+                frame_acw = (
+                    reverse_global @ frame_acw_stored @ reverse_local)
+
+                reference_delta = position_cw - position_acw
+                separation_x[row_index] = reference_delta @ frame_cw[:, 0]
+                separation_y[row_index] = reference_delta @ frame_cw[:, 1]
+
+                orbit_cw = (frame_cw[:, 0] * geometry.at[row_index, 'x_cw']
+                            + frame_cw[:, 1]
+                            * geometry.at[row_index, 'y_cw'])
+                orbit_acw = (
+                    frame_acw[:, 0] * geometry.at[row_index, 'x_acw']
+                    + frame_acw[:, 1] * geometry.at[row_index, 'y_acw'])
+                total_cw = position_cw + orbit_cw
+                total_acw = position_acw + orbit_acw
+
+                strong_minus_weak_cw = total_acw - total_cw
+                separation_x_cw[row_index] = (
+                    strong_minus_weak_cw @ frame_cw[:, 0])
+                separation_y_cw[row_index] = (
+                    strong_minus_weak_cw @ frame_cw[:, 1])
+                strong_minus_weak_acw = -strong_minus_weak_cw
+                separation_x_acw[row_index] = (
+                    strong_minus_weak_acw @ frame_acw[:, 0])
+                separation_y_acw[row_index] = (
+                    strong_minus_weak_acw @ frame_acw[:, 1])
 
     geometry['separation_x'] = separation_x
     geometry['separation_y'] = separation_y
+    geometry['separation_x_cw'] = separation_x_cw
+    geometry['separation_y_cw'] = separation_y_cw
+    geometry['separation_x_acw'] = separation_x_acw
+    geometry['separation_y_acw'] = separation_y_acw
     return geometry, twisses
 
 
@@ -734,7 +793,9 @@ def _local_survey(line, ref_name, names):
     }
 
 
-def get_partner_position_and_optics(bb_df_b1, bb_df_b2, crab_strong_beam):
+def get_partner_position_and_optics(
+        bb_df_b1, bb_df_b2, crab_strong_beam,
+        include_lab_positions=True):
 
     dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}
 
@@ -749,11 +810,11 @@ def get_partner_position_and_optics(bb_df_b1, bb_df_b2, crab_strong_beam):
             other_df = dict_dfs[other_beam_nn]
             other_ee = self_df.loc[ee, 'other_elementName']
 
-            # Get position of the other beam in its own survey
-            other_lab_position = copy.deepcopy(other_df.loc[other_ee, 'self_lab_position'])
-
-            # Store positions
-            self_df.loc[ee, 'other_lab_position'] = other_lab_position
+            if include_lab_positions:
+                # Get position of the other beam in its own survey
+                other_lab_position = copy.deepcopy(
+                    other_df.loc[other_ee, 'self_lab_position'])
+                self_df.loc[ee, 'other_lab_position'] = other_lab_position
 
             # Get sigmas of the other beam in its own survey
             for ss in _sigma_names:
