@@ -183,6 +183,25 @@ def test_conventional_install_and_configure_characterization():
     cov_cw = tw_cw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
     cov_acw = tw_acw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
 
+    encounter_instances = df_cw[[
+        'ip_name', 'label', 'identifier']].rename(
+            columns={'label': 'encounter_type'}).reset_index(drop=True)
+    shared_geometry, _ = xf.compute_beambeam_geometry(
+        encounter_table=encounter_instances,
+        line_cw=env.cw, line_acw=env.acw,
+        element_names_cw=df_cw.index,
+        element_names_acw=df_cw['other_elementName'],
+        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        survey_separation=False,
+        twiss_cw=tw_cw, twiss_acw=tw_acw)
+    for orientation, twiss in (('cw', tw_cw), ('acw', tw_acw)):
+        names = shared_geometry[f'element_name_{orientation}']
+        for coordinate in ('x', 'px', 'y', 'py'):
+            xo.assert_allclose(
+                shared_geometry[f'{coordinate}_{orientation}'].to_numpy(),
+                [twiss[coordinate, name] for name in names],
+                rtol=0, atol=0)
+
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
         nemitt_x=2e-6, nemitt_y=2.5e-6,

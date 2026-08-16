@@ -70,18 +70,41 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             'If you are using antisymmetry, you need to provide only one beam'
             ' (for now...).')
 
+    shared_geometry = None
     twisses = {}
+    if not use_antisymmetry:
+        # Preserve the conventional orientation rules explicitly: CW follows
+        # the stored line, while the stored B4 line is reversed to the physical
+        # ACW beam convention. Head-on slices are paired observation instances
+        # here, even though they share one logical head-on encounter.
+        twiss_cw = line_cw.twiss(reverse=False)
+        twiss_acw = line_acw.twiss(reverse=False).reverse()
+        encounter_instances = bb_df_cw[[
+            'ip_name', 'label', 'identifier']].rename(
+                columns={'label': 'encounter_type'}).reset_index(drop=True)
+        shared_geometry, twisses = compute_beambeam_geometry(
+            encounter_table=encounter_instances,
+            line_cw=line_cw, line_acw=line_acw,
+            element_names_cw=bb_df_cw.index,
+            element_names_acw=bb_df_cw['other_elementName'],
+            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+            survey_separation=False,
+            twiss_cw=twiss_cw, twiss_acw=twiss_acw)
+
     for bb_df, line, orientation in zip(
         [bb_df_cw, bb_df_acw], [line_cw, line_acw], ['cw', 'acw']):
 
         if bb_df is None:
             continue
 
-        twiss = line.twiss(reverse=False) # Ignore twiss_default for reverse
-        if orientation == 'acw':
-            tw_acw = twiss
-            twiss = twiss.reverse()
-        twisses[orientation] = twiss
+        if shared_geometry is not None:
+            twiss = twisses[orientation]
+        else:
+            twiss = line.twiss(
+                reverse=False)  # Ignore twiss_default for reverse
+            if orientation == 'acw':
+                twiss = twiss.reverse()
+            twisses[orientation] = twiss
 
         surveys = {}
 
@@ -94,8 +117,10 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             assert sv_ip['Y', ip_name] == 0
             assert sv_ip['Z', ip_name] == 0
 
-        sigmas = twiss.get_beam_covariance(
-            nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+        sigmas = None
+        if shared_geometry is None:
+            sigmas = twiss.get_beam_covariance(
+                nemitt_x=nemitt_x, nemitt_y=nemitt_y)
 
         bb_df['self_num_particles'] = num_particles * bb_df['self_frac_of_bunch']
 
@@ -104,7 +129,9 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             bb_df=bb_df,
             xsuite_twiss=twiss,
             xsuite_survey=surveys,
-            xsuite_sigmas=sigmas)
+            xsuite_sigmas=sigmas,
+            shared_geometry=shared_geometry,
+            orientation=orientation)
 
         if crab_strong_beam:
             measure_crabbing(line, bb_df, reverse=orientation=='acw')
@@ -526,8 +553,9 @@ def get_counter_rotating(bb_df):
 
     return c_bb_df
 
-def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=None,
-                            xsuite_sigmas=None):
+def compute_geometry_and_optics(
+        bb_df=None, xsuite_twiss=None, xsuite_survey=None,
+        xsuite_sigmas=None, shared_geometry=None, orientation=None):
 
 
     # Get positions of the bb encounters (absolute from survey), closed orbit
@@ -548,6 +576,11 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
     bb_df['self_Sigma_34'] = None
     bb_df['self_Sigma_44'] = None
 
+    if shared_geometry is not None:
+        assert orientation in ('cw', 'acw')
+        shared_by_element = shared_geometry.set_index(
+            f'element_name_{orientation}')
+
     for ele_name in bb_df.index.values:
         ip_name = bb_df['ip_name'][ele_name]
 
@@ -559,28 +592,40 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
         bb_df.loc[ele_name, 's'] = xsuite_twiss['s', ele_name]
         bb_df.loc[ele_name, 's_ip'] = xsuite_twiss['s', ip_name]
 
-        # Get the sigmas for the element
-        i_sigma = np.where(np.array(xsuite_sigmas.name) == ele_name)[0][0]
-        for ss in [
-            '11', '12', '13', '14', '22', '23', '24', '33', '34', '44']:
-            bb_df.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
-                                                    'Sigma'+ss][i_sigma]
+        # Get the sigmas for the element. The standard two-beam path consumes
+        # the shared element-independent geometry; antisymmetry retains its
+        # established single-line covariance path for now.
+        if shared_geometry is not None:
+            for ss in _sigma_names:
+                bb_df.loc[ele_name, f'self_Sigma_{ss}'] = \
+                    shared_by_element.loc[ele_name][
+                        f'Sigma_{ss}_{orientation}']
+        else:
+            i_sigma = np.where(np.array(xsuite_sigmas.name) == ele_name)[0][0]
+            for ss in _sigma_names:
+                bb_df.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
+                                                        'Sigma'+ss][i_sigma]
 
 
 def compute_beambeam_geometry(
         encounter_table, line_cw, line_acw,
         element_names_cw, element_names_acw,
-        nemitt_x, nemitt_y, survey_separation=True):
+        nemitt_x, nemitt_y, survey_separation=True,
+        twiss_cw=None, twiss_acw=None):
     """Compute element-independent optics and survey encounter geometry.
 
-    ``encounter_table`` has one row per physical encounter. The two element
-    name sequences identify the observation element representing each row in
-    the clockwise and anticlockwise lines. Head-on slicing, element classes and
-    beam-beam kick conventions deliberately remain outside this helper.
+    ``encounter_table`` has one row per paired observation instance. A
+    rigid-bunch row represents a physical encounter; a conventional caller can
+    expand one logical head-on encounter into several slice rows. The two
+    element-name sequences identify the observation element representing each
+    row in the clockwise and anticlockwise lines. Element classes and beam-beam
+    kick conventions deliberately remain outside this helper.
 
-    Returns a copy of the encounter table augmented with element names, Twiss
-    beta functions, transverse beam covariances and reference-trajectory
-    separation, together with the two Twiss tables.
+    Precomputed Twiss tables can be supplied when a caller needs explicit
+    orientation conventions. Returns a copy of the encounter table augmented
+    with element names, closed-orbit coordinates, Twiss beta functions,
+    transverse beam covariances and reference-trajectory separation, together
+    with the two Twiss tables.
     """
     geometry = encounter_table.reset_index(drop=True).copy()
     element_names_cw = list(element_names_cw)
@@ -595,7 +640,10 @@ def compute_beambeam_geometry(
     geometry['element_name_cw'] = element_names_cw
     geometry['element_name_acw'] = element_names_acw
 
-    twisses = {'cw': line_cw.twiss(), 'acw': line_acw.twiss()}
+    twisses = {
+        'cw': line_cw.twiss() if twiss_cw is None else twiss_cw,
+        'acw': line_acw.twiss() if twiss_acw is None else twiss_acw,
+    }
     covariances = {
         orientation: twiss.get_beam_covariance(
             nemitt_x=nemitt_x, nemitt_y=nemitt_y)
@@ -609,6 +657,9 @@ def compute_beambeam_geometry(
             float(twiss['betx', name]) for name in names]
         geometry[f'bety_{orientation}'] = [
             float(twiss['bety', name]) for name in names]
+        for coordinate in ('x', 'px', 'y', 'py'):
+            geometry[f'{coordinate}_{orientation}'] = [
+                float(twiss[coordinate, name]) for name in names]
         for sigma_name in _sigma_names:
             geometry[f'Sigma_{sigma_name}_{orientation}'] = [
                 float(covariance[f'Sigma{sigma_name}', name])
