@@ -24,7 +24,7 @@ SIGMA = np.sqrt(11. * NEMITT / GAMMA0)   # reference transverse size
 
 def _make_element(test_context, opp, zeta_offset_slots, zeta_period,
                   sigma_x=SIGMA, sigma_y=SIGMA):
-    return xf.BeamBeamBiGaussianMultibunch2D(
+    return xf.BeamBeamBiGaussianRigidBunch2D(
         other_particles=opp,
         zeta_offset=zeta_offset_slots * DZ,
         zeta_match_tol=0.4 * DZ,
@@ -79,7 +79,7 @@ def test_multibunch_coherent(test_context):
                        mass0=xp.PROTON_MASS_EV,
                        x=[2e-4], y=[-1e-4], zeta=[0.0], weight=INTENSITY)
     sig_own_x, sig_own_y = 0.8 * SIGMA, 1.3 * SIGMA
-    bb = xf.BeamBeamBiGaussianMultibunch2D(
+    bb = xf.BeamBeamBiGaussianRigidBunch2D(
         other_particles=opp, zeta_offset=0.0,
         zeta_match_tol=0.4 * DZ, zeta_period=N_SLOTS * DZ,
         other_beam_q0=1.0, other_beam_beta0=BETA0,
@@ -110,7 +110,7 @@ def test_multibunch_coherent(test_context):
 
     # own sizes are required in the coherent mode
     try:
-        xf.BeamBeamBiGaussianMultibunch2D(
+        xf.BeamBeamBiGaussianRigidBunch2D(
             other_particles=opp,
             other_beam_q0=1.0, other_beam_beta0=BETA0,
             coherent=True, _context=test_context)
@@ -139,7 +139,7 @@ def test_multibunch_coherent_per_bunch_own_size(test_context):
     own_slots = np.array([0, 20])
     own_sx = np.array([0.8, 1.4]) * SIGMA
     own_sy = np.array([1.3, 1.2]) * SIGMA
-    bb = xf.BeamBeamBiGaussianMultibunch2D(
+    bb = xf.BeamBeamBiGaussianRigidBunch2D(
         other_particles=opp, zeta_offset=off * DZ,
         zeta_match_tol=0.4 * DZ, zeta_period=N_SLOTS * DZ,
         other_beam_q0=1.0, other_beam_beta0=BETA0, coherent=True,
@@ -256,7 +256,7 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
         mass0=xp.PROTON_MASS_EV,
         x=centroids_x, y=centroids_y, zeta=slots * DZ,
         weight=populations)
-    bb = xf.BeamBeamBiGaussianMultibunch2D(
+    bb = xf.BeamBeamBiGaussianRigidBunch2D(
         other_particles=opposing,
         zeta_match_tol=0.4 * DZ,
         zeta_period=N_SLOTS * DZ,
@@ -309,7 +309,7 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
     xo.assert_allclose(
         ctx2np(particles.py), expected_py, rtol=2e-13, atol=1e-30)
 
-    restored = xf.BeamBeamBiGaussianMultibunch2D.from_dict(
+    restored = xf.BeamBeamBiGaussianRigidBunch2D.from_dict(
         bb.to_dict(), _context=test_context)
     particles_restored = particles_initial.copy()
     restored.track(particles_restored)

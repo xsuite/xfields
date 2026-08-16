@@ -7,7 +7,7 @@ import xfields as xf
 
 DEFAULT_XFIELDS_ELEMENTS = [
     xf.BeamBeamBiGaussian2D,
-    xf.BeamBeamBiGaussianMultibunch2D,
+    xf.BeamBeamBiGaussianRigidBunch2D,
     xf.BeamBeamBiGaussian3D,
     xf.SpaceChargeBiGaussian,
     xf.BeamBeamPIC3D,

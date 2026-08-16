@@ -9,11 +9,11 @@ import xobjects as xo
 import xtrack as xt
 
 
-class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
+class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
 
     """
-    2D (transverse) beam-beam element for multi-bunch beams in the
-    soft-Gaussian approximation.
+    2D (transverse) rigid-bunch beam-beam element in the soft-Gaussian
+    approximation.
 
     The opposing beam is described as a set of bunches, each one represented
     by a single macroparticle holding the bunch centroid (``x``, ``y``), its
@@ -70,7 +70,7 @@ class BeamBeamBiGaussianMultibunch2D(xt.BeamElement):
     }
 
     _extra_c_sources = [
-        '#include "xfields/beam_elements/beambeam_src/beambeam_multibunch_2d.h"',
+        '#include "xfields/beam_elements/beambeam_src/beambeam_rigid_bunch_2d.h"',
     ]
 
     def __init__(self,

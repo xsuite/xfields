@@ -3,8 +3,8 @@
 // Copyright (c) CERN, 2021.                   //
 // ########################################### //
 
-#ifndef XFIELDS_BEAMBEAM_MULTIBUNCH_2D_H
-#define XFIELDS_BEAMBEAM_MULTIBUNCH_2D_H
+#ifndef XFIELDS_BEAMBEAM_RIGID_BUNCH_2D_H
+#define XFIELDS_BEAMBEAM_RIGID_BUNCH_2D_H
 
 #include "xfields/beam_elements/beambeam_src/beambeam2d_kick.h"
 
@@ -17,7 +17,7 @@
 // the folded target (found by binary search) or, across the wrap, one of the
 // two ends.
 GPUFUN
-int64_t BeamBeamBiGaussianMultibunch2D_match_bunch(
+int64_t BeamBeamBiGaussianRigidBunch2D_match_bunch(
         GPUGLMEM double const* zeta_arr, int64_t const n,
         double const target, double const tol, double const period){
     if (n <= 0){
@@ -61,35 +61,35 @@ int64_t BeamBeamBiGaussianMultibunch2D_match_bunch(
 
 
 GPUFUN
-void BeamBeamBiGaussianMultibunch2D_track_local_particle(
-        BeamBeamBiGaussianMultibunch2DData el, LocalParticle* part0){
+void BeamBeamBiGaussianRigidBunch2D_track_local_particle(
+        BeamBeamBiGaussianRigidBunch2DData el, LocalParticle* part0){
 
-    double const scale_strength = BeamBeamBiGaussianMultibunch2DData_get_scale_strength(el);
+    double const scale_strength = BeamBeamBiGaussianRigidBunch2DData_get_scale_strength(el);
 
-    double const zeta_offset = BeamBeamBiGaussianMultibunch2DData_get_zeta_offset(el);
-    double const zeta_match_tol = BeamBeamBiGaussianMultibunch2DData_get_zeta_match_tol(el);
-    double const zeta_period = BeamBeamBiGaussianMultibunch2DData_get_zeta_period(el);
+    double const zeta_offset = BeamBeamBiGaussianRigidBunch2DData_get_zeta_offset(el);
+    double const zeta_match_tol = BeamBeamBiGaussianRigidBunch2DData_get_zeta_match_tol(el);
+    double const zeta_period = BeamBeamBiGaussianRigidBunch2DData_get_zeta_period(el);
 
-    double const other_beam_q0 = scale_strength*BeamBeamBiGaussianMultibunch2DData_get_other_beam_q0(el);
-    double const other_beam_beta0 = BeamBeamBiGaussianMultibunch2DData_get_other_beam_beta0(el);
+    double const other_beam_q0 = scale_strength*BeamBeamBiGaussianRigidBunch2DData_get_other_beam_q0(el);
+    double const other_beam_beta0 = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_beta0(el);
 
-    int64_t const coherent = BeamBeamBiGaussianMultibunch2DData_get_coherent(el);
+    int64_t const coherent = BeamBeamBiGaussianRigidBunch2DData_get_coherent(el);
 
-    double const min_sigma_diff = BeamBeamBiGaussianMultibunch2DData_get_min_sigma_diff(el);
+    double const min_sigma_diff = BeamBeamBiGaussianRigidBunch2DData_get_min_sigma_diff(el);
 
-    int64_t const num_other_bunches = BeamBeamBiGaussianMultibunch2DData_get_num_other_bunches(el);
-    int64_t const num_own_bunches = BeamBeamBiGaussianMultibunch2DData_get_num_own_bunches(el);
+    int64_t const num_other_bunches = BeamBeamBiGaussianRigidBunch2DData_get_num_other_bunches(el);
+    int64_t const num_own_bunches = BeamBeamBiGaussianRigidBunch2DData_get_num_own_bunches(el);
 
     // Sorted zeta grids of both beams (for the binary-search bunch matching)
     // and this beam's own per-bunch sizes.
     GPUGLMEM double const* other_beam_zeta =
-        BeamBeamBiGaussianMultibunch2DData_getp1_other_beam_zeta(el, 0);
+        BeamBeamBiGaussianRigidBunch2DData_getp1_other_beam_zeta(el, 0);
     GPUGLMEM double const* own_beam_zeta =
-        BeamBeamBiGaussianMultibunch2DData_getp1_own_beam_zeta(el, 0);
+        BeamBeamBiGaussianRigidBunch2DData_getp1_own_beam_zeta(el, 0);
     GPUGLMEM double const* own_sigma_x_arr =
-        BeamBeamBiGaussianMultibunch2DData_getp1_sigma_x(el, 0);
+        BeamBeamBiGaussianRigidBunch2DData_getp1_sigma_x(el, 0);
     GPUGLMEM double const* own_sigma_y_arr =
-        BeamBeamBiGaussianMultibunch2DData_getp1_sigma_y(el, 0);
+        BeamBeamBiGaussianRigidBunch2DData_getp1_sigma_y(el, 0);
 
     START_PER_PARTICLE_BLOCK(part0, part);
         double const x = LocalParticle_get_x(part);
@@ -99,7 +99,7 @@ void BeamBeamBiGaussianMultibunch2D_track_local_particle(
         // This particle (bunch) at `zeta` encounters the opposing bunch located
         // at `zeta + zeta_offset` (indexing of the OTHER beam), found by the
         // binary-search match on the sorted opposing-beam zeta grid.
-        int64_t const i_match = BeamBeamBiGaussianMultibunch2D_match_bunch(
+        int64_t const i_match = BeamBeamBiGaussianRigidBunch2D_match_bunch(
             other_beam_zeta, num_other_bunches, zeta + zeta_offset,
             zeta_match_tol, zeta_period);
 
@@ -108,22 +108,22 @@ void BeamBeamBiGaussianMultibunch2D_track_local_particle(
             continue;
         }
 
-        double const other_beam_shift_x = BeamBeamBiGaussianMultibunch2DData_get_other_beam_x(el, i_match);
-        double const other_beam_shift_y = BeamBeamBiGaussianMultibunch2DData_get_other_beam_y(el, i_match);
+        double const other_beam_shift_x = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_x(el, i_match);
+        double const other_beam_shift_y = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_y(el, i_match);
         double const other_beam_num_particles =
-            BeamBeamBiGaussianMultibunch2DData_get_other_beam_num_particles(el, i_match);
+            BeamBeamBiGaussianRigidBunch2DData_get_other_beam_num_particles(el, i_match);
 
         // Transverse size of the matched opposing bunch (indexed by the OTHER
         // beam). In the coherent (rigid-bunch) mode the effective Gaussian size
         // is the convolution with this beam's OWN size: the own size is indexed
         // by THIS beam -- the particle is matched to its own bunch on the
         // own-beam zeta grid (a single own bunch -> uniform size, index 0).
-        double sigma_x = BeamBeamBiGaussianMultibunch2DData_get_other_beam_sigma_x(el, i_match);
-        double sigma_y = BeamBeamBiGaussianMultibunch2DData_get_other_beam_sigma_y(el, i_match);
+        double sigma_x = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_sigma_x(el, i_match);
+        double sigma_y = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_sigma_y(el, i_match);
         if (coherent){
             int64_t i_own = 0;
             if (num_own_bunches > 1){
-                i_own = BeamBeamBiGaussianMultibunch2D_match_bunch(
+                i_own = BeamBeamBiGaussianRigidBunch2D_match_bunch(
                     own_beam_zeta, num_own_bunches, zeta,
                     zeta_match_tol, zeta_period);
                 if (i_own < 0) i_own = 0;   // fall back to the first own bunch
