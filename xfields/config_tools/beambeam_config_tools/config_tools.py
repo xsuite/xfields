@@ -567,6 +567,122 @@ def compute_geometry_and_optics(bb_df=None, xsuite_twiss=None, xsuite_survey=Non
                                                     'Sigma'+ss][i_sigma]
 
 
+def compute_beambeam_geometry(
+        encounter_table, line_cw, line_acw,
+        element_names_cw, element_names_acw,
+        nemitt_x, nemitt_y, survey_separation=True):
+    """Compute element-independent optics and survey encounter geometry.
+
+    ``encounter_table`` has one row per physical encounter. The two element
+    name sequences identify the observation element representing each row in
+    the clockwise and anticlockwise lines. Head-on slicing, element classes and
+    beam-beam kick conventions deliberately remain outside this helper.
+
+    Returns a copy of the encounter table augmented with element names, Twiss
+    beta functions, transverse beam covariances and reference-trajectory
+    separation, together with the two Twiss tables.
+    """
+    geometry = encounter_table.reset_index(drop=True).copy()
+    element_names_cw = list(element_names_cw)
+    element_names_acw = list(element_names_acw)
+    n_encounters = len(geometry)
+    if (len(element_names_cw) != n_encounters
+            or len(element_names_acw) != n_encounters):
+        raise ValueError(
+            'The CW and ACW element-name sequences must contain one entry '
+            'per encounter.')
+
+    geometry['element_name_cw'] = element_names_cw
+    geometry['element_name_acw'] = element_names_acw
+
+    twisses = {'cw': line_cw.twiss(), 'acw': line_acw.twiss()}
+    covariances = {
+        orientation: twiss.get_beam_covariance(
+            nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+        for orientation, twiss in twisses.items()
+    }
+    for orientation, names in (
+            ('cw', element_names_cw), ('acw', element_names_acw)):
+        twiss = twisses[orientation]
+        covariance = covariances[orientation]
+        geometry[f'betx_{orientation}'] = [
+            float(twiss['betx', name]) for name in names]
+        geometry[f'bety_{orientation}'] = [
+            float(twiss['bety', name]) for name in names]
+        for sigma_name in _sigma_names:
+            geometry[f'Sigma_{sigma_name}_{orientation}'] = [
+                float(covariance[f'Sigma{sigma_name}', name])
+                for name in names]
+
+    separation_x = np.zeros(n_encounters)
+    separation_y = np.zeros(n_encounters)
+    if survey_separation:
+        for ip_name in geometry['ip_name'].unique():
+            at_ip = geometry['ip_name'] == ip_name
+            row_indices = np.flatnonzero(at_ip.to_numpy())
+            names_cw = geometry.loc[at_ip, 'element_name_cw'].tolist()
+            names_acw = geometry.loc[at_ip, 'element_name_acw'].tolist()
+            frames_cw = _local_survey(line_cw, ip_name, names_cw)
+            frames_acw = _local_survey(line_acw, ip_name, names_acw)
+
+            for row_index, name_cw, name_acw in zip(
+                    row_indices, names_cw, names_acw):
+                position_cw, frame_cw = frames_cw[name_cw]
+                position_acw, _ = frames_acw[name_acw]
+                # The ACW line is stored in its direction of travel. Rotate its
+                # local frame by 180 degrees about the vertical before taking
+                # the separation in the CW encounter frame.
+                delta = position_cw - np.array([
+                    -position_acw[0], position_acw[1], -position_acw[2]])
+                separation_x[row_index] = delta @ frame_cw[:, 0]
+                separation_y[row_index] = delta @ frame_cw[:, 1]
+
+    geometry['separation_x'] = separation_x
+    geometry['separation_y'] = separation_y
+    return geometry, twisses
+
+
+def _local_survey(line, ref_name, names):
+    """Survey nearby elements in ``ref_name``'s local frame.
+
+    Rolling the sequence around the reference avoids crossing the line seam
+    and importing a whole-ring closure defect into local encounter geometry.
+    """
+    from xtrack.survey import get_survey
+
+    table = line.get_table(attr=True)
+    elements = list(line._elements)
+    n_elements = len(elements)
+    length = np.array(table.length[:n_elements], dtype=float)
+    length[~np.array(table.isthick[:n_elements], dtype=bool)] = 0.
+    angle = np.array(table.angle[:n_elements], dtype=float)
+    tilt = np.array(table.rot_s_rad[:n_elements], dtype=float)
+
+    index = {name: ii for ii, name in enumerate(line.element_names)}
+    shift = (index[ref_name] - n_elements // 2) % n_elements
+    rolled = {
+        name: (index[name] - shift) % n_elements
+        for name in list(names) + [ref_name]
+    }
+    lo, hi = min(rolled.values()), max(rolled.values())
+
+    def window(array):
+        return np.concatenate([array[shift:], array[:shift]])[lo:hi + 1]
+
+    ordered_elements = elements[shift:] + elements[:shift]
+    positions, frames = get_survey(
+        elements=ordered_elements[lo:hi + 1],
+        X0=0., Y0=0., Z0=0., theta0=0., phi0=0., psi0=0.,
+        drift_length=window(length), angle=window(angle), tilt=window(tilt),
+        element0=rolled[ref_name] - lo)
+
+    return {
+        name: (np.array(positions[rolled[name] - lo]),
+               np.array(frames[rolled[name] - lo]))
+        for name in names
+    }
+
+
 def get_partner_position_and_optics(bb_df_b1, bb_df_b2, crab_strong_beam):
 
     dict_dfs = {'b1': bb_df_b1, 'b2': bb_df_b2}

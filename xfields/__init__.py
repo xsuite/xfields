@@ -42,6 +42,7 @@ from .config_tools import full_electroncloud_setup
 from .config_tools import install_beambeam_elements_in_lines
 from .config_tools import configure_beam_beam_elements
 from .config_tools import generate_beambeam_encounter_table
+from .config_tools import compute_beambeam_geometry
 
 from ._version import __version__
 
