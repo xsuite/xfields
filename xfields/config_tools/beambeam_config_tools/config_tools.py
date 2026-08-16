@@ -253,6 +253,101 @@ def elementName(label, IRNumber, beam, identifier):
         sideTag='.c'
     return f'{label}{sideTag}{IRNumber}{beam}_{np.abs(identifier):02}'
 
+
+def generate_beambeam_encounter_table(
+        ip_names, num_long_range_encounters_per_side,
+        bunch_spacing_zeta=None, delay_at_ips_slots=None, n_slots=None):
+    """Build the logical head-on and long-range encounter description.
+
+    The returned table is independent of the beam-beam element type and of
+    head-on slicing. Each row describes one physical encounter through its IP,
+    type and signed long-range index. The head-on encounter has index zero;
+    positive and negative indices identify the right and left encounters.
+
+    ``num_long_range_encounters_per_side`` can be a scalar, a sequence aligned
+    with ``ip_names``, or a mapping keyed by IP name. If
+    ``bunch_spacing_zeta`` is supplied, the table also contains the signed
+    displacement from the IP in each line orientation. If
+    ``delay_at_ips_slots`` and ``n_slots`` are supplied, it contains the bunch
+    pairing offsets in both orientations.
+    """
+    ip_names = list(ip_names)
+    if isinstance(num_long_range_encounters_per_side, dict):
+        n_lr_by_ip = [num_long_range_encounters_per_side[ip]
+                      for ip in ip_names]
+    elif np.ndim(num_long_range_encounters_per_side) == 0:
+        n_lr_by_ip = [num_long_range_encounters_per_side] * len(ip_names)
+    else:
+        n_lr_by_ip = list(num_long_range_encounters_per_side)
+        if len(n_lr_by_ip) != len(ip_names):
+            raise ValueError(
+                '`num_long_range_encounters_per_side` must have one entry '
+                'per IP.')
+
+    encounters = []
+    for ip_name, n_lr_value in zip(ip_names, n_lr_by_ip):
+        n_lr = int(n_lr_value)
+        if n_lr != n_lr_value or n_lr < 0:
+            raise ValueError(
+                '`num_long_range_encounters_per_side` entries must be '
+                'non-negative integers.')
+        encounters.append({
+            'ip_name': ip_name,
+            'encounter_type': 'head_on',
+            'identifier': 0,
+        })
+        for identifier in range(1, n_lr + 1):
+            encounters.append({
+                'ip_name': ip_name,
+                'encounter_type': 'long_range',
+                'identifier': identifier,
+            })
+            encounters.append({
+                'ip_name': ip_name,
+                'encounter_type': 'long_range',
+                'identifier': -identifier,
+            })
+
+    table = pd.DataFrame(encounters, columns=(
+        'ip_name', 'encounter_type', 'identifier'))
+
+    if bunch_spacing_zeta is not None:
+        displacement = table['identifier'] * bunch_spacing_zeta / 2
+        table['s_from_ip_cw'] = displacement
+        table['s_from_ip_acw'] = -displacement
+
+    if delay_at_ips_slots is not None:
+        if n_slots is None:
+            raise ValueError(
+                '`n_slots` is required with `delay_at_ips_slots`.')
+        table = _add_beambeam_pairing_offsets(
+            table, ip_names, delay_at_ips_slots, n_slots)
+
+    return table
+
+
+def _add_beambeam_pairing_offsets(
+        encounter_table, ip_names, delay_at_ips_slots, n_slots):
+    if isinstance(delay_at_ips_slots, dict):
+        delay_by_ip = {ip: delay_at_ips_slots[ip] for ip in ip_names}
+    else:
+        delay_at_ips_slots = list(delay_at_ips_slots)
+        if len(delay_at_ips_slots) != len(ip_names):
+            raise ValueError(
+                '`delay_at_ips_slots` must have one entry per IP.')
+        delay_by_ip = dict(zip(ip_names, delay_at_ips_slots))
+
+    table = encounter_table.copy()
+    delay_cw = np.array([
+        delay_by_ip[ip] + identifier
+        for ip, identifier in zip(table['ip_name'], table['identifier'])])
+    delay_acw = np.array([
+        np.mod(n_slots - delay_by_ip[ip], n_slots) - identifier
+        for ip, identifier in zip(table['ip_name'], table['identifier'])])
+    table['delay_in_slots_cw'] = delay_cw.astype(int)
+    table['delay_in_slots_acw'] = delay_acw.astype(int)
+    return table
+
 def generate_set_of_bb_encounters_1beam(
     circumference=None,
     harmonic_number=None,
@@ -268,14 +363,21 @@ def generate_set_of_bb_encounters_1beam(
     ):
 
 
+    bunch_spacing_zeta = (
+        circumference / harmonic_number * bunch_spacing_buckets)
+    logical_encounters = generate_beambeam_encounter_table(
+        ip_names, numberOfLRPerIRSide,
+        bunch_spacing_zeta=bunch_spacing_zeta)
+
     # Long-Range
     myBBLRlist=[]
-    for ii, ip_nn in enumerate(ip_names):
-        for identifier in (list(range(-numberOfLRPerIRSide[ii],0))
-                           + list(range(1,numberOfLRPerIRSide[ii]+1))):
-            myBBLRlist.append({'label': 'bb_lr', 'ip_name': ip_nn,
-                               'beam': beam_name, 'other_beam':other_beam_name,
-                               'identifier':identifier})
+    for encounter in logical_encounters.itertuples(index=False):
+        if encounter.encounter_type != 'long_range':
+            continue
+        myBBLRlist.append({
+            'label': 'bb_lr', 'ip_name': encounter.ip_name,
+            'beam': beam_name, 'other_beam': other_beam_name,
+            'identifier': encounter.identifier})
 
     if len(myBBLRlist)>0:
         myBBLR=pd.DataFrame(myBBLRlist)[
@@ -291,8 +393,14 @@ def generate_set_of_bb_encounters_1beam(
             lambda x: elementName(
                 x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
         # where circ is used
-        BBSpacing = circumference / harmonic_number * bunch_spacing_buckets / 2.
-        myBBLR['atPosition']=BBSpacing*myBBLR['identifier']
+        position_by_encounter = {
+            (row.ip_name, row.identifier): row.s_from_ip_cw
+            for row in logical_encounters.itertuples(index=False)
+            if row.encounter_type == 'long_range'}
+        myBBLR['atPosition'] = [
+            position_by_encounter[ip, identifier]
+            for ip, identifier in zip(
+                myBBLR['ip_name'], myBBLR['identifier'])]
         myBBLR['s_crab'] = 0.
         myBBLR['self_frac_of_bunch'] = 1.
         # assuming a sequence rotated in IR3
@@ -308,7 +416,10 @@ def generate_set_of_bb_encounters_1beam(
                                                     1,sigzLumi,numberOfHOSlices)
     myBBHOlist=[]
 
-    for ip_nn in ip_names:
+    for encounter in logical_encounters.itertuples(index=False):
+        if encounter.encounter_type != 'head_on':
+            continue
+        ip_nn = encounter.ip_name
         for identifier in (list(range(-numberOfSliceOnSide,0))
                            +[0] + list(range(1,numberOfSliceOnSide+1))):
             myBBHOlist.append({'label': 'bb_ho', 'ip_name': ip_nn,
@@ -757,33 +868,18 @@ def _compute_delays(bb_df_cw, bb_df_acw, delay_at_ips_slots, ip_names,
 
     for orientation, bbdf  in zip(['clockwise', 'anticlockwise'],
                                   [bb_df_cw, bb_df_acw]):
-
-        if orientation == 'clockwise':
-            delay_at_ips_dict = {iipp: dd
-                                for iipp, dd in zip(ip_names, delay_at_ips_slots)}
-        elif orientation == 'anticlockwise':
-            delay_at_ips_dict = {iipp: np.mod(ring_length_in_slots - dd, ring_length_in_slots)
-                                for iipp, dd in zip(ip_names, delay_at_ips_slots)}
-        else:
-            raise ValueError('?!')
-
-        delay_in_slots = []
-
-        for nn in bbdf.index.values:
-            ip_name = bbdf.loc[nn, 'ip_name']
-            this_delay = delay_at_ips_dict[ip_name]
-
-            if nn.startswith('bb_lr.'):
-                if orientation == 'clockwise':
-                    this_delay += bbdf.loc[nn, 'identifier']
-                elif orientation == 'anticlockwise':
-                    this_delay -= bbdf.loc[nn, 'identifier']
-                else:
-                    raise ValueError('?!')
-
-            delay_in_slots.append(int(this_delay))
-
-        bbdf['delay_in_slots'] = delay_in_slots
+        pairing_table = pd.DataFrame({
+            'ip_name': bbdf['ip_name'],
+            # Head-on identifiers label slices, not distinct encounters.
+            'identifier': np.where(
+                bbdf['label'] == 'bb_lr', bbdf['identifier'], 0),
+        })
+        pairing_table = _add_beambeam_pairing_offsets(
+            pairing_table, ip_names, delay_at_ips_slots,
+            ring_length_in_slots)
+        column = ('delay_in_slots_cw' if orientation == 'clockwise'
+                  else 'delay_in_slots_acw')
+        bbdf['delay_in_slots'] = pairing_table[column].to_numpy()
 
 def apply_filling_pattern(collider, filling_pattern_cw, filling_pattern_acw,
                           i_bunch_cw, i_bunch_acw):
