@@ -619,7 +619,7 @@ def compute_geometry_and_optics(
             i_sigma = np.where(np.array(xsuite_sigmas.name) == ele_name)[0][0]
             for ss in _sigma_names:
                 bb_df.loc[ele_name, f'self_Sigma_{ss}'] = xsuite_sigmas[
-                                                        'Sigma'+ss][i_sigma]
+                                                        f'Sigma{ss}'][i_sigma]
 
 
 def compute_beambeam_geometry(

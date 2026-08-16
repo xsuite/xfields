@@ -355,3 +355,40 @@ def test_conventional_install_and_configure_characterization():
         for name in dataframe.index:
             xo.assert_allclose(line[name].scale_strength, 0.37,
                                rtol=0, atol=0)
+
+
+def test_conventional_single_beam_antisymmetry_configuration():
+    # Exercise the one-line LHC configuration used when the missing opposing
+    # beam is reconstructed from the optics antisymmetry around each IP. This
+    # path deliberately retains its legacy Twiss/survey covariance handling.
+    env = xt.Environment(lines={
+        'cw': _make_conventional_toy_ring('cw', shared_ips={}),
+    })
+    env.xfields.install_beambeam_interactions(
+        clockwise_line='cw', anticlockwise_line=None,
+        ip_names=['ip1', 'ip2'],
+        num_long_range_encounters_per_side=[1, 1],
+        num_slices_head_on=3,
+        harmonic_number=8, bunch_spacing_buckets=1,
+        sigmaz=0.1)
+
+    twiss = env.cw.twiss()
+    covariance = twiss.get_beam_covariance(
+        nemitt_x=2e-6, nemitt_y=2.5e-6)
+    env.xfields.configure_beambeam_interactions(
+        num_particles=1e11,
+        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        crab_strong_beam=False,
+        use_antisymmetry=True,
+        separation_bumps={'ip1': 'x', 'ip2': 'y'})
+
+    lr_right = env.cw['bb_lr.r1b1_01']
+    xo.assert_allclose(
+        lr_right.other_beam_Sigma_11,
+        covariance['Sigma11', 'bb_lr.l1b1_01'], rtol=1e-14)
+    xo.assert_allclose(
+        lr_right.other_beam_Sigma_33,
+        covariance['Sigma33', 'bb_lr.l1b1_01'], rtol=1e-14)
+    xo.assert_allclose(lr_right.other_beam_num_particles, 1e11,
+                       rtol=0, atol=0)
+    xo.assert_allclose(lr_right.scale_strength, 1, rtol=0, atol=0)
