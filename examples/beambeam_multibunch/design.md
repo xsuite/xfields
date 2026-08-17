@@ -99,7 +99,7 @@ The existing configuration machinery already owns:
 - storage of beam-beam configuration on the environment.
 
 These operations should be factored into element-independent helpers that
-produce an encounter description and its geometry. The conventional and
+produce an encounter description and its geometry. The particles and
 rigid-bunch workflows should consume the same description.
 
 The installation API can select a mode, for example:
@@ -311,7 +311,7 @@ Refactor the existing workflow incrementally:
 
 1. Extract encounter generation from the current installer.
 2. Extract Twiss/survey geometry and coordinate transformations.
-3. Make the conventional and rigid-bunch paths consume those helpers.
+3. Make the particles and rigid-bunch paths consume those helpers.
 4. Add `mode='rigid_bunch'` to `install_beambeam_interactions(...)`.
 5. Add the rigid-bunch filling, intensity and emittance inputs to
    `configure_beambeam_interactions(...)`.
@@ -323,7 +323,7 @@ the examples and permanent behavioral tests use the standard workflow.
 
 Step 1 is complete: Xfields now provides one logical encounter table containing
 the IP, encounter type, signed long-range index, orientation-specific
-displacement from the IP and CW/ACW bunch-pairing offsets. The conventional
+displacement from the IP and CW/ACW bunch-pairing offsets. The particles
 installer expands head-on slices from this table, while the rigid-bunch path
 renders its own element names and consumes the same
 placement and pairing data.
@@ -334,7 +334,7 @@ the standard transverse covariance with `twiss.get_beam_covariance()` and
 computes local-survey separation without crossing the line seam. The
 rigid-bunch configuration consumes this result.
 
-The standard two-beam conventional path now also consumes the shared result for
+The standard two-beam particles path now also consumes the shared result for
 its explicitly oriented CW/ACW Twiss tables, closed-orbit coordinates,
 transverse covariance components, local-survey separation and crossing slopes.
 A curved toy-ring test compares every paired encounter against the former
@@ -351,7 +351,7 @@ emittances, loads geometry and per-slot state, and returns
 temporary all-in-one installer during migration. Permanent tests now protect
 names, positions, geometry, element arrays, strength-knob response and a short
 self-consistent solve. Calls without the mode continue to dispatch unchanged
-to the conventional workflow.
+to the particles workflow.
 
 ### Phase 5: migrate examples and remove the duplicate installer path
 
@@ -413,7 +413,7 @@ Strengthen the scalar BB2D characterization tests to cover:
 - construction inside a line and xdeps control of `scale_strength`;
 - the existing pipeline updater remaining functional.
 
-Before migrating the conventional installer/configurer, add a fast
+Before migrating the particles installer/configurer, add a fast
 characterization in `xfields/tests/test_beambeam_config_tools.py`. It must run
 the public two-line install/configure workflow with sliced head-on and
 long-range encounters and protect names, partner mapping, positions, delays,
@@ -514,7 +514,7 @@ Keep the preparatory tests and implementation changes in separate commits:
 
 All nine original work packages are complete. Fast characterization protects the shared
 encounter and geometry output, including exact comparison with the former
-conventional survey calculation. Focused Xfields and Xtrack tests pass, as do
+particles-mode survey calculation. Focused Xfields and Xtrack tests pass, as do
 the LHC pytrain injection and collision regressions. The final Xmask beam-beam
 test run also passes after removal of the duplicate installer path. Development
 validation used the serial CPU context; OpenMP validation was intentionally left

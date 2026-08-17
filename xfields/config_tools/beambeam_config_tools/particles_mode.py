@@ -3,7 +3,7 @@
 # Copyright (c) CERN, 2026.                   #
 # ########################################### #
 
-"""Environment-level setup of weak--strong beam--beam interactions.
+"""Environment-level setup of particle-based beam--beam interactions.
 
 Installation-wide state is stored in ``Environment.extra_config``. Each
 installed element carries only its encounter-local description in the generic,
@@ -27,11 +27,6 @@ from .config_tools import (
     compute_twiss_and_madpoints_at_bb,
     find_alpha_and_phi,
 )
-from .orbit_dependent_configuration_tools import (
-    _store_self_orbit_and_dipolar_kick,
-)
-
-
 _BEAMBEAM_EXTRA_KEY = BEAMBEAM_ELEMENT_EXTRA_KEY
 _BEAMBEAM_EXTRA_VERSION = BEAMBEAM_ELEMENT_EXTRA_VERSION
 _BEAMBEAM_CONFIG_KEY = BEAMBEAM_CONFIG_KEY
@@ -43,7 +38,7 @@ def install_beambeam_interactions(
         num_long_range_encounters_per_side, num_slices_head_on,
         harmonic_number, bunch_spacing_buckets, sigmaz,
         delay_at_ips_slots=None):
-    """Install inactive, tagged weak--strong beam-beam elements."""
+    """Install inactive, tagged particle-based beam-beam elements."""
     cw_name = _line_name(env, clockwise_line, 'clockwise_line')
     acw_name = _line_name(env, anticlockwise_line, 'anticlockwise_line')
     ip_names = list(ip_names)
@@ -87,7 +82,7 @@ def install_beambeam_interactions(
 
     env.extra_config[_BEAMBEAM_CONFIG_KEY] = {
         'version': _BEAMBEAM_CONFIG_VERSION,
-        'mode': 'weak_strong',
+        'mode': 'particles',
         'clockwise_line': cw_name,
         'anticlockwise_line': acw_name,
         'ip_names': ip_names,
@@ -206,7 +201,7 @@ def configure_beambeam_interactions(
 
 
 @dataclass
-class _WeakStrongInstallation:
+class _ParticlesInstallation:
     elements: dict
     line_names: dict
     ip_names: list
@@ -364,7 +359,7 @@ def _install_elements(env, line_name, specs):
         element = _new_beambeam_element(spec['label'])
         metadata = {
             'version': _BEAMBEAM_EXTRA_VERSION,
-            'mode': 'weak_strong',
+            'mode': 'particles',
             'ip_name': spec['ip_name'],
             'label': spec['label'],
             'identifier': spec['identifier'],
@@ -389,11 +384,11 @@ def _metadata(element):
     metadata = extra.get(_BEAMBEAM_EXTRA_KEY)
     if metadata is None:
         return None
-    if metadata.get('mode') != 'weak_strong':
+    if metadata.get('mode') != 'particles':
         return None
     if metadata.get('version') != _BEAMBEAM_EXTRA_VERSION:
         raise RuntimeError(
-            'Unsupported weak--strong beam-beam element metadata version '
+            'Unsupported `particles`-mode element metadata version '
             f'for element `{getattr(element, "env_name", "<unknown>")}`.')
     return metadata
 
@@ -403,14 +398,15 @@ def _discover_installation(env):
     config = env.extra_config.get(_BEAMBEAM_CONFIG_KEY)
     if config is None:
         raise RuntimeError(
-            'No new-style weak--strong beam-beam configuration was found. '
+            'No `particles`-mode beam-beam configuration was found. '
             'Call `install_beambeam_interactions(...)` first.')
     if config.get('version') != _BEAMBEAM_CONFIG_VERSION:
         raise RuntimeError(
-            'Unsupported weak--strong beam-beam configuration version.')
-    if config.get('mode') != 'weak_strong':
+            'Unsupported `particles`-mode beam-beam configuration version.')
+    if config.get('mode') != 'particles':
         raise RuntimeError(
-            'The environment beam-beam configuration is not weak--strong.')
+            'The environment beam-beam configuration is not in `particles` '
+            'mode.')
 
     line_names = {
         'clockwise': config['clockwise_line'],
@@ -436,7 +432,7 @@ def _discover_installation(env):
             elements[orientation][element_name] = metadata
         if not elements[orientation]:
             raise RuntimeError(
-                f'No tagged weak--strong beam-beam elements were found in '
+                f'No tagged `particles`-mode beam-beam elements were found in '
                 f'configured line `{line_name}`.')
         installed_ips = {
             metadata['ip_name']
@@ -448,11 +444,11 @@ def _discover_installation(env):
 
     if all(line_name is None for line_name in line_names.values()):
         raise RuntimeError(
-            'The weak--strong beam-beam configuration contains no lines.')
+            'The `particles`-mode beam-beam configuration contains no lines.')
     for orientation in elements:
         elements[orientation] = dict(sorted(elements[orientation].items()))
 
-    return _WeakStrongInstallation(
+    return _ParticlesInstallation(
         elements=elements, line_names=line_names, ip_names=ip_names,
         n_slots=int(config['n_slots']),
         delay_at_ips_slots=config.get('delay_at_ips_slots'))
@@ -534,8 +530,91 @@ def _configure_element(
     else:
         raise TypeError(
             f'Tagged element `{element_name}` is not a supported '
-            'weak--strong beam-beam element.')
+            '`particles`-mode beam-beam element.')
     line.element_refs[element_name].scale_strength = 1.0
+
+
+def _store_self_orbit_and_dipolar_kick(line, particle_on_co):
+    """Store the self-beam orbit and subtract its dipolar beam--beam kick."""
+    temp_particles = particle_on_co.copy()
+    for ii, element in enumerate(line.elements):
+        if element.__class__.__name__ == 'BeamBeamBiGaussian2D':
+            px_0 = temp_particles.px[0]
+            py_0 = temp_particles.py[0]
+
+            element.post_subtract_px = 0
+            element.post_subtract_py = 0
+
+            element.ref_shift_x = temp_particles.x[0]
+            element.ref_shift_y = temp_particles.y[0]
+
+            element.track(temp_particles)
+
+            element.post_subtract_px = temp_particles.px[0] - px_0
+            element.post_subtract_py = temp_particles.py[0] - py_0
+
+            temp_particles.px -= element.post_subtract_px
+            temp_particles.py -= element.post_subtract_py
+
+        elif element.__class__.__name__ == 'BeamBeamBiGaussian3D':
+            element.ref_shift_x = temp_particles.x[0]
+            element.ref_shift_px = temp_particles.px[0]
+            element.ref_shift_y = temp_particles.y[0]
+            element.ref_shift_py = temp_particles.py[0]
+            element.ref_shift_zeta = temp_particles.zeta[0]
+            # The element assumes beta0=1 anyhow.
+            element.ref_shift_pzeta = temp_particles.delta[0]
+
+            element.post_subtract_x = 0
+            element.post_subtract_px = 0
+            element.post_subtract_y = 0
+            element.post_subtract_py = 0
+            element.post_subtract_zeta = 0
+            element.post_subtract_pzeta = 0
+
+            element.track(temp_particles)
+
+            element.post_subtract_x = (
+                temp_particles.x[0] - element.ref_shift_x)
+            element.post_subtract_px = (
+                temp_particles.px[0] - element.ref_shift_px)
+            element.post_subtract_y = (
+                temp_particles.y[0] - element.ref_shift_y)
+            element.post_subtract_py = (
+                temp_particles.py[0] - element.ref_shift_py)
+            element.post_subtract_zeta = (
+                temp_particles.zeta[0] - element.ref_shift_zeta)
+            element.post_subtract_pzeta = (
+                temp_particles.delta[0] - element.ref_shift_pzeta)
+
+            temp_particles.x[0] = element.ref_shift_x
+            temp_particles.px[0] = element.ref_shift_px
+            temp_particles.y[0] = element.ref_shift_y
+            temp_particles.py[0] = element.ref_shift_py
+            temp_particles.zeta[0] = element.ref_shift_zeta
+            # The element assumes beta0=1 anyhow.
+            temp_particles.delta[0] = element.ref_shift_pzeta
+        elif element.__class__.__name__ == 'Wire':
+            px_0 = temp_particles.px[0]
+            py_0 = temp_particles.py[0]
+
+            element.post_subtract_px = 0
+            element.post_subtract_py = 0
+
+            element.track(temp_particles)
+
+            element.post_subtract_px = temp_particles.px[0] - px_0
+            element.post_subtract_py = temp_particles.py[0] - py_0
+
+            temp_particles.px -= element.post_subtract_px
+            temp_particles.py -= element.post_subtract_py
+        else:
+            line.track(temp_particles, ele_start=ii, num_elements=1)
+
+
+# Public compatibility name used by standalone Xtrack examples.
+configure_orbit_dependent_parameters_for_bb = (
+    _store_self_orbit_and_dipolar_kick)
 
 
 def _to_stored_acw_sigma(sigma):

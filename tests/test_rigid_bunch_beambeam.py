@@ -10,7 +10,7 @@ import xfields as xf
 import xobjects as xo
 import xtrack as xt
 from xfields import BeamBeamRigidBunchStudy
-from xfields.config_tools.beambeam_config_tools.rigid_bunch import (
+from xfields.config_tools.beambeam_config_tools.rigid_bunch_mode import (
     _BEAMBEAM_EXTRA_KEY,
     _discover_installation,
 )

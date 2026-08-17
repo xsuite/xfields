@@ -4,7 +4,7 @@
 # ######################################### #
 
 """
-Generic (machine-independent) multi-bunch beam-beam tools.
+Generic (machine-independent) rigid-bunch beam-beam mode.
 
 Install coherent (rigid-bunch) 2D beam-beam elements
 (:class:`xfields.BeamBeamBiGaussianRigidBunch2D`) for the head-on and
@@ -272,7 +272,7 @@ class BeamBeamRigidBunchStudy:
     :meth:`second_order_maps`, :meth:`load_solution`,
     :meth:`apply_filling_pattern`).
 
-    Beam-beam elements use the same names as the weak--strong infrastructure,
+    Beam-beam elements use the same names as the particles-mode infrastructure,
     e.g. ``bb_ho.c1b1_00`` and ``bb_ho.c1b2_00``. The element itself is the
     observation point used for the geometry and the orbit feedback.
     """

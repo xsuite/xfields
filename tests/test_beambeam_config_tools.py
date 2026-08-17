@@ -18,7 +18,7 @@ from xfields.config_tools.beambeam_config_tools.config_tools import (
     find_bb_separations,
 )
 from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
-from xfields.config_tools.beambeam_config_tools.weak_strong import (
+from xfields.config_tools.beambeam_config_tools.particles_mode import (
     _BEAMBEAM_CONFIG_KEY,
     _BEAMBEAM_EXTRA_KEY,
     _delay_in_slots,
@@ -26,11 +26,11 @@ from xfields.config_tools.beambeam_config_tools.weak_strong import (
 )
 
 
-def test_conventional_encounters_keep_positions_and_delays():
+def test_particles_encounters_keep_positions_and_delays():
     shared_ips = {'ip1': xt.Marker(), 'ip2': xt.Marker()}
     env = xt.Environment(lines={
-        'cw': _make_conventional_toy_ring('cw', shared_ips),
-        'acw': _make_conventional_toy_ring('acw', shared_ips),
+        'cw': _make_particles_toy_ring('cw', shared_ips),
+        'acw': _make_particles_toy_ring('acw', shared_ips),
     })
     env.xfields.install_beambeam_interactions(
         clockwise_line='cw', anticlockwise_line='acw',
@@ -71,7 +71,7 @@ def test_conventional_encounters_keep_positions_and_delays():
                         expected_delay}
 
 
-def _make_conventional_toy_ring(suffix, shared_ips):
+def _make_particles_toy_ring(suffix, shared_ips):
     elements = []
     names = []
     kick_x = 1e-6 if suffix == 'cw' else -2e-6
@@ -120,7 +120,7 @@ def _make_conventional_toy_ring(suffix, shared_ips):
 
 
 def test_survey_region_rejects_wrapping_line_boundary():
-    line = _make_conventional_toy_ring('cw', {})
+    line = _make_particles_toy_ring('cw', {})
 
     with pytest.raises(AssertionError, match='wraps across the line boundary'):
         compute_twiss_and_madpoints_at_bb(
@@ -137,15 +137,15 @@ def test_survey_region_rejects_wrapping_line_boundary():
         )
 
 
-def test_conventional_install_and_configure_characterization():
-    # Exercise the established sliced-head-on/weak-strong workflow end to end
+def test_particles_install_and_configure_characterization():
+    # Exercise the particle-based workflow end to end
     # on a small two-ring model. This locks down its installed metadata and the
     # fields ultimately loaded into representative 2D and 3D elements before
-    # the conventional path is migrated to shared geometry helpers.
+    # the particles path is migrated to shared geometry helpers.
     shared_ips = {'ip1': xt.Marker(), 'ip2': xt.Marker()}
     env = xt.Environment(lines={
-        'cw': _make_conventional_toy_ring('cw', shared_ips),
-        'acw': _make_conventional_toy_ring('acw', shared_ips),
+        'cw': _make_particles_toy_ring('cw', shared_ips),
+        'acw': _make_particles_toy_ring('acw', shared_ips),
         'unused': xt.Line(
             elements=[xt.Drift(length=1)],
             particle_ref=xt.Particles(p0c=7e12)),
@@ -156,12 +156,12 @@ def test_conventional_install_and_configure_characterization():
         num_long_range_encounters_per_side=[1, 1],
         num_slices_head_on=3,
         harmonic_number=8, bunch_spacing_buckets=1,
-        sigmaz=0.1, delay_at_ips_slots=[0, 6])
+        sigmaz=0.1, delay_at_ips_slots=[0, 6], mode='particles')
 
     assert not hasattr(env, '_bb_config')
     assert env.extra_config[_BEAMBEAM_CONFIG_KEY] == {
         'version': 1,
-        'mode': 'weak_strong',
+        'mode': 'particles',
         'clockwise_line': 'cw',
         'anticlockwise_line': 'acw',
         'ip_names': ['ip1', 'ip2'],
@@ -209,7 +209,7 @@ def test_conventional_install_and_configure_characterization():
         [25, 15, 55, 45], rtol=0, atol=1e-14)
 
     # Save the bare optics used by configuration for independent covariance
-    # and closed-orbit checks. The ACW table is reversed by the conventional
+    # and closed-orbit checks. The ACW table is reversed by the particles
     # configuration code before partner data are transferred.
     tw_cw = env.cw.twiss()
     tw_acw = env.acw.twiss().reverse()
@@ -422,11 +422,11 @@ def test_conventional_install_and_configure_characterization():
         rtol=0, atol=1e-14)
 
 
-def test_conventional_element_state_drives_filling_pattern():
+def test_particles_element_state_drives_filling_pattern():
     shared_ips = {'ip1': xt.Marker(), 'ip2': xt.Marker()}
     env = xt.Environment(lines={
-        'cw': _make_conventional_toy_ring('cw', shared_ips),
-        'acw': _make_conventional_toy_ring('acw', shared_ips),
+        'cw': _make_particles_toy_ring('cw', shared_ips),
+        'acw': _make_particles_toy_ring('acw', shared_ips),
     })
     env.xfields.install_beambeam_interactions(
         clockwise_line='cw', anticlockwise_line='acw',
@@ -461,11 +461,11 @@ def test_conventional_element_state_drives_filling_pattern():
     assert env.cw['bb_lr.l1b1_01'].scale_strength == 0
 
 
-def test_conventional_single_beam_antisymmetry_configuration():
+def test_particles_single_beam_antisymmetry_configuration():
     # Exercise the one-line LHC configuration used when the missing opposing
     # beam is reconstructed from the optics antisymmetry around each IP.
     env = xt.Environment(lines={
-        'cw': _make_conventional_toy_ring('cw', shared_ips={}),
+        'cw': _make_particles_toy_ring('cw', shared_ips={}),
     })
     env.xfields.install_beambeam_interactions(
         clockwise_line='cw', anticlockwise_line=None,

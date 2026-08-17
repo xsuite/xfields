@@ -17,11 +17,10 @@ class XfieldsEnvironmentAPI:
             num_long_range_encounters_per_side, num_slices_head_on=None,
             harmonic_number=None, bunch_spacing_buckets=None, sigmaz=None,
             delay_at_ips_slots=None, mode=None):
-        """Install conventional or rigid-bunch beam-beam interactions.
+        """Install particles or rigid-bunch beam-beam interactions.
 
-        ``mode=None`` (or ``'weak_strong'`` / ``'conventional'``) selects the
-        sliced head-on and scalar long-range workflow, including optional
-        pipeline operation.
+        ``mode=None`` (or ``'particles'``) selects the sliced head-on and
+        scalar long-range workflow, including optional pipeline operation.
         ``mode='rigid_bunch'`` installs coherent train elements with one array
         entry per RF slot. Call :meth:`configure_beambeam_interactions`
         afterwards to load populations and geometry, then apply the filling
@@ -36,23 +35,22 @@ class XfieldsEnvironmentAPI:
         num_long_range_encounters_per_side : int or sequence of int
             Number of long-range encounters on each side of every IP.
         num_slices_head_on : int, optional
-            Longitudinal slices per head-on encounter in conventional mode.
+            Longitudinal slices per head-on encounter in particles mode.
         harmonic_number : int
             RF harmonic number.
         bunch_spacing_buckets : int
             Bunch spacing in RF buckets.
         sigmaz : float, optional
-            RMS bunch length required in conventional mode.
+            RMS bunch length required in particles mode.
         delay_at_ips_slots : sequence or mapping, optional
             Head-on bunch-pairing offsets in physical RF slots.
-        mode : {None, 'weak_strong', 'conventional', 'rigid_bunch'}, optional
-            Beam-beam model. ``'conventional'`` is retained as an alias for
-            ``'weak_strong'``.
+        mode : {None, 'particles', 'rigid_bunch'}, optional
+            Beam representation used by the beam-beam model. The default is
+            ``'particles'``.
         """
-        if mode not in (None, 'weak_strong', 'conventional', 'rigid_bunch'):
+        if mode not in (None, 'particles', 'rigid_bunch'):
             raise ValueError(
-                "`mode` must be None, 'weak_strong', 'conventional' or "
-                "'rigid_bunch'.")
+                "`mode` must be None, 'particles' or 'rigid_bunch'.")
 
         if mode != 'rigid_bunch':
             missing = [name for name, value in (
@@ -63,10 +61,10 @@ class XfieldsEnvironmentAPI:
             ) if value is None]
             if missing:
                 raise ValueError(
-                    'Missing conventional beam-beam installation arguments: '
+                    'Missing `particles`-mode installation arguments: '
                     + ', '.join(missing))
 
-            from .config_tools.beambeam_config_tools.weak_strong import (
+            from .config_tools.beambeam_config_tools.particles_mode import (
                 install_beambeam_interactions,
             )
 
@@ -88,7 +86,7 @@ class XfieldsEnvironmentAPI:
                 '`num_slices_head_on` and `sigmaz` do not apply when '
                 "mode='rigid_bunch'.")
 
-        from .config_tools.beambeam_config_tools.rigid_bunch import (
+        from .config_tools.beambeam_config_tools.rigid_bunch_mode import (
             install_rigid_bunch_beambeam,
         )
 
@@ -107,9 +105,9 @@ class XfieldsEnvironmentAPI:
             self, num_particles=None, nemitt_x=None, nemitt_y=None,
             crab_strong_beam=True, use_antisymmetry=False,
             separation_bumps=None):
-        """Configure conventional or rigid-bunch beam-beam interactions.
+        """Configure particles or rigid-bunch beam-beam interactions.
 
-        Conventional mode uses ``num_particles`` and the two emittances.
+        Particles mode uses ``num_particles`` and the two emittances.
         Rigid-bunch mode accepts either a common scalar population or a
         ``{'cw': ..., 'acw': ...}`` mapping whose values are scalar or
         slot-indexed. It returns the :class:`BeamBeamRigidBunchStudy` that owns
@@ -118,29 +116,29 @@ class XfieldsEnvironmentAPI:
         Parameters
         ----------
         num_particles : float or mapping
-            Uniform bunch population in weak--strong mode. In rigid-bunch
+            Uniform bunch population in particles mode. In rigid-bunch
             mode, either a common population or a ``'cw'`` / ``'acw'`` mapping
             of scalar or slot-indexed populations.
         nemitt_x, nemitt_y : float
             Normalized transverse emittances.
         crab_strong_beam, use_antisymmetry, separation_bumps
-            Conventional beam-beam configuration options.
+            Particles-mode beam-beam configuration options.
 
         Returns
         -------
         BeamBeamRigidBunchStudy or None
-            The rigid-bunch study, or the conventional helper's result.
+            The rigid-bunch study, or the particles-mode helper's result.
         """
         config = self.env.extra_config.get('xfields_beambeam', {})
-        mode = config.get('mode', 'conventional')
+        mode = config.get('mode', 'particles')
 
         if mode != 'rigid_bunch':
             if num_particles is None or nemitt_x is None or nemitt_y is None:
                 raise ValueError(
                     '`num_particles`, `nemitt_x` and `nemitt_y` are required '
-                    'for conventional beam-beam configuration.')
+                    'for `particles`-mode beam-beam configuration.')
 
-            from .config_tools.beambeam_config_tools.weak_strong import (
+            from .config_tools.beambeam_config_tools.particles_mode import (
                 configure_beambeam_interactions,
             )
 
@@ -169,7 +167,7 @@ class XfieldsEnvironmentAPI:
                 'Missing rigid-bunch configuration arguments: '
                 + ', '.join(missing))
 
-        from .config_tools.beambeam_config_tools.rigid_bunch import (
+        from .config_tools.beambeam_config_tools.rigid_bunch_mode import (
             configure_rigid_bunch_beambeam,
         )
 
@@ -181,13 +179,13 @@ class XfieldsEnvironmentAPI:
 
     def apply_filling_pattern(self, filling_pattern_cw, filling_pattern_acw,
                               i_bunch_cw, i_bunch_acw):
-        """Select one bunch from conventional beam-beam filling patterns.
+        """Select one bunch from particles-mode beam-beam filling patterns.
 
-        This established helper belongs to the weak--strong, potentially
+        This helper belongs to the particle-based, potentially
         pipeline-enabled workflow. Rigid-bunch fillings are changed with
         :meth:`BeamBeamRigidBunchStudy.apply_filling_pattern`.
         """
-        from .config_tools.beambeam_config_tools.weak_strong import (
+        from .config_tools.beambeam_config_tools.particles_mode import (
             apply_filling_pattern,
         )
 
