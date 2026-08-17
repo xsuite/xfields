@@ -39,6 +39,120 @@ _BEAMBEAM_CONFIG_KEY = 'xfields_beambeam'
 _BEAMBEAM_CONFIG_VERSION = 1
 
 
+def install_beambeam_interactions(
+        env, clockwise_line, anticlockwise_line, ip_names,
+        num_long_range_encounters_per_side, num_slices_head_on,
+        harmonic_number, bunch_spacing_buckets, sigmaz,
+        delay_at_ips_slots=None):
+    """Install inactive, tagged weak--strong beam-beam elements."""
+    cw_name = _line_name(env, clockwise_line, 'clockwise_line')
+    acw_name = _line_name(env, anticlockwise_line, 'anticlockwise_line')
+    ip_names = list(ip_names)
+    num_lr = _normalize_num_long_range(
+        ip_names, num_long_range_encounters_per_side)
+    delays_by_ip = _normalize_delays(ip_names, delay_at_ips_slots)
+
+    n_slots_float = harmonic_number / bunch_spacing_buckets
+    n_slots = int(n_slots_float)
+    if n_slots != n_slots_float:
+        raise ValueError(
+            '`harmonic_number` must be divisible by '
+            '`bunch_spacing_buckets`.')
+
+    for line in env.lines.values():
+        line.discard_tracker()
+    if cw_name is not None and acw_name is not None:
+        circumference_cw = env.lines[cw_name].get_length()
+        circumference_acw = env.lines[acw_name].get_length()
+        if not np.isclose(circumference_cw, circumference_acw,
+                          atol=1e-4, rtol=0):
+            raise ValueError(
+                'The clockwise and anticlockwise lines must have the same '
+                'circumference.')
+
+    for orientation, line_name, beam_name, other_beam_name in (
+            ('clockwise', cw_name, 'b1', 'b2'),
+            ('anticlockwise', acw_name, 'b2', 'b1')):
+        if line_name is None:
+            continue
+        line = env.lines[line_name]
+        specs = _element_specs(
+            circumference=line.get_length(), ip_names=ip_names,
+            num_long_range_encounters_per_side=num_lr,
+            num_slices_head_on=num_slices_head_on,
+            harmonic_number=harmonic_number,
+            bunch_spacing_buckets=bunch_spacing_buckets, sigmaz=sigmaz,
+            orientation=orientation, beam_name=beam_name,
+            other_beam_name=other_beam_name)
+        _install_elements(env, line_name, specs)
+
+    env.extra_config[_BEAMBEAM_CONFIG_KEY] = {
+        'version': _BEAMBEAM_CONFIG_VERSION,
+        'mode': 'weak_strong',
+        'clockwise_line': cw_name,
+        'anticlockwise_line': acw_name,
+        'ip_names': ip_names,
+        'n_slots': n_slots,
+        'delay_at_ips_slots': delays_by_ip,
+    }
+
+    # A rigid-bunch installation uses this attribute to select its configure
+    # path. Installing weak--strong elements replaces that mode explicitly.
+    if hasattr(env, '_bb_config'):
+        del env._bb_config
+
+
+def configure_beambeam_interactions(
+        env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
+        use_antisymmetry=False, separation_bumps=None):
+    """Reanalyse the live lines and configure their tagged BB elements."""
+    installation = _discover_installation(env)
+
+    for orientation in ('clockwise', 'anticlockwise'):
+        line_name = installation.line_names[orientation]
+        if line_name is None:
+            continue
+        line = env.lines[line_name]
+        if not line._has_valid_tracker():
+            line.build_tracker()
+        if not isinstance(line.tracker._context, xo.ContextCpu):
+            raise ValueError(
+                'The trackers need to be built on CPU before configuring the '
+                'beam-beam elements.')
+
+        for record in installation.elements[orientation]:
+            line.element_refs[record.name].scale_strength = 1.0
+            element = line[record.name]
+            element.other_beam_q0 = 0.0
+            for field_name in (
+                    'post_subtract_x', 'post_subtract_px',
+                    'post_subtract_y', 'post_subtract_py',
+                    'post_subtract_zeta', 'post_subtract_pzeta'):
+                if hasattr(element, field_name):
+                    setattr(element, field_name, 0.0)
+
+    _analyse_and_configure_elements(
+        installation=installation,
+        line_cw=env.lines.get(installation.line_names['clockwise']),
+        line_acw=env.lines.get(installation.line_names['anticlockwise']),
+        num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+        crab_strong_beam=crab_strong_beam,
+        use_antisymmetry=use_antisymmetry,
+        separation_bumps=separation_bumps)
+
+    env.vars['beambeam_scale'] = 1.0
+    for orientation in ('clockwise', 'anticlockwise'):
+        line_name = installation.line_names[orientation]
+        if line_name is None:
+            continue
+        line = env.lines[line_name]
+        for record in installation.elements[orientation]:
+            variable_name = f'{record.name}_scale_strength'
+            env.vars[variable_name] = env.vars['beambeam_scale']
+            line.element_refs[record.name].scale_strength = env.vars[
+                variable_name]
+
+
 @dataclass(frozen=True)
 class _InstalledBeamBeamElement:
     name: str
@@ -302,69 +416,6 @@ def _discover_installation(env):
         delay_at_ips_slots=config.get('delay_at_ips_slots'))
 
 
-def install_beambeam_interactions(
-        env, clockwise_line, anticlockwise_line, ip_names,
-        num_long_range_encounters_per_side, num_slices_head_on,
-        harmonic_number, bunch_spacing_buckets, sigmaz,
-        delay_at_ips_slots=None):
-    """Install inactive, tagged weak--strong beam-beam elements."""
-    cw_name = _line_name(env, clockwise_line, 'clockwise_line')
-    acw_name = _line_name(env, anticlockwise_line, 'anticlockwise_line')
-    ip_names = list(ip_names)
-    num_lr = _normalize_num_long_range(
-        ip_names, num_long_range_encounters_per_side)
-    delays_by_ip = _normalize_delays(ip_names, delay_at_ips_slots)
-
-    n_slots_float = harmonic_number / bunch_spacing_buckets
-    n_slots = int(n_slots_float)
-    if n_slots != n_slots_float:
-        raise ValueError(
-            '`harmonic_number` must be divisible by '
-            '`bunch_spacing_buckets`.')
-
-    for line in env.lines.values():
-        line.discard_tracker()
-    if cw_name is not None and acw_name is not None:
-        circumference_cw = env.lines[cw_name].get_length()
-        circumference_acw = env.lines[acw_name].get_length()
-        if not np.isclose(circumference_cw, circumference_acw,
-                          atol=1e-4, rtol=0):
-            raise ValueError(
-                'The clockwise and anticlockwise lines must have the same '
-                'circumference.')
-
-    for orientation, line_name, beam_name, other_beam_name in (
-            ('clockwise', cw_name, 'b1', 'b2'),
-            ('anticlockwise', acw_name, 'b2', 'b1')):
-        if line_name is None:
-            continue
-        line = env.lines[line_name]
-        specs = _element_specs(
-            circumference=line.get_length(), ip_names=ip_names,
-            num_long_range_encounters_per_side=num_lr,
-            num_slices_head_on=num_slices_head_on,
-            harmonic_number=harmonic_number,
-            bunch_spacing_buckets=bunch_spacing_buckets, sigmaz=sigmaz,
-            orientation=orientation, beam_name=beam_name,
-            other_beam_name=other_beam_name)
-        _install_elements(env, line_name, specs)
-
-    env.extra_config[_BEAMBEAM_CONFIG_KEY] = {
-        'version': _BEAMBEAM_CONFIG_VERSION,
-        'mode': 'weak_strong',
-        'clockwise_line': cw_name,
-        'anticlockwise_line': acw_name,
-        'ip_names': ip_names,
-        'n_slots': n_slots,
-        'delay_at_ips_slots': delays_by_ip,
-    }
-
-    # A rigid-bunch installation uses this attribute to select its configure
-    # path. Installing weak--strong elements replaces that mode explicitly.
-    if hasattr(env, '_bb_config'):
-        del env._bb_config
-
-
 def _build_configuration_table(elements, line, beam, other_beam):
     if not elements:
         return None
@@ -585,57 +636,6 @@ def _measure_crabbing(line, bb_df, reverse):
                 bb_df.loc[element_name, f'self_{coordinate}_crab'] = (
                     twiss_crab[coordinate][element_index]
                     - twiss[coordinate][element_index])
-
-
-def configure_beambeam_interactions(
-        env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
-        use_antisymmetry=False, separation_bumps=None):
-    """Reanalyse the live lines and configure their tagged BB elements."""
-    installation = _discover_installation(env)
-
-    for orientation in ('clockwise', 'anticlockwise'):
-        line_name = installation.line_names[orientation]
-        if line_name is None:
-            continue
-        line = env.lines[line_name]
-        if not line._has_valid_tracker():
-            line.build_tracker()
-        if not isinstance(line.tracker._context, xo.ContextCpu):
-            raise ValueError(
-                'The trackers need to be built on CPU before configuring the '
-                'beam-beam elements.')
-
-        for record in installation.elements[orientation]:
-            line.element_refs[record.name].scale_strength = 1.0
-            element = line[record.name]
-            element.other_beam_q0 = 0.0
-            for field_name in (
-                    'post_subtract_x', 'post_subtract_px',
-                    'post_subtract_y', 'post_subtract_py',
-                    'post_subtract_zeta', 'post_subtract_pzeta'):
-                if hasattr(element, field_name):
-                    setattr(element, field_name, 0.0)
-
-    _analyse_and_configure_elements(
-        installation=installation,
-        line_cw=env.lines.get(installation.line_names['clockwise']),
-        line_acw=env.lines.get(installation.line_names['anticlockwise']),
-        num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-        crab_strong_beam=crab_strong_beam,
-        use_antisymmetry=use_antisymmetry,
-        separation_bumps=separation_bumps)
-
-    env.vars['beambeam_scale'] = 1.0
-    for orientation in ('clockwise', 'anticlockwise'):
-        line_name = installation.line_names[orientation]
-        if line_name is None:
-            continue
-        line = env.lines[line_name]
-        for record in installation.elements[orientation]:
-            variable_name = f'{record.name}_scale_strength'
-            env.vars[variable_name] = env.vars['beambeam_scale']
-            line.element_refs[record.name].scale_strength = env.vars[
-                variable_name]
 
 
 def apply_filling_pattern(env, filling_pattern_cw, filling_pattern_acw,
