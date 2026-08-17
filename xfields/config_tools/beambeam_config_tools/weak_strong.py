@@ -10,7 +10,6 @@ installed element carries only its encounter-local description in the generic,
 serializable ``BeamElement.extra`` container.
 """
 
-import copy
 from dataclasses import dataclass
 
 import numpy as np
@@ -18,15 +17,12 @@ import xobjects as xo
 
 import xfields as xf
 
-from ._madpoint import MadPoint
 from .config_tools import (
     BEAMBEAM_CONFIG_KEY,
     BEAMBEAM_CONFIG_VERSION,
-    _measure_crabbing,
     compute_beambeam_geometry,
-    compute_twiss_and_survey_at_bb,
+    compute_twiss_and_madpoints_at_bb,
     find_alpha_and_phi,
-    find_bb_separations,
 )
 from .orbit_dependent_configuration_tools import (
     _store_self_orbit_and_dipolar_kick,
@@ -125,24 +121,17 @@ def configure_beambeam_interactions(
         if line_cw is not None and line_acw is not None:
             raise ValueError(
                 'Antisymmetry configuration requires exactly one beam line.')
-        orientation = 'clockwise' if line_cw is not None else 'anticlockwise'
-        _configure_with_antisymmetry(
-            line=line_cw if line_cw is not None else line_acw,
-            records=installation.elements[orientation],
-            orientation=orientation, num_particles=num_particles,
-            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-            crab_strong_beam=crab_strong_beam,
-            separation_bumps=separation_bumps,
-            ip_names=installation.ip_names)
     else:
         if line_cw is None or line_acw is None:
             raise ValueError(
                 'Both beam lines are required when antisymmetry is disabled.')
-        _configure_two_beams(
-            installation=installation, line_cw=line_cw, line_acw=line_acw,
-            num_particles=num_particles,
-            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-            crab_strong_beam=crab_strong_beam)
+
+    _configure_weak_strong(
+        installation=installation, line_cw=line_cw, line_acw=line_acw,
+        num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+        crab_strong_beam=crab_strong_beam,
+        use_antisymmetry=use_antisymmetry,
+        separation_bumps=separation_bumps)
 
     env.vars['beambeam_scale'] = 1.0
     for orientation in ('clockwise', 'anticlockwise'):
@@ -420,158 +409,94 @@ def _discover_installation(env):
         delay_at_ips_slots=config.get('delay_at_ips_slots'))
 
 
-def _configure_two_beams(
+def _configure_weak_strong(
         installation, line_cw, line_acw, num_particles,
-        nemitt_x, nemitt_y, crab_strong_beam):
-    records_cw = installation.elements['clockwise']
-    records_acw = installation.elements['anticlockwise']
-    records_acw_by_name = {record.name: record for record in records_acw}
-
+        nemitt_x, nemitt_y, crab_strong_beam,
+        use_antisymmetry, separation_bumps):
+    lines = {'cw': line_cw, 'acw': line_acw}
+    records = {
+        'cw': installation.elements['clockwise'],
+        'acw': installation.elements['anticlockwise'],
+    }
+    present_orientations = [
+        orientation for orientation, line in lines.items()
+        if line is not None]
     names_by_ip = {
-        'cw': _element_names_by_ip(records_cw),
-        'acw': _element_names_by_ip(records_acw),
+        orientation: (
+            _element_names_by_ip(records[orientation])
+            if lines[orientation] is not None else {})
+        for orientation in ('cw', 'acw')
     }
     crab_s_by_element = None
     if crab_strong_beam:
         crab_s_by_element = {
-            'cw': {record.name: record.metadata['s_crab']
-                   for record in records_cw},
-            'acw': {record.name: record.metadata['s_crab']
-                    for record in records_acw},
+            orientation: {
+                record.name: record.metadata['s_crab']
+                for record in records[orientation]}
+            for orientation in present_orientations
         }
-    twiss_and_survey = compute_twiss_and_survey_at_bb(
+    antisymmetry_records = None
+    if use_antisymmetry:
+        antisymmetry_records = records[present_orientations[0]]
+    twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=line_cw, line_acw=line_acw,
         element_names_by_ip=names_by_ip,
         nemitt_x=nemitt_x, nemitt_y=nemitt_y,
         survey_separation=True,
         acw_is_reversed=True,
-        crab_s_by_element=crab_s_by_element)
-    twiss_cw = twiss_and_survey['twiss']['cw']
-    twiss_acw = twiss_and_survey['twiss']['acw']
-
-    for record_cw in records_cw:
-        record_acw = records_acw_by_name[
-            record_cw.metadata['other_element_name']]
-        geometry = compute_beambeam_geometry(
-            twiss_and_survey=twiss_and_survey,
-            ip_name=record_cw.metadata['ip_name'],
-            element_name_cw=record_cw.name,
-            element_name_acw=record_acw.name)
-
-        _configure_element(
-            line=line_cw, record=record_cw,
-            strong_line=line_acw, strong_record=record_acw,
-            geometry=geometry, weak_orientation='cw',
-            num_particles=num_particles)
-        _configure_element(
-            line=line_acw, record=record_acw,
-            strong_line=line_cw, strong_record=record_cw,
-            geometry=geometry, weak_orientation='acw',
-            num_particles=num_particles)
-
-    _store_self_orbit_and_dipolar_kick(
-        line=line_cw, particle_on_co=twiss_cw.particle_on_co)
-    _store_self_orbit_and_dipolar_kick(
-        line=line_acw, particle_on_co=twiss_acw.reverse().particle_on_co)
-
-
-def _configure_with_antisymmetry(
-        line, records, orientation, num_particles, nemitt_x, nemitt_y,
-        crab_strong_beam, separation_bumps, ip_names):
-    reverse = orientation == 'anticlockwise'
-    twiss = line.twiss(reverse=False)
-    if reverse:
-        twiss = twiss.reverse()
-    covariance = twiss.get_beam_covariance(
-        nemitt_x=nemitt_x, nemitt_y=nemitt_y)
-    surveys = {}
-    for ip_name in ip_names:
-        survey = line.survey(element0=ip_name, reverse=False)
-        surveys[ip_name] = survey.reverse() if reverse else survey
-
-    points = {
-        record.name: MadPoint(
-            record.name, None, use_twiss=True, use_survey=True,
-            xsuite_survey=surveys[record.metadata['ip_name']],
-            xsuite_twiss=twiss)
-        for record in records
+        crab_s_by_element=crab_s_by_element,
+        antisymmetry_records=antisymmetry_records,
+        separation_bumps=separation_bumps)
+    records_by_name = {
+        orientation: {record.name: record
+                      for record in records[orientation]}
+        for orientation in present_orientations
     }
-    positions = np.array([twiss['s', record.name] for record in records])
-    crab_offsets = (_measure_crabbing(
-        line=line,
-        crab_s_by_element={record.name: record.metadata['s_crab']
-                           for record in records},
-        twiss=twiss,
-        reverse=reverse)
-        if crab_strong_beam else {})
+    geometry_by_pair = {}
 
-    antisymmetry_sigma_sign = {
-        11: 1, 12: -1, 13: 1, 14: -1, 22: 1,
-        23: -1, 24: 1, 33: 1, 34: -1, 44: 1,
-    }
-    weak_orientation = 'acw' if reverse else 'cw'
-    strong_orientation = 'cw' if reverse else 'acw'
-    for record in records:
-        element_name = record.name
-        ip_name = record.metadata['ip_name']
-        mirrored_s = 2 * twiss['s', ip_name] - twiss['s', element_name]
-        partner_index = int(np.argmin(np.abs(positions - mirrored_s)))
-        partner = records[partner_index]
-        if not np.isclose(
-                positions[partner_index], mirrored_s, rtol=0, atol=1e-5):
-            raise ValueError(
-                f'No antisymmetric beam-beam partner found for '
-                f'`{element_name}`.')
+    for weak_orientation in present_orientations:
+        for record in records[weak_orientation]:
+            strong_line, strong_record = _resolve_strong_beam(
+                weak_orientation=weak_orientation,
+                record=record,
+                lines=lines,
+                records_by_name=records_by_name,
+                twiss_and_madpoints=twiss_and_madpoints)
+            if weak_orientation == 'cw':
+                pair = (record.name, record.metadata['other_element_name'])
+            else:
+                pair = (record.metadata['other_element_name'], record.name)
+            if pair not in geometry_by_pair:
+                geometry_by_pair[pair] = compute_beambeam_geometry(
+                    twiss_and_madpoints=twiss_and_madpoints,
+                    element_name_cw=pair[0],
+                    element_name_acw=pair[1])
+            _configure_element(
+                line=lines[weak_orientation], record=record,
+                strong_line=strong_line, strong_record=strong_record,
+                geometry=geometry_by_pair[pair],
+                weak_orientation=weak_orientation,
+                num_particles=num_particles)
 
-        weak_point = points[element_name]
-        strong_point = copy.deepcopy(points[partner.name])
-        strong_point.sz = weak_point.sz
-        strong_point.p[2] = weak_point.p[2]
-        strong_point.tpx *= -1
-        strong_point.tpy *= -1
-        if separation_bumps is not None and ip_name in separation_bumps:
-            plane = separation_bumps[ip_name]
-            setattr(
-                strong_point, f't{plane}',
-                -getattr(strong_point, f't{plane}'))
-            setattr(
-                strong_point, f'tp{plane}',
-                -getattr(strong_point, f'tp{plane}'))
-            strong_point.p[{'x': 0, 'y': 1}[plane]] += (
-                2 * getattr(strong_point, f't{plane}'))
+        _store_self_orbit_and_dipolar_kick(
+            line=lines[weak_orientation],
+            particle_on_co=(
+                twiss_and_madpoints['particle_on_co'][weak_orientation]))
 
-        separation_x, separation_y = find_bb_separations(
-            [weak_point], [strong_point], names=[element_name])
-        strong_sigma = {
-            sigma_name: antisymmetry_sigma_sign[sigma_name]
-            * float(covariance[f'Sigma{sigma_name}', partner.name])
-            for sigma_name in antisymmetry_sigma_sign
-        }
-        weak_geometry = {
-            'separation_x': separation_x[0],
-            'separation_y': separation_y[0],
-            'dpx': weak_point.tpx - strong_point.tpx,
-            'dpy': weak_point.tpy - strong_point.tpy,
-        }
-        strong_crab = crab_offsets.get(partner.name)
-        if strong_crab is not None:
-            weak_geometry['separation_x'] += strong_crab['x']
-            weak_geometry['separation_y'] += strong_crab['y']
-        strong_geometry = {'sigma': strong_sigma}
-        geometry = {
-            weak_orientation: weak_geometry,
-            strong_orientation: strong_geometry,
-        }
-        _configure_element(
-            line=line, record=record,
-            strong_line=line, strong_record=partner,
-            geometry=geometry, weak_orientation=weak_orientation,
-            num_particles=num_particles)
 
-    particle_on_co = (
-        twiss.reverse().particle_on_co if reverse else twiss.particle_on_co)
-    _store_self_orbit_and_dipolar_kick(
-        line=line, particle_on_co=particle_on_co)
+def _resolve_strong_beam(
+        weak_orientation, record, lines, records_by_name,
+        twiss_and_madpoints):
+    strong_orientation = 'acw' if weak_orientation == 'cw' else 'cw'
+    if lines[strong_orientation] is not None:
+        strong_record = records_by_name[strong_orientation][
+            record.metadata['other_element_name']]
+        return lines[strong_orientation], strong_record
+
+    partner_name = twiss_and_madpoints[
+        'antisymmetric_partner_names'][weak_orientation][record.name]
+    return (lines[weak_orientation],
+            records_by_name[weak_orientation][partner_name])
 
 
 def _element_names_by_ip(records):

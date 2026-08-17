@@ -12,7 +12,7 @@ import xtrack as xt
 from xfields import BeamBeamRigidBunchStudy
 from xfields.config_tools.beambeam_config_tools.config_tools import (
     compute_beambeam_geometry,
-    compute_twiss_and_survey_at_bb,
+    compute_twiss_and_madpoints_at_bb,
 )
 
 
@@ -239,14 +239,14 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
             bb_cw.other_beam_sigma_y, geom['sigma_y_acw'], rtol=0, atol=0)
 
     # The study geometry is the normalized view of the shared per-encounter
-    # Twiss and survey data.
+    # Reduced Twiss tables and MadPoints.
     names_by_ip = {'cw': {}, 'acw': {}}
     for base, ip, _ in study.enc_specs:
         names_by_ip['cw'].setdefault(ip, []).append(
             study.bb_name(base, False))
         names_by_ip['acw'].setdefault(ip, []).append(
             study.bb_name(base, True))
-    twiss_and_survey = compute_twiss_and_survey_at_bb(
+    twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=env.cw, line_acw=env.acw,
         element_names_by_ip=names_by_ip,
         nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
@@ -254,7 +254,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     for base, ip, _ in study.enc_specs:
         geom = study.geom[base]
         encounter = compute_beambeam_geometry(
-            twiss_and_survey=twiss_and_survey, ip_name=ip,
+            twiss_and_madpoints=twiss_and_madpoints,
             element_name_cw=study.bb_name(base, False),
             element_name_acw=study.bb_name(base, True))
         for orientation in ('cw', 'acw'):

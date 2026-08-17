@@ -3,6 +3,8 @@
 # Copyright (c) CERN, 2026.                   #
 # ########################################### #
 
+import copy
+
 import numpy as np
 import pytest
 
@@ -12,7 +14,7 @@ import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
     compute_beambeam_geometry,
-    compute_twiss_and_survey_at_bb,
+    compute_twiss_and_madpoints_at_bb,
     find_bb_separations,
 )
 from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
@@ -121,7 +123,7 @@ def test_survey_region_rejects_wrapping_line_boundary():
     line = _make_conventional_toy_ring('cw', {})
 
     with pytest.raises(AssertionError, match='wraps across the line boundary'):
-        compute_twiss_and_survey_at_bb(
+        compute_twiss_and_madpoints_at_bb(
             line_cw=line,
             line_acw=line,
             element_names_by_ip={
@@ -224,12 +226,22 @@ def test_conventional_install_and_configure_characterization():
         names_by_ip['cw'].setdefault(ip_name, []).append(record.name)
         names_by_ip['acw'].setdefault(ip_name, []).append(
             record.metadata['other_element_name'])
-    twiss_and_survey = compute_twiss_and_survey_at_bb(
+    twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=env.cw, line_acw=env.acw,
         element_names_by_ip=names_by_ip,
         nemitt_x=2e-6, nemitt_y=2.5e-6,
         survey_separation=True,
         acw_is_reversed=True)
+    for orientation in ('cw', 'acw'):
+        expected_names = [
+            name for names in names_by_ip[orientation].values()
+            for name in names]
+        assert list(twiss_and_madpoints['twiss'][orientation].name) \
+            == expected_names
+        assert list(twiss_and_madpoints['covariance'][orientation].name) \
+            == expected_names
+        assert set(twiss_and_madpoints['points'][orientation]) \
+            == set(expected_names)
 
     surveys_cw = {
         ip: env.cw.survey(element0=ip, reverse=False)
@@ -244,7 +256,7 @@ def test_conventional_install_and_configure_characterization():
         element_name_cw = record.name
         element_name_acw = record.metadata['other_element_name']
         geometry = compute_beambeam_geometry(
-            twiss_and_survey=twiss_and_survey, ip_name=ip_name,
+            twiss_and_madpoints=twiss_and_madpoints,
             element_name_cw=element_name_cw,
             element_name_acw=element_name_acw)
         for orientation, twiss, element_name in (
@@ -456,8 +468,7 @@ def test_conventional_element_state_drives_filling_pattern():
 
 def test_conventional_single_beam_antisymmetry_configuration():
     # Exercise the one-line LHC configuration used when the missing opposing
-    # beam is reconstructed from the optics antisymmetry around each IP. This
-    # path deliberately retains its legacy Twiss/survey covariance handling.
+    # beam is reconstructed from the optics antisymmetry around each IP.
     env = xt.Environment(lines={
         'cw': _make_conventional_toy_ring('cw', shared_ips={}),
     })
@@ -472,6 +483,48 @@ def test_conventional_single_beam_antisymmetry_configuration():
     twiss = env.cw.twiss()
     covariance = twiss.get_beam_covariance(
         nemitt_x=2e-6, nemitt_y=2.5e-6)
+    installation = _discover_installation(env)
+    records = installation.elements['clockwise']
+    names_by_ip = {'cw': {}, 'acw': {}}
+    for record in records:
+        names_by_ip['cw'].setdefault(
+            record.metadata['ip_name'], []).append(record.name)
+    twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
+        line_cw=env.cw, line_acw=None,
+        element_names_by_ip=names_by_ip,
+        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        survey_separation=True,
+        acw_is_reversed=True,
+        antisymmetry_records=records,
+        separation_bumps={'ip1': 'x', 'ip2': 'y'})
+    actual_names = [
+        name for names in names_by_ip['cw'].values() for name in names]
+    records_by_name = {record.name: record for record in records}
+    virtual_names = [records_by_name[name].metadata['other_element_name']
+                     for name in actual_names]
+    assert list(twiss_and_madpoints['twiss']['cw'].name) == actual_names
+    assert list(twiss_and_madpoints['twiss']['acw'].name) == virtual_names
+    assert set(twiss_and_madpoints['points']['acw']) == set(virtual_names)
+    assert twiss_and_madpoints['antisymmetric_partner_names']['cw'][
+        'bb_lr.r1b1_01'] == 'bb_lr.l1b1_01'
+
+    survey_ip1 = env.cw.survey(element0='ip1')
+    weak_point = MadPoint(
+        'bb_lr.r1b1_01', use_twiss=True, use_survey=True,
+        xsuite_twiss=twiss, xsuite_survey=survey_ip1)
+    strong_point = copy.deepcopy(MadPoint(
+        'bb_lr.l1b1_01', use_twiss=True, use_survey=True,
+        xsuite_twiss=twiss, xsuite_survey=survey_ip1))
+    strong_point.sz = weak_point.sz
+    strong_point.p[2] = weak_point.p[2]
+    strong_point.tpx *= -1
+    strong_point.tpy *= -1
+    strong_point.tx *= -1
+    strong_point.tpx *= -1
+    strong_point.p[0] += 2 * strong_point.tx
+    expected_separation_x, expected_separation_y = find_bb_separations(
+        [weak_point], [strong_point], names=['bb_lr.r1b1_01'])
+
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
         nemitt_x=2e-6, nemitt_y=2.5e-6,
@@ -489,3 +542,9 @@ def test_conventional_single_beam_antisymmetry_configuration():
     xo.assert_allclose(lr_right.other_beam_num_particles, 1e11,
                        rtol=0, atol=0)
     xo.assert_allclose(lr_right.scale_strength, 1, rtol=0, atol=0)
+    xo.assert_allclose(
+        lr_right.other_beam_shift_x, expected_separation_x[0],
+        rtol=0, atol=1e-14)
+    xo.assert_allclose(
+        lr_right.other_beam_shift_y, expected_separation_y[0],
+        rtol=0, atol=1e-14)

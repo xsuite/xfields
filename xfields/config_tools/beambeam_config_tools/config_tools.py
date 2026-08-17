@@ -3,9 +3,12 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-"""Shared Twiss and survey data for beam--beam configuration."""
+"""Shared Twiss and geometry data for beam--beam configuration."""
 
+import copy
 import numpy as np
+
+from ._madpoint import MadPoint
 
 
 _SIGMA_NAMES = (11, 12, 13, 14, 22, 23, 24, 33, 34, 44)
@@ -13,42 +16,65 @@ BEAMBEAM_CONFIG_KEY = 'xfields_beambeam'
 BEAMBEAM_CONFIG_VERSION = 1
 
 
-def compute_twiss_and_survey_at_bb(
+def compute_twiss_and_madpoints_at_bb(
         line_cw, line_acw, element_names_by_ip, nemitt_x, nemitt_y,
         survey_separation=True, acw_is_reversed=False,
-        crab_s_by_element=None):
-    """Compute reusable Twiss and survey data for beam--beam configuration.
+        crab_s_by_element=None, antisymmetry_records=None,
+        separation_bumps=None):
+    """Compute reduced Twiss tables and MadPoints at beam--beam elements.
 
     ``element_names_by_ip`` is indexed first by ``'cw'`` / ``'acw'`` and
     then by IP name. ``crab_s_by_element`` optionally provides the
-    longitudinal offset used to measure crabbing at each element. No
-    per-encounter geometry is assembled or retained here.
+    longitudinal offset used to measure crabbing at each element. When
+    ``antisymmetry_records`` is provided, the missing beam is synthesized
+    from mirrored elements of the available beam.
     """
     lines = {'cw': line_cw, 'acw': line_acw}
+    lines = {orientation: line for orientation, line in lines.items()
+             if line is not None}
+    element_names_by_ip = {
+        orientation: {
+            ip_name: list(names) for ip_name, names in by_ip.items()}
+        for orientation, by_ip in element_names_by_ip.items()
+    }
+    particle_on_co = {}
     twiss = {
         orientation: line.twiss(reverse=False)
         for orientation, line in lines.items()
     }
-    if acw_is_reversed:
+    particle_on_co.update({
+        orientation: table.particle_on_co
+        for orientation, table in twiss.items()
+    })
+    if acw_is_reversed and 'acw' in twiss:
         twiss['acw'] = twiss['acw'].reverse()
     covariance = {
         orientation: table.get_beam_covariance(
             nemitt_x=nemitt_x, nemitt_y=nemitt_y)
         for orientation, table in twiss.items()
     }
-    survey = None
-    if survey_separation:
-        survey = {'cw': {}, 'acw': {}}
-        for orientation, line in lines.items():
-            for ip_name, names in element_names_by_ip[orientation].items():
+    points = {'cw': {}, 'acw': {}}
+    for orientation, line in lines.items():
+        for ip_name, names in element_names_by_ip[orientation].items():
+            region_survey = None
+            if survey_separation:
                 line_survey = line.survey(element0=ip_name)
                 region_survey = line_survey.rows[[ip_name, *names]]
                 region_span = np.ptp(region_survey.s)
                 assert 2 * region_span <= line_survey.s[-1], (
                     f'The beam-beam region around {ip_name!r} wraps across '
                     'the line boundary, which is not supported.')
-                survey[orientation][ip_name] = (
-                    region_survey.rows[names].cols['XYZ E_matrix'])
+
+            for element_name in names:
+                point = MadPoint(
+                    element_name, use_twiss=True,
+                    use_survey=survey_separation,
+                    xsuite_twiss=twiss[orientation],
+                    xsuite_survey=region_survey)
+                if survey_separation and orientation == 'acw':
+                    _transform_acw_point(
+                        point, reverse_local=acw_is_reversed)
+                points[orientation][element_name] = point
 
     crab_offsets = {'cw': {}, 'acw': {}}
     if crab_s_by_element is not None:
@@ -59,72 +85,166 @@ def compute_twiss_and_survey_at_bb(
                 twiss=twiss[orientation],
                 reverse=orientation == 'acw' and acw_is_reversed)
 
+    antisymmetric_partner_names = {'cw': {}, 'acw': {}}
+    if antisymmetry_records is not None:
+        if len(lines) != 1:
+            raise ValueError(
+                'Antisymmetry requires exactly one beam line.')
+        orientation = next(iter(lines))
+        missing_orientation = 'acw' if orientation == 'cw' else 'cw'
+        (twiss[missing_orientation], covariance[missing_orientation],
+         points[missing_orientation],
+         crab_offsets[missing_orientation],
+         antisymmetric_partner_names[orientation]) = (
+            _synthesize_antisymmetric_beam(
+                records=antisymmetry_records,
+                twiss=twiss[orientation],
+                covariance=covariance[orientation],
+                points=points[orientation],
+                crab_offsets=crab_offsets[orientation],
+                separation_bumps=separation_bumps))
+        for record in antisymmetry_records:
+            element_names_by_ip[missing_orientation].setdefault(
+                record.metadata['ip_name'], []).append(
+                    record.metadata['other_element_name'])
+
+    for orientation in ('cw', 'acw'):
+        if orientation not in twiss:
+            continue
+        names = [name
+                 for names_at_ip in element_names_by_ip[orientation].values()
+                 for name in names_at_ip]
+        twiss[orientation] = twiss[orientation].rows[names]
+        covariance[orientation] = covariance[orientation].rows[names]
+
     return {
         'twiss': twiss,
         'covariance': covariance,
-        'survey': survey,
+        'points': points,
         'crab_offsets': crab_offsets,
-        'acw_is_reversed': bool(acw_is_reversed),
+        'particle_on_co': particle_on_co,
+        'survey_separation': bool(survey_separation),
+        'antisymmetric_partner_names': antisymmetric_partner_names,
     }
+
+
+def _transform_acw_point(point, reverse_local):
+    reverse_global = np.diag([-1., 1., -1.])
+    local_transform = (
+        np.diag([-1., 1., -1.]) if reverse_local else np.eye(3))
+    frame = np.column_stack((point.ex, point.ey, point.ez))
+    frame = reverse_global @ frame @ local_transform
+    point.sp = reverse_global @ point.sp
+    point.sx, point.sy, point.sz = point.sp
+    point.ex, point.ey, point.ez = frame.T
+    point.p = point.sp + point.ex * point.tx + point.ey * point.ty
+
+
+def _synthesize_antisymmetric_beam(
+        records, twiss, covariance, points,
+        crab_offsets, separation_bumps):
+    positions = np.array([twiss['s', record.name] for record in records])
+    sigma_sign = {
+        11: 1, 12: -1, 13: 1, 14: -1, 22: 1,
+        23: -1, 24: 1, 33: 1, 34: -1, 44: 1,
+    }
+    source_names = []
+    target_names = []
+    virtual_points = {}
+    virtual_crab_offsets = {}
+    partner_names = {}
+
+    for record in records:
+        element_name = record.name
+        ip_name = record.metadata['ip_name']
+        mirrored_s = 2 * twiss['s', ip_name] - twiss['s', element_name]
+        partner_index = int(np.argmin(np.abs(positions - mirrored_s)))
+        partner = records[partner_index]
+        if not np.isclose(
+                positions[partner_index], mirrored_s, rtol=0, atol=1e-5):
+            raise ValueError(
+                f'No antisymmetric beam-beam partner found for '
+                f'`{element_name}`.')
+
+        target_name = record.metadata['other_element_name']
+        weak_point = points[element_name]
+        strong_point = copy.deepcopy(points[partner.name])
+        strong_point.name = target_name
+        strong_point.sz = weak_point.sz
+        strong_point.p[2] = weak_point.p[2]
+        strong_point.tpx *= -1
+        strong_point.tpy *= -1
+        if separation_bumps is not None and ip_name in separation_bumps:
+            plane = separation_bumps[ip_name]
+            setattr(
+                strong_point, f't{plane}',
+                -getattr(strong_point, f't{plane}'))
+            setattr(
+                strong_point, f'tp{plane}',
+                -getattr(strong_point, f'tp{plane}'))
+            strong_point.p[{'x': 0, 'y': 1}[plane]] += (
+                2 * getattr(strong_point, f't{plane}'))
+
+        source_names.append(partner.name)
+        target_names.append(target_name)
+        virtual_points[target_name] = strong_point
+        virtual_crab_offsets[target_name] = crab_offsets.get(
+            partner.name, {'x': 0., 'y': 0.})
+        partner_names[element_name] = partner.name
+
+    virtual_twiss = twiss.rows[source_names].cols[
+        's betx bety x px y py']
+    virtual_twiss.name = np.array(target_names, dtype=object)
+    virtual_twiss.x = np.array([
+        virtual_points[name].tx for name in target_names])
+    virtual_twiss.px = np.array([
+        virtual_points[name].tpx for name in target_names])
+    virtual_twiss.y = np.array([
+        virtual_points[name].ty for name in target_names])
+    virtual_twiss.py = np.array([
+        virtual_points[name].tpy for name in target_names])
+
+    sigma_columns = [f'Sigma{name}' for name in _SIGMA_NAMES]
+    virtual_covariance = covariance.rows[source_names].cols[sigma_columns]
+    virtual_covariance.name = np.array(target_names, dtype=object)
+    for sigma_name, sign in sigma_sign.items():
+        virtual_covariance[f'Sigma{sigma_name}'] *= sign
+
+    return (virtual_twiss, virtual_covariance, virtual_points,
+            virtual_crab_offsets, partner_names)
 
 
 def compute_beambeam_geometry(
-        twiss_and_survey, ip_name, element_name_cw, element_name_acw):
+        twiss_and_madpoints, element_name_cw, element_name_acw):
     """Compute the optics and geometry of one paired encounter."""
     beam = {
         orientation: _beam_data(
-            twiss_and_survey, orientation, element_name)
+            twiss_and_madpoints, orientation, element_name)
         for orientation, element_name in (
             ('cw', element_name_cw), ('acw', element_name_acw))
     }
-
-    # Weak--strong convention: strong minus weak, expressed in the weak
-    # beam's frame. This is sufficient when survey geometry is disabled.
+    point_cw = twiss_and_madpoints['points']['cw'][element_name_cw]
+    point_acw = twiss_and_madpoints['points']['acw'][element_name_acw]
+    strong_minus_weak_cw = point_acw.p - point_cw.p
     separation_cw = np.array([
-        beam['acw']['x'] - beam['cw']['x'],
-        beam['acw']['y'] - beam['cw']['y'],
+        strong_minus_weak_cw @ point_cw.ex,
+        strong_minus_weak_cw @ point_cw.ey,
     ])
-    separation_acw = -separation_cw
+    strong_minus_weak_acw = -strong_minus_weak_cw
+    separation_acw = np.array([
+        strong_minus_weak_acw @ point_acw.ex,
+        strong_minus_weak_acw @ point_acw.ey,
+    ])
     reference_separation = np.zeros(2)
-
-    if twiss_and_survey['survey'] is not None:
-        survey_cw = twiss_and_survey['survey']['cw'][ip_name]
-        survey_acw = twiss_and_survey['survey']['acw'][ip_name]
-        position_cw = survey_cw['XYZ', element_name_cw]
-        frame_cw = survey_cw['E_matrix', element_name_cw]
-        position_acw_stored = survey_acw['XYZ', element_name_acw]
-        frame_acw_stored = survey_acw['E_matrix', element_name_acw]
-
-        reverse_global = np.diag([-1., 1., -1.])
-        reverse_local = (np.diag([-1., 1., -1.])
-                         if twiss_and_survey['acw_is_reversed'] else np.eye(3))
-        position_acw = reverse_global @ position_acw_stored
-        frame_acw = reverse_global @ frame_acw_stored @ reverse_local
-
-        reference_delta = position_cw - position_acw
+    if twiss_and_madpoints['survey_separation']:
+        reference_delta = point_cw.sp - point_acw.sp
         reference_separation = np.array([
-            reference_delta @ frame_cw[:, 0],
-            reference_delta @ frame_cw[:, 1],
+            reference_delta @ point_cw.ex,
+            reference_delta @ point_cw.ey,
         ])
 
-        orbit_cw = (frame_cw[:, 0] * beam['cw']['x']
-                    + frame_cw[:, 1] * beam['cw']['y'])
-        orbit_acw = (frame_acw[:, 0] * beam['acw']['x']
-                     + frame_acw[:, 1] * beam['acw']['y'])
-        strong_minus_weak_cw = (
-            position_acw + orbit_acw - position_cw - orbit_cw)
-        separation_cw = np.array([
-            strong_minus_weak_cw @ frame_cw[:, 0],
-            strong_minus_weak_cw @ frame_cw[:, 1],
-        ])
-        strong_minus_weak_acw = -strong_minus_weak_cw
-        separation_acw = np.array([
-            strong_minus_weak_acw @ frame_acw[:, 0],
-            strong_minus_weak_acw @ frame_acw[:, 1],
-        ])
-
-    dpx_cw = beam['cw']['px'] - beam['acw']['px']
-    dpy_cw = beam['cw']['py'] - beam['acw']['py']
+    dpx_cw = point_cw.tpx - point_acw.tpx
+    dpy_cw = point_cw.tpy - point_acw.tpy
     beam['cw'].update(
         separation_x=float(separation_cw[0]),
         separation_y=float(separation_cw[1]),
@@ -134,7 +254,7 @@ def compute_beambeam_geometry(
         separation_y=float(separation_acw[1]),
         dpx=float(-dpx_cw), dpy=float(-dpy_cw))
 
-    crab_offsets = twiss_and_survey['crab_offsets']
+    crab_offsets = twiss_and_madpoints['crab_offsets']
     for weak_orientation, strong_orientation, strong_element_name in (
             ('cw', 'acw', element_name_acw),
             ('acw', 'cw', element_name_cw)):
@@ -152,9 +272,9 @@ def compute_beambeam_geometry(
     }
 
 
-def _beam_data(twiss_and_survey, orientation, element_name):
-    twiss = twiss_and_survey['twiss'][orientation]
-    covariance = twiss_and_survey['covariance'][orientation]
+def _beam_data(twiss_and_madpoints, orientation, element_name):
+    twiss = twiss_and_madpoints['twiss'][orientation]
+    covariance = twiss_and_madpoints['covariance'][orientation]
     data = {
         coordinate: float(twiss[coordinate, element_name])
         for coordinate in ('betx', 'bety', 'x', 'px', 'y', 'py')
