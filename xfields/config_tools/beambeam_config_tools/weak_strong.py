@@ -13,11 +13,24 @@ serializable ``BeamElement.extra`` container.
 from dataclasses import dataclass
 
 import numpy as np
+import pandas as pd
 import xobjects as xo
 
 import xfields as xf
 
-from .config_tools import _configure_beam_beam_elements
+from .config_tools import (
+    compute_beambeam_geometry,
+    compute_dpx_dpy,
+    compute_geometry_and_optics,
+    compute_local_crossing_angle_and_plane,
+    find_bb_separations,
+    get_counter_rotating,
+    get_partner_position_and_optics,
+    get_partner_position_and_optics_antisymmetry,
+)
+from .orbit_dependent_configuration_tools import (
+    configure_orbit_dependent_parameters_for_bb,
+)
 
 
 _BEAMBEAM_EXTRA_KEY = '_xfields_weak_strong_beambeam'
@@ -352,6 +365,228 @@ def install_beambeam_interactions(
         del env._bb_config
 
 
+def _build_configuration_table(elements, line, beam, other_beam):
+    if not elements:
+        return None
+    rows = []
+    for record in elements:
+        metadata = record.metadata
+        rows.append({
+            'beam': beam,
+            'other_beam': other_beam,
+            'ip_name': metadata['ip_name'],
+            'elementName': record.name,
+            'other_elementName': metadata['other_element_name'],
+            'label': metadata['label'],
+            'self_particle_charge': float(line.particle_ref.q0),
+            'self_relativistic_beta': float(line.particle_ref.beta0[0]),
+            'self_frac_of_bunch': metadata['self_frac_of_bunch'],
+            'identifier': metadata['identifier'],
+            's_crab': metadata['s_crab'],
+        })
+    dataframe = pd.DataFrame(rows).set_index('elementName', drop=False)
+    for which_beam in ('self', 'other'):
+        for coordinate in ('x', 'px', 'y', 'py'):
+            dataframe[f'{which_beam}_{coordinate}_crab'] = 0.
+    return dataframe.sort_index()
+
+
+def _analyse_and_configure_elements(
+        installation, line_cw, line_acw, num_particles,
+        nemitt_x, nemitt_y, crab_strong_beam,
+        use_antisymmetry=False, separation_bumps=None):
+
+    bb_df_cw = _build_configuration_table(
+        installation.elements['clockwise'], line_cw, 'b1', 'b2')
+    bb_df_acw = _build_configuration_table(
+        installation.elements['anticlockwise'], line_acw, 'b2', 'b1')
+
+    if line_cw is None or line_acw is None:
+        assert use_antisymmetry is True, (
+            'If you are not using antisymmetry, you need to provide both beams')
+    else:
+        assert use_antisymmetry is False, (
+            'If you are using antisymmetry, you need to provide only one beam'
+            ' (for now...).')
+
+    shared_geometry = None
+    twisses = {}
+    if not use_antisymmetry:
+        # CW follows the stored line. The stored B4 line is reversed to the
+        # physical ACW convention while its beam-beam elements are analysed.
+        twiss_cw = line_cw.twiss(reverse=False)
+        twiss_acw = line_acw.twiss(reverse=False).reverse()
+        encounter_instances = bb_df_cw[[
+            'ip_name', 'label', 'identifier']].rename(
+                columns={'label': 'encounter_type'}).reset_index(drop=True)
+        shared_geometry, twisses = compute_beambeam_geometry(
+            encounter_table=encounter_instances,
+            line_cw=line_cw, line_acw=line_acw,
+            element_names_cw=bb_df_cw.index,
+            element_names_acw=bb_df_cw['other_elementName'],
+            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+            survey_separation=True,
+            twiss_cw=twiss_cw, twiss_acw=twiss_acw,
+            acw_is_reversed=True)
+
+    for bb_df, line, orientation in zip(
+            [bb_df_cw, bb_df_acw], [line_cw, line_acw], ['cw', 'acw']):
+        if bb_df is None:
+            continue
+
+        if shared_geometry is not None:
+            twiss = twisses[orientation]
+        else:
+            twiss = line.twiss(reverse=False)
+            if orientation == 'acw':
+                twiss = twiss.reverse()
+            twisses[orientation] = twiss
+
+        surveys = None
+        if shared_geometry is None:
+            surveys = {}
+            for ip_name in installation.ip_names:
+                survey = line.survey(element0=ip_name, reverse=False)
+                if orientation == 'acw':
+                    survey = survey.reverse()
+                surveys[ip_name] = survey
+                assert survey['X', ip_name] == 0
+                assert survey['Y', ip_name] == 0
+                assert survey['Z', ip_name] == 0
+
+        sigmas = None
+        if shared_geometry is None:
+            sigmas = twiss.get_beam_covariance(
+                nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+
+        bb_df['self_num_particles'] = (
+            num_particles * bb_df['self_frac_of_bunch'])
+        compute_geometry_and_optics(
+            bb_df=bb_df, xsuite_twiss=twiss, xsuite_survey=surveys,
+            xsuite_sigmas=sigmas, shared_geometry=shared_geometry,
+            orientation=orientation)
+
+        if crab_strong_beam:
+            _measure_crabbing(line, bb_df, reverse=orientation == 'acw')
+
+    if not use_antisymmetry:
+        get_partner_position_and_optics(
+            bb_df_cw, bb_df_acw, crab_strong_beam=crab_strong_beam,
+            include_lab_positions=shared_geometry is None)
+    elif line_cw is not None:
+        get_partner_position_and_optics_antisymmetry(
+            bb_df_cw, crab_strong_beam=crab_strong_beam,
+            separation_bumps=separation_bumps)
+    else:
+        get_partner_position_and_optics_antisymmetry(
+            bb_df_acw, crab_strong_beam=crab_strong_beam,
+            separation_bumps=separation_bumps)
+
+    for bb_df, orientation in zip([bb_df_cw, bb_df_acw], ['cw', 'acw']):
+        if bb_df is None:
+            continue
+        if shared_geometry is not None:
+            shared_by_element = shared_geometry.set_index(
+                f'element_name_{orientation}')
+            for field in ('separation_x', 'separation_y', 'dpx', 'dpy'):
+                bb_df[field] = [
+                    shared_by_element.loc[name][f'{field}_{orientation}']
+                    for name in bb_df.index]
+        else:
+            bb_df['separation_x'], bb_df['separation_y'] = \
+                find_bb_separations(
+                    points_weak=bb_df['self_lab_position'].values,
+                    points_strong=bb_df['other_lab_position'].values,
+                    names=bb_df.index.values)
+            compute_dpx_dpy(bb_df)
+        compute_local_crossing_angle_and_plane(bb_df)
+
+        if crab_strong_beam:
+            bb_df['separation_x_no_crab'] = bb_df['separation_x']
+            bb_df['separation_y_no_crab'] = bb_df['separation_y']
+            bb_df['separation_x'] += bb_df['other_x_crab']
+            bb_df['separation_y'] += bb_df['other_y_crab']
+
+    if line_cw is not None:
+        _configure_elements_in_line(line_cw, bb_df_cw)
+        configure_orbit_dependent_parameters_for_bb(
+            line=line_cw, particle_on_co=twisses['cw'].particle_on_co)
+    if line_acw is not None:
+        bb_df_b4 = get_counter_rotating(bb_df_acw)
+        _configure_elements_in_line(line_acw, bb_df_b4)
+        configure_orbit_dependent_parameters_for_bb(
+            line=line_acw,
+            particle_on_co=twisses['acw'].reverse().particle_on_co)
+
+
+def _configure_elements_in_line(line, bb_df):
+    for element_name in bb_df.index:
+        element = line[element_name]
+        if isinstance(element, xf.BeamBeamBiGaussian2D):
+            element.other_beam_num_particles = bb_df.loc[
+                element_name, 'other_num_particles']
+            element.other_beam_q0 = bb_df.loc[
+                element_name, 'other_particle_charge']
+            element.other_beam_Sigma_11 = bb_df.loc[
+                element_name, 'other_Sigma_11']
+            element.other_beam_Sigma_33 = bb_df.loc[
+                element_name, 'other_Sigma_33']
+            element.other_beam_beta0 = bb_df.loc[
+                element_name, 'other_relativistic_beta']
+            element.other_beam_shift_x = bb_df.loc[
+                element_name, 'separation_x']
+            element.other_beam_shift_y = bb_df.loc[
+                element_name, 'separation_y']
+        elif isinstance(element, xf.BeamBeamBiGaussian3D):
+            params = {
+                'phi': bb_df.loc[element_name, 'phi'],
+                'alpha': bb_df.loc[element_name, 'alpha'],
+                'other_beam_shift_x': bb_df.loc[element_name, 'separation_x'],
+                'other_beam_shift_y': bb_df.loc[element_name, 'separation_y'],
+                'slices_other_beam_num_particles': [bb_df.loc[
+                    element_name, 'other_num_particles']],
+                'other_beam_q0': bb_df.loc[
+                    element_name, 'other_particle_charge'],
+                'slices_other_beam_zeta_center': [0.0],
+            }
+            for sigma_name in (11, 12, 13, 14, 22, 23, 24, 33, 34, 44):
+                params[f'slices_other_beam_Sigma_{sigma_name}'] = [
+                    bb_df.loc[element_name, f'other_Sigma_{sigma_name}']]
+            for sigma_name in (13, 14, 23, 24):
+                params[f'slices_other_beam_Sigma_{sigma_name}'] = [0.0]
+
+            new_element = xf.BeamBeamBiGaussian3D(**params)
+            assert new_element._xobject._size == element._xobject._size
+            new_element.move(
+                _buffer=element._buffer, _offset=element._offset)
+        else:
+            raise TypeError(
+                f'Tagged element `{element_name}` is not a supported '
+                'weak--strong beam-beam element.')
+
+
+def _measure_crabbing(line, bb_df, reverse):
+    twiss = line.twiss(reverse=False)
+    if reverse:
+        twiss = twiss.reverse()
+
+    for element_name in bb_df.index:
+        s_crab = bb_df.loc[element_name, 's_crab']
+        if s_crab != 0.0:
+            print(f'Crabbing at {element_name}     ', end='\r', flush=True)
+            zeta0 = -2 * s_crab if reverse else 2 * s_crab
+            twiss_crab = line.twiss(
+                method='4d', zeta0=zeta0, reverse=False)
+            if reverse:
+                twiss_crab = twiss_crab.reverse()
+            element_index = np.where(
+                np.array(twiss.name) == element_name)[0][0]
+            for coordinate in ('x', 'px', 'y', 'py'):
+                bb_df.loc[element_name, f'self_{coordinate}_crab'] = (
+                    twiss_crab[coordinate][element_index]
+                    - twiss[coordinate][element_index])
+
+
 def configure_beambeam_interactions(
         env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
         use_antisymmetry=False, separation_bumps=None):
@@ -381,14 +616,12 @@ def configure_beambeam_interactions(
                 if hasattr(element, field_name):
                     setattr(element, field_name, 0.0)
 
-    _configure_beam_beam_elements(
-        elements_cw=installation.elements['clockwise'],
-        elements_acw=installation.elements['anticlockwise'],
-        line_cw=env.lines.get(installation.line_names['clockwise'], None),
-        line_acw=env.lines.get(
-            installation.line_names['anticlockwise'], None),
+    _analyse_and_configure_elements(
+        installation=installation,
+        line_cw=env.lines.get(installation.line_names['clockwise']),
+        line_acw=env.lines.get(installation.line_names['anticlockwise']),
         num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-        crab_strong_beam=crab_strong_beam, ip_names=installation.ip_names,
+        crab_strong_beam=crab_strong_beam,
         use_antisymmetry=use_antisymmetry,
         separation_bumps=separation_bumps)
 

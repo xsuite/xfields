@@ -3,8 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-import xtrack as xt
-
 
 def configure_orbit_dependent_parameters_for_bb(line, particle_on_co):
 
