@@ -51,12 +51,11 @@ def beam_beam_rigid_bunch_study():
     study = xf.BeamBeamRigidBunchStudy(
         make_line(), make_line(), ips=['ip1'],
         num_long_range_encounters_per_side=0,
-        harmonic_number=3, bunch_spacing_buckets=1)
-    study.set_filling(
-        filling_scheme_cw=[1, 1, 1],
-        filling_scheme_acw=[1, 1, 1],
-        bunch_intensity_particles_cw=1.0,
-        bunch_intensity_particles_acw=1.0)
+        harmonic_number=3, bunch_spacing_buckets=1,
+        num_particles=1.0)
+    study.apply_filling_pattern(
+        filling_pattern_cw=[1, 1, 1],
+        filling_pattern_acw=[1, 1, 1])
     return study
 
 

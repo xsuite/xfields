@@ -20,6 +20,9 @@ import xfields as xf
 from .config_tools import (
     BEAMBEAM_CONFIG_KEY,
     BEAMBEAM_CONFIG_VERSION,
+    BEAMBEAM_ELEMENT_EXTRA_KEY,
+    BEAMBEAM_ELEMENT_EXTRA_VERSION,
+    _beambeam_element_name,
     compute_beambeam_geometry,
     compute_twiss_and_madpoints_at_bb,
     find_alpha_and_phi,
@@ -29,8 +32,8 @@ from .orbit_dependent_configuration_tools import (
 )
 
 
-_BEAMBEAM_EXTRA_KEY = '_xfields_weak_strong_beambeam'
-_BEAMBEAM_EXTRA_VERSION = 1
+_BEAMBEAM_EXTRA_KEY = BEAMBEAM_ELEMENT_EXTRA_KEY
+_BEAMBEAM_EXTRA_VERSION = BEAMBEAM_ELEMENT_EXTRA_VERSION
 _BEAMBEAM_CONFIG_KEY = BEAMBEAM_CONFIG_KEY
 _BEAMBEAM_CONFIG_VERSION = BEAMBEAM_CONFIG_VERSION
 
@@ -262,13 +265,6 @@ def _normalize_delays(ip_names, delay_at_ips_slots):
     return {ip_name: int(delay) for ip_name, delay in zip(ip_names, delays)}
 
 
-def _element_name(label, ip_name, beam_name, identifier):
-    side = '.r' if identifier > 0 else '.l' if identifier < 0 else '.c'
-    ip_identifier = ip_name.replace('ip', '')
-    return (f'{label}{side}{ip_identifier}{beam_name}_'
-            f'{abs(identifier):02d}')
-
-
 def _head_on_centroids(sigmaz, num_slices):
     integer_num_slices = int(num_slices)
     if (integer_num_slices != num_slices or integer_num_slices < 1
@@ -327,9 +323,9 @@ def _element_specs(
     position_sign = 1 if orientation == 'clockwise' else -1
     for spec in specs:
         identifier = spec['identifier']
-        spec['element_name'] = _element_name(
+        spec['element_name'] = _beambeam_element_name(
             spec['label'], spec['ip_name'], beam_name, identifier)
-        spec['other_element_name'] = _element_name(
+        spec['other_element_name'] = _beambeam_element_name(
             spec['label'], spec['ip_name'], other_beam_name, identifier)
         spec['at_position'] *= position_sign
     return sorted(specs, key=lambda spec: spec['element_name'])
@@ -368,6 +364,7 @@ def _install_elements(env, line_name, specs):
         element = _new_beambeam_element(spec['label'])
         metadata = {
             'version': _BEAMBEAM_EXTRA_VERSION,
+            'mode': 'weak_strong',
             'ip_name': spec['ip_name'],
             'label': spec['label'],
             'identifier': spec['identifier'],
@@ -391,6 +388,8 @@ def _metadata(element):
         return None
     metadata = extra.get(_BEAMBEAM_EXTRA_KEY)
     if metadata is None:
+        return None
+    if metadata.get('mode') != 'weak_strong':
         return None
     if metadata.get('version') != _BEAMBEAM_EXTRA_VERSION:
         raise RuntimeError(

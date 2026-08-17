@@ -73,10 +73,10 @@ env.xfields.install_beambeam_interactions(
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
 study = env.xfields.configure_beambeam_interactions(
-    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
-    filling_scheme_cw=scheme_b1, filling_scheme_acw=scheme_b2,
-    bunch_intensity_particles_cw=par['bunch_intensity'],
-    bunch_intensity_particles_acw=par['bunch_intensity'])
+    num_particles=par['bunch_intensity'],
+    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'])
+study.apply_filling_pattern(
+    filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 
 # lattice octupoles (MO), kept exact in the third footprint variant to
 # retain the lattice amplitude detuning (split elements are excluded from

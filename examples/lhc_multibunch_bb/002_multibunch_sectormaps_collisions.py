@@ -48,21 +48,19 @@ env.xfields.install_beambeam_interactions(
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
 study = env.xfields.configure_beambeam_interactions(
-    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
-    filling_scheme_cw=scheme_b1, filling_scheme_acw=scheme_b2,
-    bunch_intensity_particles_cw=par['bunch_intensity'],
-    bunch_intensity_particles_acw=par['bunch_intensity'])
+    num_particles=par['bunch_intensity'],
+    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'])
+study.apply_filling_pattern(
+    filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 print(f'  bare tunes B1 {study.meta["qx_cw"]:.5f}/{study.meta["qy_cw"]:.5f}  '
       f'B2 {study.meta["qx_acw"]:.5f}/{study.meta["qy_acw"]:.5f}')
 
 if not ALL_BUNCHES:
     # restrict to a bounded window with all-IP pairings (offsets from geometry)
     s1, s2 = mb.windowed_slots(study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
-    study.set_filling(
-        filling_scheme_cw=mb.filling_scheme_from_slots(s1),
-        filling_scheme_acw=mb.filling_scheme_from_slots(s2),
-        bunch_intensity_particles_cw=par['bunch_intensity'],
-        bunch_intensity_particles_acw=par['bunch_intensity'])
+    study.apply_filling_pattern(
+        filling_pattern_cw=mb.filling_scheme_from_slots(s1),
+        filling_pattern_acw=mb.filling_scheme_from_slots(s2))
 
 # Fast sector-map copy: the arcs between the encounters become second-order maps
 # (the beam-beam elements stay exact). Solving the reduced study is much faster.

@@ -10,6 +10,10 @@ import xfields as xf
 import xobjects as xo
 import xtrack as xt
 from xfields import BeamBeamRigidBunchStudy
+from xfields.config_tools.beambeam_config_tools.rigid_bunch import (
+    _BEAMBEAM_EXTRA_KEY,
+    _discover_installation,
+)
 from xfields.config_tools.beambeam_config_tools.config_tools import (
     compute_beambeam_geometry,
     compute_twiss_and_madpoints_at_bb,
@@ -87,8 +91,8 @@ def _toy_filling():
     filling_scheme_acw = np.zeros(N_SLOTS, dtype=int)
     filling_scheme_cw[[0, 2, 5]] = 1
     filling_scheme_acw[[0, 3, 6]] = 1
-    intensity_cw = np.zeros(N_SLOTS)
-    intensity_acw = np.zeros(N_SLOTS)
+    intensity_cw = np.full(N_SLOTS, 1.0e11)
+    intensity_acw = np.full(N_SLOTS, 1.0e11)
     intensity_cw[[0, 2, 5]] = [1.0e11, 2.0e11, 3.0e11]
     intensity_acw[[0, 3, 6]] = [1.5e11, 2.5e11, 3.5e11]
     return (filling_scheme_cw, filling_scheme_acw,
@@ -106,9 +110,9 @@ def _install_toy_rigid_bunch_beambeam():
         num_long_range_encounters_per_side=1,
         harmonic_number=N_SLOTS,
         bunch_spacing_buckets=1,
-        mode='rigid_bunch',
-        survey_separation=True)
+        mode='rigid_bunch')
     assert env.extra_config['xfields_beambeam']['mode'] == 'rigid_bunch'
+    assert not hasattr(env, '_beam_beam_rigid_bunch_study')
     bb_names_cw = [name for name in env.cw.element_names
                    if name.startswith('bb_')]
     bb_names_acw = [name for name in env.acw.element_names
@@ -121,17 +125,28 @@ def _install_toy_rigid_bunch_beambeam():
     for name in bb_names_acw:
         assert len(env.acw[name].own_beam_zeta) == N_SLOTS
         assert len(env.acw[name].other_beam_zeta) == N_SLOTS
+    for line, names in ((env.cw, bb_names_cw), (env.acw, bb_names_acw)):
+        for name in names:
+            metadata = line[name].extra[_BEAMBEAM_EXTRA_KEY]
+            assert metadata['other_element_name'] != name
+            assert metadata['ip_name'] in ('ip1', 'ip2')
 
     # Installation and its full-slot elements are serializable before filling-
     # dependent physics parameters are loaded by configuration.
     env = xt.Environment.from_dict(env.to_dict())
+    installation = _discover_installation(env)
+    assert list(installation.elements['cw']) == sorted(
+        installation.elements['cw'])
+    assert list(installation.elements['acw']) == sorted(
+        installation.elements['acw'])
     study = env.xfields.configure_beambeam_interactions(
+        num_particles={'cw': intensity_cw, 'acw': intensity_acw},
         nemitt_x=NEMITT_X,
-        nemitt_y=NEMITT_Y,
-        filling_scheme_cw=filling_scheme_cw,
-        filling_scheme_acw=filling_scheme_acw,
-        bunch_intensity_particles_cw=intensity_cw,
-        bunch_intensity_particles_acw=intensity_acw)
+        nemitt_y=NEMITT_Y)
+    study.apply_filling_pattern(
+        filling_pattern_cw=filling_scheme_cw,
+        filling_pattern_acw=filling_scheme_acw)
+    assert not hasattr(env, '_beam_beam_rigid_bunch_study')
     return (env, study, filling_scheme_cw, filling_scheme_acw,
             intensity_cw, intensity_acw)
 
@@ -148,20 +163,28 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         'bb_ip2_ho', 'bb_ip2_r01', 'bb_ip2_l01',
     ]
     assert study.enc_names == expected_encounters
+    assert study.bb_names_cw == [
+        'bb_ho.c1b1_00', 'bb_lr.r1b1_01', 'bb_lr.l1b1_01',
+        'bb_ho.c2b1_00', 'bb_lr.r2b1_01', 'bb_lr.l2b1_01',
+    ]
+    assert study.bb_names_acw == [
+        'bb_ho.c1b2_00', 'bb_lr.r1b2_01', 'bb_lr.l1b2_01',
+        'bb_ho.c2b2_00', 'bb_lr.r2b2_01', 'bb_lr.l2b2_01',
+    ]
     assert study.ip_offsets == {'ip1': 0, 'ip2': 6}
     assert study.n_slots == N_SLOTS
     assert study.bunch_spacing_zeta == SLOT_LENGTH
-    xo.assert_allclose(study.filling_scheme_cw, filling_scheme_cw,
+    xo.assert_allclose(study.filling_pattern_cw, filling_scheme_cw,
                        rtol=0, atol=0)
-    xo.assert_allclose(study.filling_scheme_acw, filling_scheme_acw,
+    xo.assert_allclose(study.filling_pattern_acw, filling_scheme_acw,
                        rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_cw, [0, 2, 5], rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_acw, [0, 3, 6], rtol=0, atol=0)
     xo.assert_allclose(
-        study.bunch_intensity_particles_cw,
+        study.num_particles_cw,
         intensity_cw[[0, 2, 5]], rtol=0, atol=0)
     xo.assert_allclose(
-        study.bunch_intensity_particles_acw,
+        study.num_particles_acw,
         intensity_acw[[0, 3, 6]], rtol=0, atol=0)
 
     expected_offsets = [0, 1, 7, 6, 7, 5]
@@ -311,12 +334,12 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert bb.num_other_bunches == N_SLOTS
         xo.assert_allclose(
             bb.other_beam_num_particles,
-            intensity_acw[::-1], rtol=0, atol=0)
+            (filling_scheme_acw * intensity_acw)[::-1], rtol=0, atol=0)
     for bb in reduced.bb_acw.values():
         assert bb.num_other_bunches == N_SLOTS
         xo.assert_allclose(
             bb.other_beam_num_particles,
-            intensity_cw[::-1], rtol=0, atol=0)
+            (filling_scheme_cw * intensity_cw)[::-1], rtol=0, atol=0)
 
     # At the +1-slot encounter, physical slot 0 faces an empty slot and gets no
     # kick, while the remaining two bunches have partners. This checks the
@@ -384,18 +407,12 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     filling_scheme_acw_new = np.zeros(N_SLOTS, dtype=int)
     filling_scheme_cw_new[[1, 4]] = 1
     filling_scheme_acw_new[[0, 2, 5, 7]] = 1
-    intensity_cw_new = np.zeros(N_SLOTS)
-    intensity_acw_new = np.zeros(N_SLOTS)
-    intensity_cw_new[[1, 4]] = [1.2e11, 2.2e11]
-    intensity_acw_new[[0, 2, 5, 7]] = [1.4e11, 2.4e11, 3.4e11, 4.4e11]
     env.cw['beambeam_scale'] = 0.29
     original_cw = dict(study.bb_cw)
     original_acw = dict(study.bb_acw)
-    study.set_filling(
-        filling_scheme_cw=filling_scheme_cw_new,
-        filling_scheme_acw=filling_scheme_acw_new,
-        bunch_intensity_particles_cw=intensity_cw_new,
-        bunch_intensity_particles_acw=intensity_acw_new)
+    study.apply_filling_pattern(
+        filling_pattern_cw=filling_scheme_cw_new,
+        filling_pattern_acw=filling_scheme_acw_new)
 
     xo.assert_allclose(study.filled_slots_cw, [1, 4], rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_acw, [0, 2, 5, 7], rtol=0, atol=0)
@@ -419,6 +436,27 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
             bb.other_beam_num_particles, np.zeros(N_SLOTS), rtol=0, atol=0)
 
 
+def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
+    (env, first, filling_scheme_cw, filling_scheme_acw,
+     intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam()
+
+    second = env.xfields.configure_beambeam_interactions(
+        num_particles={'cw': intensity_cw, 'acw': intensity_acw},
+        nemitt_x=NEMITT_X,
+        nemitt_y=NEMITT_Y)
+    second.apply_filling_pattern(
+        filling_pattern_cw=filling_scheme_cw,
+        filling_pattern_acw=filling_scheme_acw)
+
+    assert second is not first
+    assert second.geom.keys() == first.geom.keys()
+    for encounter_name in first.geom:
+        assert second.geom[encounter_name] == first.geom[encounter_name]
+    assert env.cw['beambeam_scale'] == 1
+    assert env.acw['beambeam_scale'] == 1
+    assert not hasattr(env, '_beam_beam_rigid_bunch_study')
+
+
 def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
     # Beam-beam and BeamStatsMonitor interpret filling schemes as occupancy
     # patterns over physical slots. Slot i is centred at
@@ -433,12 +471,11 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
     study = BeamBeamRigidBunchStudy(
         line, line, ips=[], num_long_range_encounters_per_side=0,
         harmonic_number=4, bunch_spacing_buckets=1,
-        nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y)
-    study.set_filling(
-        filling_scheme_cw=filling_scheme,
-        filling_scheme_acw=filling_scheme,
-        bunch_intensity_particles_cw=4.0e11,
-        bunch_intensity_particles_acw=slot_intensities)
+        nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
+        num_particles={'cw': 4.0e11, 'acw': slot_intensities})
+    study.apply_filling_pattern(
+        filling_pattern_cw=filling_scheme,
+        filling_pattern_acw=filling_scheme)
 
     monitor = xt.BeamStatsMonitor(
         filling_scheme=filling_scheme,
@@ -453,14 +490,19 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
     xo.assert_allclose(
         monitor.zeta_centers_unwrapped(line_length=20)[0], [0, -15],
         rtol=0, atol=0)
-    xo.assert_allclose(study.bunch_intensity_particles_cw,
+    xo.assert_allclose(study.num_particles_cw,
                        np.full(3, 4.0e11), rtol=0, atol=0)
-    xo.assert_allclose(study.bunch_intensity_particles_acw,
+    xo.assert_allclose(study.num_particles_acw,
                        [1.0e11, 2.0e11, 3.0e11], rtol=0, atol=0)
 
     with pytest.raises(ValueError, match='slot-indexed array'):
-        study.set_filling(
-            filling_scheme_cw=filling_scheme,
-            filling_scheme_acw=filling_scheme,
-            bunch_intensity_particles_cw=[1.0e11, 2.0e11, 3.0e11],
-            bunch_intensity_particles_acw=1.0e11)
+        invalid = BeamBeamRigidBunchStudy(
+            line, line, ips=[], num_long_range_encounters_per_side=0,
+            harmonic_number=4, bunch_spacing_buckets=1,
+            nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
+            num_particles={
+                'cw': [1.0e11, 2.0e11, 3.0e11],
+                'acw': 1.0e11})
+        invalid.apply_filling_pattern(
+            filling_pattern_cw=filling_scheme,
+            filling_pattern_acw=filling_scheme)

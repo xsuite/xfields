@@ -14,6 +14,15 @@ from ._madpoint import MadPoint
 _SIGMA_NAMES = (11, 12, 13, 14, 22, 23, 24, 33, 34, 44)
 BEAMBEAM_CONFIG_KEY = 'xfields_beambeam'
 BEAMBEAM_CONFIG_VERSION = 1
+BEAMBEAM_ELEMENT_EXTRA_KEY = '_xfields_beambeam'
+BEAMBEAM_ELEMENT_EXTRA_VERSION = 1
+
+
+def _beambeam_element_name(label, ip_name, beam_name, identifier):
+    side = '.r' if identifier > 0 else '.l' if identifier < 0 else '.c'
+    ip_identifier = ip_name.replace('ip', '')
+    return (f'{label}{side}{ip_identifier}{beam_name}_'
+            f'{abs(identifier):02d}')
 
 
 def compute_twiss_and_madpoints_at_bb(

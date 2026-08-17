@@ -11,7 +11,8 @@ Xfields. The standard beam-beam install/configure workflow with
 ``mode='rigid_bunch'`` returns a ``BeamBeamRigidBunchStudy``; all
 further operations are methods on it (``study.twiss()``, ``study.solve()``,
 ``study.second_order_maps()``, ``study.load_solution(...)``,
-``study.set_filling(...)``). The examples call those directly; this module only
+``study.apply_filling_pattern(...)``). The examples call those directly; this
+module only
 holds the LHC-specific bits the generic tools cannot know about:
 
 * :func:`load_lhc` and the ``SCENARIOS`` presets (sequence, optics files, beam
@@ -205,7 +206,8 @@ def set_per_bunch_sizes(study, nemitt_cw, nemitt_acw):
     to reach into the elements (which do support per-bunch sizes: the own
     sizes are indexed by this beam, the opposing ones by the other beam, and
     the kernel convolves the matched pair). It must be called AFTER the
-    install / any ``set_filling`` / any geometry recomputation (all of which
+    install / any ``apply_filling_pattern`` / any geometry recomputation (all
+    of which
     re-register the uniform design sizes) and holds through ``solve`` /
     ``load_solution`` as long as ``dynamic_beta`` is False -- those keep the
     stored sizes.

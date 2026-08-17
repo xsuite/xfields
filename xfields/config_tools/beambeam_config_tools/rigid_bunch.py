@@ -20,10 +20,9 @@ and returns a small state object:
         num_long_range_encounters_per_side=..., harmonic_number=...,
         bunch_spacing_buckets=..., mode='rigid_bunch')
     study = env.xfields.configure_beambeam_interactions(
-        nemitt_x=..., nemitt_y=...,
-        filling_scheme_cw=..., filling_scheme_acw=...,
-        bunch_intensity_particles_cw=...,
-        bunch_intensity_particles_acw=...)
+        num_particles=..., nemitt_x=..., nemitt_y=...)
+    study.apply_filling_pattern(
+        filling_pattern_cw=..., filling_pattern_acw=...)
     mbtw_cw, mbtw_acw = study.solve()
 
 Installation places one beam-beam element per encounter DIRECTLY on the two
@@ -44,7 +43,8 @@ bunch-pairing offset, convolved sizes, survey separation) and returns a
 * :meth:`BeamBeamRigidBunchStudy.load_solution` -- load a converged solution (from a
   reduced-model solve) onto this study's lattice, e.g. to compute footprints on
   the full thick lattice;
-* :meth:`BeamBeamRigidBunchStudy.set_filling` -- change the per-beam bunch filling.
+* :meth:`BeamBeamRigidBunchStudy.apply_filling_pattern` -- change the per-beam
+  bunch filling.
 
 Nothing is LHC specific: the IPs (a ``{ip: offset}`` mapping, or a list of IP
 element names for which the head-on offsets are derived from the ring geometry
@@ -61,6 +61,8 @@ in ``+s`` and the ``anticlockwise_line`` is the *reversed* line (also running in
 beams, mirrored on the reversed line.
 """
 
+from dataclasses import dataclass
+
 import numpy as np
 
 from xtrack.general import _print
@@ -68,9 +70,24 @@ from xtrack.general import _print
 from .config_tools import (
     BEAMBEAM_CONFIG_KEY,
     BEAMBEAM_CONFIG_VERSION,
+    BEAMBEAM_ELEMENT_EXTRA_KEY,
+    BEAMBEAM_ELEMENT_EXTRA_VERSION,
+    _beambeam_element_name,
     compute_beambeam_geometry,
     compute_twiss_and_madpoints_at_bb,
 )
+
+
+_BEAMBEAM_EXTRA_KEY = BEAMBEAM_ELEMENT_EXTRA_KEY
+_BEAMBEAM_EXTRA_VERSION = BEAMBEAM_ELEMENT_EXTRA_VERSION
+
+
+@dataclass
+class _RigidBunchInstallation:
+    elements: dict
+    line_names: dict
+    ip_names: list
+    config: dict
 
 
 def _encounter_specs(ip_names, num_long_range_encounters_per_side):
@@ -109,47 +126,136 @@ def _beta0(line):
 
 
 def _bind_beambeam_scale(line, bb_names):
-    """Create a per-line ``beambeam_scale`` knob and bind the ``scale_strength``
-    of all the beam-beam elements to it (as in the xfields beam-beam config
-    tools), e.g. for footprints with a linear rescale of the beam-beam strength.
-    """
-    if 'beambeam_scale' not in line.vars:
-        line['beambeam_scale'] = 1.0
+    """Bind all beam-beam elements to the environment-wide scale knob."""
+    env = line.env
+    if 'beambeam_scale' not in env.vars:
+        env.vars['beambeam_scale'] = 1.0
     for name in bb_names:
-        line[name].scale_strength = 'beambeam_scale'
+        line.element_refs[name].scale_strength = env.vars['beambeam_scale']
 
 
-def _normalize_filling(filling_scheme, bunch_intensity_particles, n_slots,
-                       beam_name):
+def _representative_other_beam(
+        line, other_line, n_slots, bunch_spacing_zeta):
+    """One inactive-kick representative per opposing RF slot."""
+    import xtrack as xt
+    slots = np.arange(n_slots)
+    return xt.Particles(
+        _context=line._context,
+        p0c=other_line.particle_ref.p0c[0],
+        mass0=other_line.particle_ref.mass0,
+        q0=other_line.particle_ref.q0,
+        x=np.zeros(len(slots)),
+        y=np.zeros(len(slots)),
+        zeta=-slots * bunch_spacing_zeta,
+        weight=np.zeros(len(slots)))
+
+
+def _new_beambeam_element(line, other_line, n_slots, bunch_spacing_zeta):
+    import xfields as xf
+    own_zeta = -np.arange(n_slots) * bunch_spacing_zeta
+    return xf.BeamBeamBiGaussianRigidBunch2D(
+        other_particles=_representative_other_beam(
+            line=line, other_line=other_line, n_slots=n_slots,
+            bunch_spacing_zeta=bunch_spacing_zeta),
+        own_beam_zeta=own_zeta,
+        zeta_offset=0.0,
+        zeta_match_tol=0.1 * bunch_spacing_zeta,
+        zeta_period=n_slots * bunch_spacing_zeta,
+        other_beam_q0=float(other_line.particle_ref.q0),
+        other_beam_beta0=_beta0(other_line),
+        coherent=True,
+        sigma_x=1.0, sigma_y=1.0,
+        other_beam_sigma_x=1.0, other_beam_sigma_y=1.0,
+        _context=line._context)
+
+
+def _install_elements(
+        env, line_name, other_line_name, encounter_specs,
+        n_slots, bunch_spacing_zeta, mirror):
+    line = env.lines[line_name]
+    other_line = env.lines[other_line_name]
+    length = line.get_length()
+    s_ip = {
+        ip_name: float(line.get_table()['s', ip_name])
+        for ip_name in dict.fromkeys(
+            ip_name for _, ip_name, _ in encounter_specs)}
+    placements = []
+    element_names = []
+    position_sign = -1 if mirror else 1
+    for encounter_name, ip_name, identifier in encounter_specs:
+        displacement = (
+            position_sign * identifier * bunch_spacing_zeta / 2)
+        at = (s_ip[ip_name] + displacement + 1e-6) % length
+        label = 'bb_ho' if identifier == 0 else 'bb_lr'
+        beam_name = 'b2' if mirror else 'b1'
+        other_beam_name = 'b1' if mirror else 'b2'
+        element_name = _beambeam_element_name(
+            label, ip_name, beam_name, identifier)
+        other_element_name = _beambeam_element_name(
+            label, ip_name, other_beam_name, identifier)
+        element = _new_beambeam_element(
+            line=line, other_line=other_line, n_slots=n_slots,
+            bunch_spacing_zeta=bunch_spacing_zeta)
+        if not hasattr(element, 'extra') or element.extra is None:
+            element.extra = {}
+        element.extra[_BEAMBEAM_EXTRA_KEY] = {
+            'version': _BEAMBEAM_EXTRA_VERSION,
+            'mode': 'rigid_bunch',
+            'ip_name': ip_name,
+            'label': label,
+            'identifier': identifier,
+            'encounter_name': encounter_name,
+            'other_element_name': other_element_name,
+        }
+        placements.append(env.place(element_name, element, at=at))
+        element_names.append(element_name)
+    line.insert(placements)
+    _bind_beambeam_scale(line, element_names)
+
+
+def _normalize_filling(filling_pattern, num_particles, n_slots, beam_name):
     """Normalize one beam's occupancy and return compact filled-bunch data."""
-    scheme = np.asarray(filling_scheme)
-    if scheme.ndim != 1 or len(scheme) != n_slots:
+    pattern = np.asarray(filling_pattern)
+    if pattern.ndim != 1 or len(pattern) != n_slots:
         raise ValueError(
-            f'`filling_scheme_{beam_name}` must be a one-dimensional array '
+            f'`filling_pattern_{beam_name}` must be a one-dimensional array '
             f'of length n_slots={n_slots}.')
-    if not np.all(np.isfinite(scheme)):
-        raise ValueError(f'`filling_scheme_{beam_name}` must be finite.')
-    scheme = (scheme != 0).astype(np.int64)
-    filled_slots = np.nonzero(scheme)[0].astype(np.int64)
+    if not np.all(np.isfinite(pattern)):
+        raise ValueError(f'`filling_pattern_{beam_name}` must be finite.')
+    pattern = (pattern != 0).astype(np.int64)
+    filled_slots = np.nonzero(pattern)[0].astype(np.int64)
     if len(filled_slots) == 0:
         raise ValueError(
-            f'`filling_scheme_{beam_name}` must contain at least one filled '
+            f'`filling_pattern_{beam_name}` must contain at least one filled '
             'slot.')
 
-    intensity = np.asarray(bunch_intensity_particles, dtype=float)
+    intensity = np.asarray(num_particles, dtype=float)
     if intensity.ndim == 0:
         intensity = np.full(len(filled_slots), float(intensity))
     elif intensity.ndim == 1 and len(intensity) == n_slots:
         intensity = intensity[filled_slots]
     else:
         raise ValueError(
-            f'`bunch_intensity_particles_{beam_name}` must be a scalar or a '
+            f'`num_particles["{beam_name}"]` must be a scalar or a '
             f'one-dimensional slot-indexed array of length n_slots={n_slots}.')
     if not np.all(np.isfinite(intensity)) or np.any(intensity <= 0):
         raise ValueError(
-            f'`bunch_intensity_particles_{beam_name}` must be finite and '
+            f'`num_particles["{beam_name}"]` must be finite and '
             'strictly positive at every filled slot.')
-    return scheme, filled_slots, intensity
+    return pattern, filled_slots, intensity
+
+
+def _num_particles_by_orientation(num_particles):
+    if isinstance(num_particles, dict):
+        missing = [orientation for orientation in ('cw', 'acw')
+                   if orientation not in num_particles]
+        if missing:
+            raise ValueError(
+                '`num_particles` is missing rigid-bunch entries: '
+                + ', '.join(missing))
+        return {orientation: num_particles[orientation]
+                for orientation in ('cw', 'acw')}
+    return {'cw': num_particles, 'acw': num_particles}
 
 
 class BeamBeamRigidBunchStudy:
@@ -163,18 +269,18 @@ class BeamBeamRigidBunchStudy:
     (``bb_cw`` / ``bb_acw``, keyed by encounter base name) and the per-beam bunch
     filling. Per-bunch optics, the self-consistent solve, sector-map reduction
     and solution transfer are methods (:meth:`twiss`, :meth:`solve`,
-    :meth:`second_order_maps`, :meth:`load_solution`, :meth:`set_filling`).
+    :meth:`second_order_maps`, :meth:`load_solution`,
+    :meth:`apply_filling_pattern`).
 
-    Beam-beam element names are the encounter base names plus the beam suffix
-    (default ``'_cw'`` / ``'_acw'``), e.g. ``bb_ip1_ho_cw``. The element itself
-    is the observation point used for the geometry and the orbit feedback.
+    Beam-beam elements use the same names as the weak--strong infrastructure,
+    e.g. ``bb_ho.c1b1_00`` and ``bb_ho.c1b2_00``. The element itself is the
+    observation point used for the geometry and the orbit feedback.
     """
 
     def __init__(self, clockwise_line, anticlockwise_line, ips,
                  num_long_range_encounters_per_side,
                  harmonic_number, bunch_spacing_buckets,
-                 nemitt_x=None, nemitt_y=None,
-                 bb_suffix_cw='_cw', bb_suffix_acw='_acw'):
+                 nemitt_x=None, nemitt_y=None, num_particles=None):
         self.cw_line = clockwise_line
         self.acw_line = anticlockwise_line
         self.ips = ips                          # dict {ip: offset} or list
@@ -189,34 +295,44 @@ class BeamBeamRigidBunchStudy:
         self.b_h_dist = self.bunch_spacing_zeta / 2.0
         self.nemitt_x = nemitt_x
         self.nemitt_y = nemitt_y
-        self.bb_suffix_cw = bb_suffix_cw
-        self.bb_suffix_acw = bb_suffix_acw
-
+        self._num_particles = (
+            None if num_particles is None
+            else _num_particles_by_orientation(num_particles))
         self.enc_specs = list(_encounter_specs(
             self.ip_names, num_long_range_encounters_per_side))
         self.enc_names = [b for b, _, _ in self.enc_specs]
-        self.bb_names_cw = [b + bb_suffix_cw for b in self.enc_names]
-        self.bb_names_acw = [b + bb_suffix_acw for b in self.enc_names]
+        self._bb_names = {'cw': {}, 'acw': {}}
+        for encounter_name, ip_name, identifier in self.enc_specs:
+            label = 'bb_ho' if identifier == 0 else 'bb_lr'
+            self._bb_names['cw'][encounter_name] = _beambeam_element_name(
+                label, ip_name, 'b1', identifier)
+            self._bb_names['acw'][encounter_name] = _beambeam_element_name(
+                label, ip_name, 'b2', identifier)
+        self.bb_names_cw = [
+            self._bb_names['cw'][name] for name in self.enc_names]
+        self.bb_names_acw = [
+            self._bb_names['acw'][name] for name in self.enc_names]
 
         self.geom = {}               # base_name -> geometry dict
         self.meta = {}
         self.bb_cw = {}              # base_name -> element (in cw line)
         self.bb_acw = {}             # base_name -> element (in acw line)
-        # Occupancy stays slot-indexed; intensities are compact arrays aligned
+        # Occupancy stays slot-indexed; populations are compact arrays aligned
         # with the corresponding physical filled-slot arrays.
-        self.filling_scheme_cw = None
-        self.filling_scheme_acw = None
+        self.filling_pattern_cw = None
+        self.filling_pattern_acw = None
         self.filled_slots_cw = None
         self.filled_slots_acw = None
-        self.bunch_intensity_particles_cw = None
-        self.bunch_intensity_particles_acw = None
+        self.num_particles_cw = None
+        self.num_particles_acw = None
 
     # ------------------------------------------------------------------
     # Naming / bookkeeping
     # ------------------------------------------------------------------
     def bb_name(self, base, mirror):
         """Beam-beam element name of one beam (``mirror=True`` -> acw)."""
-        return base + (self.bb_suffix_acw if mirror else self.bb_suffix_cw)
+        orientation = 'acw' if mirror else 'cw'
+        return self._bb_names[orientation][base]
 
     def bunch_zeta(self, mirror):
         """Bunch centres in ascending physical-slot order."""
@@ -230,30 +346,33 @@ class BeamBeamRigidBunchStudy:
         return (f'BeamBeamRigidBunchStudy({len(self.enc_names)} encounters, '
                 f'n_slots={self.n_slots}, B1={n_cw} B2={n_acw} bunches)')
 
-    def set_filling(self, filling_scheme_cw, filling_scheme_acw,
-                    bunch_intensity_particles_cw,
-                    bunch_intensity_particles_acw):
-        """Set the two occupancy patterns and corresponding bunch intensities.
+    def apply_filling_pattern(
+            self, filling_pattern_cw, filling_pattern_acw):
+        """Apply the two occupancy patterns to the configured populations.
 
-        Each filling scheme is a slot-indexed occupancy array of length
-        ``n_slots``. Each intensity is either a scalar, applied uniformly to
-        all filled slots, or a slot-indexed array of the same length. Derived
-        physical slot identifiers are exposed as ``filled_slots_cw`` and
-        ``filled_slots_acw``.
+        Each filling pattern is a slot-indexed occupancy array of length
+        ``n_slots``. The configured ``num_particles`` value for each beam is
+        either a scalar, applied uniformly to all filled slots, or a
+        slot-indexed array of the same length. Derived physical slot identifiers
+        are exposed as ``filled_slots_cw`` and ``filled_slots_acw``.
 
         The installed elements have one entry per RF slot, so any filling
         change updates their slot-indexed data in place without reallocating
         the Xobjects."""
+        if self._num_particles is None:
+            raise RuntimeError(
+                '`num_particles` was not provided when the rigid-bunch study '
+                'was created.')
         normalized_cw = _normalize_filling(
-            filling_scheme_cw, bunch_intensity_particles_cw,
+            filling_pattern_cw, self._num_particles['cw'],
             self.n_slots, 'cw')
         normalized_acw = _normalize_filling(
-            filling_scheme_acw, bunch_intensity_particles_acw,
+            filling_pattern_acw, self._num_particles['acw'],
             self.n_slots, 'acw')
-        (self.filling_scheme_cw, self.filled_slots_cw,
-         self.bunch_intensity_particles_cw) = normalized_cw
-        (self.filling_scheme_acw, self.filled_slots_acw,
-         self.bunch_intensity_particles_acw) = normalized_acw
+        (self.filling_pattern_cw, self.filled_slots_cw,
+         self.num_particles_cw) = normalized_cw
+        (self.filling_pattern_acw, self.filled_slots_acw,
+         self.num_particles_acw) = normalized_acw
 
         # Skipped before both elements and geometry exist. Once configured,
         # filling changes reset the slot-indexed opposing state in place.
@@ -270,64 +389,10 @@ class BeamBeamRigidBunchStudy:
         storage, while zero weight preserves the bare-lattice cold start until
         a solution update loads the physical bunch populations.
         """
-        import xtrack as xt
         other_line = self.cw_line if mirror else self.acw_line
-        slots = np.arange(self.n_slots)
-        return xt.Particles(
-            _context=line._context,
-            p0c=other_line.particle_ref.p0c[0],
-            mass0=other_line.particle_ref.mass0,
-            q0=other_line.particle_ref.q0,
-            x=np.zeros(len(slots)),
-            y=np.zeros(len(slots)),
-            zeta=-np.asarray(slots) * self.bunch_spacing_zeta,
-            weight=np.zeros(len(slots)))
-
-    def _make_bb(self, line, mirror):
-        """Build one rigid-bunch element with one entry per RF slot."""
-        import xfields as xf
-        beta0_other = _beta0(self.acw_line if not mirror else self.cw_line)
-        q0_other = float((self.acw_line if not mirror
-                          else self.cw_line).particle_ref.q0)
-        own_zeta = -np.arange(self.n_slots) * self.bunch_spacing_zeta
-        return xf.BeamBeamBiGaussianRigidBunch2D(
-            other_particles=self._representative_other_beam(line, mirror),
-            own_beam_zeta=own_zeta,
-            zeta_offset=0.0,
-            zeta_match_tol=0.1 * self.bunch_spacing_zeta,
-            zeta_period=self.n_slots * self.bunch_spacing_zeta,
-            other_beam_q0=q0_other, other_beam_beta0=beta0_other,
-            coherent=True,
-            sigma_x=1.0, sigma_y=1.0,
-            other_beam_sigma_x=1.0, other_beam_sigma_y=1.0,
-            _context=line._context)
-
-    def _place_bb(self, line, mirror):
-        """Place one full-slot beam-beam element per encounter DIRECTLY
-        at the encounter positions of ``line`` (no separate markers). The
-        element is named ``bb_name(base, mirror)`` and is the observation point
-        for the geometry. Sizes/offsets are set later by ``_configure_bb``.
-
-        The own-beam bunch zeta grid (this line's bunches) is registered on each
-        element so the kernel can match every tracked particle to its own bunch
-        for the coherent convolution; the own per-bunch sizes are indexed by it.
-        """
-        env = line.env
-        length = line.get_length()
-        tab = line.get_table()
-        s_ip = {ip: float(tab['s', ip]) for ip in self.ip_names}
-        places, names = [], []
-        position_sign = -1 if mirror else 1
-        for base, ip, identifier in self.enc_specs:
-            displacement = position_sign * identifier * self.b_h_dist
-            at = (s_ip[ip] + displacement + 1e-6) % length
-            elname = self.bb_name(base, mirror)
-            bb = self._make_bb(line, mirror)
-            places.append(env.place(elname, bb, at=at))
-            names.append((base, elname))
-        line.insert(places)
-        _bind_beambeam_scale(line, [elname for _, elname in names])
-        return {base: line[elname] for base, elname in names}
+        return _representative_other_beam(
+            line=line, other_line=other_line, n_slots=self.n_slots,
+            bunch_spacing_zeta=self.bunch_spacing_zeta)
 
     def _resolve_ip_offsets(self, tw_cw):
         """Head-on pairing offset (in slots) of each IP: from ``self.ips`` if a
@@ -342,7 +407,7 @@ class BeamBeamRigidBunchStudy:
                               / self.bunch_spacing_zeta)) % self.n_slots
                 for ip in self.ip_names}
 
-    def _compute_geometry(self, survey_separation=True):
+    def _compute_geometry(self):
         """Fill ``self.geom`` from the shared Xfields geometry description.
 
         The beam-beam elements are the observation points. They must already
@@ -359,7 +424,7 @@ class BeamBeamRigidBunchStudy:
             line_cw=self.cw_line, line_acw=self.acw_line,
             element_names_by_ip=names_by_ip,
             nemitt_x=self.nemitt_x, nemitt_y=self.nemitt_y,
-            survey_separation=survey_separation)
+            survey_separation=True)
         tw_cw = twiss_and_madpoints['twiss']['cw']
         tw_acw = twiss_and_madpoints['twiss']['acw']
         n_slots = self.n_slots
@@ -469,16 +534,16 @@ class BeamBeamRigidBunchStudy:
             red_cw, red_acw, self.ips,
             self.num_long_range_encounters_per_side, self.harmonic_number,
             self.bunch_spacing_buckets, self.nemitt_x, self.nemitt_y,
-            bb_suffix_cw=self.bb_suffix_cw, bb_suffix_acw=self.bb_suffix_acw)
+            self._num_particles)
         new.geom = self.geom
         new.meta = self.meta
         new.ip_offsets = self.ip_offsets
-        new.filling_scheme_cw = self.filling_scheme_cw
-        new.filling_scheme_acw = self.filling_scheme_acw
+        new.filling_pattern_cw = self.filling_pattern_cw
+        new.filling_pattern_acw = self.filling_pattern_acw
         new.filled_slots_cw = self.filled_slots_cw
         new.filled_slots_acw = self.filled_slots_acw
-        new.bunch_intensity_particles_cw = self.bunch_intensity_particles_cw
-        new.bunch_intensity_particles_acw = self.bunch_intensity_particles_acw
+        new.num_particles_cw = self.num_particles_cw
+        new.num_particles_acw = self.num_particles_acw
         new.bb_cw = {b: red_cw[new.bb_name(b, False)] for b in new.enc_names}
         new.bb_acw = {b: red_acw[new.bb_name(b, True)] for b in new.enc_names}
         # the reduced lines have their own env: re-create the beambeam_scale knob
@@ -498,11 +563,12 @@ class BeamBeamRigidBunchStudy:
 
     def _sigma_vector(self, bb_dict, mirror):
         """Own-beam per-bunch sizes laid out to match :func:`_orbit_vector` (x
-        then y, each the ``(n_bunches, n_enc)`` array raveled). :meth:`set_filling`
-        keeps every element's own arrays in sync with all RF slots. The element
-        stores increasing zeta, while Twiss follows increasing physical slot
-        number (decreasing zeta), so the filled slots are selected and mapped
-        back to public order before stacking."""
+        then y, each the ``(n_bunches, n_enc)`` array raveled).
+        :meth:`apply_filling_pattern` keeps every element's own arrays in sync
+        with all RF slots. The element stores increasing zeta, while Twiss
+        follows increasing physical slot number (decreasing zeta), so the
+        filled slots are selected and mapped back to public order before
+        stacking."""
         zeta = self.bunch_zeta(mirror)
 
         def active(bb):
@@ -593,12 +659,12 @@ class BeamBeamRigidBunchStudy:
         self._update_opposing(
             self.bb_cw, mbtw_anticlockwise,
             self.filled_slots_acw, self.filled_slots_cw,
-            self.bb_names_acw, self.bunch_intensity_particles_acw,
+            self.bb_names_acw, self.num_particles_acw,
             sigmas_other=sizes_acw, sigmas_own=sizes_cw)
         self._update_opposing(
             self.bb_acw, mbtw_clockwise,
             self.filled_slots_cw, self.filled_slots_acw,
-            self.bb_names_cw, self.bunch_intensity_particles_cw,
+            self.bb_names_cw, self.num_particles_cw,
             sigmas_other=sizes_cw, sigmas_own=sizes_acw)
 
     def twiss(self, method='4d', mode='fast', show_progress=True, **kwargs):
@@ -607,7 +673,7 @@ class BeamBeamRigidBunchStudy:
 
         Unlike :meth:`solve`, this does not iterate the beams to
         self-consistency. Bunch positions and labels come directly from the
-        filling schemes stored in this study.
+        filling patterns stored in this study.
 
         Returns
         -------
@@ -615,7 +681,8 @@ class BeamBeamRigidBunchStudy:
             ``(twiss_clockwise, twiss_anticlockwise)``.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
-            raise RuntimeError('bunch filling not set; call set_filling first')
+            raise RuntimeError(
+                'bunch filling not set; call apply_filling_pattern first')
 
         from .rigid_bunch_twiss import _twiss_rigid_bunch_line
 
@@ -687,7 +754,8 @@ class BeamBeamRigidBunchStudy:
             ``(mbtw_clockwise, mbtw_anticlockwise)``.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
-            raise RuntimeError('bunch filling not set; call set_filling first')
+            raise RuntimeError(
+                'bunch filling not set; call apply_filling_pattern first')
         if twiss_mode is None:
             twiss_mode = 'fast' if dynamic_beta else 'fast_orbit'
         if dynamic_beta and twiss_mode == 'fast_orbit':
@@ -753,14 +821,88 @@ def _orbit_vector(mbtw, bb_names):
     return np.concatenate([np.asarray(x).ravel(), np.asarray(y).ravel()])
 
 
+def _metadata(element):
+    extra = getattr(element, 'extra', None)
+    if not isinstance(extra, dict):
+        return None
+    metadata = extra.get(_BEAMBEAM_EXTRA_KEY)
+    if metadata is None:
+        return None
+    if metadata.get('mode') != 'rigid_bunch':
+        return None
+    if metadata.get('version') != _BEAMBEAM_EXTRA_VERSION:
+        raise RuntimeError(
+            'Unsupported rigid-bunch beam-beam element metadata version.')
+    return metadata
+
+
+def _discover_installation(env):
+    config = env.extra_config.get(BEAMBEAM_CONFIG_KEY)
+    if config is None:
+        raise RuntimeError(
+            'No rigid-bunch beam-beam configuration was found. Call '
+            '`install_beambeam_interactions(...)` first.')
+    if config.get('version') != BEAMBEAM_CONFIG_VERSION:
+        raise RuntimeError(
+            'Unsupported rigid-bunch beam-beam configuration version.')
+    if config.get('mode') != 'rigid_bunch':
+        raise RuntimeError(
+            'The environment beam-beam configuration is not rigid-bunch.')
+
+    line_names = {
+        'cw': config['clockwise_line'],
+        'acw': config['anticlockwise_line'],
+    }
+    ip_names = list(config['ip_names'])
+    elements = {'cw': {}, 'acw': {}}
+    for orientation, line_name in line_names.items():
+        if line_name not in env.lines:
+            raise RuntimeError(
+                f'Configured beam-beam line `{line_name}` is not present in '
+                'the environment.')
+        line = env.lines[line_name]
+        for element_name in dict.fromkeys(line.element_names):
+            metadata = _metadata(line[element_name])
+            if metadata is None:
+                continue
+            if metadata['ip_name'] not in ip_names:
+                raise RuntimeError(
+                    f'Tagged beam-beam element `{element_name}` refers to '
+                    f'unknown IP `{metadata["ip_name"]}`.')
+            elements[orientation][element_name] = metadata
+        if not elements[orientation]:
+            raise RuntimeError(
+                f'No tagged rigid-bunch beam-beam elements were found in '
+                f'configured line `{line_name}`.')
+        installed_ips = {
+            metadata['ip_name']
+            for metadata in elements[orientation].values()}
+        if installed_ips != set(ip_names):
+            raise RuntimeError(
+                f'Rigid-bunch elements in line `{line_name}` do not cover '
+                'the configured interaction points.')
+        elements[orientation] = dict(sorted(elements[orientation].items()))
+
+    for orientation, other_orientation in (('cw', 'acw'), ('acw', 'cw')):
+        for element_name, metadata in elements[orientation].items():
+            other_name = metadata['other_element_name']
+            if other_name not in elements[other_orientation]:
+                raise RuntimeError(
+                    f'Rigid-bunch element `{element_name}` refers to missing '
+                    f'opposing element `{other_name}`.')
+
+    return _RigidBunchInstallation(
+        elements=elements, line_names=line_names,
+        ip_names=ip_names, config=config)
+
+
 # ----------------------------------------------------------------------------
 # Entry point
 # ----------------------------------------------------------------------------
 def install_rigid_bunch_beambeam(
         env, clockwise_line, anticlockwise_line, ip_names,
         num_long_range_encounters_per_side, harmonic_number,
-        bunch_spacing_buckets, delay_at_ips_slots=None,
-        survey_separation=True, bb_suffix_cw='_cw', bb_suffix_acw='_acw'):
+        bunch_spacing_buckets, delay_at_ips_slots=None):
     """Install full-slot rigid-bunch elements and store their configuration."""
     if harmonic_number is None or bunch_spacing_buckets is None:
         raise ValueError(
@@ -822,6 +964,35 @@ def install_rigid_bunch_beambeam(
 
     cw_name = line_name(clockwise_line, 'clockwise_line')
     acw_name = line_name(anticlockwise_line, 'anticlockwise_line')
+    n_slots_float = harmonic_number / bunch_spacing_buckets
+    n_slots = int(n_slots_float)
+    if n_slots != n_slots_float:
+        raise ValueError(
+            '`harmonic_number` must be divisible by '
+            '`bunch_spacing_buckets`.')
+    circumference_cw = env.lines[cw_name].get_length()
+    circumference_acw = env.lines[acw_name].get_length()
+    if not np.isclose(
+            circumference_cw, circumference_acw, atol=1e-4, rtol=0):
+        raise ValueError(
+            'The clockwise and anticlockwise lines must have the same '
+            'circumference.')
+    bunch_spacing_zeta = circumference_cw / n_slots
+    encounter_specs = list(_encounter_specs(ip_names, num_lr))
+
+    for line in env.lines.values():
+        line.discard_tracker()
+    _install_elements(
+        env=env, line_name=cw_name, other_line_name=acw_name,
+        encounter_specs=encounter_specs,
+        n_slots=n_slots, bunch_spacing_zeta=bunch_spacing_zeta,
+        mirror=False)
+    _install_elements(
+        env=env, line_name=acw_name, other_line_name=cw_name,
+        encounter_specs=encounter_specs,
+        n_slots=n_slots, bunch_spacing_zeta=bunch_spacing_zeta,
+        mirror=True)
+
     env.extra_config[BEAMBEAM_CONFIG_KEY] = {
         'version': BEAMBEAM_CONFIG_VERSION,
         'mode': 'rigid_bunch',
@@ -832,59 +1003,35 @@ def install_rigid_bunch_beambeam(
         'num_long_range_encounters_per_side': num_lr,
         'harmonic_number': int(harmonic_number),
         'bunch_spacing_buckets': int(bunch_spacing_buckets),
-        'survey_separation': bool(survey_separation),
-        'bb_suffix_cw': bb_suffix_cw,
-        'bb_suffix_acw': bb_suffix_acw,
     }
-    study = BeamBeamRigidBunchStudy(
-        env[cw_name], env[acw_name], ips, num_lr,
-        harmonic_number, bunch_spacing_buckets,
-        bb_suffix_cw=bb_suffix_cw, bb_suffix_acw=bb_suffix_acw)
-    study.bb_cw = study._place_bb(study.cw_line, mirror=False)
-    study.bb_acw = study._place_bb(study.acw_line, mirror=True)
-    env._beam_beam_rigid_bunch_study = study
 
 
 def configure_rigid_bunch_beambeam(
-        env, nemitt_x, nemitt_y, filling_scheme_cw, filling_scheme_acw,
-        bunch_intensity_particles_cw, bunch_intensity_particles_acw):
+        env, num_particles, nemitt_x, nemitt_y):
     """Populate installed rigid-bunch elements and return their study."""
-    config = env.extra_config.get(BEAMBEAM_CONFIG_KEY, {})
-    if config.get('mode') != 'rigid_bunch':
-        raise RuntimeError(
-            'Install beam-beam interactions with `mode="rigid_bunch"` first.')
-    if config.get('version') != BEAMBEAM_CONFIG_VERSION:
-        raise RuntimeError(
-            'Unsupported rigid-bunch beam-beam configuration version.')
-    study = getattr(env, '_beam_beam_rigid_bunch_study', None)
-    if study is None:
-        cw = env[config['clockwise_line']]
-        acw = env[config['anticlockwise_line']]
-        study = BeamBeamRigidBunchStudy(
-            cw, acw, config['ips'],
-            config['num_long_range_encounters_per_side'],
-            config['harmonic_number'], config['bunch_spacing_buckets'],
-            bb_suffix_cw=config['bb_suffix_cw'],
-            bb_suffix_acw=config['bb_suffix_acw'])
-        study.bb_cw = {
-            base: cw[name]
-            for base, name in zip(study.enc_names, study.bb_names_cw)}
-        study.bb_acw = {
-            base: acw[name]
-            for base, name in zip(study.enc_names, study.bb_names_acw)}
-    elif study.geom:
-        raise RuntimeError(
-            'Rigid-bunch beam-beam interactions are already configured; use '
-            '`study.set_filling(...)` to change their filling.')
+    installation = _discover_installation(env)
+    config = installation.config
+    cw = env[installation.line_names['cw']]
+    acw = env[installation.line_names['acw']]
+    study = BeamBeamRigidBunchStudy(
+        cw, acw, config['ips'],
+        config['num_long_range_encounters_per_side'],
+        config['harmonic_number'], config['bunch_spacing_buckets'],
+        nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+        num_particles=num_particles)
+    elements_by_encounter = {
+        orientation: {
+            metadata['encounter_name']: line[element_name]
+            for element_name, metadata
+            in installation.elements[orientation].items()}
+        for orientation, line in (('cw', cw), ('acw', acw))
+    }
+    study.bb_cw = elements_by_encounter['cw']
+    study.bb_acw = elements_by_encounter['acw']
 
-    study.nemitt_x = nemitt_x
-    study.nemitt_y = nemitt_y
-    study.set_filling(
-        filling_scheme_cw=filling_scheme_cw,
-        filling_scheme_acw=filling_scheme_acw,
-        bunch_intensity_particles_cw=bunch_intensity_particles_cw,
-        bunch_intensity_particles_acw=bunch_intensity_particles_acw)
-    study._compute_geometry(
-        survey_separation=config['survey_separation'])
-    env._beam_beam_rigid_bunch_study = study
+    # Reanalyse the bare lines even when configuration is repeated.
+    env.vars['beambeam_scale'] = 0.0
+
+    study._compute_geometry()
+    env.vars['beambeam_scale'] = 1.0
     return study

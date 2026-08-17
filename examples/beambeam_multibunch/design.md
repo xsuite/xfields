@@ -116,25 +116,27 @@ env.xfields.install_beambeam_interactions(
 )
 
 study = env.xfields.configure_beambeam_interactions(
-    filling_scheme_cw=filling_scheme_cw,
-    filling_scheme_acw=filling_scheme_acw,
-    bunch_intensity_particles_cw=bunch_intensity_cw,
-    bunch_intensity_particles_acw=bunch_intensity_acw,
+    num_particles={'cw': bunch_intensity_cw, 'acw': bunch_intensity_acw},
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
+)
+study.apply_filling_pattern(
+    filling_pattern_cw=filling_pattern_cw,
+    filling_pattern_acw=filling_pattern_acw,
 )
 ```
 
 The default mode must preserve the existing sliced head-on and long-range
 workflow. Rigid-bunch mode installs the extended BB2D element with one 2D lens
 per head-on or long-range encounter and allocates its bunch arrays.
-Configuration loads the filling, populations, geometry and design
-covariances, then returns a `BeamBeamRigidBunchStudy`.
+Configuration loads the populations, geometry and design covariances, then
+returns a `BeamBeamRigidBunchStudy`. Filling patterns are applied separately,
+as in the weak--strong workflow.
 
 `BeamBeamRigidBunchStudy` remains useful, but should contain only the genuinely
 stateful rigid-bunch operations:
 
-- `set_filling(...)`;
+- `apply_filling_pattern(...)`;
 - `twiss(...)`;
 - `solve(...)`;
 - `second_order_maps(...)`;
@@ -197,21 +199,20 @@ Xpart, Xwakes and `BeamStatsMonitor`. Their common public model is:
 
 Occupancy and intensity must remain separate. In particular, a floating-point
 array containing the population of every slot should not be called a filling
-scheme. The rigid-bunch beam-beam configuration should therefore accept
-`filling_scheme_cw` / `filling_scheme_acw` separately from
-`bunch_intensity_particles_cw` / `bunch_intensity_particles_acw`. An intensity
-can be uniform for all filled slots or slot-indexed when bunch populations are
-not uniform. The study should expose the derived physical slot identifiers as
-`filled_slots_cw` and `filled_slots_acw`, rather than the ambiguous
-`bunches_cw` and `bunches_acw`.
+scheme. Rigid-bunch configuration therefore accepts `num_particles` as either
+a common scalar or a `cw` / `acw` mapping. Each value can be uniform or
+slot-indexed when bunch populations are not uniform. The separate
+`apply_filling_pattern(...)` operation selects occupied slots. The study
+exposes the derived physical slot identifiers as `filled_slots_cw` and
+`filled_slots_acw`, rather than the ambiguous `bunches_cw` and `bunches_acw`.
 
 The high-level installer allocates own- and opposing-beam arrays for every RF
 slot. This is not a user-selected reserve capacity: the ring topology fixes it
 uniquely as ``harmonic_number // bunch_spacing_buckets``. The filling schemes
 select populated physical slots, while empty slots remain present with zero
 population. This keeps the public filling semantics aligned with
-`BeamStatsMonitor` and Xwakes, and lets `set_filling(...)` update elements in
-place without a hidden reallocation lifecycle.
+`BeamStatsMonitor` and Xwakes, and lets `apply_filling_pattern(...)` update
+elements in place without a hidden reallocation lifecycle.
 
 Keeping `harmonic_number` and `bunch_spacing_buckets` in the high-level
 beam-beam installation API is useful because encounter pairing needs the
@@ -452,7 +453,8 @@ Test configuration and geometry:
 
 Test the stateful study independently:
 
-- `set_filling(...)` updating full-slot arrays without replacing elements;
+- `apply_filling_pattern(...)` updating full-slot arrays without replacing
+  elements;
 - a short symmetric two-beam solve;
 - `load_solution(...)`;
 - static and dynamic-beta updates;

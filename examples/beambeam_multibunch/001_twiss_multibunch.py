@@ -68,11 +68,11 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=N_SLOTS, bunch_spacing_buckets=1,
     mode='rigid_bunch')
 study = env.xfields.configure_beambeam_interactions(
-    nemitt_x=2.0e-6, nemitt_y=2.5e-6,
-    filling_scheme_cw=filling_cw,
-    filling_scheme_acw=filling_acw,
-    bunch_intensity_particles_cw=intensity_cw,
-    bunch_intensity_particles_acw=intensity_acw)
+    num_particles={'cw': intensity_cw, 'acw': intensity_acw},
+    nemitt_x=2.0e-6, nemitt_y=2.5e-6)
+study.apply_filling_pattern(
+    filling_pattern_cw=filling_cw,
+    filling_pattern_acw=filling_acw)
 
 # ``twiss`` observes the current frozen opposing-beam state. ``solve`` updates
 # that state until the two per-bunch closed orbits are self-consistent.

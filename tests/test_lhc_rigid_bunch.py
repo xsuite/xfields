@@ -104,14 +104,14 @@ def _run_xsuite_scenario(scenario):
         num_long_range_encounters_per_side=NPARASITIC,
         harmonic_number=HARMONIC_NUMBER,
         bunch_spacing_buckets=BUNCH_SPACING_BUCKETS,
-        survey_separation=True,
         mode='rigid_bunch')
     study = env.xfields.configure_beambeam_interactions(
+        num_particles=par['bunch_intensity'],
         nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
-        filling_scheme_cw=filling_scheme_b1,
-        filling_scheme_acw=filling_scheme_b2,
-        bunch_intensity_particles_cw=par['bunch_intensity'],
-        bunch_intensity_particles_acw=par['bunch_intensity'])
+    )
+    study.apply_filling_pattern(
+        filling_pattern_cw=filling_scheme_b1,
+        filling_pattern_acw=filling_scheme_b2)
     study_red = study.second_order_maps()
 
     # bare per-bunch tunes (second-order maps preserve the linear optics, so the
