@@ -15,7 +15,9 @@ from xfields.config_tools.beambeam_config_tools.config_tools import (
 )
 from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
 from xfields.config_tools.beambeam_config_tools.weak_strong import (
+    _BEAMBEAM_CONFIG_KEY,
     _BEAMBEAM_EXTRA_KEY,
+    _delay_in_slots,
     _discover_installation,
 )
 
@@ -76,7 +78,8 @@ def test_conventional_encounters_keep_positions_and_delays():
             key=lambda record: (
                 record.metadata['ip_name'], record.metadata['identifier']))
         xo.assert_allclose(
-            [record.metadata['delay_in_slots'] for record in long_range],
+            [_delay_in_slots(installation, orientation, record)
+             for record in long_range],
             expected_delays, rtol=0, atol=0)
 
         head_on = [record for record in records
@@ -89,7 +92,8 @@ def test_conventional_encounters_keep_positions_and_delays():
             [0, 6] if orientation == 'clockwise' else [0, 2])
         for ip_name, expected_delay in zip(
                 ['ip1', 'ip2'], expected_head_on_delays):
-            assert {record.metadata['delay_in_slots'] for record in head_on
+            assert {_delay_in_slots(installation, orientation, record)
+                    for record in head_on
                     if record.metadata['ip_name'] == ip_name} == {
                         expected_delay}
 
@@ -151,6 +155,9 @@ def test_conventional_install_and_configure_characterization():
     env = xt.Environment(lines={
         'cw': _make_conventional_toy_ring('cw', shared_ips),
         'acw': _make_conventional_toy_ring('acw', shared_ips),
+        'unused': xt.Line(
+            elements=[xt.Drift(length=1)],
+            particle_ref=xt.Particles(p0c=7e12)),
     })
     env.xfields.install_beambeam_interactions(
         clockwise_line='cw', anticlockwise_line='acw',
@@ -161,12 +168,25 @@ def test_conventional_install_and_configure_characterization():
         sigmaz=0.1, delay_at_ips_slots=[0, 6])
 
     assert not hasattr(env, '_bb_config')
+    assert env.extra_config[_BEAMBEAM_CONFIG_KEY] == {
+        'version': 1,
+        'mode': 'weak_strong',
+        'clockwise_line': 'cw',
+        'anticlockwise_line': 'acw',
+        'ip_names': ['ip1', 'ip2'],
+        'n_slots': 8,
+        'delay_at_ips_slots': {'ip1': 0, 'ip2': 6},
+    }
     for line in (env.cw, env.acw):
         for element_name in line.element_names:
             if element_name.startswith('bb_'):
                 assert _BEAMBEAM_EXTRA_KEY in line[element_name].extra
+                metadata = line[element_name].extra[_BEAMBEAM_EXTRA_KEY]
+                assert not ({'orientation', 'line_name', 'other_line_name',
+                             'ip_index', 'n_slots', 'delay_in_slots'}
+                            & metadata.keys())
 
-    # The elements keep all installation state through serialization.
+    # Environment-wide and encounter-local state survive serialization.
     env = xt.Environment.from_dict(env.to_dict())
     installation = _discover_installation(env)
     records_cw = installation.elements['clockwise']

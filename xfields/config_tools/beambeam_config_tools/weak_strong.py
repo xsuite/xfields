@@ -5,9 +5,9 @@
 
 """Environment-level setup of weak--strong beam--beam interactions.
 
-The installed elements are the persistent source of truth. Metadata which is
-not part of the tracking model is stored in the generic, serializable
-``BeamElement.extra`` container.
+Installation-wide state is stored in ``Environment.extra_config``. Each
+installed element carries only its encounter-local description in the generic,
+serializable ``BeamElement.extra`` container.
 """
 
 from dataclasses import dataclass
@@ -22,6 +22,8 @@ from .config_tools import _configure_beam_beam_elements
 
 _BEAMBEAM_EXTRA_KEY = '_xfields_weak_strong_beambeam'
 _BEAMBEAM_EXTRA_VERSION = 1
+_BEAMBEAM_CONFIG_KEY = 'xfields_beambeam'
+_BEAMBEAM_CONFIG_VERSION = 1
 
 
 @dataclass(frozen=True)
@@ -36,6 +38,7 @@ class _WeakStrongInstallation:
     line_names: dict
     ip_names: list
     n_slots: int
+    delay_at_ips_slots: dict | None
 
 
 def _line_name(env, line, argument_name):
@@ -120,20 +123,20 @@ def _head_on_centroids(sigmaz, num_slices):
 def _element_specs(
         circumference, ip_names, num_long_range_encounters_per_side,
         num_slices_head_on, harmonic_number, bunch_spacing_buckets, sigmaz,
-        orientation, beam_name, other_beam_name, delays_by_ip, n_slots):
+        orientation, beam_name, other_beam_name):
     bunch_spacing = (
         circumference / harmonic_number * bunch_spacing_buckets)
     centroids = _head_on_centroids(sigmaz, num_slices_head_on)
+    num_slices_head_on = int(num_slices_head_on)
     slice_identifiers = range(-(num_slices_head_on // 2),
                               num_slices_head_on // 2 + 1)
 
     specs = []
-    for ip_index, (ip_name, num_lr) in enumerate(zip(
-            ip_names, num_long_range_encounters_per_side)):
+    for ip_name, num_lr in zip(
+            ip_names, num_long_range_encounters_per_side):
         for identifier, centroid in zip(slice_identifiers, centroids):
             specs.append({
                 'ip_name': ip_name,
-                'ip_index': ip_index,
                 'label': 'bb_ho',
                 'identifier': identifier,
                 'at_position': float(centroid),
@@ -144,7 +147,6 @@ def _element_specs(
             for signed_identifier in (identifier, -identifier):
                 specs.append({
                     'ip_name': ip_name,
-                    'ip_index': ip_index,
                     'label': 'bb_lr',
                     'identifier': signed_identifier,
                     'at_position': signed_identifier * bunch_spacing / 2,
@@ -160,15 +162,6 @@ def _element_specs(
         spec['other_element_name'] = _element_name(
             spec['label'], spec['ip_name'], other_beam_name, identifier)
         spec['at_position'] *= position_sign
-        if delays_by_ip is not None:
-            encounter_identifier = (
-                identifier if spec['label'] == 'bb_lr' else 0)
-            ip_delay = delays_by_ip[spec['ip_name']]
-            if orientation == 'clockwise':
-                spec['delay_in_slots'] = ip_delay + encounter_identifier
-            else:
-                spec['delay_in_slots'] = (
-                    (n_slots - ip_delay) % n_slots - encounter_identifier)
     return sorted(specs, key=lambda spec: spec['element_name'])
 
 
@@ -190,8 +183,7 @@ def _new_beambeam_element(label):
         other_beam_Sigma_33=1)
 
 
-def _install_elements(
-        env, line_name, other_line_name, orientation, specs, n_slots):
+def _install_elements(env, line_name, specs):
     if line_name is None:
         return
     line = env.lines[line_name]
@@ -206,20 +198,13 @@ def _install_elements(
         element = _new_beambeam_element(spec['label'])
         metadata = {
             'version': _BEAMBEAM_EXTRA_VERSION,
-            'orientation': orientation,
-            'line_name': line_name,
-            'other_line_name': other_line_name,
             'ip_name': spec['ip_name'],
-            'ip_index': spec['ip_index'],
             'label': spec['label'],
             'identifier': spec['identifier'],
             'other_element_name': spec['other_element_name'],
             'self_frac_of_bunch': spec['self_frac_of_bunch'],
             's_crab': spec['s_crab'],
-            'n_slots': n_slots,
         }
-        if 'delay_in_slots' in spec:
-            metadata['delay_in_slots'] = spec['delay_in_slots']
         if not hasattr(element, 'extra') or element.extra is None:
             element.extra = {}
         element.extra[_BEAMBEAM_EXTRA_KEY] = metadata
@@ -246,49 +231,62 @@ def _metadata(element):
 
 def _discover_installation(env):
     elements = {'clockwise': [], 'anticlockwise': []}
-    line_names = {'clockwise': None, 'anticlockwise': None}
-    ip_indices = {}
-    n_slots_values = set()
+    config = env.extra_config.get(_BEAMBEAM_CONFIG_KEY)
+    if config is None:
+        raise RuntimeError(
+            'No new-style weak--strong beam-beam configuration was found. '
+            'Call `install_beambeam_interactions(...)` first.')
+    if config.get('version') != _BEAMBEAM_CONFIG_VERSION:
+        raise RuntimeError(
+            'Unsupported weak--strong beam-beam configuration version.')
+    if config.get('mode') != 'weak_strong':
+        raise RuntimeError(
+            'The environment beam-beam configuration is not weak--strong.')
 
-    for actual_line_name, line in env.lines.items():
+    line_names = {
+        'clockwise': config['clockwise_line'],
+        'anticlockwise': config['anticlockwise_line'],
+    }
+    ip_names = list(config['ip_names'])
+    for orientation, line_name in line_names.items():
+        if line_name is None:
+            continue
+        if line_name not in env.lines:
+            raise RuntimeError(
+                f'Configured beam-beam line `{line_name}` is not present in '
+                'the environment.')
+        line = env.lines[line_name]
         for element_name in dict.fromkeys(line.element_names):
             metadata = _metadata(line[element_name])
             if metadata is None:
                 continue
-            orientation = metadata['orientation']
-            if orientation not in elements:
+            if metadata['ip_name'] not in ip_names:
                 raise RuntimeError(
-                    f'Invalid beam-beam orientation `{orientation}` on '
-                    f'element `{element_name}`.')
-            if metadata['line_name'] != actual_line_name:
-                continue
-            if (line_names[orientation] is not None
-                    and line_names[orientation] != actual_line_name):
-                raise RuntimeError(
-                    'More than one weak--strong beam-beam installation was '
-                    f'found for the {orientation} orientation.')
-            line_names[orientation] = actual_line_name
-            ip_indices[metadata['ip_name']] = metadata['ip_index']
-            n_slots_values.add(int(metadata['n_slots']))
+                    f'Tagged beam-beam element `{element_name}` refers to '
+                    f'unknown IP `{metadata["ip_name"]}`.')
             elements[orientation].append(
                 _InstalledBeamBeamElement(element_name, metadata))
+        if not elements[orientation]:
+            raise RuntimeError(
+                f'No tagged weak--strong beam-beam elements were found in '
+                f'configured line `{line_name}`.')
+        installed_ips = {
+            record.metadata['ip_name'] for record in elements[orientation]}
+        if installed_ips != set(ip_names):
+            raise RuntimeError(
+                f'Beam-beam elements in line `{line_name}` do not cover the '
+                'configured interaction points.')
 
-    if not elements['clockwise'] and not elements['anticlockwise']:
+    if all(line_name is None for line_name in line_names.values()):
         raise RuntimeError(
-            'No new-style weak--strong beam-beam interactions were found. '
-            'Call `install_beambeam_interactions(...)` first.')
-    if len(n_slots_values) != 1:
-        raise RuntimeError(
-            'Installed weak--strong beam-beam elements have inconsistent '
-            '`n_slots` metadata.')
+            'The weak--strong beam-beam configuration contains no lines.')
     for orientation in elements:
         elements[orientation].sort(key=lambda record: record.name)
 
-    ip_names = [
-        name for name, _ in sorted(ip_indices.items(), key=lambda item: item[1])]
     return _WeakStrongInstallation(
         elements=elements, line_names=line_names, ip_names=ip_names,
-        n_slots=n_slots_values.pop())
+        n_slots=int(config['n_slots']),
+        delay_at_ips_slots=config.get('delay_at_ips_slots'))
 
 
 def install_beambeam_interactions(
@@ -296,7 +294,7 @@ def install_beambeam_interactions(
         num_long_range_encounters_per_side, num_slices_head_on,
         harmonic_number, bunch_spacing_buckets, sigmaz,
         delay_at_ips_slots=None):
-    """Install inactive, self-describing weak--strong beam-beam elements."""
+    """Install inactive, tagged weak--strong beam-beam elements."""
     cw_name = _line_name(env, clockwise_line, 'clockwise_line')
     acw_name = _line_name(env, anticlockwise_line, 'anticlockwise_line')
     ip_names = list(ip_names)
@@ -322,9 +320,9 @@ def install_beambeam_interactions(
                 'The clockwise and anticlockwise lines must have the same '
                 'circumference.')
 
-    for orientation, line_name, other_line_name, beam_name, other_beam_name in (
-            ('clockwise', cw_name, acw_name, 'b1', 'b2'),
-            ('anticlockwise', acw_name, cw_name, 'b2', 'b1')):
+    for orientation, line_name, beam_name, other_beam_name in (
+            ('clockwise', cw_name, 'b1', 'b2'),
+            ('anticlockwise', acw_name, 'b2', 'b1')):
         if line_name is None:
             continue
         line = env.lines[line_name]
@@ -335,10 +333,18 @@ def install_beambeam_interactions(
             harmonic_number=harmonic_number,
             bunch_spacing_buckets=bunch_spacing_buckets, sigmaz=sigmaz,
             orientation=orientation, beam_name=beam_name,
-            other_beam_name=other_beam_name, delays_by_ip=delays_by_ip,
-            n_slots=n_slots)
-        _install_elements(
-            env, line_name, other_line_name, orientation, specs, n_slots)
+            other_beam_name=other_beam_name)
+        _install_elements(env, line_name, specs)
+
+    env.extra_config[_BEAMBEAM_CONFIG_KEY] = {
+        'version': _BEAMBEAM_CONFIG_VERSION,
+        'mode': 'weak_strong',
+        'clockwise_line': cw_name,
+        'anticlockwise_line': acw_name,
+        'ip_names': ip_names,
+        'n_slots': n_slots,
+        'delay_at_ips_slots': delays_by_ip,
+    }
 
     # A rigid-bunch installation uses this attribute to select its configure
     # path. Installing weak--strong elements replaces that mode explicitly.
@@ -429,17 +435,32 @@ def apply_filling_pattern(env, filling_pattern_cw, filling_pattern_acw,
         records = installation.elements[orientation]
         if not records:
             continue
-        if any('delay_in_slots' not in record.metadata for record in records):
+        if installation.delay_at_ips_slots is None:
             raise RuntimeError(
                 'Filling-pattern selection requires `delay_at_ips_slots` at '
                 'beam-beam installation time.')
         other_orientation = (
             'anticlockwise' if orientation == 'clockwise' else 'clockwise')
         for record in records:
+            delay = _delay_in_slots(installation, orientation, record)
             partner_slot = (
-                record.metadata['delay_in_slots']
-                + selected_bunches[orientation]) % installation.n_slots
+                delay + selected_bunches[orientation]) % installation.n_slots
             is_active = filling_patterns[other_orientation][partner_slot] == 1
             variable_name = f'{record.name}_scale_strength'
             env.vars[variable_name] = (
                 env.vars['beambeam_scale'] if is_active else 0)
+
+
+def _delay_in_slots(installation, orientation, record):
+    """Return the opposing bunch-slot offset for one installed encounter."""
+    delay_at_ip = installation.delay_at_ips_slots[
+        record.metadata['ip_name']]
+    encounter_identifier = (
+        record.metadata['identifier']
+        if record.metadata['label'] == 'bb_lr' else 0)
+    if orientation == 'clockwise':
+        return delay_at_ip + encounter_identifier
+    if orientation == 'anticlockwise':
+        return ((installation.n_slots - delay_at_ip)
+                % installation.n_slots - encounter_identifier)
+    raise ValueError(f'Unknown beam-beam orientation `{orientation}`.')
