@@ -7,3 +7,5 @@ from .config_tools import (
     generate_beambeam_encounter_table,
     install_beambeam_elements_in_lines,
 )
+from .rigid_bunch import RigidBunchBBSetup
+from .rigid_bunch_twiss import RigidBunchTwiss

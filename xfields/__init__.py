@@ -18,6 +18,7 @@ from .solvers.fftsolvers import FFTSolver3D
 
 from .touschek.study import TouschekResult, TouschekStudy
 from .line_tools import XfieldsLineAPI
+from .environment_tools import XfieldsEnvironmentAPI
 
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
 from .beam_elements.beambeam2d import BeamBeamBiGaussian2D
@@ -43,6 +44,8 @@ from .config_tools import install_beambeam_elements_in_lines
 from .config_tools import configure_beam_beam_elements
 from .config_tools import generate_beambeam_encounter_table
 from .config_tools import compute_beambeam_geometry
+from .config_tools.beambeam_config_tools.rigid_bunch import RigidBunchBBSetup
+from .config_tools.beambeam_config_tools.rigid_bunch_twiss import RigidBunchTwiss
 
 from ._version import __version__
 
