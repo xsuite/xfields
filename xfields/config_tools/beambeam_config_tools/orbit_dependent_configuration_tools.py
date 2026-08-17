@@ -4,12 +4,9 @@
 # ########################################### #
 
 
-def configure_orbit_dependent_parameters_for_bb(line, particle_on_co):
+def _store_self_orbit_and_dipolar_kick(line, particle_on_co):
 
-    """
-    Assumes that the separation is saved in mean_x, mean_y for the 4D
-    bb lenses.
-    """
+    """Store the self-beam orbit and subtract its dipolar beam--beam kick."""
 
     temp_particles = particle_on_co.copy()
     for ii, ee in enumerate(line.elements):
@@ -77,3 +74,8 @@ def configure_orbit_dependent_parameters_for_bb(line, particle_on_co):
             temp_particles.py -= ee.post_subtract_py
         else:
             line.track(temp_particles, ele_start=ii, num_elements=1)
+
+
+# Public compatibility name used by standalone Xtrack examples.
+configure_orbit_dependent_parameters_for_bb = (
+    _store_self_orbit_and_dipolar_kick)

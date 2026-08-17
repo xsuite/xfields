@@ -69,7 +69,7 @@ from .config_tools import (
     BEAMBEAM_CONFIG_KEY,
     BEAMBEAM_CONFIG_VERSION,
     compute_beambeam_geometry,
-    prepare_beambeam_analysis,
+    compute_twiss_and_survey_at_bb,
 )
 
 
@@ -355,13 +355,13 @@ class BeamBeamRigidBunchStudy:
                 self.bb_name(base, False))
             names_by_ip['acw'].setdefault(ip, []).append(
                 self.bb_name(base, True))
-        analysis = prepare_beambeam_analysis(
+        twiss_and_survey = compute_twiss_and_survey_at_bb(
             line_cw=self.cw_line, line_acw=self.acw_line,
             element_names_by_ip=names_by_ip,
             nemitt_x=self.nemitt_x, nemitt_y=self.nemitt_y,
             survey_separation=survey_separation)
-        tw_cw = analysis['twiss']['cw']
-        tw_acw = analysis['twiss']['acw']
+        tw_cw = twiss_and_survey['twiss']['cw']
+        tw_acw = twiss_and_survey['twiss']['acw']
         n_slots = self.n_slots
         self.ip_offsets = self._resolve_ip_offsets(tw_cw)
 
@@ -369,7 +369,7 @@ class BeamBeamRigidBunchStudy:
         for base, ip, signed_identifier in self.enc_specs:
             offset = (self.ip_offsets[ip] + signed_identifier) % n_slots
             encounter = compute_beambeam_geometry(
-                analysis=analysis, ip_name=ip,
+                twiss_and_survey=twiss_and_survey, ip_name=ip,
                 element_name_cw=self.bb_name(base, False),
                 element_name_acw=self.bb_name(base, True))
             cw = encounter['cw']

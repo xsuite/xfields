@@ -3,7 +3,7 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-"""Shared optics and survey analysis for beam--beam configuration."""
+"""Shared Twiss and survey data for beam--beam configuration."""
 
 import numpy as np
 
@@ -13,19 +13,24 @@ BEAMBEAM_CONFIG_KEY = 'xfields_beambeam'
 BEAMBEAM_CONFIG_VERSION = 1
 
 
-def prepare_beambeam_analysis(
+def compute_twiss_and_survey_at_bb(
         line_cw, line_acw, element_names_by_ip, nemitt_x, nemitt_y,
-        survey_separation=True, twiss_cw=None, twiss_acw=None,
-        acw_is_reversed=False):
-    """Prepare the reusable tables needed to analyse individual encounters.
+        survey_separation=True, acw_is_reversed=False,
+        crab_s_by_element=None):
+    """Compute reusable Twiss and survey data for beam--beam configuration.
 
     ``element_names_by_ip`` is indexed first by ``'cw'`` / ``'acw'`` and
-    then by IP name. No per-encounter results are assembled or retained here.
+    then by IP name. ``crab_s_by_element`` optionally provides the
+    longitudinal offset used to measure crabbing at each element. No
+    per-encounter geometry is assembled or retained here.
     """
+    lines = {'cw': line_cw, 'acw': line_acw}
     twiss = {
-        'cw': line_cw.twiss() if twiss_cw is None else twiss_cw,
-        'acw': line_acw.twiss() if twiss_acw is None else twiss_acw,
+        orientation: line.twiss(reverse=False)
+        for orientation, line in lines.items()
     }
+    if acw_is_reversed:
+        twiss['acw'] = twiss['acw'].reverse()
     covariance = {
         orientation: table.get_beam_covariance(
             nemitt_x=nemitt_x, nemitt_y=nemitt_y)
@@ -34,7 +39,7 @@ def prepare_beambeam_analysis(
     survey = None
     if survey_separation:
         survey = {'cw': {}, 'acw': {}}
-        for orientation, line in (('cw', line_cw), ('acw', line_acw)):
+        for orientation, line in lines.items():
             for ip_name, names in element_names_by_ip[orientation].items():
                 line_survey = line.survey(element0=ip_name)
                 region_survey = line_survey.rows[[ip_name, *names]]
@@ -45,19 +50,30 @@ def prepare_beambeam_analysis(
                 survey[orientation][ip_name] = (
                     region_survey.rows[names].cols['XYZ E_matrix'])
 
+    crab_offsets = {'cw': {}, 'acw': {}}
+    if crab_s_by_element is not None:
+        for orientation, line in lines.items():
+            crab_offsets[orientation] = _measure_crabbing(
+                line=line,
+                crab_s_by_element=crab_s_by_element.get(orientation, {}),
+                twiss=twiss[orientation],
+                reverse=orientation == 'acw' and acw_is_reversed)
+
     return {
         'twiss': twiss,
         'covariance': covariance,
         'survey': survey,
+        'crab_offsets': crab_offsets,
         'acw_is_reversed': bool(acw_is_reversed),
     }
 
 
 def compute_beambeam_geometry(
-        analysis, ip_name, element_name_cw, element_name_acw):
+        twiss_and_survey, ip_name, element_name_cw, element_name_acw):
     """Compute the optics and geometry of one paired encounter."""
     beam = {
-        orientation: _beam_data(analysis, orientation, element_name)
+        orientation: _beam_data(
+            twiss_and_survey, orientation, element_name)
         for orientation, element_name in (
             ('cw', element_name_cw), ('acw', element_name_acw))
     }
@@ -71,9 +87,9 @@ def compute_beambeam_geometry(
     separation_acw = -separation_cw
     reference_separation = np.zeros(2)
 
-    if analysis['survey'] is not None:
-        survey_cw = analysis['survey']['cw'][ip_name]
-        survey_acw = analysis['survey']['acw'][ip_name]
+    if twiss_and_survey['survey'] is not None:
+        survey_cw = twiss_and_survey['survey']['cw'][ip_name]
+        survey_acw = twiss_and_survey['survey']['acw'][ip_name]
         position_cw = survey_cw['XYZ', element_name_cw]
         frame_cw = survey_cw['E_matrix', element_name_cw]
         position_acw_stored = survey_acw['XYZ', element_name_acw]
@@ -81,7 +97,7 @@ def compute_beambeam_geometry(
 
         reverse_global = np.diag([-1., 1., -1.])
         reverse_local = (np.diag([-1., 1., -1.])
-                         if analysis['acw_is_reversed'] else np.eye(3))
+                         if twiss_and_survey['acw_is_reversed'] else np.eye(3))
         position_acw = reverse_global @ position_acw_stored
         frame_acw = reverse_global @ frame_acw_stored @ reverse_local
 
@@ -125,9 +141,9 @@ def compute_beambeam_geometry(
     }
 
 
-def _beam_data(analysis, orientation, element_name):
-    twiss = analysis['twiss'][orientation]
-    covariance = analysis['covariance'][orientation]
+def _beam_data(twiss_and_survey, orientation, element_name):
+    twiss = twiss_and_survey['twiss'][orientation]
+    covariance = twiss_and_survey['covariance'][orientation]
     data = {
         coordinate: float(twiss[coordinate, element_name])
         for coordinate in ('betx', 'bety', 'x', 'px', 'y', 'py')
@@ -137,6 +153,26 @@ def _beam_data(analysis, orientation, element_name):
         for sigma_name in _SIGMA_NAMES
     }
     return data
+
+
+def _measure_crabbing(line, crab_s_by_element, twiss, reverse):
+    offsets = {}
+    for element_name, s_crab in crab_s_by_element.items():
+        if s_crab == 0.0:
+            offsets[element_name] = {'x': 0.0, 'y': 0.0}
+            continue
+
+        print(f'Crabbing at {element_name}     ', end='\r', flush=True)
+        zeta0 = -2 * s_crab if reverse else 2 * s_crab
+        twiss_crab = line.twiss(method='4d', zeta0=zeta0, reverse=False)
+        if reverse:
+            twiss_crab = twiss_crab.reverse()
+        offsets[element_name] = {
+            coordinate: (twiss_crab[coordinate, element_name]
+                         - twiss[coordinate, element_name])
+            for coordinate in ('x', 'y')
+        }
+    return offsets
 
 
 def find_alpha_and_phi(dpx, dpy):

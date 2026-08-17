@@ -12,8 +12,8 @@ import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
     compute_beambeam_geometry,
+    compute_twiss_and_survey_at_bb,
     find_bb_separations,
-    prepare_beambeam_analysis,
 )
 from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
 from xfields.config_tools.beambeam_config_tools.weak_strong import (
@@ -121,7 +121,7 @@ def test_survey_region_rejects_wrapping_line_boundary():
     line = _make_conventional_toy_ring('cw', {})
 
     with pytest.raises(AssertionError, match='wraps across the line boundary'):
-        prepare_beambeam_analysis(
+        compute_twiss_and_survey_at_bb(
             line_cw=line,
             line_acw=line,
             element_names_by_ip={
@@ -224,12 +224,11 @@ def test_conventional_install_and_configure_characterization():
         names_by_ip['cw'].setdefault(ip_name, []).append(record.name)
         names_by_ip['acw'].setdefault(ip_name, []).append(
             record.metadata['other_element_name'])
-    analysis = prepare_beambeam_analysis(
+    twiss_and_survey = compute_twiss_and_survey_at_bb(
         line_cw=env.cw, line_acw=env.acw,
         element_names_by_ip=names_by_ip,
         nemitt_x=2e-6, nemitt_y=2.5e-6,
         survey_separation=True,
-        twiss_cw=tw_cw, twiss_acw=tw_acw,
         acw_is_reversed=True)
 
     surveys_cw = {
@@ -245,7 +244,7 @@ def test_conventional_install_and_configure_characterization():
         element_name_cw = record.name
         element_name_acw = record.metadata['other_element_name']
         geometry = compute_beambeam_geometry(
-            analysis=analysis, ip_name=ip_name,
+            twiss_and_survey=twiss_and_survey, ip_name=ip_name,
             element_name_cw=element_name_cw,
             element_name_acw=element_name_acw)
         for orientation, twiss, element_name in (
@@ -405,7 +404,7 @@ def test_conventional_install_and_configure_characterization():
         rtol=0, atol=1e-14)
     assert env['beambeam_scale'] == 1
 
-    # Exercise the crabbing analysis as well. This toy lattice has no crab
+    # Exercise the crabbing calculation as well. This toy lattice has no crab
     # cavities, so all measured offsets are zero.
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,

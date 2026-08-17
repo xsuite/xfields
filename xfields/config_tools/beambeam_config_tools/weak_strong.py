@@ -22,13 +22,14 @@ from ._madpoint import MadPoint
 from .config_tools import (
     BEAMBEAM_CONFIG_KEY,
     BEAMBEAM_CONFIG_VERSION,
+    _measure_crabbing,
     compute_beambeam_geometry,
+    compute_twiss_and_survey_at_bb,
     find_alpha_and_phi,
     find_bb_separations,
-    prepare_beambeam_analysis,
 )
 from .orbit_dependent_configuration_tools import (
-    configure_orbit_dependent_parameters_for_bb,
+    _store_self_orbit_and_dipolar_kick,
 )
 
 
@@ -430,28 +431,30 @@ def _configure_two_beams(
         'cw': _element_names_by_ip(records_cw),
         'acw': _element_names_by_ip(records_acw),
     }
-    twiss_cw = line_cw.twiss(reverse=False)
-    twiss_acw = line_acw.twiss(reverse=False).reverse()
-    analysis = prepare_beambeam_analysis(
+    crab_s_by_element = None
+    if crab_strong_beam:
+        crab_s_by_element = {
+            'cw': {record.name: record.metadata['s_crab']
+                   for record in records_cw},
+            'acw': {record.name: record.metadata['s_crab']
+                    for record in records_acw},
+        }
+    twiss_and_survey = compute_twiss_and_survey_at_bb(
         line_cw=line_cw, line_acw=line_acw,
         element_names_by_ip=names_by_ip,
         nemitt_x=nemitt_x, nemitt_y=nemitt_y,
         survey_separation=True,
-        twiss_cw=twiss_cw, twiss_acw=twiss_acw,
-        acw_is_reversed=True)
-
-    crab_offsets = {'cw': {}, 'acw': {}}
-    if crab_strong_beam:
-        crab_offsets['cw'] = _measure_crabbing(
-            line_cw, records_cw, twiss_cw, reverse=False)
-        crab_offsets['acw'] = _measure_crabbing(
-            line_acw, records_acw, twiss_acw, reverse=True)
+        acw_is_reversed=True,
+        crab_s_by_element=crab_s_by_element)
+    twiss_cw = twiss_and_survey['twiss']['cw']
+    twiss_acw = twiss_and_survey['twiss']['acw']
+    crab_offsets = twiss_and_survey['crab_offsets']
 
     for record_cw in records_cw:
         record_acw = records_acw_by_name[
             record_cw.metadata['other_element_name']]
         geometry = compute_beambeam_geometry(
-            analysis=analysis,
+            twiss_and_survey=twiss_and_survey,
             ip_name=record_cw.metadata['ip_name'],
             element_name_cw=record_cw.name,
             element_name_acw=record_acw.name)
@@ -471,9 +474,9 @@ def _configure_two_beams(
             strong_crab=crab_offsets['cw'].get(record_cw.name),
             num_particles=num_particles, stored_acw=True)
 
-    configure_orbit_dependent_parameters_for_bb(
+    _store_self_orbit_and_dipolar_kick(
         line=line_cw, particle_on_co=twiss_cw.particle_on_co)
-    configure_orbit_dependent_parameters_for_bb(
+    _store_self_orbit_and_dipolar_kick(
         line=line_acw, particle_on_co=twiss_acw.reverse().particle_on_co)
 
 
@@ -500,7 +503,11 @@ def _configure_with_antisymmetry(
     }
     positions = np.array([twiss['s', record.name] for record in records])
     crab_offsets = (_measure_crabbing(
-        line, records, twiss, reverse=reverse)
+        line=line,
+        crab_s_by_element={record.name: record.metadata['s_crab']
+                           for record in records},
+        twiss=twiss,
+        reverse=reverse)
         if crab_strong_beam else {})
 
     antisymmetry_sigma_sign = {
@@ -560,7 +567,7 @@ def _configure_with_antisymmetry(
 
     particle_on_co = (
         twiss.reverse().particle_on_co if reverse else twiss.particle_on_co)
-    configure_orbit_dependent_parameters_for_bb(
+    _store_self_orbit_and_dipolar_kick(
         line=line, particle_on_co=particle_on_co)
 
 
@@ -636,27 +643,6 @@ def _to_stored_acw_sigma(sigma):
         23: 1, 24: -1, 33: 1, 34: -1, 44: 1,
     }
     return {name: signs[name] * value for name, value in sigma.items()}
-
-
-def _measure_crabbing(line, records, twiss, reverse):
-    offsets = {}
-    for record in records:
-        s_crab = record.metadata['s_crab']
-        if s_crab == 0.0:
-            offsets[record.name] = {'x': 0.0, 'y': 0.0}
-            continue
-
-        print(f'Crabbing at {record.name}     ', end='\r', flush=True)
-        zeta0 = -2 * s_crab if reverse else 2 * s_crab
-        twiss_crab = line.twiss(method='4d', zeta0=zeta0, reverse=False)
-        if reverse:
-            twiss_crab = twiss_crab.reverse()
-        offsets[record.name] = {
-            coordinate: (twiss_crab[coordinate, record.name]
-                         - twiss[coordinate, record.name])
-            for coordinate in ('x', 'y')
-        }
-    return offsets
 
 
 def apply_filling_pattern(env, filling_pattern_cw, filling_pattern_acw,
