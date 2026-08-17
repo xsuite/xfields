@@ -113,16 +113,9 @@ def configure_beambeam_interactions(
                 'The trackers need to be built on CPU before configuring the '
                 'beam-beam elements.')
 
+        # Disable any previous configuration while analysing the bare lines.
         for record in installation.elements[orientation]:
-            line.element_refs[record.name].scale_strength = 1.0
-            element = line[record.name]
-            element.other_beam_q0 = 0.0
-            for field_name in (
-                    'post_subtract_x', 'post_subtract_px',
-                    'post_subtract_y', 'post_subtract_py',
-                    'post_subtract_zeta', 'post_subtract_pzeta'):
-                if hasattr(element, field_name):
-                    setattr(element, field_name, 0.0)
+            line.element_refs[record.name].scale_strength = 0.0
 
     _analyse_and_configure_elements(
         installation=installation,
@@ -617,6 +610,7 @@ def _configure_element_from_geometry(
         other_sigma=sigma,
         separation_x=separation_x, separation_y=separation_y,
         alpha=alpha, phi=phi)
+    line.element_refs[record.name].scale_strength = 1.0
 
 
 def _to_stored_acw_sigma(sigma):
