@@ -36,8 +36,14 @@ def prepare_beambeam_analysis(
         survey = {'cw': {}, 'acw': {}}
         for orientation, line in (('cw', line_cw), ('acw', line_acw)):
             for ip_name, names in element_names_by_ip[orientation].items():
-                survey[orientation][ip_name] = _survey_region(
-                    line, ip_name, names)
+                line_survey = line.survey(element0=ip_name)
+                region_survey = line_survey.rows[[ip_name, *names]]
+                region_span = np.ptp(region_survey.s)
+                assert 2 * region_span <= line_survey.s[-1], (
+                    f'The beam-beam region around {ip_name!r} wraps across '
+                    'the line boundary, which is not supported.')
+                survey[orientation][ip_name] = (
+                    region_survey.rows[names].cols['XYZ E_matrix'])
 
     return {
         'twiss': twiss,
@@ -131,17 +137,6 @@ def _beam_data(analysis, orientation, element_name):
         for sigma_name in _SIGMA_NAMES
     }
     return data
-
-
-def _survey_region(line, ip_name, element_names):
-    """Survey one non-wrapping beam--beam region in the IP frame."""
-    survey = line.survey(element0=ip_name)
-    region = survey.rows[[ip_name, *element_names]]
-    region_span = np.ptp(region.s)
-    assert 2 * region_span <= survey.s[-1], (
-        f'The beam-beam region around {ip_name!r} wraps across the line '
-        'boundary, which is not supported.')
-    return region.rows[element_names].cols['XYZ E_matrix']
 
 
 def find_alpha_and_phi(dpx, dpy):

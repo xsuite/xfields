@@ -11,7 +11,6 @@ import xobjects as xo
 import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
-    _survey_region,
     compute_beambeam_geometry,
     find_bb_separations,
     prepare_beambeam_analysis,
@@ -119,19 +118,21 @@ def _make_conventional_toy_ring(suffix, shared_ips):
 
 
 def test_survey_region_rejects_wrapping_line_boundary():
-    line = xt.Line(
-        elements=[
-            xt.Marker(), xt.Drift(length=1), xt.Marker(),
-            xt.Drift(length=8), xt.Marker(), xt.Drift(length=1),
-        ],
-        element_names=[
-            'ip', 'drift_right', 'bb_right',
-            'drift_left', 'bb_left', 'drift_end',
-        ],
-    )
+    line = _make_conventional_toy_ring('cw', {})
 
     with pytest.raises(AssertionError, match='wraps across the line boundary'):
-        _survey_region(line, 'ip', ['bb_left', 'bb_right'])
+        prepare_beambeam_analysis(
+            line_cw=line,
+            line_acw=line,
+            element_names_by_ip={
+                'cw': {
+                    'cell0_cw': ['drift_b17_cw', 'qf0_cw'],
+                },
+                'acw': {},
+            },
+            nemitt_x=2e-6,
+            nemitt_y=2.5e-6,
+        )
 
 
 def test_conventional_install_and_configure_characterization():
