@@ -448,7 +448,6 @@ def _configure_two_beams(
         crab_s_by_element=crab_s_by_element)
     twiss_cw = twiss_and_survey['twiss']['cw']
     twiss_acw = twiss_and_survey['twiss']['acw']
-    crab_offsets = twiss_and_survey['crab_offsets']
 
     for record_cw in records_cw:
         record_acw = records_acw_by_name[
@@ -462,17 +461,13 @@ def _configure_two_beams(
         _configure_element(
             line=line_cw, record=record_cw,
             strong_line=line_acw, strong_record=record_acw,
-            weak_geometry=geometry['cw'],
-            strong_geometry=geometry['acw'],
-            strong_crab=crab_offsets['acw'].get(record_acw.name),
-            num_particles=num_particles, stored_acw=False)
+            geometry=geometry, weak_orientation='cw',
+            num_particles=num_particles)
         _configure_element(
             line=line_acw, record=record_acw,
             strong_line=line_cw, strong_record=record_cw,
-            weak_geometry=geometry['acw'],
-            strong_geometry=geometry['cw'],
-            strong_crab=crab_offsets['cw'].get(record_cw.name),
-            num_particles=num_particles, stored_acw=True)
+            geometry=geometry, weak_orientation='acw',
+            num_particles=num_particles)
 
     _store_self_orbit_and_dipolar_kick(
         line=line_cw, particle_on_co=twiss_cw.particle_on_co)
@@ -514,6 +509,8 @@ def _configure_with_antisymmetry(
         11: 1, 12: -1, 13: 1, 14: -1, 22: 1,
         23: -1, 24: 1, 33: 1, 34: -1, 44: 1,
     }
+    weak_orientation = 'acw' if reverse else 'cw'
+    strong_orientation = 'cw' if reverse else 'acw'
     for record in records:
         element_name = record.name
         ip_name = record.metadata['ip_name']
@@ -556,14 +553,20 @@ def _configure_with_antisymmetry(
             'dpx': weak_point.tpx - strong_point.tpx,
             'dpy': weak_point.tpy - strong_point.tpy,
         }
+        strong_crab = crab_offsets.get(partner.name)
+        if strong_crab is not None:
+            weak_geometry['separation_x'] += strong_crab['x']
+            weak_geometry['separation_y'] += strong_crab['y']
         strong_geometry = {'sigma': strong_sigma}
+        geometry = {
+            weak_orientation: weak_geometry,
+            strong_orientation: strong_geometry,
+        }
         _configure_element(
             line=line, record=record,
             strong_line=line, strong_record=partner,
-            weak_geometry=weak_geometry,
-            strong_geometry=strong_geometry,
-            strong_crab=crab_offsets.get(partner.name),
-            num_particles=num_particles, stored_acw=reverse)
+            geometry=geometry, weak_orientation=weak_orientation,
+            num_particles=num_particles)
 
     particle_on_co = (
         twiss.reverse().particle_on_co if reverse else twiss.particle_on_co)
@@ -580,18 +583,17 @@ def _element_names_by_ip(records):
 
 def _configure_element(
         line, record, strong_line, strong_record,
-        weak_geometry, strong_geometry, strong_crab,
-        num_particles, stored_acw):
+        geometry, weak_orientation, num_particles):
+    strong_orientation = 'acw' if weak_orientation == 'cw' else 'cw'
+    weak_geometry = geometry[weak_orientation]
+    strong_geometry = geometry[strong_orientation]
     separation_x = weak_geometry['separation_x']
     separation_y = weak_geometry['separation_y']
-    if strong_crab is not None:
-        separation_x += strong_crab['x']
-        separation_y += strong_crab['y']
 
     sigma = strong_geometry['sigma']
     dpx = weak_geometry['dpx']
     dpy = weak_geometry['dpy']
-    if stored_acw:
+    if weak_orientation == 'acw':
         separation_x = -separation_x
         sigma = _to_stored_acw_sigma(sigma)
         dpy = -dpy

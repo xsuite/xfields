@@ -133,6 +133,17 @@ def compute_beambeam_geometry(
         separation_x=float(separation_acw[0]),
         separation_y=float(separation_acw[1]),
         dpx=float(-dpx_cw), dpy=float(-dpy_cw))
+
+    crab_offsets = twiss_and_survey['crab_offsets']
+    for weak_orientation, strong_orientation, strong_element_name in (
+            ('cw', 'acw', element_name_acw),
+            ('acw', 'cw', element_name_cw)):
+        strong_crab = crab_offsets[strong_orientation].get(
+            strong_element_name)
+        if strong_crab is not None:
+            beam[weak_orientation]['separation_x'] += strong_crab['x']
+            beam[weak_orientation]['separation_y'] += strong_crab['y']
+
     return {
         'cw': beam['cw'],
         'acw': beam['acw'],
