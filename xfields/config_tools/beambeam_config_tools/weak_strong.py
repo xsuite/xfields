@@ -95,6 +95,7 @@ def install_beambeam_interactions(
         'delay_at_ips_slots': delays_by_ip,
     }
 
+
 def configure_beambeam_interactions(
         env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
         use_antisymmetry=False, separation_bumps=None):
@@ -117,14 +118,30 @@ def configure_beambeam_interactions(
         for record in installation.elements[orientation]:
             line.element_refs[record.name].scale_strength = 0.0
 
-    _analyse_and_configure_elements(
-        installation=installation,
-        line_cw=env.lines.get(installation.line_names['clockwise']),
-        line_acw=env.lines.get(installation.line_names['anticlockwise']),
-        num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-        crab_strong_beam=crab_strong_beam,
-        use_antisymmetry=use_antisymmetry,
-        separation_bumps=separation_bumps)
+    line_cw = env.lines.get(installation.line_names['clockwise'])
+    line_acw = env.lines.get(installation.line_names['anticlockwise'])
+    if use_antisymmetry:
+        if line_cw is not None and line_acw is not None:
+            raise ValueError(
+                'Antisymmetry configuration requires exactly one beam line.')
+        orientation = 'clockwise' if line_cw is not None else 'anticlockwise'
+        _configure_with_antisymmetry(
+            line=line_cw if line_cw is not None else line_acw,
+            records=installation.elements[orientation],
+            orientation=orientation, num_particles=num_particles,
+            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+            crab_strong_beam=crab_strong_beam,
+            separation_bumps=separation_bumps,
+            ip_names=installation.ip_names)
+    else:
+        if line_cw is None or line_acw is None:
+            raise ValueError(
+                'Both beam lines are required when antisymmetry is disabled.')
+        _configure_two_beams(
+            installation=installation, line_cw=line_cw, line_acw=line_acw,
+            num_particles=num_particles,
+            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+            crab_strong_beam=crab_strong_beam)
 
     env.vars['beambeam_scale'] = 1.0
     for orientation in ('clockwise', 'anticlockwise'):
@@ -402,34 +419,6 @@ def _discover_installation(env):
         delay_at_ips_slots=config.get('delay_at_ips_slots'))
 
 
-def _analyse_and_configure_elements(
-        installation, line_cw, line_acw, num_particles,
-        nemitt_x, nemitt_y, crab_strong_beam,
-        use_antisymmetry=False, separation_bumps=None):
-    if use_antisymmetry:
-        if line_cw is not None and line_acw is not None:
-            raise ValueError(
-                'Antisymmetry configuration requires exactly one beam line.')
-        orientation = 'clockwise' if line_cw is not None else 'anticlockwise'
-        line = line_cw if line_cw is not None else line_acw
-        _configure_with_antisymmetry(
-            line=line, records=installation.elements[orientation],
-            orientation=orientation, num_particles=num_particles,
-            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-            crab_strong_beam=crab_strong_beam,
-            separation_bumps=separation_bumps,
-            ip_names=installation.ip_names)
-        return
-
-    if line_cw is None or line_acw is None:
-        raise ValueError(
-            'Both beam lines are required when antisymmetry is disabled.')
-    _configure_two_beams(
-        installation=installation, line_cw=line_cw, line_acw=line_acw,
-        num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-        crab_strong_beam=crab_strong_beam)
-
-
 def _configure_two_beams(
         installation, line_cw, line_acw, num_particles,
         nemitt_x, nemitt_y, crab_strong_beam):
@@ -467,14 +456,14 @@ def _configure_two_beams(
             element_name_cw=record_cw.name,
             element_name_acw=record_acw.name)
 
-        _configure_element_from_geometry(
+        _configure_element(
             line=line_cw, record=record_cw,
             strong_line=line_acw, strong_record=record_acw,
             weak_geometry=geometry['cw'],
             strong_geometry=geometry['acw'],
             strong_crab=crab_offsets['acw'].get(record_acw.name),
             num_particles=num_particles, stored_acw=False)
-        _configure_element_from_geometry(
+        _configure_element(
             line=line_acw, record=record_acw,
             strong_line=line_cw, strong_record=record_cw,
             weak_geometry=geometry['acw'],
@@ -561,7 +550,7 @@ def _configure_with_antisymmetry(
             'dpy': weak_point.tpy - strong_point.tpy,
         }
         strong_geometry = {'sigma': strong_sigma}
-        _configure_element_from_geometry(
+        _configure_element(
             line=line, record=record,
             strong_line=line, strong_record=partner,
             weak_geometry=weak_geometry,
@@ -582,7 +571,7 @@ def _element_names_by_ip(records):
     return names
 
 
-def _configure_element_from_geometry(
+def _configure_element(
         line, record, strong_line, strong_record,
         weak_geometry, strong_geometry, strong_crab,
         num_particles, stored_acw):
@@ -601,15 +590,43 @@ def _configure_element_from_geometry(
         dpy = -dpy
 
     alpha, phi = find_alpha_and_phi(dpx, dpy)
-    _configure_element(
-        line=line, record=record,
-        other_num_particles=(num_particles
-            * strong_record.metadata['self_frac_of_bunch']),
-        other_particle_charge=float(strong_line.particle_ref.q0),
-        other_relativistic_beta=float(strong_line.particle_ref.beta0[0]),
-        other_sigma=sigma,
-        separation_x=separation_x, separation_y=separation_y,
-        alpha=alpha, phi=phi)
+    other_num_particles = (
+        num_particles * strong_record.metadata['self_frac_of_bunch'])
+    other_particle_charge = float(strong_line.particle_ref.q0)
+    other_relativistic_beta = float(strong_line.particle_ref.beta0[0])
+    element = line[record.name]
+    if isinstance(element, xf.BeamBeamBiGaussian2D):
+        element.other_beam_num_particles = other_num_particles
+        element.other_beam_q0 = other_particle_charge
+        element.other_beam_Sigma_11 = sigma[11]
+        element.other_beam_Sigma_33 = sigma[33]
+        element.other_beam_beta0 = other_relativistic_beta
+        element.other_beam_shift_x = separation_x
+        element.other_beam_shift_y = separation_y
+    elif isinstance(element, xf.BeamBeamBiGaussian3D):
+        params = {
+            'phi': phi,
+            'alpha': alpha,
+            'other_beam_shift_x': separation_x,
+            'other_beam_shift_y': separation_y,
+            'slices_other_beam_num_particles': [other_num_particles],
+            'other_beam_q0': other_particle_charge,
+            'slices_other_beam_zeta_center': [0.0],
+        }
+        for sigma_name, value in sigma.items():
+            params[f'slices_other_beam_Sigma_{sigma_name}'] = [value]
+        for sigma_name in (13, 14, 23, 24):
+            params[f'slices_other_beam_Sigma_{sigma_name}'] = [0.0]
+
+        new_element = xf.BeamBeamBiGaussian3D(**params)
+        if new_element._xobject._size != element._xobject._size:
+            raise RuntimeError(
+                'The configured 3D beam-beam element changed allocation size.')
+        new_element.move(_buffer=element._buffer, _offset=element._offset)
+    else:
+        raise TypeError(
+            f'Tagged element `{record.name}` is not a supported '
+            'weak--strong beam-beam element.')
     line.element_refs[record.name].scale_strength = 1.0
 
 
@@ -619,47 +636,6 @@ def _to_stored_acw_sigma(sigma):
         23: 1, 24: -1, 33: 1, 34: -1, 44: 1,
     }
     return {name: signs[name] * value for name, value in sigma.items()}
-
-
-def _configure_element(
-        line, record, other_num_particles, other_particle_charge,
-        other_relativistic_beta, other_sigma,
-        separation_x, separation_y, alpha, phi):
-    element = line[record.name]
-    if isinstance(element, xf.BeamBeamBiGaussian2D):
-        element.other_beam_num_particles = other_num_particles
-        element.other_beam_q0 = other_particle_charge
-        element.other_beam_Sigma_11 = other_sigma[11]
-        element.other_beam_Sigma_33 = other_sigma[33]
-        element.other_beam_beta0 = other_relativistic_beta
-        element.other_beam_shift_x = separation_x
-        element.other_beam_shift_y = separation_y
-        return
-
-    if not isinstance(element, xf.BeamBeamBiGaussian3D):
-        raise TypeError(
-            f'Tagged element `{record.name}` is not a supported '
-            'weak--strong beam-beam element.')
-
-    params = {
-        'phi': phi,
-        'alpha': alpha,
-        'other_beam_shift_x': separation_x,
-        'other_beam_shift_y': separation_y,
-        'slices_other_beam_num_particles': [other_num_particles],
-        'other_beam_q0': other_particle_charge,
-        'slices_other_beam_zeta_center': [0.0],
-    }
-    for sigma_name, value in other_sigma.items():
-        params[f'slices_other_beam_Sigma_{sigma_name}'] = [value]
-    for sigma_name in (13, 14, 23, 24):
-        params[f'slices_other_beam_Sigma_{sigma_name}'] = [0.0]
-
-    new_element = xf.BeamBeamBiGaussian3D(**params)
-    if new_element._xobject._size != element._xobject._size:
-        raise RuntimeError(
-            'The configured 3D beam-beam element changed allocation size.')
-    new_element.move(_buffer=element._buffer, _offset=element._offset)
 
 
 def _measure_crabbing(line, records, twiss, reverse):
