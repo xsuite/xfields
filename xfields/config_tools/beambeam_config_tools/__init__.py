@@ -3,9 +3,7 @@ from .orbit_dependent_configuration_tools import (
 
 from .config_tools import (
     compute_beambeam_geometry,
-    configure_beam_beam_elements,
     generate_beambeam_encounter_table,
-    install_beambeam_elements_in_lines,
 )
 from .rigid_bunch import BeamBeamRigidBunchStudy
 from .rigid_bunch_twiss import RigidBunchTwiss

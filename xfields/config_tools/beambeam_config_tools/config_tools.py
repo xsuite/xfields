@@ -2,65 +2,44 @@ import copy
 
 import pandas as pd
 import numpy as np
-from scipy.special import  erfinv
 
 from ._madpoint import MadPoint
 import xfields as xf
 
-def install_beambeam_elements_in_lines(line_b1, line_b4, ip_names,
-            harmonic_number, bunch_spacing_buckets,
-            num_long_range_encounters_per_side, num_slices_head_on,
-            sigmaz_m, delay_at_ips_slots=None):
+def _build_configuration_table(elements, line, beam, other_beam):
+    if not elements:
+        return None
+    rows = []
+    for record in elements:
+        metadata = record.metadata
+        rows.append({
+            'beam': beam,
+            'other_beam': other_beam,
+            'ip_name': metadata['ip_name'],
+            'elementName': record.name,
+            'other_elementName': metadata['other_element_name'],
+            'label': metadata['label'],
+            'self_particle_charge': float(line.particle_ref.q0),
+            'self_relativistic_beta': float(line.particle_ref.beta0[0]),
+            'self_frac_of_bunch': metadata['self_frac_of_bunch'],
+            'identifier': metadata['identifier'],
+            's_crab': metadata['s_crab'],
+        })
+    dataframe = pd.DataFrame(rows).set_index('elementName', drop=False)
+    for which_beam in ('self', 'other'):
+        for coordinate in ('x', 'px', 'y', 'py'):
+            dataframe[f'{which_beam}_{coordinate}_crab'] = 0.
+    return dataframe.sort_index()
 
-    keep_columns = ['beam', 'other_beam', 'ip_name', 'elementName', 'other_elementName', 'label',
-            'self_particle_charge', 'self_relativistic_beta', 'self_frac_of_bunch',
-            'identifier', 's_crab']
 
-    # TODO: use keyword arguments
-    # TODO: what happens if bunch length is different for the two beams
-    if line_b1 is not None:
-        circumference = line_b1.get_length()
-        bb_df_b1 = generate_set_of_bb_encounters_1beam(
-            circumference, harmonic_number,
-            bunch_spacing_buckets,
-            num_slices_head_on,
-            line_b1.particle_ref.q0,
-            sigmaz_m, line_b1.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
-            beam_name = 'b1',
-            other_beam_name = 'b2')
-        install_dummy_bb_lenses(bb_df=bb_df_b1, line=line_b1)
-        bb_df_b1 = bb_df_b1[keep_columns].copy()
-    else:
-        bb_df_b1 = None
+def _configure_beam_beam_elements(
+        elements_cw, elements_acw, line_cw, line_acw, num_particles,
+        nemitt_x, nemitt_y, crab_strong_beam, ip_names,
+        use_antisymmetry=False, separation_bumps=None):
 
-    if line_b4 is not None:
-        circumference = line_b4.get_length()
-        bb_df_b2 = generate_set_of_bb_encounters_1beam(
-            circumference, harmonic_number,
-            bunch_spacing_buckets,
-            num_slices_head_on,
-            line_b4.particle_ref.q0,
-            sigmaz_m,
-            line_b4.particle_ref.beta0[0], ip_names, num_long_range_encounters_per_side,
-            beam_name = 'b2',
-            other_beam_name = 'b1')
-        bb_df_b2['atPosition'] = -bb_df_b2['atPosition'] # I am installing in b4 not in b2
-        install_dummy_bb_lenses(bb_df=bb_df_b2, line=line_b4)
-        bb_df_b2 = bb_df_b2[keep_columns].copy()
-    else:
-        bb_df_b2 = None
-
-    if delay_at_ips_slots is not None:
-        _compute_delays(bb_df_b1, bb_df_b2, delay_at_ips_slots, ip_names,
-                        harmonic_number, bunch_spacing_buckets)
-
-    return bb_df_b1, bb_df_b2
-
-def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
-                                 num_particles,
-                                 nemitt_x, nemitt_y, crab_strong_beam, ip_names,
-                                 use_antisymmetry=False,
-                                 separation_bumps=None):
+    bb_df_cw = _build_configuration_table(elements_cw, line_cw, 'b1', 'b2')
+    bb_df_acw = _build_configuration_table(
+        elements_acw, line_acw, 'b2', 'b1')
 
     if line_cw is None or line_acw is None:
         assert use_antisymmetry is True, (
@@ -184,7 +163,7 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
             bb_df['separation_x'] += bb_df['other_x_crab']
             bb_df['separation_y'] += bb_df['other_y_crab']
 
-    # Get bb dataframe and mad model (with dummy bb) for beam 4
+    # Transform the ACW configuration to the stored B4 line convention.
     bb_df_b4 = get_counter_rotating(bb_df_acw) if bb_df_acw is not None else None
 
     if line_cw is not None:
@@ -196,104 +175,10 @@ def configure_beam_beam_elements(bb_df_cw, bb_df_acw, line_cw, line_acw,
         xf.configure_orbit_dependent_parameters_for_bb(line=line_acw,
                     particle_on_co=twisses['acw'].reverse().particle_on_co)
 
-def install_dummy_bb_lenses(bb_df, line):
-
-    ip_names = bb_df['ip_name'].unique().tolist()
-
-    s_ips = {}
-    tt = line.get_table()
-    for iipp in ip_names:
-        s_ips[iipp] = tt['s', iipp]
-
-    s_insertions = []
-    for nn in bb_df.index:
-        s_insertions.append(s_ips[bb_df.loc[nn, 'ip_name']] + bb_df.loc[nn, 'atPosition'])
-
-    insertions = []
-    for nn in bb_df.index:
-        print(f'Insert: {nn}     ', end='\r', flush=True)
-        ll = bb_df.loc[nn, 'label']
-        iipp = bb_df.loc[nn, 'ip_name']
-
-        if ll == 'bb_ho':
-            new_bb = xf.BeamBeamBiGaussian3D(phi=0, alpha=0, other_beam_q0=0.,
-                slices_other_beam_num_particles=[0],
-                slices_other_beam_zeta_center=[0],
-                slices_other_beam_Sigma_11=[1],
-                slices_other_beam_Sigma_12=[0],
-                slices_other_beam_Sigma_22=[0],
-                slices_other_beam_Sigma_33=[1],
-                slices_other_beam_Sigma_34=[0],
-                slices_other_beam_Sigma_44=[0],
-                )
-        elif ll == 'bb_lr':
-            new_bb = xf.BeamBeamBiGaussian2D(
-                other_beam_beta0=1.,
-                other_beam_q0=0,
-                other_beam_num_particles=0.,
-                other_beam_Sigma_11=1,
-                other_beam_Sigma_33=1,
-            )
-        else:
-            raise ValueError('Unknown label')
-
-        line.env.elements[nn] = new_bb
-        insertions.append(line.env.place(nn,
-                at=s_ips[bb_df.loc[nn, 'ip_name']]+ bb_df.loc[nn, 'atPosition']))
-
-    line.insert(insertions)
-
 _sigma_names = [11, 12, 13, 14, 22, 23, 24, 33, 34, 44]
 
 def norm(v):
     return np.sqrt(np.sum(v ** 2))
-
-# From https://github.com/giadarol/WeakStrong/blob/master/slicing.py
-def constant_charge_slicing_gaussian(N_part_tot, sigmaz, N_slices):
-    if N_slices>1:
-        # working with intensity 1. and rescling at the end
-        Qi = (np.arange(N_slices)/float(N_slices))[1:]
-
-        z_cuts = np.sqrt(2)*sigmaz*erfinv(2*Qi-1.)
-
-        z_centroids = []
-        first_centroid = -sigmaz/np.sqrt(2*np.pi)*np.exp(
-                -z_cuts[0]**2/(2*sigmaz*sigmaz))*float(N_slices)
-        z_centroids.append(first_centroid)
-        for ii in range(N_slices-2):
-            this_centroid = -sigmaz/np.sqrt(2*np.pi)*(
-                    np.exp(-z_cuts[ii+1]**2/(2*sigmaz*sigmaz))-
-                    np.exp(-z_cuts[ii]**2/(2*sigmaz*sigmaz)))*float(N_slices)
-            # the multiplication times n slices comes from the fact
-            # that we have to divide by the slice charge, i.e. 1./N
-            z_centroids.append(this_centroid)
-
-        last_centroid = sigmaz/np.sqrt(2*np.pi)*np.exp(
-                -z_cuts[-1]**2/(2*sigmaz*sigmaz))*float(N_slices)
-        z_centroids.append(last_centroid)
-
-        z_centroids = np.array(z_centroids)
-
-        N_part_per_slice = z_centroids*0.+N_part_tot/float(N_slices)
-    elif N_slices==1:
-        z_centroids = np.array([0.])
-        z_cuts = []
-        N_part_per_slice = np.array([N_part_tot])
-
-    else:
-        raise ValueError('Invalid number of slices')
-
-    return z_centroids, z_cuts, N_part_per_slice
-
-def elementName(label, IRNumber, beam, identifier):
-    if identifier >0:
-        sideTag='.r'
-    elif identifier < 0:
-        sideTag='.l'
-    else:
-        sideTag='.c'
-    return f'{label}{sideTag}{IRNumber}{beam}_{np.abs(identifier):02}'
-
 
 def generate_beambeam_encounter_table(
         ip_names, num_long_range_encounters_per_side,
@@ -388,113 +273,6 @@ def _add_beambeam_pairing_offsets(
     table['delay_in_slots_cw'] = delay_cw.astype(int)
     table['delay_in_slots_acw'] = delay_acw.astype(int)
     return table
-
-def generate_set_of_bb_encounters_1beam(
-    circumference=None,
-    harmonic_number=None,
-    bunch_spacing_buckets=None,
-    numberOfHOSlices=None,
-    bunch_particle_charge=None,
-    sigt=None,
-    relativistic_beta=None,
-    ip_names=None,
-    numberOfLRPerIRSide=None,
-    beam_name=None,
-    other_beam_name=None
-    ):
-
-
-    bunch_spacing_zeta = (
-        circumference / harmonic_number * bunch_spacing_buckets)
-    logical_encounters = generate_beambeam_encounter_table(
-        ip_names, numberOfLRPerIRSide,
-        bunch_spacing_zeta=bunch_spacing_zeta)
-
-    # Long-Range
-    myBBLRlist=[]
-    for encounter in logical_encounters.itertuples(index=False):
-        if encounter.encounter_type != 'long_range':
-            continue
-        myBBLRlist.append({
-            'label': 'bb_lr', 'ip_name': encounter.ip_name,
-            'beam': beam_name, 'other_beam': other_beam_name,
-            'identifier': encounter.identifier})
-
-    if len(myBBLRlist)>0:
-        myBBLR=pd.DataFrame(myBBLRlist)[
-            ['beam','other_beam','ip_name','label','identifier']]
-
-        myBBLR['self_particle_charge'] = bunch_particle_charge
-        myBBLR['self_relativistic_beta'] = relativistic_beta
-        myBBLR['elementName']=myBBLR.apply(
-            lambda x: elementName(
-                x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier),
-                axis=1)
-        myBBLR['other_elementName']=myBBLR.apply(
-            lambda x: elementName(
-                x.label, x.ip_name.replace('ip', ''), x.other_beam, x.identifier), axis=1)
-        # where circ is used
-        position_by_encounter = {
-            (row.ip_name, row.identifier): row.s_from_ip_cw
-            for row in logical_encounters.itertuples(index=False)
-            if row.encounter_type == 'long_range'}
-        myBBLR['atPosition'] = [
-            position_by_encounter[ip, identifier]
-            for ip, identifier in zip(
-                myBBLR['ip_name'], myBBLR['identifier'])]
-        myBBLR['s_crab'] = 0.
-        myBBLR['self_frac_of_bunch'] = 1.
-        # assuming a sequence rotated in IR3
-    else:
-        myBBLR = pd.DataFrame()
-
-    # Head-On
-    numberOfSliceOnSide=int((numberOfHOSlices-1)/2)
-    # to check: sigz of the luminous region
-    # where sigt is used
-    sigzLumi=sigt/2
-    z_centroids, z_cuts, N_part_per_slice = constant_charge_slicing_gaussian(
-                                                    1,sigzLumi,numberOfHOSlices)
-    myBBHOlist=[]
-
-    for encounter in logical_encounters.itertuples(index=False):
-        if encounter.encounter_type != 'head_on':
-            continue
-        ip_nn = encounter.ip_name
-        for identifier in (list(range(-numberOfSliceOnSide,0))
-                           +[0] + list(range(1,numberOfSliceOnSide+1))):
-            myBBHOlist.append({'label': 'bb_ho', 'ip_name': ip_nn,
-                                'other_beam': other_beam_name, 'beam':beam_name,
-                                'identifier':identifier})
-
-    myBBHO=pd.DataFrame(myBBHOlist)[
-        ['beam','other_beam', 'ip_name','label','identifier']]
-
-
-    myBBHO['self_frac_of_bunch'] = 1./numberOfHOSlices
-    myBBHO['self_particle_charge'] = bunch_particle_charge
-    myBBHO['self_relativistic_beta'] = relativistic_beta
-    for ip_nn in ip_names:
-        myBBHO.loc[myBBHO['ip_name'] == ip_nn, 'atPosition']=list(z_centroids)
-    myBBHO['s_crab'] = myBBHO['atPosition']
-
-    myBBHO['elementName'] = myBBHO.apply(
-        lambda x: elementName(
-            x.label, x.ip_name.replace('ip', ''), x.beam, x.identifier), axis=1)
-    myBBHO['other_elementName']=myBBHO.apply(
-        lambda x: elementName(x.label, x.ip_name.replace('ip', ''),
-                              x.other_beam, x.identifier), axis=1)
-    # assuming a sequence rotated in IR3
-
-    myBB=pd.concat([myBBHO, myBBLR],sort=False)
-    myBB = myBB.set_index('elementName', drop=False).sort_index()
-
-
-    for ww in ['self', 'other']:
-        for coord in ['x', 'px', 'y', 'py']:
-            myBB[f'{ww}_{coord}_crab'] = 0
-
-    return myBB
 
 def get_counter_rotating(bb_df):
 
@@ -1021,7 +799,8 @@ def setup_beam_beam_in_line(
     import xfields as xf
     assert bb_coupling is False  # Not implemented
 
-    for ii, (ee, eename) in enumerate(zip(line.elements, line.element_names)):
+    for eename in bb_df.index:
+        ee = line[eename]
         if isinstance(ee, xf.BeamBeamBiGaussian2D):
             ee.other_beam_num_particles=bb_df.loc[eename, 'other_num_particles']
             ee.other_beam_q0 = bb_df.loc[eename, 'other_particle_charge']
@@ -1030,7 +809,7 @@ def setup_beam_beam_in_line(
             ee.other_beam_beta0 = bb_df.loc[eename, 'other_relativistic_beta']
             ee.other_beam_shift_x = bb_df.loc[eename, 'separation_x']
             ee.other_beam_shift_y = bb_df.loc[eename, 'separation_y']
-        if isinstance(ee, xf.BeamBeamBiGaussian3D):
+        elif isinstance(ee, xf.BeamBeamBiGaussian3D):
             params = {}
             params['phi'] = bb_df.loc[eename, 'phi']
             params['alpha'] =  bb_df.loc[eename, 'alpha']
@@ -1062,6 +841,10 @@ def setup_beam_beam_in_line(
             assert newee._xobject._size == ee._xobject._size
             # move to the location of the old element (ee becomese newee)
             newee.move(_buffer=ee._buffer, _offset=ee._offset)
+        else:
+            raise TypeError(
+                f'Tagged element `{eename}` is not a supported weak--strong '
+                'beam-beam element.')
 
 def measure_crabbing(line, bb_df, reverse):
 
@@ -1088,58 +871,3 @@ def measure_crabbing(line, bb_df, reverse):
         else:
             for coord in ['x', 'px', 'y', 'py']:
                 bb_df.loc[nn, f'self_{coord}_crab'] = 0.0
-
-def _compute_delays(bb_df_cw, bb_df_acw, delay_at_ips_slots, ip_names,
-                    harmonic_number, bunch_spacing_buckets):
-
-    ring_length_in_slots = harmonic_number / bunch_spacing_buckets
-
-    for orientation, bbdf  in zip(['clockwise', 'anticlockwise'],
-                                  [bb_df_cw, bb_df_acw]):
-        pairing_table = pd.DataFrame({
-            'ip_name': bbdf['ip_name'],
-            # Head-on identifiers label slices, not distinct encounters.
-            'identifier': np.where(
-                bbdf['label'] == 'bb_lr', bbdf['identifier'], 0),
-        })
-        pairing_table = _add_beambeam_pairing_offsets(
-            pairing_table, ip_names, delay_at_ips_slots,
-            ring_length_in_slots)
-        column = ('delay_in_slots_cw' if orientation == 'clockwise'
-                  else 'delay_in_slots_acw')
-        bbdf['delay_in_slots'] = pairing_table[column].to_numpy()
-
-def apply_filling_pattern(collider, filling_pattern_cw, filling_pattern_acw,
-                          i_bunch_cw, i_bunch_acw):
-
-    dframes = collider._bb_config['dataframes']
-
-    ring_length_in_slots = int(collider._bb_config['harmonic_number']
-                            / collider._bb_config['bunch_spacing_buckets'])
-
-    for orientation_self in ['clockwise', 'anticlockwise']:
-
-        if orientation_self == 'clockwise':
-            filling_pattern_self = np.array(filling_pattern_cw, dtype=int)
-            filling_pattern_other = np.array(filling_pattern_acw, dtype=int)
-            i_bunch_self = i_bunch_cw
-        else:
-            filling_pattern_self = np.array(filling_pattern_acw)
-            filling_pattern_other = np.array(filling_pattern_cw)
-            i_bunch_self = i_bunch_acw
-
-        assert set(list(filling_pattern_self)).issubset({0, 1})
-        assert set(list(filling_pattern_other)).issubset({0, 1})
-
-        assert filling_pattern_self[i_bunch_self] == 1, "Selected bunch is not in the filling scheme"
-
-        temp_df = dframes[orientation_self].loc[:, ['delay_in_slots', 'ip_name']].copy()
-        temp_df['partner_bunch_index'] = dframes[orientation_self]['delay_in_slots'] + i_bunch_self
-        temp_df['partner_bunch_index'] = np.mod(temp_df['partner_bunch_index'], ring_length_in_slots)
-        temp_df['is_active'] = filling_pattern_other[temp_df['partner_bunch_index']] == 1
-
-        for nn, state in temp_df['is_active'].items():
-            if state:
-                collider.vars[nn + '_scale_strength'] = collider.vars['beambeam_scale']
-            else:
-                collider.vars[nn + '_scale_strength'] = 0

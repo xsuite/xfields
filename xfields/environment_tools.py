@@ -67,9 +67,11 @@ class XfieldsEnvironmentAPI:
                     'Missing conventional beam-beam installation arguments: '
                     + ', '.join(missing))
 
-            from xtrack.environment import MultilineLegacy
+            from .config_tools.beambeam_config_tools.weak_strong import (
+                install_beambeam_interactions,
+            )
 
-            return MultilineLegacy.install_beambeam_interactions(
+            return install_beambeam_interactions(
                 self.env,
                 clockwise_line=clockwise_line,
                 anticlockwise_line=anticlockwise_line,
@@ -146,9 +148,11 @@ class XfieldsEnvironmentAPI:
                     '`num_particles`, `nemitt_x` and `nemitt_y` are required '
                     'for conventional beam-beam configuration.')
 
-            from xtrack.environment import MultilineLegacy
+            from .config_tools.beambeam_config_tools.weak_strong import (
+                configure_beambeam_interactions,
+            )
 
-            return MultilineLegacy.configure_beambeam_interactions(
+            return configure_beambeam_interactions(
                 self.env,
                 num_particles=num_particles,
                 nemitt_x=nemitt_x,
@@ -203,9 +207,11 @@ class XfieldsEnvironmentAPI:
         pipeline-enabled workflow. Rigid-bunch fillings are changed with
         :meth:`BeamBeamRigidBunchStudy.set_filling`.
         """
-        from xtrack.environment import MultilineLegacy
+        from .config_tools.beambeam_config_tools.weak_strong import (
+            apply_filling_pattern,
+        )
 
-        return MultilineLegacy.apply_filling_pattern(
+        return apply_filling_pattern(
             self.env,
             filling_pattern_cw=filling_pattern_cw,
             filling_pattern_acw=filling_pattern_acw,

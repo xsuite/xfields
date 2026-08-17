@@ -4,17 +4,20 @@
 # ########################################### #
 
 import numpy as np
+import pandas as pd
 
 import xfields as xf
 import xobjects as xo
 import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
-    _compute_delays,
     find_bb_separations,
-    generate_set_of_bb_encounters_1beam,
 )
 from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
+from xfields.config_tools.beambeam_config_tools.weak_strong import (
+    _BEAMBEAM_EXTRA_KEY,
+    _discover_installation,
+)
 
 
 def test_generate_beambeam_encounter_table():
@@ -49,51 +52,46 @@ def test_generate_beambeam_encounter_table():
 
 
 def test_conventional_encounters_keep_positions_and_delays():
-    # The conventional weak-strong installer expands each logical head-on
-    # encounter into slices. Long-range positions and bunch-pairing delays must
-    # nevertheless come from the same logical description used by rigid-bunch
-    # installation.
-    kwargs = dict(
-        circumference=80.0,
-        harmonic_number=8,
-        bunch_spacing_buckets=1,
-        numberOfHOSlices=3,
-        bunch_particle_charge=1,
-        sigt=0.1,
-        relativistic_beta=1,
+    shared_ips = {'ip1': xt.Marker(), 'ip2': xt.Marker()}
+    env = xt.Environment(lines={
+        'cw': _make_conventional_toy_ring('cw', shared_ips),
+        'acw': _make_conventional_toy_ring('acw', shared_ips),
+    })
+    env.xfields.install_beambeam_interactions(
+        clockwise_line='cw', anticlockwise_line='acw',
         ip_names=['ip1', 'ip2'],
-        numberOfLRPerIRSide=[1, 1],
-    )
-    encounters_cw = generate_set_of_bb_encounters_1beam(
-        beam_name='b1', other_beam_name='b2', **kwargs)
-    encounters_acw = generate_set_of_bb_encounters_1beam(
-        beam_name='b2', other_beam_name='b1', **kwargs)
-    _compute_delays(
-        encounters_cw, encounters_acw,
-        delay_at_ips_slots=[0, 6], ip_names=['ip1', 'ip2'],
-        harmonic_number=8, bunch_spacing_buckets=1)
+        num_long_range_encounters_per_side=[1, 1],
+        num_slices_head_on=3,
+        harmonic_number=8, bunch_spacing_buckets=1,
+        sigmaz=0.1, delay_at_ips_slots=[0, 6])
 
-    for table, orientation in (
-            (encounters_cw, 'cw'), (encounters_acw, 'acw')):
-        lr = table[table['label'] == 'bb_lr'].sort_values(
-            ['ip_name', 'identifier'])
-        xo.assert_allclose(lr['atPosition'].to_numpy(), [-5, 5, -5, 5],
-                           rtol=0, atol=0)
-        expected_delays = ([-1, 1, 5, 7] if orientation == 'cw'
-                           else [1, -1, 3, 1])
-        xo.assert_allclose(lr['delay_in_slots'].to_numpy(), expected_delays,
-                           rtol=0, atol=0)
+    installation = _discover_installation(env)
+    for orientation, expected_delays in (
+            ('clockwise', [-1, 1, 5, 7]),
+            ('anticlockwise', [1, -1, 3, 1])):
+        records = installation.elements[orientation]
+        long_range = sorted(
+            (record for record in records
+             if record.metadata['label'] == 'bb_lr'),
+            key=lambda record: (
+                record.metadata['ip_name'], record.metadata['identifier']))
+        xo.assert_allclose(
+            [record.metadata['delay_in_slots'] for record in long_range],
+            expected_delays, rtol=0, atol=0)
 
-        head_on = table[table['label'] == 'bb_ho']
-        assert len(head_on[head_on['ip_name'] == 'ip1']) == 3
-        assert len(head_on[head_on['ip_name'] == 'ip2']) == 3
-        expected_head_on_delays = ([0, 6] if orientation == 'cw' else [0, 2])
+        head_on = [record for record in records
+                   if record.metadata['label'] == 'bb_ho']
+        assert sum(record.metadata['ip_name'] == 'ip1'
+                   for record in head_on) == 3
+        assert sum(record.metadata['ip_name'] == 'ip2'
+                   for record in head_on) == 3
+        expected_head_on_delays = (
+            [0, 6] if orientation == 'clockwise' else [0, 2])
         for ip_name, expected_delay in zip(
                 ['ip1', 'ip2'], expected_head_on_delays):
-            xo.assert_allclose(
-                head_on[head_on['ip_name'] == ip_name][
-                    'delay_in_slots'].to_numpy(),
-                expected_delay, rtol=0, atol=0)
+            assert {record.metadata['delay_in_slots'] for record in head_on
+                    if record.metadata['ip_name'] == ip_name} == {
+                        expected_delay}
 
 
 def _make_conventional_toy_ring(suffix, shared_ips):
@@ -162,18 +160,35 @@ def test_conventional_install_and_configure_characterization():
         harmonic_number=8, bunch_spacing_buckets=1,
         sigmaz=0.1, delay_at_ips_slots=[0, 6])
 
-    df_cw = env._bb_config['dataframes']['clockwise']
-    df_acw = env._bb_config['dataframes']['anticlockwise']
-    assert len(df_cw) == 10
-    assert len(df_acw) == 10
-    assert list(df_cw.index) == sorted(df_cw.index)
-    assert list(df_acw.index) == sorted(df_acw.index)
-    assert set(df_cw['label']) == {'bb_ho', 'bb_lr'}
-    assert set(df_acw['label']) == {'bb_ho', 'bb_lr'}
-    assert dict(df_cw['other_elementName']) == {
-        name: name.replace('b1_', 'b2_') for name in df_cw.index}
-    assert dict(df_acw['other_elementName']) == {
-        name: name.replace('b2_', 'b1_') for name in df_acw.index}
+    assert not hasattr(env, '_bb_config')
+    for line in (env.cw, env.acw):
+        for element_name in line.element_names:
+            if element_name.startswith('bb_'):
+                assert _BEAMBEAM_EXTRA_KEY in line[element_name].extra
+
+    # The elements keep all installation state through serialization.
+    env = xt.Environment.from_dict(env.to_dict())
+    installation = _discover_installation(env)
+    records_cw = installation.elements['clockwise']
+    records_acw = installation.elements['anticlockwise']
+    assert len(records_cw) == 10
+    assert len(records_acw) == 10
+    assert [record.name for record in records_cw] == sorted(
+        record.name for record in records_cw)
+    assert [record.name for record in records_acw] == sorted(
+        record.name for record in records_acw)
+    assert {record.metadata['label'] for record in records_cw} == {
+        'bb_ho', 'bb_lr'}
+    assert {record.metadata['label'] for record in records_acw} == {
+        'bb_ho', 'bb_lr'}
+    assert {record.name: record.metadata['other_element_name']
+            for record in records_cw} == {
+        record.name: record.name.replace('b1_', 'b2_')
+        for record in records_cw}
+    assert {record.name: record.metadata['other_element_name']
+            for record in records_acw} == {
+        record.name: record.name.replace('b2_', 'b1_')
+        for record in records_acw}
 
     xo.assert_allclose(
         env.cw.get_table()['s', [
@@ -194,14 +209,19 @@ def test_conventional_install_and_configure_characterization():
     cov_cw = tw_cw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
     cov_acw = tw_acw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
 
-    encounter_instances = df_cw[[
-        'ip_name', 'label', 'identifier']].rename(
-            columns={'label': 'encounter_type'}).reset_index(drop=True)
+    encounter_instances = pd.DataFrame([
+        {
+            'ip_name': record.metadata['ip_name'],
+            'encounter_type': record.metadata['label'],
+            'identifier': record.metadata['identifier'],
+        }
+        for record in records_cw])
     shared_geometry, _ = xf.compute_beambeam_geometry(
         encounter_table=encounter_instances,
         line_cw=env.cw, line_acw=env.acw,
-        element_names_cw=df_cw.index,
-        element_names_acw=df_cw['other_elementName'],
+        element_names_cw=[record.name for record in records_cw],
+        element_names_acw=[record.metadata['other_element_name']
+                           for record in records_cw],
         nemitt_x=2e-6, nemitt_y=2.5e-6,
         survey_separation=True,
         twiss_cw=tw_cw, twiss_acw=tw_acw,
@@ -351,10 +371,61 @@ def test_conventional_install_and_configure_characterization():
 
     assert env['beambeam_scale'] == 1
     env['beambeam_scale'] = 0.37
-    for line, dataframe in ((env.cw, df_cw), (env.acw, df_acw)):
-        for name in dataframe.index:
-            xo.assert_allclose(line[name].scale_strength, 0.37,
+    for line, records in ((env.cw, records_cw), (env.acw, records_acw)):
+        for record in records:
+            xo.assert_allclose(line[record.name].scale_strength, 0.37,
                                rtol=0, atol=0)
+
+    # Configuration is repeatable: it first makes the tagged lenses inactive,
+    # reanalyses the bare lines, and then restores fully configured elements.
+    env.xfields.configure_beambeam_interactions(
+        num_particles=1e11,
+        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        crab_strong_beam=False)
+    xo.assert_allclose(
+        env.cw['bb_lr.r1b1_01'].other_beam_shift_x,
+        legacy_separation_cw['bb_lr.r1b1_01'][0],
+        rtol=0, atol=1e-14)
+    assert env['beambeam_scale'] == 1
+
+
+def test_conventional_element_state_drives_filling_pattern():
+    shared_ips = {'ip1': xt.Marker(), 'ip2': xt.Marker()}
+    env = xt.Environment(lines={
+        'cw': _make_conventional_toy_ring('cw', shared_ips),
+        'acw': _make_conventional_toy_ring('acw', shared_ips),
+    })
+    env.xfields.install_beambeam_interactions(
+        clockwise_line='cw', anticlockwise_line='acw',
+        ip_names=['ip1', 'ip2'],
+        num_long_range_encounters_per_side=[1, 1],
+        num_slices_head_on=3,
+        harmonic_number=8, bunch_spacing_buckets=1,
+        sigmaz=0.1, delay_at_ips_slots=[0, 6])
+    env = xt.Environment.from_dict(env.to_dict())
+    env.xfields.configure_beambeam_interactions(
+        num_particles=1e11, nemitt_x=2e-6, nemitt_y=2.5e-6,
+        crab_strong_beam=False)
+
+    filling_cw = np.zeros(8, dtype=int)
+    filling_acw = np.zeros(8, dtype=int)
+    filling_cw[[0, 2]] = 1
+    filling_acw[[0, 1, 6]] = 1
+    env.xfields.apply_filling_pattern(
+        filling_pattern_cw=filling_cw,
+        filling_pattern_acw=filling_acw,
+        i_bunch_cw=0, i_bunch_acw=0)
+
+    assert env.cw['bb_ho.c1b1_00'].scale_strength == 1
+    assert env.cw['bb_lr.r1b1_01'].scale_strength == 1
+    assert env.cw['bb_lr.l1b1_01'].scale_strength == 0
+    assert env.cw['bb_ho.c2b1_00'].scale_strength == 1
+    assert env.acw['bb_ho.c2b2_00'].scale_strength == 1
+    assert env.acw['bb_lr.r2b2_01'].scale_strength == 0
+
+    env['beambeam_scale'] = 0.4
+    assert env.cw['bb_lr.r1b1_01'].scale_strength == 0.4
+    assert env.cw['bb_lr.l1b1_01'].scale_strength == 0
 
 
 def test_conventional_single_beam_antisymmetry_configuration():
