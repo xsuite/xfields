@@ -131,27 +131,21 @@ def configure_beambeam_interactions(
         'cw': installation.elements['clockwise'],
         'acw': installation.elements['anticlockwise'],
     }
-    present_orientations = [
-        orientation for orientation, line in lines.items()
-        if line is not None]
-    names_by_ip = {
-        orientation: (
-            _element_names_by_ip(elements[orientation])
-            if lines[orientation] is not None else {})
-        for orientation in ('cw', 'acw')
-    }
-    crab_s_by_element = None
-    if crab_strong_beam:
-        crab_s_by_element = {
-            orientation: {
+    names_by_ip = {'cw': {}, 'acw': {}}
+    crab_s_by_element = {} if crab_strong_beam else None
+    antisymmetry_elements = None
+    for orientation in ('cw', 'acw'):
+        if lines[orientation] is None:
+            continue
+        names_by_ip[orientation] = _element_names_by_ip(
+            elements[orientation])
+        if crab_strong_beam:
+            crab_s_by_element[orientation] = {
                 element_name: metadata['s_crab']
                 for element_name, metadata
                 in elements[orientation].items()}
-            for orientation in present_orientations
-        }
-    antisymmetry_elements = None
-    if use_antisymmetry:
-        antisymmetry_elements = elements[present_orientations[0]]
+        if use_antisymmetry:
+            antisymmetry_elements = elements[orientation]
     twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=line_cw, line_acw=line_acw,
         element_names_by_ip=names_by_ip,
@@ -163,7 +157,9 @@ def configure_beambeam_interactions(
         separation_bumps=separation_bumps)
     geometry_by_pair = {}
 
-    for weak_orientation in present_orientations:
+    for weak_orientation in ('cw', 'acw'):
+        if lines[weak_orientation] is None:
+            continue
         for element_name, metadata in elements[weak_orientation].items():
             strong_line, strong_metadata = _resolve_strong_beam(
                 weak_orientation=weak_orientation,
