@@ -10,6 +10,10 @@ import xfields as xf
 import xobjects as xo
 import xtrack as xt
 from xfields import BeamBeamRigidBunchStudy
+from xfields.config_tools.beambeam_config_tools.config_tools import (
+    compute_beambeam_geometry,
+    prepare_beambeam_analysis,
+)
 
 
 N_CELLS = 8
@@ -102,7 +106,7 @@ def _install_toy_rigid_bunch_beambeam():
         bunch_spacing_buckets=1,
         mode='rigid_bunch',
         survey_separation=True)
-    assert env._bb_config['mode'] == 'rigid_bunch'
+    assert env.extra_config['xfields_beambeam']['mode'] == 'rigid_bunch'
     bb_names_cw = [name for name in env.cw.element_names
                    if name.startswith('bb_')]
     bb_names_acw = [name for name in env.acw.element_names
@@ -230,29 +234,48 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         xo.assert_allclose(
             bb_cw.other_beam_sigma_y, geom['sigma_y_acw'], rtol=0, atol=0)
 
-    # The study geometry is the normalized view of the shared Xfields result.
-    shared_geometry, _ = xf.compute_beambeam_geometry(
-        encounter_table=study.encounter_table,
+    # The study geometry is the normalized view of the shared per-encounter
+    # analysis.
+    names_by_ip = {'cw': {}, 'acw': {}}
+    for base, ip, _ in study.enc_specs:
+        names_by_ip['cw'].setdefault(ip, []).append(
+            study.bb_name(base, False))
+        names_by_ip['acw'].setdefault(ip, []).append(
+            study.bb_name(base, True))
+    analysis = prepare_beambeam_analysis(
         line_cw=env.cw, line_acw=env.acw,
-        element_names_cw=study.bb_names_cw,
-        element_names_acw=study.bb_names_acw,
+        element_names_by_ip=names_by_ip,
         nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
         survey_separation=False)
-    for ii, base in enumerate(expected_encounters):
+    for base, ip, _ in study.enc_specs:
         geom = study.geom[base]
-        row = shared_geometry.iloc[ii]
-        for field in ('betx_cw', 'bety_cw', 'betx_acw', 'bety_acw'):
-            xo.assert_allclose(geom[field], row[field], rtol=0, atol=0)
+        encounter = compute_beambeam_geometry(
+            analysis=analysis, ip_name=ip,
+            element_name_cw=study.bb_name(base, False),
+            element_name_acw=study.bb_name(base, True))
+        for orientation in ('cw', 'acw'):
+            xo.assert_allclose(
+                geom[f'betx_{orientation}'],
+                encounter[orientation]['betx'], rtol=0, atol=0)
+            xo.assert_allclose(
+                geom[f'bety_{orientation}'],
+                encounter[orientation]['bety'], rtol=0, atol=0)
         xo.assert_allclose(
-            geom['sigma_x_cw'], np.sqrt(row['Sigma_11_cw']), rtol=0, atol=0)
+            geom['sigma_x_cw'], np.sqrt(encounter['cw']['sigma'][11]),
+            rtol=0, atol=0)
         xo.assert_allclose(
-            geom['sigma_y_cw'], np.sqrt(row['Sigma_33_cw']), rtol=0, atol=0)
+            geom['sigma_y_cw'], np.sqrt(encounter['cw']['sigma'][33]),
+            rtol=0, atol=0)
         xo.assert_allclose(
-            geom['sigma_x_acw'], np.sqrt(row['Sigma_11_acw']), rtol=0, atol=0)
+            geom['sigma_x_acw'], np.sqrt(encounter['acw']['sigma'][11]),
+            rtol=0, atol=0)
         xo.assert_allclose(
-            geom['sigma_y_acw'], np.sqrt(row['Sigma_33_acw']), rtol=0, atol=0)
-        xo.assert_allclose(geom['sep_x'], row['separation_x'], rtol=0, atol=0)
-        xo.assert_allclose(geom['sep_y'], row['separation_y'], rtol=0, atol=0)
+            geom['sigma_y_acw'], np.sqrt(encounter['acw']['sigma'][33]),
+            rtol=0, atol=0)
+        xo.assert_allclose(
+            geom['sep_x'], encounter['separation_x'], rtol=0, atol=0)
+        xo.assert_allclose(
+            geom['sep_y'], encounter['separation_y'], rtol=0, atol=0)
 
     env.cw['beambeam_scale'] = 0.37
     for name in study.bb_names_cw:

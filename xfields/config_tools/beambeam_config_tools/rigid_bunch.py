@@ -65,23 +65,39 @@ import numpy as np
 
 from xtrack.general import _print
 
+from .config_tools import (
+    BEAMBEAM_CONFIG_KEY,
+    BEAMBEAM_CONFIG_VERSION,
+    compute_beambeam_geometry,
+    prepare_beambeam_analysis,
+)
 
-def _encounter_specs(encounters):
+
+def _encounter_specs(ip_names, num_long_range_encounters_per_side):
     """Yield ``(base_name, ip, signed_n)``; ``signed_n == 0`` is the head-on
-    encounter.
+    encounter."""
+    if isinstance(num_long_range_encounters_per_side, dict):
+        num_lr_by_ip = [num_long_range_encounters_per_side[ip]
+                        for ip in ip_names]
+    elif np.ndim(num_long_range_encounters_per_side) == 0:
+        num_lr_by_ip = [num_long_range_encounters_per_side] * len(ip_names)
+    else:
+        num_lr_by_ip = list(num_long_range_encounters_per_side)
+        if len(num_lr_by_ip) != len(ip_names):
+            raise ValueError(
+                '`num_long_range_encounters_per_side` must have one entry '
+                'per IP.')
 
-    Encounter enumeration is shared with the conventional beam-beam installer;
-    only the rigid-bunch element names are rendered here.
-    """
-    for encounter in encounters.itertuples(index=False):
-        ip = encounter.ip_name
-        signed_n = encounter.identifier
-        if encounter.encounter_type == 'head_on':
-            base_name = f'bb_{ip}_ho'
-        else:
-            side = 'r' if signed_n > 0 else 'l'
-            base_name = f'bb_{ip}_{side}{abs(signed_n):02d}'
-        yield base_name, ip, signed_n
+    for ip, num_lr_value in zip(ip_names, num_lr_by_ip):
+        num_lr = int(num_lr_value)
+        if num_lr != num_lr_value or num_lr < 0:
+            raise ValueError(
+                '`num_long_range_encounters_per_side` entries must be '
+                'non-negative integers.')
+        yield f'bb_{ip}_ho', ip, 0
+        for identifier in range(1, num_lr + 1):
+            yield f'bb_{ip}_r{identifier:02d}', ip, identifier
+            yield f'bb_{ip}_l{identifier:02d}', ip, -identifier
 
 
 def _gamma0(line):
@@ -176,11 +192,8 @@ class BeamBeamRigidBunchStudy:
         self.bb_suffix_cw = bb_suffix_cw
         self.bb_suffix_acw = bb_suffix_acw
 
-        import xfields as xf
-        self.encounter_table = xf.generate_beambeam_encounter_table(
-            self.ip_names, num_long_range_encounters_per_side,
-            bunch_spacing_zeta=self.bunch_spacing_zeta)
-        self.enc_specs = list(_encounter_specs(self.encounter_table))
+        self.enc_specs = list(_encounter_specs(
+            self.ip_names, num_long_range_encounters_per_side))
         self.enc_names = [b for b, _, _ in self.enc_specs]
         self.bb_names_cw = [b + bb_suffix_cw for b in self.enc_names]
         self.bb_names_acw = [b + bb_suffix_acw for b in self.enc_names]
@@ -304,9 +317,9 @@ class BeamBeamRigidBunchStudy:
         tab = line.get_table()
         s_ip = {ip: float(tab['s', ip]) for ip in self.ip_names}
         places, names = [], []
-        position_column = 's_from_ip_acw' if mirror else 's_from_ip_cw'
-        for (base, ip, _), displacement in zip(
-                self.enc_specs, self.encounter_table[position_column]):
+        position_sign = -1 if mirror else 1
+        for base, ip, identifier in self.enc_specs:
+            displacement = position_sign * identifier * self.b_h_dist
             at = (s_ip[ip] + displacement + 1e-6) % length
             elname = self.bb_name(base, mirror)
             bb = self._make_bb(line, mirror)
@@ -336,38 +349,41 @@ class BeamBeamRigidBunchStudy:
         be placed and inactive, so the shared Twiss and covariance calculation
         sees the bare optics.
         """
-        import xfields as xf
-
-        geometry_table, twisses = xf.compute_beambeam_geometry(
-            encounter_table=self.encounter_table,
+        names_by_ip = {'cw': {}, 'acw': {}}
+        for base, ip, _ in self.enc_specs:
+            names_by_ip['cw'].setdefault(ip, []).append(
+                self.bb_name(base, False))
+            names_by_ip['acw'].setdefault(ip, []).append(
+                self.bb_name(base, True))
+        analysis = prepare_beambeam_analysis(
             line_cw=self.cw_line, line_acw=self.acw_line,
-            element_names_cw=self.bb_names_cw,
-            element_names_acw=self.bb_names_acw,
+            element_names_by_ip=names_by_ip,
             nemitt_x=self.nemitt_x, nemitt_y=self.nemitt_y,
             survey_separation=survey_separation)
-        tw_cw = twisses['cw']
-        tw_acw = twisses['acw']
+        tw_cw = analysis['twiss']['cw']
+        tw_acw = analysis['twiss']['acw']
         n_slots = self.n_slots
         self.ip_offsets = self._resolve_ip_offsets(tw_cw)
-        self.encounter_table = xf.generate_beambeam_encounter_table(
-            self.ip_names, self.num_long_range_encounters_per_side,
-            bunch_spacing_zeta=self.bunch_spacing_zeta,
-            delay_at_ips_slots=self.ip_offsets, n_slots=n_slots)
 
         geom = {}
-        for j, (base, ip, sn) in enumerate(self.enc_specs):
-            offset = int(self.encounter_table['delay_in_slots_cw'].iloc[j]) \
-                % n_slots
-            row = geometry_table.iloc[j]
+        for base, ip, signed_identifier in self.enc_specs:
+            offset = (self.ip_offsets[ip] + signed_identifier) % n_slots
+            encounter = compute_beambeam_geometry(
+                analysis=analysis, ip_name=ip,
+                element_name_cw=self.bb_name(base, False),
+                element_name_acw=self.bb_name(base, True))
+            cw = encounter['cw']
+            acw = encounter['acw']
             geom[base] = dict(
-                ip=ip, offset=offset, signed_n=sn,
-                betx_cw=row['betx_cw'], bety_cw=row['bety_cw'],
-                betx_acw=row['betx_acw'], bety_acw=row['bety_acw'],
-                sigma_x_cw=np.sqrt(row['Sigma_11_cw']),
-                sigma_y_cw=np.sqrt(row['Sigma_33_cw']),
-                sigma_x_acw=np.sqrt(row['Sigma_11_acw']),
-                sigma_y_acw=np.sqrt(row['Sigma_33_acw']),
-                sep_x=row['separation_x'], sep_y=row['separation_y'],
+                ip=ip, offset=offset, signed_n=signed_identifier,
+                betx_cw=cw['betx'], bety_cw=cw['bety'],
+                betx_acw=acw['betx'], bety_acw=acw['bety'],
+                sigma_x_cw=np.sqrt(cw['sigma'][11]),
+                sigma_y_cw=np.sqrt(cw['sigma'][33]),
+                sigma_x_acw=np.sqrt(acw['sigma'][11]),
+                sigma_y_acw=np.sqrt(acw['sigma'][33]),
+                sep_x=encounter['separation_x'],
+                sep_y=encounter['separation_y'],
             )
         self.geom = geom
         self.meta = dict(
@@ -806,11 +822,9 @@ def install_rigid_bunch_beambeam(
 
     cw_name = line_name(clockwise_line, 'clockwise_line')
     acw_name = line_name(anticlockwise_line, 'anticlockwise_line')
-    env._bb_config = {
+    env.extra_config[BEAMBEAM_CONFIG_KEY] = {
+        'version': BEAMBEAM_CONFIG_VERSION,
         'mode': 'rigid_bunch',
-        # Retain the conventional serialization shape alongside the
-        # rigid-bunch installation description.
-        'dataframes': {'clockwise': None, 'anticlockwise': None},
         'clockwise_line': cw_name,
         'anticlockwise_line': acw_name,
         'ip_names': ip_names,
@@ -835,10 +849,13 @@ def configure_rigid_bunch_beambeam(
         env, nemitt_x, nemitt_y, filling_scheme_cw, filling_scheme_acw,
         bunch_intensity_particles_cw, bunch_intensity_particles_acw):
     """Populate installed rigid-bunch elements and return their study."""
-    config = env._bb_config
+    config = env.extra_config.get(BEAMBEAM_CONFIG_KEY, {})
     if config.get('mode') != 'rigid_bunch':
         raise RuntimeError(
             'Install beam-beam interactions with `mode="rigid_bunch"` first.')
+    if config.get('version') != BEAMBEAM_CONFIG_VERSION:
+        raise RuntimeError(
+            'Unsupported rigid-bunch beam-beam configuration version.')
     study = getattr(env, '_beam_beam_rigid_bunch_study', None)
     if study is None:
         cw = env[config['clockwise_line']]

@@ -4,14 +4,15 @@
 # ########################################### #
 
 import numpy as np
-import pandas as pd
 
 import xfields as xf
 import xobjects as xo
 import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
+    compute_beambeam_geometry,
     find_bb_separations,
+    prepare_beambeam_analysis,
 )
 from xfields.config_tools.beambeam_config_tools._madpoint import MadPoint
 from xfields.config_tools.beambeam_config_tools.weak_strong import (
@@ -20,37 +21,6 @@ from xfields.config_tools.beambeam_config_tools.weak_strong import (
     _delay_in_slots,
     _discover_installation,
 )
-
-
-def test_generate_beambeam_encounter_table():
-    encounters = xf.generate_beambeam_encounter_table(
-        ip_names=['ip1', 'ip2'],
-        num_long_range_encounters_per_side={'ip1': 2, 'ip2': 1},
-        bunch_spacing_zeta=10.0,
-        delay_at_ips_slots={'ip1': 0, 'ip2': 6},
-        n_slots=8,
-    )
-
-    assert list(encounters[[
-        'ip_name', 'encounter_type', 'identifier',
-    ]].itertuples(index=False, name=None)) == [
-        ('ip1', 'head_on', 0),
-        ('ip1', 'long_range', 1),
-        ('ip1', 'long_range', -1),
-        ('ip1', 'long_range', 2),
-        ('ip1', 'long_range', -2),
-        ('ip2', 'head_on', 0),
-        ('ip2', 'long_range', 1),
-        ('ip2', 'long_range', -1),
-    ]
-    xo.assert_allclose(encounters['s_from_ip_cw'].to_numpy(),
-                       [0, 5, -5, 10, -10, 0, 5, -5], rtol=0, atol=0)
-    xo.assert_allclose(encounters['s_from_ip_acw'].to_numpy(),
-                       [0, -5, 5, -10, 10, 0, -5, 5], rtol=0, atol=0)
-    xo.assert_allclose(encounters['delay_in_slots_cw'].to_numpy(),
-                       [0, 1, -1, 2, -2, 6, 7, 5], rtol=0, atol=0)
-    xo.assert_allclose(encounters['delay_in_slots_acw'].to_numpy(),
-                       [0, -1, 1, -2, 2, 2, 1, 3], rtol=0, atol=0)
 
 
 def test_conventional_encounters_keep_positions_and_delays():
@@ -229,30 +199,19 @@ def test_conventional_install_and_configure_characterization():
     cov_cw = tw_cw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
     cov_acw = tw_acw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
 
-    encounter_instances = pd.DataFrame([
-        {
-            'ip_name': record.metadata['ip_name'],
-            'encounter_type': record.metadata['label'],
-            'identifier': record.metadata['identifier'],
-        }
-        for record in records_cw])
-    shared_geometry, _ = xf.compute_beambeam_geometry(
-        encounter_table=encounter_instances,
+    names_by_ip = {'cw': {}, 'acw': {}}
+    for record in records_cw:
+        ip_name = record.metadata['ip_name']
+        names_by_ip['cw'].setdefault(ip_name, []).append(record.name)
+        names_by_ip['acw'].setdefault(ip_name, []).append(
+            record.metadata['other_element_name'])
+    analysis = prepare_beambeam_analysis(
         line_cw=env.cw, line_acw=env.acw,
-        element_names_cw=[record.name for record in records_cw],
-        element_names_acw=[record.metadata['other_element_name']
-                           for record in records_cw],
+        element_names_by_ip=names_by_ip,
         nemitt_x=2e-6, nemitt_y=2.5e-6,
         survey_separation=True,
         twiss_cw=tw_cw, twiss_acw=tw_acw,
         acw_is_reversed=True)
-    for orientation, twiss in (('cw', tw_cw), ('acw', tw_acw)):
-        names = shared_geometry[f'element_name_{orientation}']
-        for coordinate in ('x', 'px', 'y', 'py'):
-            xo.assert_allclose(
-                shared_geometry[f'{coordinate}_{orientation}'].to_numpy(),
-                [twiss[coordinate, name] for name in names],
-                rtol=0, atol=0)
 
     surveys_cw = {
         ip: env.cw.survey(element0=ip, reverse=False)
@@ -262,29 +221,48 @@ def test_conventional_install_and_configure_characterization():
         for ip in ('ip1', 'ip2')}
     legacy_separation_cw = {}
     legacy_separation_acw = {}
-    for row in shared_geometry.itertuples(index=False):
+    for record in records_cw:
+        ip_name = record.metadata['ip_name']
+        element_name_cw = record.name
+        element_name_acw = record.metadata['other_element_name']
+        geometry = compute_beambeam_geometry(
+            analysis=analysis, ip_name=ip_name,
+            element_name_cw=element_name_cw,
+            element_name_acw=element_name_acw)
+        for orientation, twiss, element_name in (
+                ('cw', tw_cw, element_name_cw),
+                ('acw', tw_acw, element_name_acw)):
+            for coordinate in ('x', 'px', 'y', 'py'):
+                xo.assert_allclose(
+                    geometry[orientation][coordinate],
+                    twiss[coordinate, element_name], rtol=0, atol=0)
+
         point_cw = MadPoint(
-            row.element_name_cw, use_twiss=True, use_survey=True,
-            xsuite_survey=surveys_cw[row.ip_name], xsuite_twiss=tw_cw)
+            element_name_cw, use_twiss=True, use_survey=True,
+            xsuite_survey=surveys_cw[ip_name], xsuite_twiss=tw_cw)
         point_acw = MadPoint(
-            row.element_name_acw, use_twiss=True, use_survey=True,
-            xsuite_survey=surveys_acw[row.ip_name], xsuite_twiss=tw_acw)
+            element_name_acw, use_twiss=True, use_survey=True,
+            xsuite_survey=surveys_acw[ip_name], xsuite_twiss=tw_acw)
         sep_x_cw, sep_y_cw = find_bb_separations(
             points_weak=[point_cw], points_strong=[point_acw])
         sep_x_acw, sep_y_acw = find_bb_separations(
             points_weak=[point_acw], points_strong=[point_cw])
-        legacy_separation_cw[row.element_name_cw] = (
+        legacy_separation_cw[element_name_cw] = (
             sep_x_cw[0], sep_y_cw[0])
-        legacy_separation_acw[row.element_name_acw] = (
+        legacy_separation_acw[element_name_acw] = (
             sep_x_acw[0], sep_y_acw[0])
-        xo.assert_allclose(row.separation_x_cw, sep_x_cw[0],
-                           rtol=0, atol=1e-14)
-        xo.assert_allclose(row.separation_y_cw, sep_y_cw[0],
-                           rtol=0, atol=1e-14)
-        xo.assert_allclose(row.separation_x_acw, sep_x_acw[0],
-                           rtol=0, atol=1e-14)
-        xo.assert_allclose(row.separation_y_acw, sep_y_acw[0],
-                           rtol=0, atol=1e-14)
+        xo.assert_allclose(
+            geometry['cw']['separation_x'], sep_x_cw[0],
+            rtol=0, atol=1e-14)
+        xo.assert_allclose(
+            geometry['cw']['separation_y'], sep_y_cw[0],
+            rtol=0, atol=1e-14)
+        xo.assert_allclose(
+            geometry['acw']['separation_x'], sep_x_acw[0],
+            rtol=0, atol=1e-14)
+        xo.assert_allclose(
+            geometry['acw']['separation_y'], sep_y_acw[0],
+            rtol=0, atol=1e-14)
 
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
@@ -407,6 +385,16 @@ def test_conventional_install_and_configure_characterization():
         legacy_separation_cw['bb_lr.r1b1_01'][0],
         rtol=0, atol=1e-14)
     assert env['beambeam_scale'] == 1
+
+    # Exercise the crabbing analysis as well. This toy lattice has no crab
+    # cavities, so all measured offsets are zero.
+    env.xfields.configure_beambeam_interactions(
+        num_particles=1e11,
+        nemitt_x=2e-6, nemitt_y=2.5e-6)
+    xo.assert_allclose(
+        env.cw['bb_lr.r1b1_01'].other_beam_shift_x,
+        legacy_separation_cw['bb_lr.r1b1_01'][0],
+        rtol=0, atol=1e-14)
 
 
 def test_conventional_element_state_drives_filling_pattern():

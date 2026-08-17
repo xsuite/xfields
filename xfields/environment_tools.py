@@ -139,7 +139,7 @@ class XfieldsEnvironmentAPI:
         BeamBeamRigidBunchStudy or None
             The rigid-bunch study, or the conventional helper's result.
         """
-        config = getattr(self.env, '_bb_config', None) or {}
+        config = self.env.extra_config.get('xfields_beambeam', {})
         mode = config.get('mode', 'conventional')
 
         if mode != 'rigid_bunch':

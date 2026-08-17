@@ -40,8 +40,6 @@ from .config_tools import replace_spacecharge_with_PIC
 from .config_tools import configure_orbit_dependent_parameters_for_bb
 from .config_tools import install_spacecharge_frozen
 from .config_tools import full_electroncloud_setup
-from .config_tools import generate_beambeam_encounter_table
-from .config_tools import compute_beambeam_geometry
 from .config_tools.beambeam_config_tools.rigid_bunch import BeamBeamRigidBunchStudy
 from .config_tools.beambeam_config_tools.rigid_bunch_twiss import RigidBunchTwiss
 
