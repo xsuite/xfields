@@ -19,14 +19,14 @@ BEAMBEAM_CONFIG_VERSION = 1
 def compute_twiss_and_madpoints_at_bb(
         line_cw, line_acw, element_names_by_ip, nemitt_x, nemitt_y,
         survey_separation=True, acw_is_reversed=False,
-        crab_s_by_element=None, antisymmetry_records=None,
+        crab_s_by_element=None, antisymmetry_elements=None,
         separation_bumps=None):
     """Compute reduced Twiss tables and MadPoints at beam--beam elements.
 
     ``element_names_by_ip`` is indexed first by ``'cw'`` / ``'acw'`` and
     then by IP name. ``crab_s_by_element`` optionally provides the
     longitudinal offset used to measure crabbing at each element. When
-    ``antisymmetry_records`` is provided, the missing beam is synthesized
+    ``antisymmetry_elements`` is provided, the missing beam is synthesized
     from mirrored elements of the available beam.
     """
     lines = {'cw': line_cw, 'acw': line_acw}
@@ -86,7 +86,7 @@ def compute_twiss_and_madpoints_at_bb(
                 reverse=orientation == 'acw' and acw_is_reversed)
 
     antisymmetric_partner_names = {'cw': {}, 'acw': {}}
-    if antisymmetry_records is not None:
+    if antisymmetry_elements is not None:
         if len(lines) != 1:
             raise ValueError(
                 'Antisymmetry requires exactly one beam line.')
@@ -97,16 +97,16 @@ def compute_twiss_and_madpoints_at_bb(
          crab_offsets[missing_orientation],
          antisymmetric_partner_names[orientation]) = (
             _synthesize_antisymmetric_beam(
-                records=antisymmetry_records,
+                elements=antisymmetry_elements,
                 twiss=twiss[orientation],
                 covariance=covariance[orientation],
                 points=points[orientation],
                 crab_offsets=crab_offsets[orientation],
                 separation_bumps=separation_bumps))
-        for record in antisymmetry_records:
+        for metadata in antisymmetry_elements.values():
             element_names_by_ip[missing_orientation].setdefault(
-                record.metadata['ip_name'], []).append(
-                    record.metadata['other_element_name'])
+                metadata['ip_name'], []).append(
+                    metadata['other_element_name'])
 
     for orientation in ('cw', 'acw'):
         if orientation not in twiss:
@@ -141,9 +141,11 @@ def _transform_acw_point(point, reverse_local):
 
 
 def _synthesize_antisymmetric_beam(
-        records, twiss, covariance, points,
+        elements, twiss, covariance, points,
         crab_offsets, separation_bumps):
-    positions = np.array([twiss['s', record.name] for record in records])
+    element_names = list(elements)
+    positions = np.array([
+        twiss['s', element_name] for element_name in element_names])
     sigma_sign = {
         11: 1, 12: -1, 13: 1, 14: -1, 22: 1,
         23: -1, 24: 1, 33: 1, 34: -1, 44: 1,
@@ -154,21 +156,20 @@ def _synthesize_antisymmetric_beam(
     virtual_crab_offsets = {}
     partner_names = {}
 
-    for record in records:
-        element_name = record.name
-        ip_name = record.metadata['ip_name']
+    for element_name, metadata in elements.items():
+        ip_name = metadata['ip_name']
         mirrored_s = 2 * twiss['s', ip_name] - twiss['s', element_name]
         partner_index = int(np.argmin(np.abs(positions - mirrored_s)))
-        partner = records[partner_index]
+        partner_name = element_names[partner_index]
         if not np.isclose(
                 positions[partner_index], mirrored_s, rtol=0, atol=1e-5):
             raise ValueError(
                 f'No antisymmetric beam-beam partner found for '
                 f'`{element_name}`.')
 
-        target_name = record.metadata['other_element_name']
+        target_name = metadata['other_element_name']
         weak_point = points[element_name]
-        strong_point = copy.deepcopy(points[partner.name])
+        strong_point = copy.deepcopy(points[partner_name])
         strong_point.name = target_name
         strong_point.sz = weak_point.sz
         strong_point.p[2] = weak_point.p[2]
@@ -185,12 +186,12 @@ def _synthesize_antisymmetric_beam(
             strong_point.p[{'x': 0, 'y': 1}[plane]] += (
                 2 * getattr(strong_point, f't{plane}'))
 
-        source_names.append(partner.name)
+        source_names.append(partner_name)
         target_names.append(target_name)
         virtual_points[target_name] = strong_point
         virtual_crab_offsets[target_name] = crab_offsets.get(
-            partner.name, {'x': 0., 'y': 0.})
-        partner_names[element_name] = partner.name
+            partner_name, {'x': 0., 'y': 0.})
+        partner_names[element_name] = partner_name
 
     virtual_twiss = twiss.rows[source_names].cols[
         's betx bety x px y py']

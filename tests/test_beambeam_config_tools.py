@@ -44,30 +44,30 @@ def test_conventional_encounters_keep_positions_and_delays():
     for orientation, expected_delays in (
             ('clockwise', [-1, 1, 5, 7]),
             ('anticlockwise', [1, -1, 3, 1])):
-        records = installation.elements[orientation]
+        elements = installation.elements[orientation]
         long_range = sorted(
-            (record for record in records
-             if record.metadata['label'] == 'bb_lr'),
-            key=lambda record: (
-                record.metadata['ip_name'], record.metadata['identifier']))
+            (metadata for metadata in elements.values()
+             if metadata['label'] == 'bb_lr'),
+            key=lambda metadata: (
+                metadata['ip_name'], metadata['identifier']))
         xo.assert_allclose(
-            [_delay_in_slots(installation, orientation, record)
-             for record in long_range],
+            [_delay_in_slots(installation, orientation, metadata)
+             for metadata in long_range],
             expected_delays, rtol=0, atol=0)
 
-        head_on = [record for record in records
-                   if record.metadata['label'] == 'bb_ho']
-        assert sum(record.metadata['ip_name'] == 'ip1'
-                   for record in head_on) == 3
-        assert sum(record.metadata['ip_name'] == 'ip2'
-                   for record in head_on) == 3
+        head_on = [metadata for metadata in elements.values()
+                   if metadata['label'] == 'bb_ho']
+        assert sum(metadata['ip_name'] == 'ip1'
+                   for metadata in head_on) == 3
+        assert sum(metadata['ip_name'] == 'ip2'
+                   for metadata in head_on) == 3
         expected_head_on_delays = (
             [0, 6] if orientation == 'clockwise' else [0, 2])
         for ip_name, expected_delay in zip(
                 ['ip1', 'ip2'], expected_head_on_delays):
-            assert {_delay_in_slots(installation, orientation, record)
-                    for record in head_on
-                    if record.metadata['ip_name'] == ip_name} == {
+            assert {_delay_in_slots(installation, orientation, metadata)
+                    for metadata in head_on
+                    if metadata['ip_name'] == ip_name} == {
                         expected_delay}
 
 
@@ -180,26 +180,22 @@ def test_conventional_install_and_configure_characterization():
     # Environment-wide and encounter-local state survive serialization.
     env = xt.Environment.from_dict(env.to_dict())
     installation = _discover_installation(env)
-    records_cw = installation.elements['clockwise']
-    records_acw = installation.elements['anticlockwise']
-    assert len(records_cw) == 10
-    assert len(records_acw) == 10
-    assert [record.name for record in records_cw] == sorted(
-        record.name for record in records_cw)
-    assert [record.name for record in records_acw] == sorted(
-        record.name for record in records_acw)
-    assert {record.metadata['label'] for record in records_cw} == {
+    elements_cw = installation.elements['clockwise']
+    elements_acw = installation.elements['anticlockwise']
+    assert len(elements_cw) == 10
+    assert len(elements_acw) == 10
+    assert list(elements_cw) == sorted(elements_cw)
+    assert list(elements_acw) == sorted(elements_acw)
+    assert {metadata['label'] for metadata in elements_cw.values()} == {
         'bb_ho', 'bb_lr'}
-    assert {record.metadata['label'] for record in records_acw} == {
+    assert {metadata['label'] for metadata in elements_acw.values()} == {
         'bb_ho', 'bb_lr'}
-    assert {record.name: record.metadata['other_element_name']
-            for record in records_cw} == {
-        record.name: record.name.replace('b1_', 'b2_')
-        for record in records_cw}
-    assert {record.name: record.metadata['other_element_name']
-            for record in records_acw} == {
-        record.name: record.name.replace('b2_', 'b1_')
-        for record in records_acw}
+    assert {name: metadata['other_element_name']
+            for name, metadata in elements_cw.items()} == {
+        name: name.replace('b1_', 'b2_') for name in elements_cw}
+    assert {name: metadata['other_element_name']
+            for name, metadata in elements_acw.items()} == {
+        name: name.replace('b2_', 'b1_') for name in elements_acw}
 
     xo.assert_allclose(
         env.cw.get_table()['s', [
@@ -221,11 +217,11 @@ def test_conventional_install_and_configure_characterization():
     cov_acw = tw_acw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
 
     names_by_ip = {'cw': {}, 'acw': {}}
-    for record in records_cw:
-        ip_name = record.metadata['ip_name']
-        names_by_ip['cw'].setdefault(ip_name, []).append(record.name)
+    for element_name, metadata in elements_cw.items():
+        ip_name = metadata['ip_name']
+        names_by_ip['cw'].setdefault(ip_name, []).append(element_name)
         names_by_ip['acw'].setdefault(ip_name, []).append(
-            record.metadata['other_element_name'])
+            metadata['other_element_name'])
     twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=env.cw, line_acw=env.acw,
         element_names_by_ip=names_by_ip,
@@ -251,10 +247,9 @@ def test_conventional_install_and_configure_characterization():
         for ip in ('ip1', 'ip2')}
     legacy_separation_cw = {}
     legacy_separation_acw = {}
-    for record in records_cw:
-        ip_name = record.metadata['ip_name']
-        element_name_cw = record.name
-        element_name_acw = record.metadata['other_element_name']
+    for element_name_cw, metadata in elements_cw.items():
+        ip_name = metadata['ip_name']
+        element_name_acw = metadata['other_element_name']
         geometry = compute_beambeam_geometry(
             twiss_and_madpoints=twiss_and_madpoints,
             element_name_cw=element_name_cw,
@@ -399,9 +394,9 @@ def test_conventional_install_and_configure_characterization():
 
     assert env['beambeam_scale'] == 1
     env['beambeam_scale'] = 0.37
-    for line, records in ((env.cw, records_cw), (env.acw, records_acw)):
-        for record in records:
-            xo.assert_allclose(line[record.name].scale_strength, 0.37,
+    for line, elements in ((env.cw, elements_cw), (env.acw, elements_acw)):
+        for element_name in elements:
+            xo.assert_allclose(line[element_name].scale_strength, 0.37,
                                rtol=0, atol=0)
 
     # Configuration is repeatable: it first makes the tagged lenses inactive,
@@ -484,23 +479,22 @@ def test_conventional_single_beam_antisymmetry_configuration():
     covariance = twiss.get_beam_covariance(
         nemitt_x=2e-6, nemitt_y=2.5e-6)
     installation = _discover_installation(env)
-    records = installation.elements['clockwise']
+    elements = installation.elements['clockwise']
     names_by_ip = {'cw': {}, 'acw': {}}
-    for record in records:
+    for element_name, metadata in elements.items():
         names_by_ip['cw'].setdefault(
-            record.metadata['ip_name'], []).append(record.name)
+            metadata['ip_name'], []).append(element_name)
     twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=env.cw, line_acw=None,
         element_names_by_ip=names_by_ip,
         nemitt_x=2e-6, nemitt_y=2.5e-6,
         survey_separation=True,
         acw_is_reversed=True,
-        antisymmetry_records=records,
+        antisymmetry_elements=elements,
         separation_bumps={'ip1': 'x', 'ip2': 'y'})
     actual_names = [
         name for names in names_by_ip['cw'].values() for name in names]
-    records_by_name = {record.name: record for record in records}
-    virtual_names = [records_by_name[name].metadata['other_element_name']
+    virtual_names = [elements[name]['other_element_name']
                      for name in actual_names]
     assert list(twiss_and_madpoints['twiss']['cw'].name) == actual_names
     assert list(twiss_and_madpoints['twiss']['acw'].name) == virtual_names

@@ -112,8 +112,8 @@ def configure_beambeam_interactions(
                 'beam-beam elements.')
 
         # Disable any previous configuration while analysing the bare lines.
-        for record in installation.elements[orientation]:
-            line.element_refs[record.name].scale_strength = 0.0
+        for element_name in installation.elements[orientation]:
+            line.element_refs[element_name].scale_strength = 0.0
 
     line_cw = env.lines.get(installation.line_names['clockwise'])
     line_acw = env.lines.get(installation.line_names['anticlockwise'])
@@ -126,12 +126,72 @@ def configure_beambeam_interactions(
             raise ValueError(
                 'Both beam lines are required when antisymmetry is disabled.')
 
-    _configure_weak_strong(
-        installation=installation, line_cw=line_cw, line_acw=line_acw,
-        num_particles=num_particles, nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-        crab_strong_beam=crab_strong_beam,
-        use_antisymmetry=use_antisymmetry,
+    lines = {'cw': line_cw, 'acw': line_acw}
+    elements = {
+        'cw': installation.elements['clockwise'],
+        'acw': installation.elements['anticlockwise'],
+    }
+    present_orientations = [
+        orientation for orientation, line in lines.items()
+        if line is not None]
+    names_by_ip = {
+        orientation: (
+            _element_names_by_ip(elements[orientation])
+            if lines[orientation] is not None else {})
+        for orientation in ('cw', 'acw')
+    }
+    crab_s_by_element = None
+    if crab_strong_beam:
+        crab_s_by_element = {
+            orientation: {
+                element_name: metadata['s_crab']
+                for element_name, metadata
+                in elements[orientation].items()}
+            for orientation in present_orientations
+        }
+    antisymmetry_elements = None
+    if use_antisymmetry:
+        antisymmetry_elements = elements[present_orientations[0]]
+    twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
+        line_cw=line_cw, line_acw=line_acw,
+        element_names_by_ip=names_by_ip,
+        nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+        survey_separation=True,
+        acw_is_reversed=True,
+        crab_s_by_element=crab_s_by_element,
+        antisymmetry_elements=antisymmetry_elements,
         separation_bumps=separation_bumps)
+    geometry_by_pair = {}
+
+    for weak_orientation in present_orientations:
+        for element_name, metadata in elements[weak_orientation].items():
+            strong_line, strong_metadata = _resolve_strong_beam(
+                weak_orientation=weak_orientation,
+                element_name=element_name,
+                metadata=metadata,
+                lines=lines,
+                elements=elements,
+                twiss_and_madpoints=twiss_and_madpoints)
+            if weak_orientation == 'cw':
+                pair = (element_name, metadata['other_element_name'])
+            else:
+                pair = (metadata['other_element_name'], element_name)
+            if pair not in geometry_by_pair:
+                geometry_by_pair[pair] = compute_beambeam_geometry(
+                    twiss_and_madpoints=twiss_and_madpoints,
+                    element_name_cw=pair[0],
+                    element_name_acw=pair[1])
+            _configure_element(
+                line=lines[weak_orientation], element_name=element_name,
+                strong_line=strong_line, strong_metadata=strong_metadata,
+                geometry=geometry_by_pair[pair],
+                weak_orientation=weak_orientation,
+                num_particles=num_particles)
+
+        _store_self_orbit_and_dipolar_kick(
+            line=lines[weak_orientation],
+            particle_on_co=(
+                twiss_and_madpoints['particle_on_co'][weak_orientation]))
 
     env.vars['beambeam_scale'] = 1.0
     for orientation in ('clockwise', 'anticlockwise'):
@@ -139,17 +199,11 @@ def configure_beambeam_interactions(
         if line_name is None:
             continue
         line = env.lines[line_name]
-        for record in installation.elements[orientation]:
-            variable_name = f'{record.name}_scale_strength'
+        for element_name in installation.elements[orientation]:
+            variable_name = f'{element_name}_scale_strength'
             env.vars[variable_name] = env.vars['beambeam_scale']
-            line.element_refs[record.name].scale_strength = env.vars[
+            line.element_refs[element_name].scale_strength = env.vars[
                 variable_name]
-
-
-@dataclass(frozen=True)
-class _InstalledBeamBeamElement:
-    name: str
-    metadata: dict
 
 
 @dataclass
@@ -350,7 +404,7 @@ def _metadata(element):
 
 
 def _discover_installation(env):
-    elements = {'clockwise': [], 'anticlockwise': []}
+    elements = {'clockwise': {}, 'anticlockwise': {}}
     config = env.extra_config.get(_BEAMBEAM_CONFIG_KEY)
     if config is None:
         raise RuntimeError(
@@ -384,14 +438,14 @@ def _discover_installation(env):
                 raise RuntimeError(
                     f'Tagged beam-beam element `{element_name}` refers to '
                     f'unknown IP `{metadata["ip_name"]}`.')
-            elements[orientation].append(
-                _InstalledBeamBeamElement(element_name, metadata))
+            elements[orientation][element_name] = metadata
         if not elements[orientation]:
             raise RuntimeError(
                 f'No tagged weak--strong beam-beam elements were found in '
                 f'configured line `{line_name}`.')
         installed_ips = {
-            record.metadata['ip_name'] for record in elements[orientation]}
+            metadata['ip_name']
+            for metadata in elements[orientation].values()}
         if installed_ips != set(ip_names):
             raise RuntimeError(
                 f'Beam-beam elements in line `{line_name}` do not cover the '
@@ -401,7 +455,7 @@ def _discover_installation(env):
         raise RuntimeError(
             'The weak--strong beam-beam configuration contains no lines.')
     for orientation in elements:
-        elements[orientation].sort(key=lambda record: record.name)
+        elements[orientation] = dict(sorted(elements[orientation].items()))
 
     return _WeakStrongInstallation(
         elements=elements, line_names=line_names, ip_names=ip_names,
@@ -409,105 +463,30 @@ def _discover_installation(env):
         delay_at_ips_slots=config.get('delay_at_ips_slots'))
 
 
-def _configure_weak_strong(
-        installation, line_cw, line_acw, num_particles,
-        nemitt_x, nemitt_y, crab_strong_beam,
-        use_antisymmetry, separation_bumps):
-    lines = {'cw': line_cw, 'acw': line_acw}
-    records = {
-        'cw': installation.elements['clockwise'],
-        'acw': installation.elements['anticlockwise'],
-    }
-    present_orientations = [
-        orientation for orientation, line in lines.items()
-        if line is not None]
-    names_by_ip = {
-        orientation: (
-            _element_names_by_ip(records[orientation])
-            if lines[orientation] is not None else {})
-        for orientation in ('cw', 'acw')
-    }
-    crab_s_by_element = None
-    if crab_strong_beam:
-        crab_s_by_element = {
-            orientation: {
-                record.name: record.metadata['s_crab']
-                for record in records[orientation]}
-            for orientation in present_orientations
-        }
-    antisymmetry_records = None
-    if use_antisymmetry:
-        antisymmetry_records = records[present_orientations[0]]
-    twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
-        line_cw=line_cw, line_acw=line_acw,
-        element_names_by_ip=names_by_ip,
-        nemitt_x=nemitt_x, nemitt_y=nemitt_y,
-        survey_separation=True,
-        acw_is_reversed=True,
-        crab_s_by_element=crab_s_by_element,
-        antisymmetry_records=antisymmetry_records,
-        separation_bumps=separation_bumps)
-    records_by_name = {
-        orientation: {record.name: record
-                      for record in records[orientation]}
-        for orientation in present_orientations
-    }
-    geometry_by_pair = {}
-
-    for weak_orientation in present_orientations:
-        for record in records[weak_orientation]:
-            strong_line, strong_record = _resolve_strong_beam(
-                weak_orientation=weak_orientation,
-                record=record,
-                lines=lines,
-                records_by_name=records_by_name,
-                twiss_and_madpoints=twiss_and_madpoints)
-            if weak_orientation == 'cw':
-                pair = (record.name, record.metadata['other_element_name'])
-            else:
-                pair = (record.metadata['other_element_name'], record.name)
-            if pair not in geometry_by_pair:
-                geometry_by_pair[pair] = compute_beambeam_geometry(
-                    twiss_and_madpoints=twiss_and_madpoints,
-                    element_name_cw=pair[0],
-                    element_name_acw=pair[1])
-            _configure_element(
-                line=lines[weak_orientation], record=record,
-                strong_line=strong_line, strong_record=strong_record,
-                geometry=geometry_by_pair[pair],
-                weak_orientation=weak_orientation,
-                num_particles=num_particles)
-
-        _store_self_orbit_and_dipolar_kick(
-            line=lines[weak_orientation],
-            particle_on_co=(
-                twiss_and_madpoints['particle_on_co'][weak_orientation]))
-
-
 def _resolve_strong_beam(
-        weak_orientation, record, lines, records_by_name,
+        weak_orientation, element_name, metadata, lines, elements,
         twiss_and_madpoints):
     strong_orientation = 'acw' if weak_orientation == 'cw' else 'cw'
     if lines[strong_orientation] is not None:
-        strong_record = records_by_name[strong_orientation][
-            record.metadata['other_element_name']]
-        return lines[strong_orientation], strong_record
+        strong_metadata = elements[strong_orientation][
+            metadata['other_element_name']]
+        return lines[strong_orientation], strong_metadata
 
     partner_name = twiss_and_madpoints[
-        'antisymmetric_partner_names'][weak_orientation][record.name]
+        'antisymmetric_partner_names'][weak_orientation][element_name]
     return (lines[weak_orientation],
-            records_by_name[weak_orientation][partner_name])
+            elements[weak_orientation][partner_name])
 
 
-def _element_names_by_ip(records):
+def _element_names_by_ip(elements):
     names = {}
-    for record in records:
-        names.setdefault(record.metadata['ip_name'], []).append(record.name)
+    for element_name, metadata in elements.items():
+        names.setdefault(metadata['ip_name'], []).append(element_name)
     return names
 
 
 def _configure_element(
-        line, record, strong_line, strong_record,
+        line, element_name, strong_line, strong_metadata,
         geometry, weak_orientation, num_particles):
     strong_orientation = 'acw' if weak_orientation == 'cw' else 'cw'
     weak_geometry = geometry[weak_orientation]
@@ -525,10 +504,10 @@ def _configure_element(
 
     alpha, phi = find_alpha_and_phi(dpx, dpy)
     other_num_particles = (
-        num_particles * strong_record.metadata['self_frac_of_bunch'])
+        num_particles * strong_metadata['self_frac_of_bunch'])
     other_particle_charge = float(strong_line.particle_ref.q0)
     other_relativistic_beta = float(strong_line.particle_ref.beta0[0])
-    element = line[record.name]
+    element = line[element_name]
     if isinstance(element, xf.BeamBeamBiGaussian2D):
         element.other_beam_num_particles = other_num_particles
         element.other_beam_q0 = other_particle_charge
@@ -559,9 +538,9 @@ def _configure_element(
         new_element.move(_buffer=element._buffer, _offset=element._offset)
     else:
         raise TypeError(
-            f'Tagged element `{record.name}` is not a supported '
+            f'Tagged element `{element_name}` is not a supported '
             'weak--strong beam-beam element.')
-    line.element_refs[record.name].scale_strength = 1.0
+    line.element_refs[element_name].scale_strength = 1.0
 
 
 def _to_stored_acw_sigma(sigma):
@@ -599,8 +578,8 @@ def apply_filling_pattern(env, filling_pattern_cw, filling_pattern_acw,
                 'pattern.')
 
     for orientation in ('clockwise', 'anticlockwise'):
-        records = installation.elements[orientation]
-        if not records:
+        elements = installation.elements[orientation]
+        if not elements:
             continue
         if installation.delay_at_ips_slots is None:
             raise RuntimeError(
@@ -608,23 +587,23 @@ def apply_filling_pattern(env, filling_pattern_cw, filling_pattern_acw,
                 'beam-beam installation time.')
         other_orientation = (
             'anticlockwise' if orientation == 'clockwise' else 'clockwise')
-        for record in records:
-            delay = _delay_in_slots(installation, orientation, record)
+        for element_name, metadata in elements.items():
+            delay = _delay_in_slots(installation, orientation, metadata)
             partner_slot = (
                 delay + selected_bunches[orientation]) % installation.n_slots
             is_active = filling_patterns[other_orientation][partner_slot] == 1
-            variable_name = f'{record.name}_scale_strength'
+            variable_name = f'{element_name}_scale_strength'
             env.vars[variable_name] = (
                 env.vars['beambeam_scale'] if is_active else 0)
 
 
-def _delay_in_slots(installation, orientation, record):
+def _delay_in_slots(installation, orientation, metadata):
     """Return the opposing bunch-slot offset for one installed encounter."""
     delay_at_ip = installation.delay_at_ips_slots[
-        record.metadata['ip_name']]
+        metadata['ip_name']]
     encounter_identifier = (
-        record.metadata['identifier']
-        if record.metadata['label'] == 'bb_lr' else 0)
+        metadata['identifier']
+        if metadata['label'] == 'bb_lr' else 0)
     if orientation == 'clockwise':
         return delay_at_ip + encounter_identifier
     if orientation == 'anticlockwise':
