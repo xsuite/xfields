@@ -116,7 +116,7 @@ class XfieldsEnvironmentAPI:
         Conventional mode uses ``num_particles`` and the two emittances.
         Rigid-bunch mode instead requires two slot-indexed filling schemes and
         their scalar or slot-indexed bunch populations; it returns the
-        :class:`RigidBunchBBSetup` that owns subsequent optics and solve
+        :class:`BeamBeamRigidBunchStudy` that owns subsequent optics and solve
         operations.
 
         Parameters
@@ -134,8 +134,8 @@ class XfieldsEnvironmentAPI:
 
         Returns
         -------
-        RigidBunchBBSetup or None
-            The rigid-bunch setup, or the conventional helper's result.
+        BeamBeamRigidBunchStudy or None
+            The rigid-bunch study, or the conventional helper's result.
         """
         config = getattr(self.env, '_bb_config', None) or {}
         mode = config.get('mode', 'conventional')
@@ -201,7 +201,7 @@ class XfieldsEnvironmentAPI:
 
         This established helper belongs to the conventional, potentially
         pipeline-enabled workflow. Rigid-bunch fillings are changed with
-        :meth:`RigidBunchBBSetup.set_filling`.
+        :meth:`BeamBeamRigidBunchStudy.set_filling`.
         """
         from xtrack.environment import MultilineLegacy
 

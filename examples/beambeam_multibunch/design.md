@@ -115,7 +115,7 @@ env.xfields.install_beambeam_interactions(
     mode='rigid_bunch',
 )
 
-setup = env.xfields.configure_beambeam_interactions(
+study = env.xfields.configure_beambeam_interactions(
     filling_scheme_cw=filling_scheme_cw,
     filling_scheme_acw=filling_scheme_acw,
     bunch_intensity_particles_cw=bunch_intensity_cw,
@@ -129,9 +129,9 @@ The default mode must preserve the existing sliced head-on and long-range
 workflow. Rigid-bunch mode installs the extended BB2D element with one 2D lens
 per head-on or long-range encounter and allocates its bunch arrays.
 Configuration loads the filling, populations, geometry and design
-covariances, then returns a `RigidBunchBBSetup`.
+covariances, then returns a `BeamBeamRigidBunchStudy`.
 
-`RigidBunchBBSetup` remains useful, but should contain only the genuinely
+`BeamBeamRigidBunchStudy` remains useful, but should contain only the genuinely
 stateful rigid-bunch operations:
 
 - `set_filling(...)`;
@@ -162,22 +162,22 @@ not describe pipeline strong-strong operation, wakefields or arbitrary
 multibunch tracking. The generic name therefore promises a wider contract than
 the implementation provides.
 
-Rigid-bunch optics belongs to the beam-beam setup that already knows both
+Rigid-bunch optics belongs to the beam-beam study that already knows both
 lines, their filling schemes and their physical RF slots. The public API is:
 
 ```python
-twiss_cw, twiss_acw = setup.twiss(mode='fast')
-twiss_cw, twiss_acw = setup.solve(...)
+twiss_cw, twiss_acw = study.twiss(mode='fast')
+twiss_cw, twiss_acw = study.solve(...)
 ```
 
-`setup.twiss(...)` observes the opposing-beam state currently loaded in the
-elements; `setup.solve(...)` repeatedly calls that operation while feeding the
-two beams back into each other. Bunch positions are derived from the setup, so
+`study.twiss(...)` observes the opposing-beam state currently loaded in the
+elements; `study.solve(...)` repeatedly calls that operation while feeding the
+two beams back into each other. Bunch positions are derived from the study, so
 users cannot accidentally provide a `zeta_bunches` array inconsistent with the
 configured filling. The result container is named `RigidBunchTwiss` and lives
-in Xfields together with `RigidBunchBBSetup` and its solver.
+in Xfields together with `BeamBeamRigidBunchStudy` and its solver.
 
-For the same ownership reason, the rigid-bunch installer, setup, examples,
+For the same ownership reason, the rigid-bunch installer, study, examples,
 tests and LHC regression data live in Xfields. Xtrack retains only a generic
 lazy environment façade: `env.xfields` constructs
 `xfields.XfieldsEnvironmentAPI`, just as the line-level Xfields and Xcoll
@@ -201,7 +201,7 @@ scheme. The rigid-bunch beam-beam configuration should therefore accept
 `filling_scheme_cw` / `filling_scheme_acw` separately from
 `bunch_intensity_particles_cw` / `bunch_intensity_particles_acw`. An intensity
 can be uniform for all filled slots or slot-indexed when bunch populations are
-not uniform. The setup should expose the derived physical slot identifiers as
+not uniform. The study should expose the derived physical slot identifiers as
 `filled_slots_cw` and `filled_slots_acw`, rather than the ambiguous
 `bunches_cw` and `bunches_acw`.
 
@@ -215,7 +215,7 @@ place without a hidden reallocation lifecycle.
 
 Keeping `harmonic_number` and `bunch_spacing_buckets` in the high-level
 beam-beam installation API is useful because encounter pairing needs the
-integer ring topology. The normalized setup should additionally expose
+integer ring topology. The normalized study should additionally expose
 `bunch_spacing_zeta`. Any different phase or sign convention needed inside a
 beam-beam kernel should be converted at the implementation boundary and should
 not change the public bunch-position convention.
@@ -270,7 +270,7 @@ Add the fast characterization tests before changing either implementation:
 - current multibunch matching and coherent convolution;
 - one-bunch scalar/multibunch equivalence;
 - sparse fillings, unequal intensities and periodic matching;
-- a small deterministic Xtrack installer/setup test;
+- a small deterministic Xtrack installer/study test;
 - multibunch Twiss mode comparisons; and
 - the cross-package bunch-pattern contract described above.
 
@@ -314,7 +314,7 @@ Refactor the existing workflow incrementally:
 4. Add `mode='rigid_bunch'` to `install_beambeam_interactions(...)`.
 5. Add the rigid-bunch filling, intensity and emittance inputs to
    `configure_beambeam_interactions(...)`.
-6. Return `RigidBunchBBSetup` for the genuinely stateful operations.
+6. Return `BeamBeamRigidBunchStudy` for the genuinely stateful operations.
 
 During migration, keep `install_multibunch_beambeam(...)` as a temporary bridge
 and compare its normalized output against the consolidated path. Remove it once
@@ -346,7 +346,7 @@ Steps 4--6 are complete behind the explicit ``mode='rigid_bunch'`` selection.
 In this mode installation places serializable elements with arrays covering
 every RF slot. Configuration receives the two filling schemes, populations and
 emittances, loads geometry and per-slot state, and returns
-``RigidBunchBBSetup``. A bridge test compares the result with the
+``BeamBeamRigidBunchStudy``. A bridge test compares the result with the
 temporary all-in-one installer during migration. Permanent tests now protect
 names, positions, geometry, element arrays, strength-knob response and a short
 self-consistent solve. Calls without the mode continue to dispatch unchanged
@@ -369,7 +369,7 @@ BB2D helper.
 Run checks in increasing order of cost:
 
 1. Focused Xfields element tests.
-2. Focused Xfields installer, setup and rigid-bunch-Twiss tests.
+2. Focused Xfields installer, study and rigid-bunch-Twiss tests.
 3. Existing Xfields and Xtrack beam-beam suites.
 4. Serialization, xdeps knobs, prebuilt kernels and supported execution
    contexts.
@@ -450,7 +450,7 @@ Test configuration and geometry:
 - CW/ACW transverse coordinate transformations;
 - nonzero survey separation on the curved toy lattice.
 
-Test the stateful setup independently:
+Test the stateful study independently:
 
 - `set_filling(...)` updating full-slot arrays without replacing elements;
 - a short symmetric two-beam solve;
@@ -461,7 +461,7 @@ Test the stateful setup independently:
 ### 3. Rigid-bunch Twiss tests
 
 Add `xfields/tests/test_rigid_bunch_twiss.py` using a `LineSegmentMap` and one
-2D beam-beam lens through `RigidBunchBBSetup.twiss(...)`, without plotting or
+2D beam-beam lens through `BeamBeamRigidBunchStudy.twiss(...)`, without plotting or
 external model data.
 
 Cover:
@@ -470,7 +470,7 @@ Cover:
 - closed-orbit and fractional-tune agreement against `full`;
 - beta, alpha, dispersion and phase from `fast` against `full`;
 - `RigidBunchTwiss` integer, named-row and attribute access;
-- bunch positions and labels derived from the setup filling;
+- bunch positions and labels derived from the study filling;
 - unsupported modes, methods and kwargs;
 - lost particles and closed-orbit failure handling.
 
@@ -519,7 +519,7 @@ validation used the serial CPU context; OpenMP validation was intentionally left
 out of scope for this work.
 
 After moving rigid-bunch ownership into Xfields, the 16 focused Xfields
-beam-beam/setup/Twiss tests, the Xtrack lazy-façade test and both LHC pytrain
+beam-beam/study/Twiss tests, the Xtrack lazy-façade test and both LHC pytrain
 scenarios pass again. The recorded Xmask pass predates this package-ownership
 move; Xmask has not been rerun after it.
 

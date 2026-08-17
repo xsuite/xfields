@@ -19,32 +19,32 @@ and returns a small state object:
         clockwise_line, anticlockwise_line, ip_names=[...],
         num_long_range_encounters_per_side=..., harmonic_number=...,
         bunch_spacing_buckets=..., mode='rigid_bunch')
-    setup = env.xfields.configure_beambeam_interactions(
+    study = env.xfields.configure_beambeam_interactions(
         nemitt_x=..., nemitt_y=...,
         filling_scheme_cw=..., filling_scheme_acw=...,
         bunch_intensity_particles_cw=...,
         bunch_intensity_particles_acw=...)
-    mbtw_cw, mbtw_acw = setup.solve()
+    mbtw_cw, mbtw_acw = study.solve()
 
 Installation places one beam-beam element per encounter DIRECTLY on the two
 lines (the element is its own twiss/survey observation point -- there are no
 separate markers), with arrays covering every RF slot. Configuration loads the
 filling and populations, computes the encounter geometry (per-encounter
 bunch-pairing offset, convolved sizes, survey separation) and returns a
-:class:`RigidBunchBBSetup`. All further operations are methods on that object:
+:class:`BeamBeamRigidBunchStudy`. All further operations are methods on that object:
 
-* :meth:`RigidBunchBBSetup.solve` -- self-consistent per-bunch closed orbit;
-* :meth:`RigidBunchBBSetup.twiss` -- per-bunch optics for the currently loaded
+* :meth:`BeamBeamRigidBunchStudy.solve` -- self-consistent per-bunch closed orbit;
+* :meth:`BeamBeamRigidBunchStudy.twiss` -- per-bunch optics for the currently loaded
   opposing-beam state;
-* :meth:`RigidBunchBBSetup.second_order_maps` -- a fast sector-map copy: the arcs
+* :meth:`BeamBeamRigidBunchStudy.second_order_maps` -- a fast sector-map copy: the arcs
   between the encounters are replaced by second-order maps (splitting the lines
-  at the beam-beam elements, which stay exact) and a NEW setup on the reduced
+  at the beam-beam elements, which stay exact) and a NEW study on the reduced
   lines is returned; solving it is orders of magnitude faster and gives the same
   per-bunch orbit and tunes;
-* :meth:`RigidBunchBBSetup.load_solution` -- load a converged solution (from a
-  reduced-model solve) onto this setup's lattice, e.g. to compute footprints on
+* :meth:`BeamBeamRigidBunchStudy.load_solution` -- load a converged solution (from a
+  reduced-model solve) onto this study's lattice, e.g. to compute footprints on
   the full thick lattice;
-* :meth:`RigidBunchBBSetup.set_filling` -- change the per-beam bunch filling.
+* :meth:`BeamBeamRigidBunchStudy.set_filling` -- change the per-beam bunch filling.
 
 Nothing is LHC specific: the IPs (a ``{ip: offset}`` mapping, or a list of IP
 element names for which the head-on offsets are derived from the ring geometry
@@ -136,7 +136,7 @@ def _normalize_filling(filling_scheme, bunch_intensity_particles, n_slots,
     return scheme, filled_slots, intensity
 
 
-class RigidBunchBBSetup:
+class BeamBeamRigidBunchStudy:
     """State and operations of one rigid-bunch beam-beam problem.
 
     Returned by
@@ -214,7 +214,7 @@ class RigidBunchBBSetup:
         n_cw = 0 if self.filled_slots_cw is None else len(self.filled_slots_cw)
         n_acw = (0 if self.filled_slots_acw is None
                  else len(self.filled_slots_acw))
-        return (f'RigidBunchBBSetup({len(self.enc_names)} encounters, '
+        return (f'BeamBeamRigidBunchStudy({len(self.enc_names)} encounters, '
                 f'n_slots={self.n_slots}, B1={n_cw} B2={n_acw} bunches)')
 
     def set_filling(self, filling_scheme_cw, filling_scheme_acw,
@@ -424,11 +424,11 @@ class RigidBunchBBSetup:
     # ------------------------------------------------------------------
     def second_order_maps(self, keep_extra_cw=None, keep_extra_acw=None,
                           context=None):
-        """Return a NEW :class:`RigidBunchBBSetup` on second-order-map copies of
+        """Return a NEW :class:`BeamBeamRigidBunchStudy` on second-order-map copies of
         the two lines: the arcs between the encounters are replaced by
         second-order maps (the beam-beam elements, kept as split points, stay
-        exact), so solving the returned setup is much faster and gives the same
-        per-bunch orbit and tunes. This setup (the full lattice) is left
+        exact), so solving the returned study is much faster and gives the same
+        per-bunch orbit and tunes. This study (the full lattice) is left
         untouched; transfer a converged reduced solution back with
         :meth:`load_solution`.
 
@@ -449,7 +449,7 @@ class RigidBunchBBSetup:
             rl.twiss_default['method'] = method
             rl.build_tracker(_context=context)
 
-        new = RigidBunchBBSetup(
+        new = BeamBeamRigidBunchStudy(
             red_cw, red_acw, self.ips,
             self.num_long_range_encounters_per_side, self.harmonic_number,
             self.bunch_spacing_buckets, self.nemitt_x, self.nemitt_y,
@@ -561,8 +561,8 @@ class RigidBunchBBSetup:
     def load_solution(self, mbtw_clockwise, mbtw_anticlockwise,
                       dynamic_beta=False):
         """Load a converged per-bunch solution (e.g. from a reduced-model
-        :meth:`solve`) into this setup's beam-beam elements, so a subsequent
-        :meth:`twiss` / footprint on this setup's lattice
+        :meth:`solve`) into this study's beam-beam elements, so a subsequent
+        :meth:`twiss` / footprint on this study's lattice
         reproduces it. ``mbtw_clockwise`` / ``mbtw_anticlockwise`` are the two
         beams' rigid-bunch Twiss results (their orbits are read at the beam-beam
         elements). With ``dynamic_beta`` the per-bunch sizes are taken from the
@@ -591,7 +591,7 @@ class RigidBunchBBSetup:
 
         Unlike :meth:`solve`, this does not iterate the beams to
         self-consistency. Bunch positions and labels come directly from the
-        filling schemes stored in this setup.
+        filling schemes stored in this study.
 
         Returns
         -------
@@ -822,52 +822,52 @@ def install_rigid_bunch_beambeam(
         'bb_suffix_cw': bb_suffix_cw,
         'bb_suffix_acw': bb_suffix_acw,
     }
-    setup = RigidBunchBBSetup(
+    study = BeamBeamRigidBunchStudy(
         env[cw_name], env[acw_name], ips, num_lr,
         harmonic_number, bunch_spacing_buckets,
         bb_suffix_cw=bb_suffix_cw, bb_suffix_acw=bb_suffix_acw)
-    setup.bb_cw = setup._place_bb(setup.cw_line, mirror=False)
-    setup.bb_acw = setup._place_bb(setup.acw_line, mirror=True)
-    env._rigid_bunch_bb_setup = setup
+    study.bb_cw = study._place_bb(study.cw_line, mirror=False)
+    study.bb_acw = study._place_bb(study.acw_line, mirror=True)
+    env._beam_beam_rigid_bunch_study = study
 
 
 def configure_rigid_bunch_beambeam(
         env, nemitt_x, nemitt_y, filling_scheme_cw, filling_scheme_acw,
         bunch_intensity_particles_cw, bunch_intensity_particles_acw):
-    """Populate installed rigid-bunch elements and return their setup."""
+    """Populate installed rigid-bunch elements and return their study."""
     config = env._bb_config
     if config.get('mode') != 'rigid_bunch':
         raise RuntimeError(
             'Install beam-beam interactions with `mode="rigid_bunch"` first.')
-    setup = getattr(env, '_rigid_bunch_bb_setup', None)
-    if setup is None:
+    study = getattr(env, '_beam_beam_rigid_bunch_study', None)
+    if study is None:
         cw = env[config['clockwise_line']]
         acw = env[config['anticlockwise_line']]
-        setup = RigidBunchBBSetup(
+        study = BeamBeamRigidBunchStudy(
             cw, acw, config['ips'],
             config['num_long_range_encounters_per_side'],
             config['harmonic_number'], config['bunch_spacing_buckets'],
             bb_suffix_cw=config['bb_suffix_cw'],
             bb_suffix_acw=config['bb_suffix_acw'])
-        setup.bb_cw = {
+        study.bb_cw = {
             base: cw[name]
-            for base, name in zip(setup.enc_names, setup.bb_names_cw)}
-        setup.bb_acw = {
+            for base, name in zip(study.enc_names, study.bb_names_cw)}
+        study.bb_acw = {
             base: acw[name]
-            for base, name in zip(setup.enc_names, setup.bb_names_acw)}
-    elif setup.geom:
+            for base, name in zip(study.enc_names, study.bb_names_acw)}
+    elif study.geom:
         raise RuntimeError(
             'Rigid-bunch beam-beam interactions are already configured; use '
-            '`setup.set_filling(...)` to change their filling.')
+            '`study.set_filling(...)` to change their filling.')
 
-    setup.nemitt_x = nemitt_x
-    setup.nemitt_y = nemitt_y
-    setup.set_filling(
+    study.nemitt_x = nemitt_x
+    study.nemitt_y = nemitt_y
+    study.set_filling(
         filling_scheme_cw=filling_scheme_cw,
         filling_scheme_acw=filling_scheme_acw,
         bunch_intensity_particles_cw=bunch_intensity_particles_cw,
         bunch_intensity_particles_acw=bunch_intensity_particles_acw)
-    setup._compute_geometry(
+    study._compute_geometry(
         survey_separation=config['survey_separation'])
-    env._rigid_bunch_bb_setup = setup
-    return setup
+    env._beam_beam_rigid_bunch_study = study
+    return study

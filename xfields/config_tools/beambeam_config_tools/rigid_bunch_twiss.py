@@ -20,7 +20,7 @@ class RigidBunchTwiss:
 
     """
     Container for the per-bunch Twiss results of a multi-bunch beam, as returned
-    by the rigid-bunch beam-beam setup.
+    by the rigid-bunch beam-beam study.
 
     Each bunch of the beam sits at a distinct longitudinal position ``zeta`` and,
     through a multi-bunch beam-beam element, experiences a different force. As a

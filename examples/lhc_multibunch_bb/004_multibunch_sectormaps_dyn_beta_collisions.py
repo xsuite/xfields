@@ -52,14 +52,14 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-setup = env.xfields.configure_beambeam_interactions(
+study = env.xfields.configure_beambeam_interactions(
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_scheme_cw=scheme_b1, filling_scheme_acw=scheme_b2,
     bunch_intensity_particles_cw=par['bunch_intensity'],
     bunch_intensity_particles_acw=par['bunch_intensity'])
 print('  building second-order maps between the beam-beam elements...')
-setup_red = setup.second_order_maps(context=par['context'])
-slots_b1, slots_b2 = setup_red.filled_slots_cw, setup_red.filled_slots_acw
+study_red = study.second_order_maps(context=par['context'])
+slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
 # ----------------------------------------------------------------------------
@@ -72,7 +72,7 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
     # 'fast' twiss (per-bunch optics) in both cases so the returned tables carry
     # betx/bety for the static-vs-dynamic beta* comparison below (dynamic_beta
     # forces it anyway; the static solve would otherwise default to fast_orbit).
-    mbtw_b1, mbtw_b2 = setup_red.solve(
+    mbtw_b1, mbtw_b2 = study_red.solve(
         max_iterations=N_ITER, tol_sigma=0.0,
         twiss_mode='fast', dynamic_beta=dynamic_beta)
     print(f'  solve time ({N_ITER} iters): {time.time() - t0:.1f} s')
@@ -81,7 +81,7 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
 # ----------------------------------------------------------------------------
 # Compare per-bunch tunes, orbit and beta* at IP1 (B1)
 # ----------------------------------------------------------------------------
-mk_b1 = setup_red.bb_name('bb_ip1_ho', False)
+mk_b1 = study_red.bb_name('bb_ip1_ho', False)
 
 
 def extract(mbtw):
@@ -96,11 +96,11 @@ def extract(mbtw):
 stat = extract(results['static'][0])
 dyn = extract(results['dynamic beta'][0])
 
-df_b1 = mb.results_dataframe(setup_red, results['dynamic beta'][0], slots_b1,
-                             setup.meta['qx_cw'], setup.meta['qy_cw'],
+df_b1 = mb.results_dataframe(study_red, results['dynamic beta'][0], slots_b1,
+                             study.meta['qx_cw'], study.meta['qy_cw'],
                              mirror=False)
-df_b2 = mb.results_dataframe(setup_red, results['dynamic beta'][1], slots_b2,
-                             setup.meta['qx_acw'], setup.meta['qy_acw'],
+df_b2 = mb.results_dataframe(study_red, results['dynamic beta'][1], slots_b2,
+                             study.meta['qx_acw'], study.meta['qy_acw'],
                              mirror=True)
 df_b1.to_pickle(os.path.join(mb.HERE, 'results_b1_coll_dynbeta.pkl'))
 df_b2.to_pickle(os.path.join(mb.HERE, 'results_b2_coll_dynbeta.pkl'))

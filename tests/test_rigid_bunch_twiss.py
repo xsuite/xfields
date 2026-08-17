@@ -15,7 +15,7 @@ ZETA_BUNCHES = np.array([0.0, -0.2, -0.4])
 
 
 @pytest.fixture
-def rigid_bunch_twiss_setup():
+def beam_beam_rigid_bunch_study():
     def make_line():
         opposing = xt.Particles(
             p0c=7e12,
@@ -48,31 +48,31 @@ def rigid_bunch_twiss_setup():
         line.build_tracker()
         return line
 
-    setup = xf.RigidBunchBBSetup(
+    study = xf.BeamBeamRigidBunchStudy(
         make_line(), make_line(), ips=['ip1'],
         num_long_range_encounters_per_side=0,
         harmonic_number=3, bunch_spacing_buckets=1)
-    setup.set_filling(
+    study.set_filling(
         filling_scheme_cw=[1, 1, 1],
         filling_scheme_acw=[1, 1, 1],
         bunch_intensity_particles_cw=1.0,
         bunch_intensity_particles_acw=1.0)
-    return setup
+    return study
 
 
-def test_rigid_bunch_twiss_fast_modes_against_full(rigid_bunch_twiss_setup):
-    setup = rigid_bunch_twiss_setup
+def test_rigid_bunch_twiss_fast_modes_against_full(beam_beam_rigid_bunch_study):
+    study = beam_beam_rigid_bunch_study
     names = ['slot_0', 'slot_1', 'slot_2']
-    full, full_acw = setup.twiss(
+    full, full_acw = study.twiss(
         mode='full',
         show_progress=False,
     )
-    fast, fast_acw = setup.twiss(
+    fast, fast_acw = study.twiss(
         mode='fast',
         show_progress=False,
         co_tol=1e-12,
     )
-    fast_orbit, fast_orbit_acw = setup.twiss(
+    fast_orbit, fast_orbit_acw = study.twiss(
         mode='fast_orbit',
         show_progress=False,
         co_tol=1e-12,
@@ -107,14 +107,14 @@ def test_rigid_bunch_twiss_fast_modes_against_full(rigid_bunch_twiss_setup):
         fast['x', 'bb'], full['x', 'bb'], rtol=0, atol=5e-13)
 
 
-def test_rigid_bunch_twiss_rejects_invalid_inputs(rigid_bunch_twiss_setup):
-    setup = rigid_bunch_twiss_setup
+def test_rigid_bunch_twiss_rejects_invalid_inputs(beam_beam_rigid_bunch_study):
+    study = beam_beam_rigid_bunch_study
 
     with pytest.raises(ValueError, match='Unknown mode'):
-        setup.twiss(mode='unknown')
+        study.twiss(mode='unknown')
     with pytest.raises(ValueError, match="requires method='4d'"):
-        setup.twiss(mode='fast', method='6d')
+        study.twiss(mode='fast', method='6d')
     with pytest.raises(ValueError, match='not supported'):
-        setup.twiss(mode='fast', freeze_longitudinal=True)
+        study.twiss(mode='fast', freeze_longitudinal=True)
     with pytest.raises(ValueError, match='cannot be provided'):
-        setup.twiss(zeta0=0.0)
+        study.twiss(zeta0=0.0)

@@ -9,7 +9,7 @@ import pytest
 import xfields as xf
 import xobjects as xo
 import xtrack as xt
-from xfields import RigidBunchBBSetup
+from xfields import BeamBeamRigidBunchStudy
 
 
 N_CELLS = 8
@@ -119,60 +119,60 @@ def _install_toy_rigid_bunch_beambeam():
     # Installation and its full-slot elements are serializable before filling-
     # dependent physics parameters are loaded by configuration.
     env = xt.Environment.from_dict(env.to_dict())
-    setup = env.xfields.configure_beambeam_interactions(
+    study = env.xfields.configure_beambeam_interactions(
         nemitt_x=NEMITT_X,
         nemitt_y=NEMITT_Y,
         filling_scheme_cw=filling_scheme_cw,
         filling_scheme_acw=filling_scheme_acw,
         bunch_intensity_particles_cw=intensity_cw,
         bunch_intensity_particles_acw=intensity_acw)
-    return (env, setup, filling_scheme_cw, filling_scheme_acw,
+    return (env, study, filling_scheme_cw, filling_scheme_acw,
             intensity_cw, intensity_acw)
 
 
-def test_rigid_bunch_beambeam_toy_installation_and_setup():
+def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     # Characterize the consolidated install/configure path through a normalized
     # set of encounter, element and solution properties.
-    (env, setup, filling_scheme_cw, filling_scheme_acw,
+    (env, study, filling_scheme_cw, filling_scheme_acw,
      intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam()
-    assert isinstance(setup, RigidBunchBBSetup)
+    assert isinstance(study, BeamBeamRigidBunchStudy)
 
     expected_encounters = [
         'bb_ip1_ho', 'bb_ip1_r01', 'bb_ip1_l01',
         'bb_ip2_ho', 'bb_ip2_r01', 'bb_ip2_l01',
     ]
-    assert setup.enc_names == expected_encounters
-    assert setup.ip_offsets == {'ip1': 0, 'ip2': 6}
-    assert setup.n_slots == N_SLOTS
-    assert setup.bunch_spacing_zeta == SLOT_LENGTH
-    xo.assert_allclose(setup.filling_scheme_cw, filling_scheme_cw,
+    assert study.enc_names == expected_encounters
+    assert study.ip_offsets == {'ip1': 0, 'ip2': 6}
+    assert study.n_slots == N_SLOTS
+    assert study.bunch_spacing_zeta == SLOT_LENGTH
+    xo.assert_allclose(study.filling_scheme_cw, filling_scheme_cw,
                        rtol=0, atol=0)
-    xo.assert_allclose(setup.filling_scheme_acw, filling_scheme_acw,
+    xo.assert_allclose(study.filling_scheme_acw, filling_scheme_acw,
                        rtol=0, atol=0)
-    xo.assert_allclose(setup.filled_slots_cw, [0, 2, 5], rtol=0, atol=0)
-    xo.assert_allclose(setup.filled_slots_acw, [0, 3, 6], rtol=0, atol=0)
+    xo.assert_allclose(study.filled_slots_cw, [0, 2, 5], rtol=0, atol=0)
+    xo.assert_allclose(study.filled_slots_acw, [0, 3, 6], rtol=0, atol=0)
     xo.assert_allclose(
-        setup.bunch_intensity_particles_cw,
+        study.bunch_intensity_particles_cw,
         intensity_cw[[0, 2, 5]], rtol=0, atol=0)
     xo.assert_allclose(
-        setup.bunch_intensity_particles_acw,
+        study.bunch_intensity_particles_acw,
         intensity_acw[[0, 3, 6]], rtol=0, atol=0)
 
     expected_offsets = [0, 1, 7, 6, 7, 5]
-    assert [setup.geom[name]['offset'] for name in expected_encounters] \
+    assert [study.geom[name]['offset'] for name in expected_encounters] \
         == expected_offsets
-    assert [setup.geom[name]['signed_n'] for name in expected_encounters] \
+    assert [study.geom[name]['signed_n'] for name in expected_encounters] \
         == [0, 1, -1, 0, 1, -1]
-    for geom in setup.geom.values():
+    for geom in study.geom.values():
         assert geom['sep_x'] == 0
         assert geom['sep_y'] == 0
 
     xo.assert_allclose(
-        env.cw.get_table()['s', setup.bb_names_cw],
+        env.cw.get_table()['s', study.bb_names_cw],
         [1e-6, 5.000001, 75.000001, 30.000001, 35.000001, 25.000001],
         rtol=0, atol=2e-14)
     xo.assert_allclose(
-        env.acw.get_table()['s', setup.bb_names_acw],
+        env.acw.get_table()['s', study.bb_names_acw],
         [1e-6, 75.000001, 5.000001, 30.000001, 25.000001, 35.000001],
         rtol=0, atol=2e-14)
 
@@ -181,8 +181,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
     beta0_acw = float(env.acw.particle_ref.beta0[0])
     gamma0_acw = float(env.acw.particle_ref.gamma0[0])
     for base, offset in zip(expected_encounters, expected_offsets):
-        bb_cw = setup.bb_cw[base]
-        bb_acw = setup.bb_acw[base]
+        bb_cw = study.bb_cw[base]
+        bb_acw = study.bb_acw[base]
         assert isinstance(bb_cw, xf.BeamBeamBiGaussianRigidBunch2D)
         assert isinstance(bb_acw, xf.BeamBeamBiGaussianRigidBunch2D)
         assert bb_cw.coherent == 1
@@ -202,7 +202,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
         assert len(bb_cw.other_beam_zeta) == N_SLOTS
         assert len(bb_acw.other_beam_zeta) == N_SLOTS
 
-        geom = setup.geom[base]
+        geom = study.geom[base]
         # The shared covariance API includes relativistic beta in the
         # normalized-to-geometric emittance conversion.
         xo.assert_allclose(
@@ -230,16 +230,16 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
         xo.assert_allclose(
             bb_cw.other_beam_sigma_y, geom['sigma_y_acw'], rtol=0, atol=0)
 
-    # The setup geometry is the normalized view of the shared Xfields result.
+    # The study geometry is the normalized view of the shared Xfields result.
     shared_geometry, _ = xf.compute_beambeam_geometry(
-        encounter_table=setup.encounter_table,
+        encounter_table=study.encounter_table,
         line_cw=env.cw, line_acw=env.acw,
-        element_names_cw=setup.bb_names_cw,
-        element_names_acw=setup.bb_names_acw,
+        element_names_cw=study.bb_names_cw,
+        element_names_acw=study.bb_names_acw,
         nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
         survey_separation=False)
     for ii, base in enumerate(expected_encounters):
-        geom = setup.geom[base]
+        geom = study.geom[base]
         row = shared_geometry.iloc[ii]
         for field in ('betx_cw', 'bety_cw', 'betx_acw', 'bety_acw'):
             xo.assert_allclose(geom[field], row[field], rtol=0, atol=0)
@@ -255,15 +255,15 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
         xo.assert_allclose(geom['sep_y'], row['separation_y'], rtol=0, atol=0)
 
     env.cw['beambeam_scale'] = 0.37
-    for name in setup.bb_names_cw:
+    for name in study.bb_names_cw:
         assert env.cw[name].scale_strength == 0.37
-    for name in setup.bb_names_acw:
+    for name in study.bb_names_acw:
         assert env.acw[name].scale_strength == 0.37
     env.cw['beambeam_scale'] = 1.0
 
-    reduced = setup.second_order_maps()
-    assert reduced.enc_names == setup.enc_names
-    assert reduced.geom == setup.geom
+    reduced = study.second_order_maps()
+    assert reduced.enc_names == study.enc_names
+    assert reduced.geom == study.geom
     for name in reduced.bb_names_cw:
         assert isinstance(
             reduced.cw_line[name], xf.BeamBeamBiGaussianRigidBunch2D)
@@ -277,8 +277,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
         twiss_mode='fast_orbit',
         show_progress=False,
     )
-    assert len(mbtw_cw) == len(setup.filled_slots_cw)
-    assert len(mbtw_acw) == len(setup.filled_slots_acw)
+    assert len(mbtw_cw) == len(study.filled_slots_cw)
+    assert len(mbtw_acw) == len(study.filled_slots_acw)
 
     for bb in reduced.bb_cw.values():
         assert bb.num_other_bunches == N_SLOTS
@@ -305,11 +305,11 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
         assert probe.px[0] == 0
         assert np.all(np.abs(probe.px[1:]) > 0)
 
-    setup.load_solution(mbtw_cw, mbtw_acw)
+    study.load_solution(mbtw_cw, mbtw_acw)
     for base in expected_encounters:
         for full_bb, reduced_bb in (
-                (setup.bb_cw[base], reduced.bb_cw[base]),
-                (setup.bb_acw[base], reduced.bb_acw[base])):
+                (study.bb_cw[base], reduced.bb_cw[base]),
+                (study.bb_acw[base], reduced.bb_acw[base])):
             assert full_bb.num_other_bunches == N_SLOTS
             for field in (
                     'other_beam_zeta', 'other_beam_x', 'other_beam_y',
@@ -330,8 +330,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
     )
     gamma0_cw = float(reduced.cw_line.particle_ref.gamma0[0])
     gamma0_acw = float(reduced.acw_line.particle_ref.gamma0[0])
-    indices_cw = N_SLOTS - 1 - setup.filled_slots_cw
-    indices_acw = N_SLOTS - 1 - setup.filled_slots_acw
+    indices_cw = N_SLOTS - 1 - study.filled_slots_cw
+    indices_acw = N_SLOTS - 1 - study.filled_slots_acw
     for base in expected_encounters:
         name_cw = reduced.bb_name(base, mirror=False)
         name_acw = reduced.bb_name(base, mirror=True)
@@ -362,17 +362,17 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
     intensity_cw_new[[1, 4]] = [1.2e11, 2.2e11]
     intensity_acw_new[[0, 2, 5, 7]] = [1.4e11, 2.4e11, 3.4e11, 4.4e11]
     env.cw['beambeam_scale'] = 0.29
-    original_cw = dict(setup.bb_cw)
-    original_acw = dict(setup.bb_acw)
-    setup.set_filling(
+    original_cw = dict(study.bb_cw)
+    original_acw = dict(study.bb_acw)
+    study.set_filling(
         filling_scheme_cw=filling_scheme_cw_new,
         filling_scheme_acw=filling_scheme_acw_new,
         bunch_intensity_particles_cw=intensity_cw_new,
         bunch_intensity_particles_acw=intensity_acw_new)
 
-    xo.assert_allclose(setup.filled_slots_cw, [1, 4], rtol=0, atol=0)
-    xo.assert_allclose(setup.filled_slots_acw, [0, 2, 5, 7], rtol=0, atol=0)
-    for base, bb in setup.bb_cw.items():
+    xo.assert_allclose(study.filled_slots_cw, [1, 4], rtol=0, atol=0)
+    xo.assert_allclose(study.filled_slots_acw, [0, 2, 5, 7], rtol=0, atol=0)
+    for base, bb in study.bb_cw.items():
         assert bb is original_cw[base]
         assert len(bb.own_beam_zeta) == N_SLOTS
         assert len(bb.other_beam_zeta) == N_SLOTS
@@ -381,7 +381,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_setup():
         assert bb.scale_strength == 0.29
         xo.assert_allclose(
             bb.other_beam_num_particles, np.zeros(N_SLOTS), rtol=0, atol=0)
-    for base, bb in setup.bb_acw.items():
+    for base, bb in study.bb_acw.items():
         assert bb is original_acw[base]
         assert len(bb.own_beam_zeta) == N_SLOTS
         assert len(bb.other_beam_zeta) == N_SLOTS
@@ -403,11 +403,11 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
     line = xt.Line(
         elements=[xt.Drift(length=4 * bunch_spacing_zeta)],
         particle_ref=xt.Particles(p0c=7e12))
-    setup = RigidBunchBBSetup(
+    study = BeamBeamRigidBunchStudy(
         line, line, ips=[], num_long_range_encounters_per_side=0,
         harmonic_number=4, bunch_spacing_buckets=1,
         nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y)
-    setup.set_filling(
+    study.set_filling(
         filling_scheme_cw=filling_scheme,
         filling_scheme_acw=filling_scheme,
         bunch_intensity_particles_cw=4.0e11,
@@ -418,21 +418,21 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
         selected_slots=[0, 3],
         bunch_spacing_zeta=bunch_spacing_zeta)
 
-    xo.assert_allclose(setup.filled_slots_cw, [0, 2, 3], rtol=0, atol=0)
-    xo.assert_allclose(setup.filled_slots_cw, monitor.filled_slots,
+    xo.assert_allclose(study.filled_slots_cw, [0, 2, 3], rtol=0, atol=0)
+    xo.assert_allclose(study.filled_slots_cw, monitor.filled_slots,
                        rtol=0, atol=0)
-    xo.assert_allclose(setup.bunch_zeta(mirror=False), [0, -10, -15],
+    xo.assert_allclose(study.bunch_zeta(mirror=False), [0, -10, -15],
                        rtol=0, atol=0)
     xo.assert_allclose(
         monitor.zeta_centers_unwrapped(line_length=20)[0], [0, -15],
         rtol=0, atol=0)
-    xo.assert_allclose(setup.bunch_intensity_particles_cw,
+    xo.assert_allclose(study.bunch_intensity_particles_cw,
                        np.full(3, 4.0e11), rtol=0, atol=0)
-    xo.assert_allclose(setup.bunch_intensity_particles_acw,
+    xo.assert_allclose(study.bunch_intensity_particles_acw,
                        [1.0e11, 2.0e11, 3.0e11], rtol=0, atol=0)
 
     with pytest.raises(ValueError, match='slot-indexed array'):
-        setup.set_filling(
+        study.set_filling(
             filling_scheme_cw=filling_scheme,
             filling_scheme_acw=filling_scheme,
             bunch_intensity_particles_cw=[1.0e11, 2.0e11, 3.0e11],

@@ -44,18 +44,18 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-setup = env.xfields.configure_beambeam_interactions(
+study = env.xfields.configure_beambeam_interactions(
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_scheme_cw=scheme_b1, filling_scheme_acw=scheme_b2,
     bunch_intensity_particles_cw=par['bunch_intensity'],
     bunch_intensity_particles_acw=par['bunch_intensity'])
 print('  building second-order maps between the beam-beam elements...')
-setup_red = setup.second_order_maps(context=ctx_mt)
-slots_b1, slots_b2 = setup_red.filled_slots_cw, setup_red.filled_slots_acw
+study_red = study.second_order_maps(context=ctx_mt)
+slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
 print('Populating the beam-beam elements (one solve iteration):')
-setup_red.solve(max_iterations=1, tol_sigma=0.0)
+study_red.solve(max_iterations=1, tol_sigma=0.0)
 
 # ----------------------------------------------------------------------------
 # Timing: batched rigid-bunch Twiss, serial vs multi-threaded kernels
@@ -67,12 +67,12 @@ print(f'\nBatched rigid-bunch Twiss ({len(slots_b1)}+{len(slots_b2)} bunches):')
 for mode in ('fast_orbit', 'fast'):
     timings = []
     for label, ctx in contexts:
-        for line in (setup_red.cw_line, setup_red.acw_line):
+        for line in (study_red.cw_line, study_red.acw_line):
             line.discard_tracker()
             line.build_tracker(_context=ctx)
-        setup_red.twiss(mode=mode, show_progress=False)  # warm-up
+        study_red.twiss(mode=mode, show_progress=False)  # warm-up
         t0 = time.time()
-        setup_red.twiss(mode=mode, show_progress=False)
+        study_red.twiss(mode=mode, show_progress=False)
         timings.append(time.time() - t0)
         print(f'  mode={mode!r:13s} {label:22s}: {timings[-1]:7.1f} s')
     print(f'  mode={mode!r:13s} speed-up: x{timings[0] / timings[1]:.2f}')
