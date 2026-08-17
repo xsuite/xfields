@@ -68,6 +68,8 @@ def _make_toy_ring(suffix, shared_ips):
         element_names=names,
         particle_ref=xt.Particles(p0c=7e12),
     )
+    # Keep the line boundary away from both beam--beam regions.
+    line.cycle(name_first_element=f'cell6_{suffix}', inplace=True)
     line.twiss_default['method'] = '4d'
     return line
 
@@ -173,11 +175,13 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
 
     xo.assert_allclose(
         env.cw.get_table()['s', study.bb_names_cw],
-        [1e-6, 5.000001, 75.000001, 30.000001, 35.000001, 25.000001],
+        [20.000001, 25.000001, 15.000001,
+         50.000001, 55.000001, 45.000001],
         rtol=0, atol=2e-14)
     xo.assert_allclose(
         env.acw.get_table()['s', study.bb_names_acw],
-        [1e-6, 75.000001, 5.000001, 30.000001, 25.000001, 35.000001],
+        [20.000001, 15.000001, 25.000001,
+         50.000001, 45.000001, 55.000001],
         rtol=0, atol=2e-14)
 
     beta0_cw = float(env.cw.particle_ref.beta0[0])

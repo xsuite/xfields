@@ -36,7 +36,7 @@ def prepare_beambeam_analysis(
         survey = {'cw': {}, 'acw': {}}
         for orientation, line in (('cw', line_cw), ('acw', line_acw)):
             for ip_name, names in element_names_by_ip[orientation].items():
-                survey[orientation][ip_name] = _local_survey(
+                survey[orientation][ip_name] = _survey_region(
                     line, ip_name, names)
 
     return {
@@ -66,10 +66,12 @@ def compute_beambeam_geometry(
     reference_separation = np.zeros(2)
 
     if analysis['survey'] is not None:
-        position_cw, frame_cw = analysis['survey']['cw'][ip_name][
-            element_name_cw]
-        position_acw_stored, frame_acw_stored = \
-            analysis['survey']['acw'][ip_name][element_name_acw]
+        survey_cw = analysis['survey']['cw'][ip_name]
+        survey_acw = analysis['survey']['acw'][ip_name]
+        position_cw = survey_cw['XYZ', element_name_cw]
+        frame_cw = survey_cw['E_matrix', element_name_cw]
+        position_acw_stored = survey_acw['XYZ', element_name_acw]
+        frame_acw_stored = survey_acw['E_matrix', element_name_acw]
 
         reverse_global = np.diag([-1., 1., -1.])
         reverse_local = (np.diag([-1., 1., -1.])
@@ -131,41 +133,15 @@ def _beam_data(analysis, orientation, element_name):
     return data
 
 
-def _local_survey(line, ref_name, names):
-    """Survey nearby elements in ``ref_name``'s local frame."""
-    from xtrack.survey import get_survey
-
-    table = line.get_table(attr=True)
-    elements = list(line._elements)
-    n_elements = len(elements)
-    length = np.array(table.length[:n_elements], dtype=float)
-    length[~np.array(table.isthick[:n_elements], dtype=bool)] = 0.
-    angle = np.array(table.angle[:n_elements], dtype=float)
-    tilt = np.array(table.rot_s_rad[:n_elements], dtype=float)
-
-    index = {name: ii for ii, name in enumerate(line.element_names)}
-    shift = (index[ref_name] - n_elements // 2) % n_elements
-    rolled = {
-        name: (index[name] - shift) % n_elements
-        for name in list(names) + [ref_name]
-    }
-    lo, hi = min(rolled.values()), max(rolled.values())
-
-    def window(array):
-        return np.concatenate([array[shift:], array[:shift]])[lo:hi + 1]
-
-    ordered_elements = elements[shift:] + elements[:shift]
-    positions, frames = get_survey(
-        elements=ordered_elements[lo:hi + 1],
-        X0=0., Y0=0., Z0=0., theta0=0., phi0=0., psi0=0.,
-        drift_length=window(length), angle=window(angle), tilt=window(tilt),
-        element0=rolled[ref_name] - lo)
-
-    return {
-        name: (np.array(positions[rolled[name] - lo]),
-               np.array(frames[rolled[name] - lo]))
-        for name in names
-    }
+def _survey_region(line, ip_name, element_names):
+    """Survey one non-wrapping beam--beam region in the IP frame."""
+    survey = line.survey(element0=ip_name)
+    region = survey.rows[[ip_name, *element_names]]
+    region_span = np.ptp(region.s)
+    assert 2 * region_span <= survey.s[-1], (
+        f'The beam-beam region around {ip_name!r} wraps across the line '
+        'boundary, which is not supported.')
+    return region.rows[element_names].cols['XYZ E_matrix']
 
 
 def find_alpha_and_phi(dpx, dpy):

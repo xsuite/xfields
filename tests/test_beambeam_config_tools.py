@@ -4,12 +4,14 @@
 # ########################################### #
 
 import numpy as np
+import pytest
 
 import xfields as xf
 import xobjects as xo
 import xtrack as xt
 
 from xfields.config_tools.beambeam_config_tools.config_tools import (
+    _survey_region,
     compute_beambeam_geometry,
     find_bb_separations,
     prepare_beambeam_analysis,
@@ -114,6 +116,22 @@ def _make_conventional_toy_ring(suffix, shared_ips):
     )
     line.twiss_default['method'] = '4d'
     return line
+
+
+def test_survey_region_rejects_wrapping_line_boundary():
+    line = xt.Line(
+        elements=[
+            xt.Marker(), xt.Drift(length=1), xt.Marker(),
+            xt.Drift(length=8), xt.Marker(), xt.Drift(length=1),
+        ],
+        element_names=[
+            'ip', 'drift_right', 'bb_right',
+            'drift_left', 'bb_left', 'drift_end',
+        ],
+    )
+
+    with pytest.raises(AssertionError, match='wraps across the line boundary'):
+        _survey_region(line, 'ip', ['bb_left', 'bb_right'])
 
 
 def test_conventional_install_and_configure_characterization():
