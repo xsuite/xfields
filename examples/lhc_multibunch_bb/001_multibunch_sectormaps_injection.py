@@ -40,8 +40,7 @@ env.xfields.install_beambeam_interactions(
     mode='rigid_bunch')
 study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
-    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'])
-study.apply_filling_pattern(
+    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 if not ALL_BUNCHES:
     s1, s2 = mb.windowed_slots(study.ip_offsets, scheme_b1, scheme_b2, WINDOW)

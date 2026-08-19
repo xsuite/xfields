@@ -93,8 +93,18 @@ def install_beambeam_interactions(
 
 def configure_beambeam_interactions(
         env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
-        use_antisymmetry=False, separation_bumps=None):
+        use_antisymmetry=False, separation_bumps=None,
+        filling_pattern_cw=None, filling_pattern_acw=None,
+        i_bunch_cw=None, i_bunch_acw=None):
     """Reanalyse the live lines and configure their tagged BB elements."""
+    filling_arguments = (
+        filling_pattern_cw, filling_pattern_acw, i_bunch_cw, i_bunch_acw)
+    num_filling_arguments = sum(value is not None for value in filling_arguments)
+    if num_filling_arguments not in (0, 4):
+        raise ValueError(
+            'Particles-mode filling requires both filling patterns and both '
+            'selected bunch indices.')
+
     installation = _discover_installation(env)
 
     for orientation in ('clockwise', 'anticlockwise'):
@@ -198,6 +208,14 @@ def configure_beambeam_interactions(
             env.vars[variable_name] = env.vars['beambeam_scale']
             line.element_refs[element_name].scale_strength = env.vars[
                 variable_name]
+
+    if filling_pattern_cw is not None:
+        apply_filling_pattern(
+            env,
+            filling_pattern_cw=filling_pattern_cw,
+            filling_pattern_acw=filling_pattern_acw,
+            i_bunch_cw=i_bunch_cw,
+            i_bunch_acw=i_bunch_acw)
 
 
 @dataclass

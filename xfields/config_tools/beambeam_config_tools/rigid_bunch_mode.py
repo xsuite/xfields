@@ -20,15 +20,14 @@ and returns a small state object:
         num_long_range_encounters_per_side=..., harmonic_number=...,
         bunch_spacing_buckets=..., mode='rigid_bunch')
     study = env.xfields.configure_beambeam_interactions(
-        num_particles=..., nemitt_x=..., nemitt_y=...)
-    study.apply_filling_pattern(
+        num_particles=..., nemitt_x=..., nemitt_y=...,
         filling_pattern_cw=..., filling_pattern_acw=...)
     mbtw_cw, mbtw_acw = study.solve()
 
 Installation places one beam-beam element per encounter DIRECTLY on the two
 lines (the element is its own twiss/survey observation point -- there are no
 separate markers), with arrays covering every RF slot. Configuration loads the
-filling and populations, computes the encounter geometry (per-encounter
+populations and optional filling, computes the encounter geometry (per-encounter
 bunch-pairing offset, convolved sizes, survey separation) and returns a
 :class:`BeamBeamRigidBunchStudy`. All further operations are methods on that object:
 
@@ -1007,8 +1006,13 @@ def install_rigid_bunch_beambeam(
 
 
 def configure_rigid_bunch_beambeam(
-        env, num_particles, nemitt_x, nemitt_y):
+        env, num_particles, nemitt_x, nemitt_y,
+        filling_pattern_cw=None, filling_pattern_acw=None):
     """Populate installed rigid-bunch elements and return their study."""
+    if (filling_pattern_cw is None) != (filling_pattern_acw is None):
+        raise ValueError(
+            '`filling_pattern_cw` and `filling_pattern_acw` must be provided '
+            'together.')
     installation = _discover_installation(env)
     config = installation.config
     cw = env[installation.line_names['cw']]
@@ -1034,4 +1038,8 @@ def configure_rigid_bunch_beambeam(
 
     study._compute_geometry()
     env.vars['beambeam_scale'] = 1.0
+    if filling_pattern_cw is not None:
+        study.apply_filling_pattern(
+            filling_pattern_cw=filling_pattern_cw,
+            filling_pattern_acw=filling_pattern_acw)
     return study

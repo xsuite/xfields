@@ -436,15 +436,13 @@ def test_particles_element_state_drives_filling_pattern():
         harmonic_number=8, bunch_spacing_buckets=1,
         sigmaz=0.1, delay_at_ips_slots=[0, 6])
     env = xt.Environment.from_dict(env.to_dict())
-    env.xfields.configure_beambeam_interactions(
-        num_particles=1e11, nemitt_x=2e-6, nemitt_y=2.5e-6,
-        crab_strong_beam=False)
-
     filling_cw = np.zeros(8, dtype=int)
     filling_acw = np.zeros(8, dtype=int)
     filling_cw[[0, 2]] = 1
     filling_acw[[0, 1, 6]] = 1
-    env.xfields.apply_filling_pattern(
+    env.xfields.configure_beambeam_interactions(
+        num_particles=1e11, nemitt_x=2e-6, nemitt_y=2.5e-6,
+        crab_strong_beam=False,
         filling_pattern_cw=filling_cw,
         filling_pattern_acw=filling_acw,
         i_bunch_cw=0, i_bunch_acw=0)

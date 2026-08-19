@@ -104,14 +104,15 @@ class XfieldsEnvironmentAPI:
     def configure_beambeam_interactions(
             self, num_particles=None, nemitt_x=None, nemitt_y=None,
             crab_strong_beam=True, use_antisymmetry=False,
-            separation_bumps=None):
+            separation_bumps=None, filling_pattern_cw=None,
+            filling_pattern_acw=None, i_bunch_cw=None, i_bunch_acw=None):
         """Configure particles or rigid-bunch beam-beam interactions.
 
         Particles mode uses ``num_particles`` and the two emittances.
         Rigid-bunch mode accepts either a common scalar population or a
         ``{'cw': ..., 'acw': ...}`` mapping whose values are scalar or
-        slot-indexed. It returns the :class:`BeamBeamRigidBunchStudy` that owns
-        filling-pattern application and subsequent optics and solve operations.
+        slot-indexed. Filling patterns can be applied directly during
+        configuration or later through the mode-specific filling helper.
 
         Parameters
         ----------
@@ -123,6 +124,11 @@ class XfieldsEnvironmentAPI:
             Normalized transverse emittances.
         crab_strong_beam, use_antisymmetry, separation_bumps
             Particles-mode beam-beam configuration options.
+        filling_pattern_cw, filling_pattern_acw : array-like, optional
+            Slot-indexed filling patterns. Either provide both or neither.
+        i_bunch_cw, i_bunch_acw : int, optional
+            Selected bunch indices required with filling patterns in particles
+            mode. They do not apply in rigid-bunch mode.
 
         Returns
         -------
@@ -131,12 +137,25 @@ class XfieldsEnvironmentAPI:
         """
         config = self.env.extra_config.get('xfields_beambeam', {})
         mode = config.get('mode', 'particles')
+        has_filling_cw = filling_pattern_cw is not None
+        has_filling_acw = filling_pattern_acw is not None
+        if has_filling_cw != has_filling_acw:
+            raise ValueError(
+                '`filling_pattern_cw` and `filling_pattern_acw` must be '
+                'provided together.')
 
         if mode != 'rigid_bunch':
             if num_particles is None or nemitt_x is None or nemitt_y is None:
                 raise ValueError(
                     '`num_particles`, `nemitt_x` and `nemitt_y` are required '
                     'for `particles`-mode beam-beam configuration.')
+            has_i_bunch_cw = i_bunch_cw is not None
+            has_i_bunch_acw = i_bunch_acw is not None
+            if (has_filling_cw, has_filling_acw,
+                    has_i_bunch_cw, has_i_bunch_acw).count(True) not in (0, 4):
+                raise ValueError(
+                    'Particles-mode filling requires both filling patterns '
+                    'and both selected bunch indices.')
 
             from .config_tools.beambeam_config_tools.particles_mode import (
                 configure_beambeam_interactions,
@@ -149,11 +168,19 @@ class XfieldsEnvironmentAPI:
                 nemitt_y=nemitt_y,
                 crab_strong_beam=crab_strong_beam,
                 use_antisymmetry=use_antisymmetry,
-                separation_bumps=separation_bumps)
+                separation_bumps=separation_bumps,
+                filling_pattern_cw=filling_pattern_cw,
+                filling_pattern_acw=filling_pattern_acw,
+                i_bunch_cw=i_bunch_cw,
+                i_bunch_acw=i_bunch_acw)
 
         if use_antisymmetry or separation_bumps is not None:
             raise ValueError(
                 '`use_antisymmetry` and `separation_bumps` do not apply when '
+                "mode='rigid_bunch'.")
+        if i_bunch_cw is not None or i_bunch_acw is not None:
+            raise ValueError(
+                '`i_bunch_cw` and `i_bunch_acw` do not apply when '
                 "mode='rigid_bunch'.")
 
         required = {
@@ -175,7 +202,9 @@ class XfieldsEnvironmentAPI:
             self.env,
             num_particles=num_particles,
             nemitt_x=nemitt_x,
-            nemitt_y=nemitt_y)
+            nemitt_y=nemitt_y,
+            filling_pattern_cw=filling_pattern_cw,
+            filling_pattern_acw=filling_pattern_acw)
 
     def apply_filling_pattern(self, filling_pattern_cw, filling_pattern_acw,
                               i_bunch_cw, i_bunch_acw):

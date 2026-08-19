@@ -108,8 +108,6 @@ def _run_xsuite_scenario(scenario):
     study = env.xfields.configure_beambeam_interactions(
         num_particles=par['bunch_intensity'],
         nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
-    )
-    study.apply_filling_pattern(
         filling_pattern_cw=filling_scheme_b1,
         filling_pattern_acw=filling_scheme_b2)
     study_red = study.second_order_maps()

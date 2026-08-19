@@ -49,8 +49,7 @@ env.xfields.install_beambeam_interactions(
     mode='rigid_bunch')
 study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
-    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'])
-study.apply_filling_pattern(
+    nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 print(f'  bare tunes B1 {study.meta["qx_cw"]:.5f}/{study.meta["qy_cw"]:.5f}  '
       f'B2 {study.meta["qx_acw"]:.5f}/{study.meta["qy_acw"]:.5f}')

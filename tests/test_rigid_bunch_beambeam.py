@@ -142,8 +142,7 @@ def _install_toy_rigid_bunch_beambeam():
     study = env.xfields.configure_beambeam_interactions(
         num_particles={'cw': intensity_cw, 'acw': intensity_acw},
         nemitt_x=NEMITT_X,
-        nemitt_y=NEMITT_Y)
-    study.apply_filling_pattern(
+        nemitt_y=NEMITT_Y,
         filling_pattern_cw=filling_scheme_cw,
         filling_pattern_acw=filling_scheme_acw)
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')

@@ -119,8 +119,6 @@ study = env.xfields.configure_beambeam_interactions(
     num_particles={'cw': bunch_intensity_cw, 'acw': bunch_intensity_acw},
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
-)
-study.apply_filling_pattern(
     filling_pattern_cw=filling_pattern_cw,
     filling_pattern_acw=filling_pattern_acw,
 )
@@ -130,8 +128,8 @@ The default mode must preserve the existing sliced head-on and long-range
 workflow. Rigid-bunch mode installs the extended BB2D element with one 2D lens
 per head-on or long-range encounter and allocates its bunch arrays.
 Configuration loads the populations, geometry and design covariances, then
-returns a `BeamBeamRigidBunchStudy`. Filling patterns are applied separately,
-as in the weak--strong workflow.
+returns a `BeamBeamRigidBunchStudy`. Filling patterns can be supplied during
+configuration or changed later on the returned study.
 
 `BeamBeamRigidBunchStudy` remains useful, but should contain only the genuinely
 stateful rigid-bunch operations:

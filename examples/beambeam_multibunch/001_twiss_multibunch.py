@@ -69,8 +69,7 @@ env.xfields.install_beambeam_interactions(
     mode='rigid_bunch')
 study = env.xfields.configure_beambeam_interactions(
     num_particles={'cw': intensity_cw, 'acw': intensity_acw},
-    nemitt_x=2.0e-6, nemitt_y=2.5e-6)
-study.apply_filling_pattern(
+    nemitt_x=2.0e-6, nemitt_y=2.5e-6,
     filling_pattern_cw=filling_cw,
     filling_pattern_acw=filling_acw)
 

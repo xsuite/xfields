@@ -11,8 +11,8 @@ Xfields. The standard beam-beam install/configure workflow with
 ``mode='rigid_bunch'`` returns a ``BeamBeamRigidBunchStudy``; all
 further operations are methods on it (``study.twiss()``, ``study.solve()``,
 ``study.second_order_maps()``, ``study.load_solution(...)``,
-``study.apply_filling_pattern(...)``). The examples call those directly; this
-module only
+``study.apply_filling_pattern(...)``). The examples use these methods when
+changing an already configured study; this module only
 holds the LHC-specific bits the generic tools cannot know about:
 
 * :func:`load_lhc` and the ``SCENARIOS`` presets (sequence, optics files, beam
