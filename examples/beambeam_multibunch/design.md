@@ -115,7 +115,7 @@ env.xfields.install_beambeam_interactions(
     mode='rigid_bunch',
 )
 
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles={'cw': bunch_intensity_cw, 'acw': bunch_intensity_acw},
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
@@ -166,16 +166,23 @@ Rigid-bunch optics belongs to the beam-beam study that already knows both
 lines, their filling schemes and their physical RF slots. The public API is:
 
 ```python
-twiss_cw, twiss_acw = study.twiss(mode='fast')
-twiss_cw, twiss_acw = study.solve(...)
+twiss = rigid_bunch_study.twiss(mode='fast')
+solution = rigid_bunch_study.solve(...)
+
+twiss.b1.qx
+twiss.b2.qx
+rigid_bunch_study.load_solution(solution)
 ```
 
-`study.twiss(...)` observes the opposing-beam state currently loaded in the
-elements; `study.solve(...)` repeatedly calls that operation while feeding the
-two beams back into each other. Bunch positions are derived from the study, so
+`rigid_bunch_study.twiss(...)` observes the opposing-beam state currently
+loaded in the elements; `rigid_bunch_study.solve(...)` repeatedly calls that
+operation while feeding the two beams back into each other. Bunch positions
+are derived from the study, so
 users cannot accidentally provide a `zeta_bunches` array inconsistent with the
-configured filling. The result container is named `RigidBunchTwiss` and lives
-in Xfields together with `BeamBeamRigidBunchStudy` and its solver.
+configured filling. `RigidBunchTwiss` contains the two beam results as `b1` and
+`b2`; each is a `BunchTwiss` collection with one Xtrack `TwissTable` per filled
+bunch. The containers live in Xfields together with
+`BeamBeamRigidBunchStudy` and its solver.
 
 For the same ownership reason, the rigid-bunch installer, study, examples,
 tests and LHC regression data live in Xfields. Xtrack retains only a generic
@@ -469,7 +476,8 @@ Cover:
 - `full`, `fast` and `fast_orbit` on the same bunches;
 - closed-orbit and fractional-tune agreement against `full`;
 - beta, alpha, dispersion and phase from `fast` against `full`;
-- `RigidBunchTwiss` integer, named-row and attribute access;
+- `RigidBunchTwiss.b1` / `.b2` access and `BunchTwiss` integer, named-row and
+  attribute access;
 - bunch positions and labels derived from the study filling;
 - unsupported modes, methods and kwargs;
 - lost particles and closed-orbit failure handling.

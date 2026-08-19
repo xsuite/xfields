@@ -320,12 +320,17 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert isinstance(
             reduced.acw_line[name], xf.BeamBeamBiGaussianRigidBunch2D)
 
-    mbtw_cw, mbtw_acw = reduced.solve(
+    solution = reduced.solve(
         max_iterations=2,
         tol_sigma=0,
         twiss_mode='fast_orbit',
         show_progress=False,
     )
+    assert isinstance(solution, xf.RigidBunchTwiss)
+    assert solution.converged is False
+    assert solution.num_iterations == 2
+    assert np.isfinite(solution.max_orbit_change)
+    mbtw_cw, mbtw_acw = solution.b1, solution.b2
     assert len(mbtw_cw) == len(study.filled_slots_cw)
     assert len(mbtw_acw) == len(study.filled_slots_acw)
 
@@ -354,7 +359,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert probe.px[0] == 0
         assert np.all(np.abs(probe.px[1:]) > 0)
 
-    study.load_solution(mbtw_cw, mbtw_acw)
+    study.load_solution(solution)
     for base in expected_encounters:
         for full_bb, reduced_bb in (
                 (study.bb_cw[base], reduced.bb_cw[base]),
@@ -370,13 +375,15 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
 
     # Dynamic-beta sizes arrive in public filled-slot order from Twiss and are
     # reordered together with the negative-zeta grids inside each element.
-    mbtw_cw_dyn, mbtw_acw_dyn = reduced.solve(
+    dynamic_solution = reduced.solve(
         max_iterations=1,
         tol_sigma=0,
         dynamic_beta=True,
         twiss_mode='fast',
         show_progress=False,
     )
+    mbtw_cw_dyn = dynamic_solution.b1
+    mbtw_acw_dyn = dynamic_solution.b2
     gamma0_cw = float(reduced.cw_line.particle_ref.gamma0[0])
     gamma0_acw = float(reduced.acw_line.particle_ref.gamma0[0])
     indices_cw = N_SLOTS - 1 - study.filled_slots_cw

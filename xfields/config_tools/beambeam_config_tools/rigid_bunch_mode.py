@@ -22,7 +22,7 @@ and returns a small state object:
     study = env.xfields.configure_beambeam_interactions(
         num_particles=..., nemitt_x=..., nemitt_y=...,
         filling_pattern_cw=..., filling_pattern_acw=...)
-    mbtw_cw, mbtw_acw = study.solve()
+    solution = study.solve()
 
 Installation places one beam-beam element per encounter DIRECTLY on the two
 lines (the element is its own twiss/survey observation point -- there are no
@@ -639,15 +639,16 @@ class BeamBeamRigidBunchStudy:
                     sigma_x=sigma_x_own,
                     sigma_y=sigma_y_own)
 
-    def load_solution(self, mbtw_clockwise, mbtw_anticlockwise,
-                      dynamic_beta=False):
+    def load_solution(self, rigid_bunch_twiss, dynamic_beta=False):
         """Load a converged per-bunch solution (e.g. from a reduced-model
         :meth:`solve`) into this study's beam-beam elements, so a subsequent
         :meth:`twiss` / footprint on this study's lattice
-        reproduces it. ``mbtw_clockwise`` / ``mbtw_anticlockwise`` are the two
-        beams' rigid-bunch Twiss results (their orbits are read at the beam-beam
-        elements). With ``dynamic_beta`` the per-bunch sizes are taken from the
-        live beta functions of the solution."""
+        reproduces it. ``rigid_bunch_twiss`` contains the two beams' Twiss
+        results; their orbits are read at the beam-beam elements. With
+        ``dynamic_beta`` the per-bunch sizes are taken from the live beta
+        functions of the solution."""
+        mbtw_clockwise = rigid_bunch_twiss.b1
+        mbtw_anticlockwise = rigid_bunch_twiss.b2
         sizes_cw = sizes_acw = None
         if dynamic_beta:
             sizes_cw = self._compute_sigmas(mbtw_clockwise, self.bb_names_cw,
@@ -676,14 +677,16 @@ class BeamBeamRigidBunchStudy:
 
         Returns
         -------
-        tuple of RigidBunchTwiss
-            ``(twiss_clockwise, twiss_anticlockwise)``.
+        RigidBunchTwiss
+            Two-beam result with ``b1`` (clockwise) and ``b2``
+            (anticlockwise) bunch Twiss data.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
             raise RuntimeError(
                 'bunch filling not set; call apply_filling_pattern first')
 
-        from .rigid_bunch_twiss import _twiss_rigid_bunch_line
+        from .rigid_bunch_twiss import (
+            RigidBunchTwiss, _twiss_rigid_bunch_line)
 
         common = dict(method=method, mode=mode,
                       show_progress=show_progress, **kwargs)
@@ -697,7 +700,7 @@ class BeamBeamRigidBunchStudy:
             zeta_bunches=self.bunch_zeta(mirror=True),
             bunch_names=[f'slot_{slot}' for slot in self.filled_slots_acw],
             **common)
-        return twiss_cw, twiss_acw
+        return RigidBunchTwiss(b1=twiss_cw, b2=twiss_acw)
 
     def solve(self, max_iterations=5, tol_sigma=1e-4, dynamic_beta=False,
               method='4d', chrom=False, twiss_mode=None, show_progress=True,
@@ -749,12 +752,15 @@ class BeamBeamRigidBunchStudy:
 
         Returns
         -------
-        tuple of RigidBunchTwiss
-            ``(mbtw_clockwise, mbtw_anticlockwise)``.
+        RigidBunchTwiss
+            Two-beam solution with ``b1`` (clockwise) and ``b2``
+            (anticlockwise) bunch Twiss data, plus convergence metadata.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
             raise RuntimeError(
                 'bunch filling not set; call apply_filling_pattern first')
+        if max_iterations < 1:
+            raise ValueError('`max_iterations` must be at least one.')
         if twiss_mode is None:
             twiss_mode = 'fast' if dynamic_beta else 'fast_orbit'
         if dynamic_beta and twiss_mode == 'fast_orbit':
@@ -767,23 +773,24 @@ class BeamBeamRigidBunchStudy:
         co_kwargs = (dict(continue_on_closed_orbit_error=True)
                      if continue_on_closed_orbit_error else {})
 
-        mbtw_cw = mbtw_acw = None
+        result = None
         prev = None
         err = np.inf
         for it in range(max_iterations):
-            mbtw_cw, mbtw_acw = self.twiss(
+            result = self.twiss(
                 method=method, chrom=chrom, mode=twiss_mode,
                 show_progress=show_progress, **co_kwargs)
 
-            cur = np.concatenate([_orbit_vector(mbtw_cw, self.bb_names_cw),
-                                  _orbit_vector(mbtw_acw, self.bb_names_acw)])
+            cur = np.concatenate([
+                _orbit_vector(result.b1, self.bb_names_cw),
+                _orbit_vector(result.b2, self.bb_names_acw)])
             sig = np.concatenate([self._sigma_vector(self.bb_cw, mirror=False),
                                   self._sigma_vector(self.bb_acw, mirror=True)])
             err = (np.inf if prev is None
                    else float(np.max(np.abs(cur - prev) / sig)))
             prev = cur
 
-            self.load_solution(mbtw_cw, mbtw_acw, dynamic_beta=dynamic_beta)
+            self.load_solution(result, dynamic_beta=dynamic_beta)
 
             if show_progress:
                 _print(f'  rigid-bunch orbit iteration {it}: '
@@ -805,12 +812,15 @@ class BeamBeamRigidBunchStudy:
             # the caller must know.
             if show_progress:
                 _print('  final closed-orbit pass (strict)')
-            mbtw_cw, mbtw_acw = self.twiss(
+            result = self.twiss(
                 method=method, chrom=chrom, mode=twiss_mode,
                 show_progress=show_progress)
-            self.load_solution(mbtw_cw, mbtw_acw, dynamic_beta=dynamic_beta)
+            self.load_solution(result, dynamic_beta=dynamic_beta)
 
-        return mbtw_cw, mbtw_acw
+        result.converged = err < tol_sigma
+        result.num_iterations = it + 1
+        result.max_orbit_change = err
+        return result
 
 
 def _orbit_vector(mbtw, bb_names):

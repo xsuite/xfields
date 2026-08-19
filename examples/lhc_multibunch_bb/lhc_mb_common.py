@@ -9,17 +9,18 @@ LHC-specific glue for the multi-bunch beam-beam examples.
 The rigid-bunch beam-beam machinery itself is machine-independent and lives in
 Xfields. The standard beam-beam install/configure workflow with
 ``mode='rigid_bunch'`` returns a ``BeamBeamRigidBunchStudy``; all
-further operations are methods on it (``study.twiss()``, ``study.solve()``,
-``study.second_order_maps()``, ``study.load_solution(...)``,
-``study.apply_filling_pattern(...)``). The examples use these methods when
-changing an already configured study; this module only
+further operations are methods on it (``rigid_bunch_study.twiss()``,
+``rigid_bunch_study.solve()``, ``rigid_bunch_study.second_order_maps()``,
+``rigid_bunch_study.load_solution(...)``, and
+``rigid_bunch_study.apply_filling_pattern(...)``). The examples use these
+methods when changing an already configured rigid-bunch study; this module only
 holds the LHC-specific bits the generic tools cannot know about:
 
 * :func:`load_lhc` and the ``SCENARIOS`` presets (sequence, optics files, beam
   parameters for injection / collision);
 * the filling-scheme helpers (:func:`load_scheme`, :func:`all_filled_slots`,
   :func:`filling_scheme_from_slots`, :func:`windowed_slots`
-  -- which reuses the ``study.ip_offsets`` the tools derive from the geometry);
+  -- which reuses the ``rigid_bunch_study.ip_offsets`` derived from geometry);
 * the DataFrame / plotting utilities (:func:`results_dataframe`,
   :func:`plot_results`, :func:`plot_global_quantities`).
 
@@ -162,7 +163,8 @@ def windowed_slots(ho_offsets, scheme_b1, scheme_b2, window, n_slots=N_SLOTS):
     contiguous filled run of beam 1) plus the windows it collides with at every
     distinct head-on offset (so all IPs get realistic PACMAN pairings).
     ``ho_offsets`` is the ``{ip: offset}`` mapping the tools derive from the
-    ring geometry, i.e. ``study.ip_offsets`` after rigid-bunch configuration.
+    ring geometry, i.e. ``rigid_bunch_study.ip_offsets`` after rigid-bunch
+    configuration.
     """
     offsets = sorted(set(ho_offsets.values()))
     filled = scheme_b1 > 0
@@ -189,15 +191,16 @@ def windowed_slots(ho_offsets, scheme_b1, scheme_b2, window, n_slots=N_SLOTS):
 # ----------------------------------------------------------------------------
 # Measured per-bunch emittances
 # ----------------------------------------------------------------------------
-def set_per_bunch_sizes(study, nemitt_cw, nemitt_acw):
+def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
     """Replace the uniform design beam sizes of the beam-beam elements by
     PER-BUNCH ones, from measured per-bunch normalised emittances.
 
     ``nemitt_cw`` / ``nemitt_acw`` are ``(nemitt_x, nemitt_y)`` pairs of
-    arrays aligned with ``study.filled_slots_cw`` /
-    ``study.filled_slots_acw``. The sizes follow the tools' own convention,
+    arrays aligned with ``rigid_bunch_study.filled_slots_cw`` /
+    ``rigid_bunch_study.filled_slots_acw``. The sizes follow the tools' own
+    convention,
     ``sigma = sqrt(beta nemitt / gamma)`` with the bare-optics beta functions
-    cached in ``study.geom``;
+    cached in ``rigid_bunch_study.geom``;
     only the single design emittance is replaced by the per-bunch one, so the
     kick between bunch ``i`` and bunch ``j`` uses the convolved size
     ``sqrt(eps_i beta_1 / gamma + eps_j beta_2 / gamma)``, as in pytrain.
@@ -212,31 +215,32 @@ def set_per_bunch_sizes(study, nemitt_cw, nemitt_acw):
     ``load_solution`` as long as ``dynamic_beta`` is False -- those keep the
     stored sizes.
     """
-    line = {False: study.cw_line, True: study.acw_line}
+    line = {False: rigid_bunch_study.cw_line, True: rigid_bunch_study.acw_line}
     gamma = {mirror: float(line[mirror].particle_ref.gamma0[0])
              for mirror in (False, True)}
     emit = {False: nemitt_cw, True: nemitt_acw}
     n_bunches = {
-        False: len(study.filled_slots_cw),
-        True: len(study.filled_slots_acw),
+        False: len(rigid_bunch_study.filled_slots_cw),
+        True: len(rigid_bunch_study.filled_slots_acw),
     }
-    for base in study.enc_names:
-        geom = study.geom[base]
+    for base in rigid_bunch_study.enc_names:
+        geom = rigid_bunch_study.geom[base]
         sigma = {}
         for mirror, tag in ((False, 'cw'), (True, 'acw')):
             sigma[mirror] = (
                 np.sqrt(geom[f'betx_{tag}'] * emit[mirror][0] / gamma[mirror]),
                 np.sqrt(geom[f'bety_{tag}'] * emit[mirror][1] / gamma[mirror]))
         for mirror in (False, True):
-            # the RAW element: `line[name]` (and hence `study.bb_cw[...]`) is
+            # The raw element (and hence `rigid_bunch_study.bb_cw[...]`) is
             # an expression view, whose array slices are not assignable
-            bb = line[mirror].element_dict[study.bb_name(base, mirror)]
+            bb_name = rigid_bunch_study.bb_name(base, mirror)
+            bb = line[mirror].element_dict[bb_name]
             own, other = sigma[mirror], sigma[not mirror]
             n_other = n_bunches[not mirror]
             bb.update_from_own_beam(
-                zeta=study.bunch_zeta(mirror),
+                zeta=rigid_bunch_study.bunch_zeta(mirror),
                 sigma_x=own[0], sigma_y=own[1])
-            other_order = np.argsort(study.bunch_zeta(not mirror),
+            other_order = np.argsort(rigid_bunch_study.bunch_zeta(not mirror),
                                      kind='stable')
             bb.other_beam_sigma_x[:n_other] = other[0][other_order]
             bb.other_beam_sigma_y[:n_other] = other[1][other_order]
@@ -245,7 +249,7 @@ def set_per_bunch_sizes(study, nemitt_cw, nemitt_acw):
 # ----------------------------------------------------------------------------
 # Results as a DataFrame
 # ----------------------------------------------------------------------------
-def results_dataframe(study, mbtw, slots, bare_qx, bare_qy, mirror=False,
+def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, mirror=False,
                       ip='ip1'):
     """Per-bunch results as a pandas DataFrame, indexed by 25 ns slot.
 
@@ -255,7 +259,7 @@ def results_dataframe(study, mbtw, slots, bare_qx, bare_qy, mirror=False,
     x). ``dx``/``dy`` are the per-bunch orbit deviations from the beam average.
     """
     import pandas as pd
-    marker = study.bb_name(f'bb_{ip}_ho', mirror)
+    marker = rigid_bunch_study.bb_name(f'bb_{ip}_ho', mirror)
     x = mbtw['x', marker] * (-1.0 if mirror else 1.0)
     y = mbtw['y', marker]
 
@@ -273,9 +277,9 @@ def results_dataframe(study, mbtw, slots, bare_qx, bare_qy, mirror=False,
 # ----------------------------------------------------------------------------
 # Plot
 # ----------------------------------------------------------------------------
-def plot_results(study, slots_b1, mbtw_b1, bare_qx, bare_qy, title_suffix=''):
+def plot_results(rigid_bunch_study, slots_b1, mbtw_b1, bare_qx, bare_qy, title_suffix=''):
     import matplotlib.pyplot as plt
-    mk = study.bb_name('bb_ip1_ho', False)
+    mk = rigid_bunch_study.bb_name('bb_ip1_ho', False)
     co_x = mbtw_b1['x', mk]
     co_y = mbtw_b1['y', mk]
     # per-bunch orbit deviation from the bunch-averaged orbit (removes the common
@@ -302,13 +306,13 @@ def plot_results(study, slots_b1, mbtw_b1, bare_qx, bare_qy, title_suffix=''):
     return fig
 
 
-def plot_global_quantities(study, slots_b1, mbtw_b1, slots_b2, mbtw_b2):
+def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_b2):
     """Bunch-by-bunch orbit at IP1, beta* at IP1, tunes, chromaticity and
-    coupling |C-| of both beams, from mode='fast' RigidBunchTwiss results
+    coupling |C-| of both beams, from mode='fast' BunchTwiss results
     (which carry per-bunch optics and global quantities)."""
     import matplotlib.pyplot as plt
-    mk = {False: study.bb_name('bb_ip1_ho', False),
-          True: study.bb_name('bb_ip1_ho', True)}
+    mk = {False: rigid_bunch_study.bb_name('bb_ip1_ho', False),
+          True: rigid_bunch_study.bb_name('bb_ip1_ho', True)}
 
     def at_ip1(mbtw, col, mirror):
         return mbtw[col, mk[mirror]]

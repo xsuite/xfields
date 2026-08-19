@@ -72,7 +72,7 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
@@ -83,14 +83,14 @@ study = env.xfields.configure_beambeam_interactions(
 mo_names = [nn for nn in line_b1.element_names if re.match(r'^mo\.', nn)]
 
 print('  building second-order maps between the beam-beam elements...')
-study_red = study.second_order_maps(context=par['context'])
+study_red = rigid_bunch_study.second_order_maps(context=par['context'])
 print(f'  ... and a variant keeping the {len(mo_names)} lattice octupoles '
       'of beam 1 exact...')
-study_mo = study.second_order_maps(keep_extra_cw=mo_names,
+study_mo = rigid_bunch_study.second_order_maps(keep_extra_cw=mo_names,
                                    context=par['context'])
 # beam-1 lines and lens handles used for the footprints below
 red_b1, red_mo_b1 = study_red.cw_line, study_mo.cw_line
-bb_b1, bb_thick_b1, bb_mo_b1 = study_red.bb_cw, study.bb_cw, study_mo.bb_cw
+bb_b1, bb_thick_b1, bb_mo_b1 = study_red.bb_cw, rigid_bunch_study.bb_cw, study_mo.bb_cw
 slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
@@ -102,8 +102,9 @@ print('Self-consistent solve (4 iterations fast_orbit):')
 t0 = time.time()
 study_red.solve(max_iterations=4)
 print('Self-consistent solve (4 more iterations with dynamic beta):')
-mbtw_b1, mbtw_b2 = study_red.solve(
+solution = study_red.solve(
     max_iterations=4, dynamic_beta=True)
+mbtw_b1, mbtw_b2 = solution.b1, solution.b2
 print(f'  total solve time: {time.time() - t0:.1f} s')
 
 # ----------------------------------------------------------------------------
@@ -113,8 +114,8 @@ print(f'  total solve time: {time.time() - t0:.1f} s')
 # ----------------------------------------------------------------------------
 print('Loading the converged solution on the full thick lattice (B1) and '
       'on the maps+MO line...')
-study.load_solution(mbtw_b1, mbtw_b2, dynamic_beta=True)
-study_mo.load_solution(mbtw_b1, mbtw_b2, dynamic_beta=True)
+rigid_bunch_study.load_solution(solution, dynamic_beta=True)
+study_mo.load_solution(solution, dynamic_beta=True)
 
 # ----------------------------------------------------------------------------
 # 3) Footprints for the bunch families of the longest train
@@ -139,11 +140,10 @@ family = [(train[k], f'train bunch {k + 1}') for k in pos_in_train]
 
 # cross-check the transferred lattices on the family bunches
 idx_fam = np.searchsorted(slots_b1, [sl for sl, _ in family])
-for label, transferred in (('thick', study), ('maps+MO', study_mo)):
-    mb_check, _ = transferred.twiss(
-        mode='fast_orbit', show_progress=False)
+for label, transferred in (('thick', rigid_bunch_study), ('maps+MO', study_mo)):
+    check = transferred.twiss(mode='fast_orbit', show_progress=False)
     dq_check = mb.wrap_frac_tune(
-        np.asarray(mb_check.qx)[idx_fam]
+        np.asarray(check.b1.qx)[idx_fam]
         - np.asarray(mbtw_b1.qx)[idx_fam])
     print(f'  transfer check ({label} vs sector maps, family bunches): '
           f'max |dqx| = {np.max(np.abs(dq_check)):.2e}')
@@ -179,7 +179,7 @@ for sl, label in family:
             nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
             r_range=(0.3, 6), theta_range=(0.15, np.pi / 2 - 0.15),
             freeze_longitudinal=True,
-            zeta0=-sl * study.bunch_spacing_zeta,
+            zeta0=-sl * rigid_bunch_study.bunch_spacing_zeta,
             linear_rescale_on_knobs=[xt.LinearRescale(
                 knob_name='beambeam_scale', v0=0.0, dv=0.1)])
         fp[tag + '_t'] = time.time() - t0

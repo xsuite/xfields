@@ -52,12 +52,12 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 print('  building second-order maps between the beam-beam elements...')
-study_red = study.second_order_maps(context=par['context'])
+study_red = rigid_bunch_study.second_order_maps(context=par['context'])
 slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
@@ -71,11 +71,10 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
     # 'fast' twiss (per-bunch optics) in both cases so the returned tables carry
     # betx/bety for the static-vs-dynamic beta* comparison below (dynamic_beta
     # forces it anyway; the static solve would otherwise default to fast_orbit).
-    mbtw_b1, mbtw_b2 = study_red.solve(
+    results[label] = study_red.solve(
         max_iterations=N_ITER, tol_sigma=0.0,
         twiss_mode='fast', dynamic_beta=dynamic_beta)
     print(f'  solve time ({N_ITER} iters): {time.time() - t0:.1f} s')
-    results[label] = (mbtw_b1, mbtw_b2)
 
 # ----------------------------------------------------------------------------
 # Compare per-bunch tunes, orbit and beta* at IP1 (B1)
@@ -92,14 +91,14 @@ def extract(mbtw):
     )
 
 
-stat = extract(results['static'][0])
-dyn = extract(results['dynamic beta'][0])
+stat = extract(results['static'].b1)
+dyn = extract(results['dynamic beta'].b1)
 
-df_b1 = mb.results_dataframe(study_red, results['dynamic beta'][0], slots_b1,
-                             study.meta['qx_cw'], study.meta['qy_cw'],
+df_b1 = mb.results_dataframe(study_red, results['dynamic beta'].b1, slots_b1,
+                             rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
                              mirror=False)
-df_b2 = mb.results_dataframe(study_red, results['dynamic beta'][1], slots_b2,
-                             study.meta['qx_acw'], study.meta['qy_acw'],
+df_b2 = mb.results_dataframe(study_red, results['dynamic beta'].b2, slots_b2,
+                             rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'],
                              mirror=True)
 df_b1.to_pickle(os.path.join(mb.HERE, 'results_b1_coll_dynbeta.pkl'))
 df_b2.to_pickle(os.path.join(mb.HERE, 'results_b2_coll_dynbeta.pkl'))

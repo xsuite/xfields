@@ -16,11 +16,10 @@ from xtrack.twiss.twiss import twiss_line
 from xtrack.twiss.twiss_table import TwissTable
 
 
-class RigidBunchTwiss:
+class BunchTwiss:
 
     """
-    Container for the per-bunch Twiss results of a multi-bunch beam, as returned
-    by the rigid-bunch beam-beam study.
+    Container for the per-bunch Twiss results of one multi-bunch beam.
 
     Each bunch of the beam sits at a distinct longitudinal position ``zeta`` and,
     through a multi-bunch beam-beam element, experiences a different force. As a
@@ -46,9 +45,15 @@ class RigidBunchTwiss:
         self.bunch_twiss = list(bunch_twiss)
         self.zeta_bunches = np.atleast_1d(np.asarray(zeta_bunches, dtype=float))
         self.num_bunches = len(self.bunch_twiss)
+        if len(self.zeta_bunches) != self.num_bunches:
+            raise ValueError(
+                '`bunch_twiss` and `zeta_bunches` must have the same length.')
         if bunch_names is None:
             bunch_names = [f'bunch_{i}' for i in range(self.num_bunches)]
         self.bunch_names = list(bunch_names)
+        if len(self.bunch_names) != self.num_bunches:
+            raise ValueError(
+                '`bunch_twiss` and `bunch_names` must have the same length.')
         self._name_pos = None
 
     def __len__(self):
@@ -94,8 +99,41 @@ class RigidBunchTwiss:
         return self.bunch_twiss[self.bunch_names.index(name)]
 
     def __repr__(self):
-        return (f'RigidBunchTwiss({self.num_bunches} bunches, '
+        return (f'BunchTwiss({self.num_bunches} bunches, '
                 f'zeta={np.array2string(self.zeta_bunches, precision=3)})')
+
+
+class RigidBunchTwiss:
+    """Twiss result for the two beams of a rigid-bunch study.
+
+    ``b1`` is the clockwise beam and ``b2`` is the anticlockwise beam. Each is
+    a :class:`BunchTwiss` containing one :class:`TwissTable` per filled bunch.
+    Results returned by :meth:`BeamBeamRigidBunchStudy.solve` additionally
+    carry ``converged``, ``num_iterations`` and ``max_orbit_change``. The last
+    quantity is the largest orbit change normalized by the local beam size.
+    These three attributes are ``None`` on results returned by ``twiss()``.
+    """
+
+    def __init__(self, b1, b2, *, converged=None, num_iterations=None,
+                 max_orbit_change=None):
+        if not isinstance(b1, BunchTwiss) or not isinstance(b2, BunchTwiss):
+            raise TypeError('`b1` and `b2` must be BunchTwiss objects.')
+        self.b1 = b1
+        self.b2 = b2
+        self.converged = converged
+        self.num_iterations = num_iterations
+        self.max_orbit_change = max_orbit_change
+
+    def __getitem__(self, beam):
+        if beam == 'b1':
+            return self.b1
+        if beam == 'b2':
+            return self.b2
+        raise KeyError(beam)
+
+    def __repr__(self):
+        return (f'RigidBunchTwiss(B1={self.b1.num_bunches} bunches, '
+                f'B2={self.b2.num_bunches} bunches)')
 
 
 def _mb_co_search(line, zeta_t, delta_t, Z_init, hs, co_tol, max_iter_co,
@@ -472,10 +510,10 @@ def _twiss_rigid_bunch_line(line, zeta_bunches=None, particles=None,
 
     Returns
     -------
-    RigidBunchTwiss
+    BunchTwiss
         Container with one table per bunch (a full :class:`TwissTable` in
         ``mode='full'``, a lightweight orbit/tunes table in ``mode='fast'``).
-        See :class:`RigidBunchTwiss`.
+        See :class:`BunchTwiss`.
     """
 
     if 'zeta0' in kwargs:
@@ -524,5 +562,5 @@ def _twiss_rigid_bunch_line(line, zeta_bunches=None, particles=None,
         raise ValueError(
             f'Unknown mode {mode!r} (use "fast", "fast_orbit" or "full")')
 
-    return RigidBunchTwiss(
+    return BunchTwiss(
         bunch_twiss, zeta_bunches, bunch_names=bunch_names)

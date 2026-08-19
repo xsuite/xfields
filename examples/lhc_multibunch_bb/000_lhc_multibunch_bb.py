@@ -11,13 +11,13 @@ Head-on and long-range beam-beam elements (BeamBeamBiGaussianRigidBunch2D) are
 installed at IP1/2/5/8 with the rigid-bunch mode of the standard beam-beam
 install/configure workflow, and the per-bunch closed solution (closed orbit
 + tunes) of the two multi-bunch beams is found self-consistently with
-``study.solve()``. The per-IP head-on bunch-pairing offsets are derived from the
+``rigid_bunch_study.solve()``. The per-IP head-on bunch-pairing offsets are derived from the
 ring geometry (the IPs are passed as a list of names); the beams collide head-on
 at IP1/IP5 (levelling offsets at IP2/IP8), so the effect is head-on + BBLR.
 
 This "direct" variant twisses the full thick line (no sector-map reduction).
 The companion example ``002_multibunch_sectormaps_collisions.py`` replaces the
-arcs by second-order maps (much faster) with ``study.second_order_maps()``.
+arcs by second-order maps (much faster) with ``rigid_bunch_study.second_order_maps()``.
 """
 import os
 import time
@@ -40,7 +40,7 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
@@ -49,29 +49,30 @@ if not ALL_BUNCHES:
     # restrict to a bounded window (the pairing offsets are now known from the
     # geometry, so we can pick the colliding sub-set) to keep the thick-lattice
     # solve fast
-    s1, s2 = mb.windowed_slots(study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
-    study.apply_filling_pattern(
+    s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
+    rigid_bunch_study.apply_filling_pattern(
         filling_pattern_cw=mb.filling_scheme_from_slots(s1),
         filling_pattern_acw=mb.filling_scheme_from_slots(s2))
 
-slots_b1, slots_b2 = study.filled_slots_cw, study.filled_slots_acw
+slots_b1, slots_b2 = rigid_bunch_study.filled_slots_cw, rigid_bunch_study.filled_slots_acw
 for ip in par['ips']:
-    print(f'  {ip}: head-on offset = {study.geom[f"bb_{ip}_ho"]["offset"]} slots')
+    print(f'  {ip}: head-on offset = {rigid_bunch_study.geom[f"bb_{ip}_ho"]["offset"]} slots')
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
 print('Self-consistent solve on the full thick lattice:')
 t0 = time.time()
-mbtw_b1, mbtw_b2 = study.solve(max_iterations=N_ITER)
+solution = rigid_bunch_study.solve(max_iterations=N_ITER)
+mbtw_b1, mbtw_b2 = solution.b1, solution.b2
 print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches): '
       f'{time.time() - t0:.1f} s')
 
-bare = study.meta
+bare = rigid_bunch_study.meta
 dqx_b1 = mb.wrap_frac_tune(mbtw_b1.qx - bare['qx_cw'])
 print(f"\nB1 tune shift: dqx in [{dqx_b1.min():.2e}, {dqx_b1.max():.2e}]")
 
-df_b1 = mb.results_dataframe(study, mbtw_b1, slots_b1,
+df_b1 = mb.results_dataframe(rigid_bunch_study, mbtw_b1, slots_b1,
                              bare['qx_cw'], bare['qy_cw'], mirror=False)
-df_b2 = mb.results_dataframe(study, mbtw_b2, slots_b2,
+df_b2 = mb.results_dataframe(rigid_bunch_study, mbtw_b2, slots_b2,
                              bare['qx_acw'], bare['qy_acw'], mirror=True)
 out_b1 = os.path.join(mb.HERE, 'results_b1_coll_full.pkl')
 out_b2 = os.path.join(mb.HERE, 'results_b2_coll_full.pkl')
@@ -79,6 +80,6 @@ df_b1.to_pickle(out_b1)
 df_b2.to_pickle(out_b2)
 print(f'saved {out_b1}\nsaved {out_b2}')
 
-mb.plot_results(study, slots_b1, mbtw_b1, bare['qx_cw'], bare['qy_cw'],
+mb.plot_results(rigid_bunch_study, slots_b1, mbtw_b1, bare['qx_cw'], bare['qy_cw'],
                 title_suffix='  [full thick lattice, collision]')
 plt.show()

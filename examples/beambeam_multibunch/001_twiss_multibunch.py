@@ -5,7 +5,7 @@
 
 """Per-bunch rigid-beam optics through ``BeamBeamRigidBunchStudy``.
 
-The study owns both the filling scheme and the beam-beam state. Its ``twiss``
+The rigid-bunch study owns both the filling scheme and the beam-beam state. Its ``twiss``
 method therefore needs no separate bunch-position argument, while ``solve``
 iterates the two beams to a self-consistent closed orbit.
 """
@@ -67,7 +67,7 @@ env.xfields.install_beambeam_interactions(
     ip_names=['ip1'], num_long_range_encounters_per_side=0,
     harmonic_number=N_SLOTS, bunch_spacing_buckets=1,
     mode='rigid_bunch')
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles={'cw': intensity_cw, 'acw': intensity_acw},
     nemitt_x=2.0e-6, nemitt_y=2.5e-6,
     filling_pattern_cw=filling_cw,
@@ -75,18 +75,18 @@ study = env.xfields.configure_beambeam_interactions(
 
 # ``twiss`` observes the current frozen opposing-beam state. ``solve`` updates
 # that state until the two per-bunch closed orbits are self-consistent.
-initial_cw, initial_acw = study.twiss(mode='fast')
-solved_cw, solved_acw = study.solve(max_iterations=6)
+initial_twiss = rigid_bunch_study.twiss(mode='fast')
+solution = rigid_bunch_study.solve(max_iterations=6)
 
 for beam, slots, twiss in (
-        ('cw', study.filled_slots_cw, solved_cw),
-        ('acw', study.filled_slots_acw, solved_acw)):
+        ('cw', rigid_bunch_study.filled_slots_cw, solution.b1),
+        ('acw', rigid_bunch_study.filled_slots_acw, solution.b2)):
     print(f'{beam} per-bunch tunes:')
     for slot, qx, qy in zip(slots, twiss.qx, twiss.qy):
         print(f'  slot {slot}: qx={qx:.8f}, qy={qy:.8f}')
 
-plt.plot(study.filled_slots_cw, solved_cw.qx, 'o-', label='cw')
-plt.plot(study.filled_slots_acw, solved_acw.qx, 's-', label='acw')
+plt.plot(rigid_bunch_study.filled_slots_cw, solution.b1.qx, 'o-', label='cw')
+plt.plot(rigid_bunch_study.filled_slots_acw, solution.b2.qx, 's-', label='acw')
 plt.xlabel('physical RF slot')
 plt.ylabel('$q_x$')
 plt.legend()

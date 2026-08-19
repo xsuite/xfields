@@ -62,20 +62,29 @@ def beam_beam_rigid_bunch_study():
 def test_rigid_bunch_twiss_fast_modes_against_full(beam_beam_rigid_bunch_study):
     study = beam_beam_rigid_bunch_study
     names = ['slot_0', 'slot_1', 'slot_2']
-    full, full_acw = study.twiss(
+    full_result = study.twiss(
         mode='full',
         show_progress=False,
     )
-    fast, fast_acw = study.twiss(
+    fast_result = study.twiss(
         mode='fast',
         show_progress=False,
         co_tol=1e-12,
     )
-    fast_orbit, fast_orbit_acw = study.twiss(
+    fast_orbit_result = study.twiss(
         mode='fast_orbit',
         show_progress=False,
         co_tol=1e-12,
     )
+
+    assert isinstance(fast_result, xf.RigidBunchTwiss)
+    assert isinstance(fast_result.b1, xf.BunchTwiss)
+    assert fast_result['b1'] is fast_result.b1
+    assert fast_result['b2'] is fast_result.b2
+    full, full_acw = full_result.b1, full_result.b2
+    fast, fast_acw = fast_result.b1, fast_result.b2
+    fast_orbit = fast_orbit_result.b1
+    fast_orbit_acw = fast_orbit_result.b2
 
     assert len(full) == len(fast) == len(fast_orbit) == len(ZETA_BUNCHES)
     assert fast.bunch_names == names

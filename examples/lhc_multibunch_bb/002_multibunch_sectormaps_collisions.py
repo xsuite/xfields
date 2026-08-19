@@ -15,7 +15,7 @@ tunes/chromaticity matched to 62.316/60.322 and Q' = 10. 1.1e11 p/bunch,
 
 The standard beam-beam workflow in ``mode='rigid_bunch'`` installs and
 configures the head-on + long-range lenses on the full lattice;
-``study.second_order_maps``
+``rigid_bunch_study.second_order_maps``
 then makes a fast copy where the arcs between the encounters are replaced by
 second-order Taylor maps (the lenses stay exact), and ``study_red.solve`` finds
 the per-bunch self-consistent closed solution on it. The flattened collision
@@ -47,56 +47,58 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
-print(f'  bare tunes B1 {study.meta["qx_cw"]:.5f}/{study.meta["qy_cw"]:.5f}  '
-      f'B2 {study.meta["qx_acw"]:.5f}/{study.meta["qy_acw"]:.5f}')
+print(f'  bare tunes B1 {rigid_bunch_study.meta["qx_cw"]:.5f}/{rigid_bunch_study.meta["qy_cw"]:.5f}  '
+      f'B2 {rigid_bunch_study.meta["qx_acw"]:.5f}/{rigid_bunch_study.meta["qy_acw"]:.5f}')
 
 if not ALL_BUNCHES:
     # restrict to a bounded window with all-IP pairings (offsets from geometry)
-    s1, s2 = mb.windowed_slots(study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
-    study.apply_filling_pattern(
+    s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
+    rigid_bunch_study.apply_filling_pattern(
         filling_pattern_cw=mb.filling_scheme_from_slots(s1),
         filling_pattern_acw=mb.filling_scheme_from_slots(s2))
 
 # Fast sector-map copy: the arcs between the encounters become second-order maps
 # (the beam-beam elements stay exact). Solving the reduced study is much faster.
 print('  building second-order maps between the beam-beam elements...')
-study_red = study.second_order_maps(context=par['context'])
+study_red = rigid_bunch_study.second_order_maps(context=par['context'])
 slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
 print('Self-consistent solve (head-on + long-range):')
 t0 = time.time()
-mbtw_b1, mbtw_b2 = study_red.solve(max_iterations=N_ITER)
+solution = study_red.solve(max_iterations=N_ITER)
+mbtw_b1, mbtw_b2 = solution.b1, solution.b2
 print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches, {N_ITER} iters): '
       f'{time.time() - t0:.1f} s')
 
 if COMPUTE_OPTICS_PARAMS:
     print('Final mode="fast" twiss (per-bunch optics + global quantities):')
     t0 = time.time()
-    mbtw_b1, mbtw_b2 = study_red.twiss(mode='fast')
+    final_twiss = study_red.twiss(mode='fast')
+    mbtw_b1, mbtw_b2 = final_twiss.b1, final_twiss.b2
     print(f'  final twiss (both beams): {time.time() - t0:.1f} s')
 
 # bare per-bunch tunes: second-order maps preserve the linear optics, so the
-# reduced-line tunes equal the full-lattice ones in study.meta
-dqx_b1 = mb.wrap_frac_tune(mbtw_b1.qx - study.meta['qx_cw'])
+# reduced-line tunes equal the full-lattice ones in rigid_bunch_study.meta
+dqx_b1 = mb.wrap_frac_tune(mbtw_b1.qx - rigid_bunch_study.meta['qx_cw'])
 print(f"\nB1 tune shift: dqx in [{dqx_b1.min():.2e}, {dqx_b1.max():.2e}]")
 
 df_b1 = mb.results_dataframe(study_red, mbtw_b1, slots_b1,
-                             study.meta['qx_cw'], study.meta['qy_cw'],
+                             rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
                              mirror=False)
 df_b2 = mb.results_dataframe(study_red, mbtw_b2, slots_b2,
-                             study.meta['qx_acw'], study.meta['qy_acw'],
+                             rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'],
                              mirror=True)
 df_b1.to_pickle(os.path.join(mb.HERE, 'results_b1_coll.pkl'))
 df_b2.to_pickle(os.path.join(mb.HERE, 'results_b2_coll.pkl'))
 print('saved results_b1_coll.pkl / results_b2_coll.pkl')
 
 mb.plot_results(study_red, slots_b1, mbtw_b1,
-                study.meta['qx_cw'], study.meta['qy_cw'],
+                rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
                 title_suffix='  [collision, 6.8 TeV]')
 if COMPUTE_OPTICS_PARAMS:
     mb.plot_global_quantities(study_red, slots_b1, mbtw_b1, slots_b2, mbtw_b2)

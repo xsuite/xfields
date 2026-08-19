@@ -44,12 +44,12 @@ env.xfields.install_beambeam_interactions(
     harmonic_number=mb.HARMONIC_NUMBER,
     bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
-study = env.xfields.configure_beambeam_interactions(
+rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 print('  building second-order maps between the beam-beam elements...')
-study_red = study.second_order_maps(context=ctx_mt)
+study_red = rigid_bunch_study.second_order_maps(context=ctx_mt)
 slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
