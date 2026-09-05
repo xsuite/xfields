@@ -531,6 +531,86 @@ beam-beam/study/Twiss tests, the Xtrack lazy-façade test and both LHC pytrain
 scenarios pass again. The recorded Xmask pass predates this package-ownership
 move; Xmask has not been rerun after it.
 
+## Pre-merge API and example review TODO
+
+The following items were identified in the final API/example review and should
+be resolved before the rigid-bunch interface is treated as established.
+
+### Required fixes
+
+- Reconcile the covariance contract with the implementation. This document
+  specifies per-bunch transverse covariances and coherent covariance
+  convolution, including the possibility of transverse coupling. The current
+  rigid-bunch element stores only ``sigma_x`` and ``sigma_y`` and supplies zero
+  cross-plane covariance to the common BB2D kick. Either add slot-indexed
+  ``Sigma_11``, ``Sigma_13`` and ``Sigma_33`` support for both beams, or
+  explicitly narrow the documented model to uncoupled transverse Gaussian
+  distributions.
+- Make non-convergence explicit. ``BeamBeamRigidBunchStudy.solve()`` currently
+  returns the last iterate with ``result.converged == False`` after reaching
+  ``max_iterations``. Prefer raising by default, with an explicit option to
+  return the last iterate when desired. In all cases, examples must inspect and
+  report ``converged``, ``num_iterations`` and ``max_orbit_change`` before
+  treating, saving or plotting the result as a solution.
+- Preserve ``beambeam_scale`` during configuration. Geometry analysis currently
+  sets the knob to zero and then unconditionally to one. Save the previous
+  value and restore it with exception-safe handling so reconfiguration neither
+  changes a user's knob setting nor leaves beam-beam disabled after an error.
+- Fix ``examples/beambeam_multibunch/000_multibunch_2d.py``: it describes a
+  coherent calculation but constructs the rigid-bunch elements with the
+  default ``coherent=False`` and without own-beam sizes. Make the physics and
+  description agree.
+
+### Public API decisions
+
+- Use one orientation vocabulary consistently. The study exposes ``cw`` /
+  ``acw`` state (for example ``filled_slots_cw``), while ``RigidBunchTwiss``
+  exposes ``b1`` / ``b2``. Prefer ``cw`` / ``acw`` for the machine-independent
+  API, optionally retaining ``b1`` / ``b2`` as convenience aliases.
+- Resolve ``filling_scheme`` versus ``filling_pattern`` before release. The
+  bunch-pattern contract in this document calls the slot-indexed occupancy a
+  filling scheme, while the implemented beam-beam entry points use
+  ``filling_pattern_cw`` / ``filling_pattern_acw``. Choose one public term and
+  make the design, code, tests and examples consistent. Compatibility with the
+  established particles-mode beam-beam API should be considered explicitly.
+- Avoid boolean orientation in public-looking helpers such as
+  ``bb_name(base, mirror)`` and ``bunch_zeta(mirror)``. Use named CW/ACW
+  accessors or an explicit orientation value, or make these helpers private.
+- Clarify mode-specific configuration arguments. The shared
+  ``configure_beambeam_interactions()`` signature contains both particles-only
+  and rigid-bunch-only options; particle-only defaults such as
+  ``crab_strong_beam=True`` are silently ignored in rigid-bunch mode. Use
+  sentinel defaults and validation, or document the mode-dependent contract
+  prominently.
+
+### LHC example cleanup
+
+- In ``000_lhc_multibunch_bb.py``, avoid configuring the complete filling and
+  immediately replacing it with the bounded filling. Configure without a
+  filling, derive the IP offsets, and apply the selected filling once.
+- Make it obvious in the example output and introductory text that the default
+  calculation uses a bounded bunch subset, controlled by ``LHC_ALL`` and
+  ``LHC_WINDOW``, even though it uses the full thick lattice.
+- Do not unconditionally write fixed pickle files into the source directory.
+  Make result export explicit and direct outputs to a user-selected directory.
+- Remove the unused ``line_b1`` / ``line_b2`` return values in the example, or
+  simplify ``load_lhc()`` if callers generally use the lines through the
+  environment.
+- Keep the full-lattice LHC script as a realistic application example, but use
+  the small deterministic example as the primary API introduction. Add a short
+  README that distinguishes the quick API example, full thick-lattice study,
+  second-order-map workflow, OpenMP example and pytrain comparison.
+
+### Final validation gates
+
+- Run the focused serial and OpenMP element, configuration, study and
+  rigid-bunch-Twiss tests with the supported compiler setup.
+- Run the current LHC injection and collision pytrain regressions.
+- Rerun the Xmask beam-beam acceptance tests after the package-ownership move;
+  the pass recorded above predates that change.
+- Exercise at least one complete OpenMP rigid-bunch study, not only the element
+  kernels.
+
 ## Non-goals
 
 - This rationalization does not change the intended coherent rigid-bunch
