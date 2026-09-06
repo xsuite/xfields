@@ -58,6 +58,12 @@ The two lines are the usual xsuite two-ring setup: the ``clockwise_line`` runs
 in ``+s`` and the ``anticlockwise_line`` is the *reversed* line (also running in
 ``+s``); a given encounter element name is the same physical point in both
 beams, mirrored on the reversed line.
+
+The full transverse covariance is retained in the configured elements, but the
+rigid-bunch kick currently uses only ``Sigma_11`` and ``Sigma_33``.
+``Sigma_13`` is stored and serialized but ignored by the kick until coupled
+rigid-bunch operation is validated. A :class:`RuntimeWarning` is emitted when
+``abs(Sigma_13) / sqrt(Sigma_11 * Sigma_33)`` exceeds ``1e-2``.
 """
 
 from dataclasses import dataclass
@@ -282,6 +288,11 @@ class BeamBeamRigidBunchStudy:
     Beam-beam elements use the same names as the particles-mode infrastructure,
     e.g. ``bb_ho.c1b1_00`` and ``bb_ho.c1b2_00``. The element itself is the
     observation point used for the geometry and the orbit feedback.
+
+    The configured elements retain ``Sigma_13`` from the bare optics, but the
+    rigid-bunch kick ignores it and uses the diagonal covariance only. A
+    :class:`RuntimeWarning` reports a normalized transverse correlation above
+    ``1e-2``.
     """
 
     def __init__(self, clockwise_line, anticlockwise_line, ips,
@@ -419,7 +430,9 @@ class BeamBeamRigidBunchStudy:
 
         The beam-beam elements are the observation points. They must already
         be placed and inactive, so the shared Twiss and covariance calculation
-        sees the bare optics.
+        sees the bare optics. All three transverse covariance components are
+        retained; ``Sigma_13`` is ignored by the kick, with a warning when its
+        normalized correlation exceeds ``1e-2``.
         """
         names_by_ip = {'cw': {}, 'acw': {}}
         for base, ip, _ in self.enc_specs:
@@ -669,8 +682,10 @@ class BeamBeamRigidBunchStudy:
         :meth:`twiss` / footprint on this study's lattice
         reproduces it. ``rigid_bunch_twiss`` contains the two beams' Twiss
         results; their orbits are read at the beam-beam elements. With
-        ``dynamic_beta`` the per-bunch sizes are taken from the live beta
-        functions of the solution."""
+        ``dynamic_beta`` the per-bunch diagonal covariance is taken from the
+        live beta functions of the solution; its ``Sigma_13`` is set to zero.
+        This does not change the kick, which currently ignores ``Sigma_13``.
+        """
         mbtw_clockwise = rigid_bunch_twiss.b1
         mbtw_anticlockwise = rigid_bunch_twiss.b2
         covariances_cw = covariances_acw = None
@@ -1044,7 +1059,13 @@ def install_rigid_bunch_beambeam(
 def configure_rigid_bunch_beambeam(
         env, num_particles, nemitt_x, nemitt_y,
         filling_pattern_cw=None, filling_pattern_acw=None):
-    """Populate installed rigid-bunch elements and return their study."""
+    """Populate installed rigid-bunch elements and return their study.
+
+    The elements retain all transverse covariance components computed from the
+    bare optics. ``Sigma_13`` is stored and serialized but currently ignored by
+    the rigid-bunch kick. A :class:`RuntimeWarning` is emitted when its
+    normalized correlation exceeds ``1e-2``.
+    """
     if (filling_pattern_cw is None) != (filling_pattern_acw is None):
         raise ValueError(
             '`filling_pattern_cw` and `filling_pattern_acw` must be provided '

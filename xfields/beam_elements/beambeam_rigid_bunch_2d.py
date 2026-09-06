@@ -361,7 +361,12 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
         covariance. Covariance or convenience sigma inputs are sorted together
         with ``zeta``. With ``zeta=None`` only the covariance is updated for the
         already-registered own bunches. Scalars are broadcast. A change in the
-        number of bunches requires element reconfiguration."""
+        number of bunches requires element reconfiguration.
+
+        ``own_beam_Sigma_13`` is stored and serialized but is currently ignored
+        by the rigid-bunch kick. A :class:`RuntimeWarning` is emitted if
+        ``abs(Sigma_13) / sqrt(Sigma_11 * Sigma_33)`` exceeds ``1e-2``.
+        """
         covariance = _resolve_covariance_inputs(
             Sigma_11=own_beam_Sigma_11,
             Sigma_13=own_beam_Sigma_13,
@@ -418,6 +423,10 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
         If no covariance or sigma inputs are given, the stored covariance is
         kept. This is valid only if the set and zeta ordering of bunches is
         unchanged since the covariance was last set.
+
+        ``other_beam_Sigma_13`` is stored and serialized but is currently
+        ignored by the rigid-bunch kick. A :class:`RuntimeWarning` is emitted
+        if ``abs(Sigma_13) / sqrt(Sigma_11 * Sigma_33)`` exceeds ``1e-2``.
         """
 
         covariance = _resolve_covariance_inputs(
