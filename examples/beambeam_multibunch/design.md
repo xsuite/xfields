@@ -554,14 +554,12 @@ be resolved before the rigid-bunch interface is treated as established.
   return the last iterate when desired. In all cases, examples must inspect and
   report ``converged``, ``num_iterations`` and ``max_orbit_change`` before
   treating, saving or plotting the result as a solution.
-- Preserve ``beambeam_scale`` during configuration. Geometry analysis currently
-  sets the knob to zero and then unconditionally to one. Save the previous
-  value and restore it with exception-safe handling so reconfiguration neither
-  changes a user's knob setting nor leaves beam-beam disabled after an error.
-- Fix ``examples/beambeam_multibunch/000_multibunch_2d.py``: it describes a
-  coherent calculation but constructs the rigid-bunch elements with the
-  default ``coherent=False`` and without own-beam sizes. Make the physics and
-  description agree.
+- [x] Preserve ``beambeam_scale`` during configuration. Geometry analysis
+  temporarily disables the knob and restores the previous value or expression
+  with exception-safe handling.
+- [x] Fix ``examples/beambeam_multibunch/000_multibunch_2d.py``: the coherent
+  calculation now explicitly enables ``coherent=True`` and provides the
+  own-beam sizes and bunch grid.
 
 ### Public API decisions
 

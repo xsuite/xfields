@@ -1090,11 +1090,16 @@ def configure_rigid_bunch_beambeam(
     study.bb_cw = elements_by_encounter['cw']
     study.bb_acw = elements_by_encounter['acw']
 
-    # Reanalyse the bare lines even when configuration is repeated.
-    env.vars['beambeam_scale'] = 0.0
-
-    study._compute_geometry()
-    env.vars['beambeam_scale'] = 1.0
+    # Reanalyse the bare lines even when configuration is repeated. Preserve
+    # the user's knob value or expression, including when geometry fails.
+    previous_beambeam_scale = env.ref['beambeam_scale'].xdeps.expr
+    if previous_beambeam_scale is None:
+        previous_beambeam_scale = env['beambeam_scale']
+    try:
+        env['beambeam_scale'] = 0.0
+        study._compute_geometry()
+    finally:
+        env['beambeam_scale'] = previous_beambeam_scale
     if filling_pattern_cw is not None:
         study.apply_filling_pattern(
             filling_pattern_cw=filling_pattern_cw,

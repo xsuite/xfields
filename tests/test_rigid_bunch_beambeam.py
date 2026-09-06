@@ -444,6 +444,7 @@ def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
     (env, first, filling_scheme_cw, filling_scheme_acw,
      intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam()
 
+    env.cw['beambeam_scale'] = 0.41
     second = env.xfields.configure_beambeam_interactions(
         num_particles={'cw': intensity_cw, 'acw': intensity_acw},
         nemitt_x=NEMITT_X,
@@ -456,9 +457,36 @@ def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
     assert second.geom.keys() == first.geom.keys()
     for encounter_name in first.geom:
         assert second.geom[encounter_name] == first.geom[encounter_name]
-    assert env.cw['beambeam_scale'] == 1
-    assert env.acw['beambeam_scale'] == 1
+    assert env.cw['beambeam_scale'] == 0.41
+    assert env.acw['beambeam_scale'] == 0.41
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')
+
+
+def test_rigid_bunch_configuration_restores_scale_expression_on_error(
+        monkeypatch):
+    (env, _, _, _, intensity_cw,
+     intensity_acw) = _install_toy_rigid_bunch_beambeam()
+
+    env['scale_source'] = 0.23
+    env['beambeam_scale'] = 2 * env.ref['scale_source']
+    previous_expression = str(env.ref['beambeam_scale'].xdeps.expr)
+
+    def fail_geometry(self):
+        raise RuntimeError('geometry failed')
+
+    monkeypatch.setattr(BeamBeamRigidBunchStudy, '_compute_geometry',
+                        fail_geometry)
+    with pytest.raises(RuntimeError, match='geometry failed'):
+        env.xfields.configure_beambeam_interactions(
+            num_particles={'cw': intensity_cw, 'acw': intensity_acw},
+            nemitt_x=NEMITT_X,
+            nemitt_y=NEMITT_Y)
+
+    assert str(env.ref['beambeam_scale'].xdeps.expr) == previous_expression
+    assert env.cw['beambeam_scale'] == 0.46
+    env['scale_source'] = 0.31
+    assert env.cw['beambeam_scale'] == 0.62
+    assert env.acw['beambeam_scale'] == 0.62
 
 
 def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
