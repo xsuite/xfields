@@ -4,7 +4,7 @@ import xfields as xf
 import xobjects as xo
 import xtrack as xt
 
-from .._filling_pattern import _resolve_filling_pattern
+from xtrack._filling_pattern import _FillingPattern
 
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
@@ -22,6 +22,7 @@ _xof = {
     'num_slices': xo.Int64,
     'dzeta': xo.Float64,
     'num_bunches': xo.Int64,
+    'num_slots': xo.Int64,
     'filled_slots': xo.Int64[:],
     'bunch_selection': xo.Int64[:],
     'bunch_spacing_zeta': xo.Float64,
@@ -66,6 +67,12 @@ class UniformBinSlicer(xt.BeamElement):
         otherwise.
     filling_scheme: np.ndarray
         Compatibility alias for ``filling_pattern``.
+    filled_slots: np.ndarray
+        Sparse list of filled physical slots. Mutually exclusive with
+        ``filling_pattern`` and ``filling_scheme``.
+    num_slots: int
+        Total number of slots. This is useful with ``filled_slots`` when the
+        pattern ends with empty slots.
     bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
@@ -99,28 +106,38 @@ class UniformBinSlicer(xt.BeamElement):
     def __init__(self, zeta_range=None, num_slices=None, dzeta=None,
                  zeta_slice_edges=None, num_bunches=None, filling_pattern=None,
                  bunch_selection=None, bunch_spacing_zeta=None,
-                 moments='all', filling_scheme=None, **kwargs):
+                 moments='all', filling_scheme=None, filled_slots=None,
+                 num_slots=None, **kwargs):
 
         if '_xobject' in kwargs:
             self.xoinitialize(_xobject=kwargs['_xobject'])
+            # Old serialized slicers predate ``num_slots``. Recover the
+            # minimum compatible value without changing their filled slots.
+            if self._num_slots == 0:
+                slots = self._context.nparray_from_context_array(
+                    self._filled_slots)
+                self._num_slots = (
+                    1 if len(slots) == 0 else int(slots[-1]) + 1)
             return
 
-        filling_pattern = _resolve_filling_pattern(
-            filling_pattern, filling_scheme)
-
-        if filling_pattern is not None:
-            filling_pattern = np.asarray(filling_pattern)
-            if filling_pattern.ndim != 1:
-                raise ValueError('`filling_pattern` must be one-dimensional.')
-            if not np.all((filling_pattern == 0) | (filling_pattern == 1)):
-                raise ValueError(
-                    '`filling_pattern` can contain only zero and one.')
+        if num_bunches is not None and any(value is not None for value in (
+                filling_pattern, filling_scheme, filled_slots)):
+            raise ValueError(
+                '`num_bunches` is mutually exclusive with filling inputs')
+        filling = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern,
+            filled_slots=filled_slots,
+            filling_scheme=filling_scheme,
+            num_slots=num_slots)
 
         # for now we require that the first slot of the filling pattern is filled
         # needs to be tested otherwise (especially computation of _z_a, _z_b in
         # in compressed profile)
-        if filling_pattern is not None:
-            assert filling_pattern[0] == 1, 'First slot must be filled'
+        if filling is not None:
+            if filling.num_filled_slots == 0:
+                raise ValueError('At least one filled slot is required')
+            if filling.filled_slots[0] != 0:
+                raise ValueError('First slot must be filled')
 
         num_edges = None
         if num_slices is not None:
@@ -131,16 +148,21 @@ class UniformBinSlicer(xt.BeamElement):
                                                         _zeta_slice_edges[0])/2
 
 
-        if filling_pattern is None and num_bunches is None:
+        if filling is None and num_bunches is None:
             filled_slots = np.zeros(1, dtype=np.int64)
-        elif filling_pattern is None:
+            normalized_num_slots = 1
+        elif filling is None:
             filled_slots = np.arange(num_bunches, dtype=np.int64)
+            normalized_num_slots = int(num_bunches)
         else:
-            filling_pattern = np.array(filling_pattern, dtype=np.int64)
-            filled_slots = filling_pattern.nonzero()[0]
+            filled_slots = filling.filled_slots
+            normalized_num_slots = filling.num_slots
 
-        if bunch_selection is None:
-            bunch_selection = np.arange(len(filled_slots), dtype=np.int64)
+        normalized_filling = filling or _FillingPattern.from_inputs(
+            filled_slots=filled_slots, num_slots=normalized_num_slots,
+            allow_none=False)
+        bunch_selection = normalized_filling.normalize_bunch_selection(
+            bunch_selection)
 
         bunch_spacing_zeta = bunch_spacing_zeta or 0
 
@@ -185,6 +207,7 @@ class UniformBinSlicer(xt.BeamElement):
             num_slices=len(_zeta_slice_centers),
             dzeta=_zeta_slice_edges[1] - _zeta_slice_edges[0],
             num_bunches=num_bunches,
+            num_slots=normalized_num_slots,
             filled_slots=filled_slots,
             bunch_selection=bunch_selection,
             bunch_spacing_zeta=bunch_spacing_zeta,
@@ -269,9 +292,22 @@ class UniformBinSlicer(xt.BeamElement):
     @property
     def filled_slots(self):
         """
-        Filled slots
+        Filled physical slots as a host-side copy.
         """
-        return self._filled_slots
+        return self._context.nparray_from_context_array(
+            self._filled_slots).copy()
+
+    @property
+    def filling_pattern(self):
+        """Slot-indexed occupancy as a host-side copy."""
+        pattern = np.zeros(self.num_slots, dtype=np.int64)
+        pattern[self.filled_slots] = 1
+        return pattern
+
+    @property
+    def num_slots(self):
+        """Total number of slots represented by the filling."""
+        return int(self._num_slots)
 
     @property
     def bunch_selection(self):

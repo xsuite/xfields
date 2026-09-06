@@ -105,7 +105,8 @@ class XfieldsEnvironmentAPI:
             self, num_particles=None, nemitt_x=None, nemitt_y=None,
             crab_strong_beam=True, use_antisymmetry=False,
             separation_bumps=None, filling_pattern_cw=None,
-            filling_pattern_acw=None, i_bunch_cw=None, i_bunch_acw=None):
+            filling_pattern_acw=None, i_bunch_cw=None, i_bunch_acw=None,
+            filled_slots_cw=None, filled_slots_acw=None):
         """Configure particles or rigid-bunch beam-beam interactions.
 
         Particles mode uses ``num_particles`` and the two emittances.
@@ -126,6 +127,10 @@ class XfieldsEnvironmentAPI:
             Particles-mode beam-beam configuration options.
         filling_pattern_cw, filling_pattern_acw : array-like, optional
             Slot-indexed filling patterns. Either provide both or neither.
+        filled_slots_cw, filled_slots_acw : array-like, optional
+            Sparse filled physical slots. For each beam this is mutually
+            exclusive with its filling pattern. Either provide both beams or
+            neither. Inputs are copied during configuration.
         i_bunch_cw, i_bunch_acw : int, optional
             Selected bunch indices required with filling patterns in particles
             mode. They do not apply in rigid-bunch mode.
@@ -137,12 +142,14 @@ class XfieldsEnvironmentAPI:
         """
         config = self.env.extra_config.get('xfields_beambeam', {})
         mode = config.get('mode', 'particles')
-        has_filling_cw = filling_pattern_cw is not None
-        has_filling_acw = filling_pattern_acw is not None
+        has_filling_cw = (
+            filling_pattern_cw is not None or filled_slots_cw is not None)
+        has_filling_acw = (
+            filling_pattern_acw is not None or filled_slots_acw is not None)
         if has_filling_cw != has_filling_acw:
             raise ValueError(
-                '`filling_pattern_cw` and `filling_pattern_acw` must be '
-                'provided together.')
+                'A filling representation must be provided for both beams or '
+                'neither beam.')
 
         if mode != 'rigid_bunch':
             if num_particles is None or nemitt_x is None or nemitt_y is None:
@@ -172,7 +179,9 @@ class XfieldsEnvironmentAPI:
                 filling_pattern_cw=filling_pattern_cw,
                 filling_pattern_acw=filling_pattern_acw,
                 i_bunch_cw=i_bunch_cw,
-                i_bunch_acw=i_bunch_acw)
+                i_bunch_acw=i_bunch_acw,
+                filled_slots_cw=filled_slots_cw,
+                filled_slots_acw=filled_slots_acw)
 
         if use_antisymmetry or separation_bumps is not None:
             raise ValueError(
@@ -204,10 +213,14 @@ class XfieldsEnvironmentAPI:
             nemitt_x=nemitt_x,
             nemitt_y=nemitt_y,
             filling_pattern_cw=filling_pattern_cw,
-            filling_pattern_acw=filling_pattern_acw)
+            filling_pattern_acw=filling_pattern_acw,
+            filled_slots_cw=filled_slots_cw,
+            filled_slots_acw=filled_slots_acw)
 
-    def apply_filling_pattern(self, filling_pattern_cw, filling_pattern_acw,
-                              i_bunch_cw, i_bunch_acw):
+    def apply_filling_pattern(
+            self, filling_pattern_cw=None, filling_pattern_acw=None,
+            i_bunch_cw=None, i_bunch_acw=None, *,
+            filled_slots_cw=None, filled_slots_acw=None):
         """Select one bunch from particles-mode beam-beam filling patterns.
 
         This helper belongs to the particle-based, potentially
@@ -223,4 +236,6 @@ class XfieldsEnvironmentAPI:
             filling_pattern_cw=filling_pattern_cw,
             filling_pattern_acw=filling_pattern_acw,
             i_bunch_cw=i_bunch_cw,
-            i_bunch_acw=i_bunch_acw)
+            i_bunch_acw=i_bunch_acw,
+            filled_slots_cw=filled_slots_cw,
+            filled_slots_acw=filled_slots_acw)

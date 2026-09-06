@@ -135,6 +135,22 @@ Configuration loads the populations, geometry and design covariances, then
 returns a `BeamBeamRigidBunchStudy`. Filling patterns can be supplied during
 configuration or changed later on the returned study.
 
+Dense and sparse filling inputs share one contract across Xtrack, Xpart,
+Xfields and Xwakes. A caller provides exactly one of `filling_pattern` or
+`filled_slots`; `filling_scheme` remains a compatibility alias for the dense
+form where it was previously exposed. APIs that know the machine layout use
+`num_slots` (or their installed harmonic configuration) to retain trailing
+empty slots. Bunch
+intensities remain separate from occupancy.
+
+Normalization is implemented by the internal, immutable
+`xtrack._filling_pattern._FillingPattern` value object. It validates dense
+binary patterns and sparse non-negative, unique slot indices, copies caller
+inputs, and creates fresh arrays when either representation is exposed. Device
+arrays needed by tracking remain private. Filling changes are made through the
+owning object's configuration/apply method, where all inputs are normalized
+before state is replaced, rather than by mutating a public slot array.
+
 `BeamBeamRigidBunchStudy` remains useful, but should contain only the genuinely
 stateful rigid-bunch operations:
 

@@ -1,9 +1,6 @@
-from typing import Tuple
-import numpy as np
-
 import xobjects as xo
+from xtrack._filling_pattern import _FillingPattern
 from ..element_with_slicer import ElementWithSlicer
-from ..._filling_pattern import _resolve_filling_pattern
 from .convolution import _ConvData
 
 
@@ -28,6 +25,11 @@ class WakeTracker(ElementWithSlicer):
         otherwise.
     filling_scheme: np.ndarray
         Compatibility alias for ``filling_pattern``.
+    filled_slots: np.ndarray
+        Sparse list of filled physical slots. Mutually exclusive with the
+        dense filling inputs.
+    num_slots: int
+        Total number of slots associated with ``filled_slots``.
     fake_coupled_bunch_phase_x : float
         Phase [rad] between the horizontal positon and momentum of consecutive
         bunches used when applying the wakefields of 'fake' bunches participating
@@ -63,10 +65,17 @@ class WakeTracker(ElementWithSlicer):
                  log_moments=None,
                  _flatten=False,
                  filling_scheme=None,
+                 filled_slots=None,
+                 num_slots=None,
                  **kwargs):
 
-        filling_pattern = _resolve_filling_pattern(
-            filling_pattern, filling_scheme)
+        filling = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern,
+            filled_slots=filled_slots,
+            filling_scheme=filling_scheme,
+            num_slots=num_slots)
+        filling_pattern = (
+            None if filling is None else filling.filling_pattern)
 
         self.xoinitialize(**kwargs)
 
@@ -169,12 +178,15 @@ class WakeTracker(ElementWithSlicer):
 
     def _compute_fake_bunch_moments(self):
         conjugate_names = {'x':'px','y':'py'}
-        n_slots = int(self._context.nplike_lib.max(self.slicer.filled_slots))+1
+        slicer_filled_slots = self.slicer._filled_slots
+        n_slots = int(self._context.nplike_lib.max(slicer_filled_slots)) + 1
         for moment_name in self.fake_coupled_bunch_phases.keys():
             z_dummy,mom = self.moments_data.get_source_moment_profile(moment_name,0,self.bunch_selection[0])
             z_dummy,mom_conj = self.moments_data.get_source_moment_profile(conjugate_names[moment_name],0,self.bunch_selection[0])
             complex_normalised_moments = mom + (1j*self.betas[moment_name])*mom_conj
-            slots = self._context.nplike_lib.transpose(self._context.nplike_lib.tile(self.slicer.filled_slots,(len(complex_normalised_moments),1)))
+            slots = self._context.nplike_lib.transpose(
+                self._context.nplike_lib.tile(
+                    slicer_filled_slots, (len(complex_normalised_moments), 1)))
             complex_normalised_moments = self._context.nplike_lib.tile(complex_normalised_moments,(n_slots,1))
             all_beam_moments = self._context.nplike_lib.real(complex_normalised_moments*self._context.nplike_lib.exp(1j*self.fake_coupled_bunch_phases[moment_name]*(self.bunch_selection[0]-slots)))
             self.moments_data.set_all_beam_moments(moment_name,0,all_beam_moments)
@@ -223,11 +235,9 @@ class WakeTracker(ElementWithSlicer):
                 'Bunch spacing zeta is not consistent')
         else:
             xo.assert_allclose(self.bunch_spacing_zeta, other.bunch_spacing_zeta, atol=1e-12, rtol=0)
-        if self.filling_scheme is None:
-            assert other.filling_scheme is None, (
-                'Filling pattern is not consistent')
-        else:
-            xo.assert_allclose(self.filling_scheme, other.filling_scheme, atol=0, rtol=0)
+        xo.assert_allclose(
+            self.slicer.filled_slots, other.slicer.filled_slots,
+            atol=0, rtol=0)
         xo.assert_allclose(self.bunch_selection, other.bunch_selection, atol=0, rtol=0)
         xo.assert_allclose(self.num_turns, other.num_turns, atol=0, rtol=0)
         xo.assert_allclose(self.circumference, other.circumference, atol=0, rtol=0)
@@ -237,8 +247,9 @@ class WakeTracker(ElementWithSlicer):
                  zeta_range=self.zeta_range,
                  num_slices=self.num_slices,
                  bunch_spacing_zeta=self.bunch_spacing_zeta,
-                 filling_scheme=self.filling_scheme,
-                 bunch_selection=(self.bunch_selection if self.filling_scheme else None),
+                 filled_slots=self.slicer.filled_slots,
+                 num_slots=self.slicer.num_slots,
+                 bunch_selection=self.bunch_selection,
                  num_turns=self.num_turns,
                  circumference=self.circumference
         )

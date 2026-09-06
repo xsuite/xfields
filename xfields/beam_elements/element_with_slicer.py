@@ -2,9 +2,8 @@ import numpy as np
 
 import xfields as xf
 import xtrack as xt
+from xtrack._filling_pattern import _FillingPattern
 from xfields.slicers.compressed_profile import CompressedProfile
-
-from .._filling_pattern import _resolve_filling_pattern
 
 
 class ElementWithSlicer(xt.BeamElement):
@@ -28,6 +27,11 @@ class ElementWithSlicer(xt.BeamElement):
         otherwise.
     filling_scheme: np.ndarray
         Compatibility alias for ``filling_pattern``.
+    filled_slots: np.ndarray
+        Sparse list of filled physical slots. Mutually exclusive with the
+        dense filling inputs.
+    num_slots: int
+        Total number of slots associated with ``filled_slots``.
     bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
@@ -53,10 +57,17 @@ class ElementWithSlicer(xt.BeamElement):
                  circumference=None,
                  with_compressed_profile=False,
                  filling_scheme=None,
+                 filled_slots=None,
+                 num_slots=None,
                  **kwargs):
 
-        filling_pattern = _resolve_filling_pattern(
-            filling_pattern, filling_scheme)
+        filling = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern,
+            filled_slots=filled_slots,
+            filling_scheme=filling_scheme,
+            num_slots=num_slots)
+        filling_pattern = (
+            None if filling is None else filling.filling_pattern)
 
         self.xoinitialize(**kwargs)
 

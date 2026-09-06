@@ -45,8 +45,7 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
 if not ALL_BUNCHES:
     s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
     rigid_bunch_study.apply_filling_pattern(
-        filling_pattern_cw=mb.filling_pattern_from_slots(s1),
-        filling_pattern_acw=mb.filling_pattern_from_slots(s2))
+        filled_slots_cw=s1, filled_slots_acw=s2)
 
 print('  building second-order maps between the beam-beam elements...')
 study_red = rigid_bunch_study.second_order_maps(context=par['context'])

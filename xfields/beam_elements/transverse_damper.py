@@ -3,9 +3,8 @@ import numpy as np
 import xpart as xp
 import xfields as xf
 import xtrack as xt
+from xtrack._filling_pattern import _FillingPattern
 from xfields.slicers.compressed_profile import CompressedProfile
-
-from .._filling_pattern import _resolve_filling_pattern
 
 
 class TransverseDamper(xt.BeamElement):
@@ -29,6 +28,11 @@ class TransverseDamper(xt.BeamElement):
         needed for multi-bunch tracking.
     filling_scheme : np.ndarray, optional
         Compatibility alias for ``filling_pattern``.
+    filled_slots : np.ndarray, optional
+        Sparse list of filled physical slots. Mutually exclusive with the
+        dense filling inputs.
+    num_slots : int, optional
+        Total number of slots associated with ``filled_slots``.
     bunch_selection : np.ndarray, optional
         an array indicating which slot each bunch occupies in the filling
         scheme. Only needed for multi-bunch tracking
@@ -42,9 +46,15 @@ class TransverseDamper(xt.BeamElement):
     def __init__(self, gain_x, gain_y, zeta_range, num_slices,
                  circumference=None, bunch_spacing_zeta=None,
                  filling_pattern=None, bunch_selection=None,
-                 filling_scheme=None, **kwargs):
-        filling_pattern = _resolve_filling_pattern(
-            filling_pattern, filling_scheme)
+                 filling_scheme=None, filled_slots=None, num_slots=None,
+                 **kwargs):
+        filling = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern,
+            filled_slots=filled_slots,
+            filling_scheme=filling_scheme,
+            num_slots=num_slots)
+        filling_pattern = (
+            None if filling is None else filling.filling_pattern)
         self.gains = {
             'px': gain_x,
             'py': gain_y,
@@ -83,10 +93,7 @@ class TransverseDamper(xt.BeamElement):
             )
 
     def _reconfigure_for_parallel(self, n_procs, my_rank):
-        filled_slots = self.slicer.filled_slots
-        scheme = np.zeros(np.max(filled_slots) + 1,
-                        dtype=np.int64)
-        scheme[filled_slots] = 1
+        scheme = self.slicer.filling_pattern
 
         bunch_selection_rank = xp.split_filling_pattern(
             filling_pattern=scheme, n_chunk=int(n_procs))

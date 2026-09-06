@@ -1,7 +1,6 @@
 import numpy as np
 
 from .element_with_slicer import ElementWithSlicer
-from .._filling_pattern import _resolve_filling_pattern
 import json
 import os
 import xfields as xf
@@ -64,6 +63,11 @@ class CollectiveMonitor(ElementWithSlicer):
         otherwise.
     filling_scheme: np.ndarray
         Compatibility alias for ``filling_pattern``.
+    filled_slots: np.ndarray
+        Sparse list of filled physical slots. Mutually exclusive with the
+        dense filling inputs.
+    num_slots: int
+        Total number of slots associated with ``filled_slots``.
     bunch_selection: np.ndarray
         List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
@@ -119,10 +123,9 @@ class CollectiveMonitor(ElementWithSlicer):
                  backend='hdf5',
                  _flatten=False,
                  filling_scheme=None,
+                 filled_slots=None,
+                 num_slots=None,
                  **kwargs):
-
-        filling_pattern = _resolve_filling_pattern(
-            filling_pattern, filling_scheme)
 
         slicer_moments = []
         if stats_to_store is not None:
@@ -194,16 +197,16 @@ class CollectiveMonitor(ElementWithSlicer):
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
             filling_pattern=filling_pattern,
+            filled_slots=filled_slots,
+            filling_scheme=filling_scheme,
+            num_slots=num_slots,
             bunch_selection=bunch_selection,
             with_compressed_profile=False,
            **kwargs
         )
 
     def _reconfigure_for_parallel(self, n_procs, my_rank):
-        filled_slots = self.slicer.filled_slots
-        scheme = np.zeros(np.max(filled_slots) + 1,
-                          dtype=np.int64)
-        scheme[filled_slots] = 1
+        scheme = self.slicer.filling_pattern
 
         bunch_selection_rank = xp.split_filling_pattern(
             filling_pattern=scheme, n_chunk=int(n_procs))

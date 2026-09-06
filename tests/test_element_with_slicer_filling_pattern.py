@@ -26,6 +26,34 @@ def test_filling_scheme_compatibility_alias():
             filling_pattern=[1, 0, 2], bunch_spacing_zeta=5)
 
 
+def test_filled_slots_input_and_protected_public_state():
+    source_slots = np.array([2, 0], dtype=np.int64)
+    slicer = xf.UniformBinSlicer(
+        zeta_range=(-1, 1), num_slices=2,
+        filled_slots=source_slots, num_slots=4, bunch_spacing_zeta=5)
+    source_slots[:] = 1
+
+    exposed_slots = slicer.filled_slots
+    exposed_pattern = slicer.filling_pattern
+    exposed_slots[:] = 1
+    exposed_pattern[:] = 0
+
+    assert np.array_equal(slicer.filled_slots, [0, 2])
+    assert np.array_equal(slicer.filling_pattern, [1, 0, 1, 0])
+    assert slicer.num_slots == 4
+    assert np.array_equal(slicer.zeta_centers, [[-0.5, 0.5], [-10.5, -9.5]])
+
+    restored = xf.UniformBinSlicer._from_npbuffer(slicer._to_npbuffer())
+    assert restored.num_slots == 4
+    assert np.array_equal(restored.filling_pattern, [1, 0, 1, 0])
+
+    with pytest.raises(ValueError, match='Only one'):
+        xf.UniformBinSlicer(
+            zeta_range=(-1, 1), num_slices=2,
+            filling_pattern=[1, 0, 1], filled_slots=[0, 2],
+            bunch_spacing_zeta=5)
+
+
 @pytest.mark.parametrize('buffer_round_trip', [True, False])
 @pytest.mark.parametrize('num_turns', [1, 2, 3])
 def test_element_with_slicer_filling_pattern(buffer_round_trip, num_turns):
@@ -96,6 +124,7 @@ def test_element_with_slicer_filling_pattern(buffer_round_trip, num_turns):
     assert (slicer1.bunch_selection == np.array([1, 2])).all()
     assert (slicer2.bunch_selection == np.array([0])).all()
     assert slicer.num_bunches == 3
+    assert slicer.num_slots == 4
     assert slicer1.num_bunches == 2
     assert slicer2.num_bunches == 1
 

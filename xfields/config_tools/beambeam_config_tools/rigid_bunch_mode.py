@@ -69,6 +69,7 @@ rigid-bunch operation is validated. A :class:`RuntimeWarning` is emitted when
 from dataclasses import dataclass
 
 import numpy as np
+from xtrack._filling_pattern import _FillingPattern
 
 from xtrack.general import _print
 
@@ -226,20 +227,9 @@ def _install_elements(
     _bind_beambeam_scale(line, element_names)
 
 
-def _normalize_filling(filling_pattern, num_particles, n_slots, beam_name):
+def _normalize_filling(filling, num_particles, n_slots, beam_name):
     """Normalize one beam's occupancy and return compact filled-bunch data."""
-    pattern = np.asarray(filling_pattern)
-    if pattern.ndim != 1 or len(pattern) != n_slots:
-        raise ValueError(
-            f'`filling_pattern_{beam_name}` must be a one-dimensional array '
-            f'of length n_slots={n_slots}.')
-    if not np.all(np.isfinite(pattern)):
-        raise ValueError(f'`filling_pattern_{beam_name}` must be finite.')
-    if not np.all((pattern == 0) | (pattern == 1)):
-        raise ValueError(
-            f'`filling_pattern_{beam_name}` can contain only zero and one.')
-    pattern = pattern.astype(np.int64)
-    filled_slots = np.nonzero(pattern)[0].astype(np.int64)
+    filled_slots = filling.filled_slots
     if len(filled_slots) == 0:
         raise ValueError(
             f'`filling_pattern_{beam_name}` must contain at least one filled '
@@ -258,7 +248,7 @@ def _normalize_filling(filling_pattern, num_particles, n_slots, beam_name):
         raise ValueError(
             f'`num_particles["{beam_name}"]` must be finite and '
             'strictly positive at every filled slot.')
-    return pattern, filled_slots, intensity
+    return intensity
 
 
 def _num_particles_by_orientation(num_particles):
@@ -340,10 +330,8 @@ class BeamBeamRigidBunchStudy:
         self.bb_acw = {}             # base_name -> element (in acw line)
         # Occupancy stays slot-indexed; populations are compact arrays aligned
         # with the corresponding physical filled-slot arrays.
-        self.filling_pattern_cw = None
-        self.filling_pattern_acw = None
-        self.filled_slots_cw = None
-        self.filled_slots_acw = None
+        self._filling_cw = None
+        self._filling_acw = None
         self.num_particles_cw = None
         self.num_particles_acw = None
 
@@ -360,6 +348,30 @@ class BeamBeamRigidBunchStudy:
         slots = self.filled_slots_acw if mirror else self.filled_slots_cw
         return -np.asarray(slots) * self.bunch_spacing_zeta
 
+    @property
+    def filling_pattern_cw(self):
+        """Clockwise slot-indexed occupancy as a copy, or ``None``."""
+        return (None if self._filling_cw is None
+                else self._filling_cw.filling_pattern)
+
+    @property
+    def filling_pattern_acw(self):
+        """Anticlockwise slot-indexed occupancy as a copy, or ``None``."""
+        return (None if self._filling_acw is None
+                else self._filling_acw.filling_pattern)
+
+    @property
+    def filled_slots_cw(self):
+        """Clockwise filled physical slots as a copy, or ``None``."""
+        return (None if self._filling_cw is None
+                else self._filling_cw.filled_slots)
+
+    @property
+    def filled_slots_acw(self):
+        """Anticlockwise filled physical slots as a copy, or ``None``."""
+        return (None if self._filling_acw is None
+                else self._filling_acw.filled_slots)
+
     def __repr__(self):
         n_cw = 0 if self.filled_slots_cw is None else len(self.filled_slots_cw)
         n_acw = (0 if self.filled_slots_acw is None
@@ -368,11 +380,17 @@ class BeamBeamRigidBunchStudy:
                 f'n_slots={self.n_slots}, CW={n_cw} ACW={n_acw} bunches)')
 
     def apply_filling_pattern(
-            self, filling_pattern_cw, filling_pattern_acw):
+            self, filling_pattern_cw=None, filling_pattern_acw=None, *,
+            filled_slots_cw=None, filled_slots_acw=None):
         """Apply the two occupancy patterns to the configured populations.
 
-        Each filling pattern is a slot-indexed occupancy array of length
-        ``n_slots``. The configured ``num_particles`` value for each beam is
+        Each beam can be specified with either a slot-indexed occupancy array
+        of length ``n_slots`` or a sparse ``filled_slots_*`` list. Exactly one
+        representation is required for each beam. Inputs are validated and
+        copied before either beam is updated; the public occupancy and slot
+        properties also return copies.
+
+        The configured ``num_particles`` value for each beam is
         either a scalar, applied uniformly to all filled slots, or a
         slot-indexed array of the same length. Derived physical slot identifiers
         are exposed as ``filled_slots_cw`` and ``filled_slots_acw``.
@@ -384,16 +402,29 @@ class BeamBeamRigidBunchStudy:
             raise RuntimeError(
                 '`num_particles` was not provided when the rigid-bunch study '
                 'was created.')
-        normalized_cw = _normalize_filling(
-            filling_pattern_cw, self._num_particles['cw'],
-            self.n_slots, 'cw')
-        normalized_acw = _normalize_filling(
-            filling_pattern_acw, self._num_particles['acw'],
-            self.n_slots, 'acw')
-        (self.filling_pattern_cw, self.filled_slots_cw,
-         self.num_particles_cw) = normalized_cw
-        (self.filling_pattern_acw, self.filled_slots_acw,
-         self.num_particles_acw) = normalized_acw
+        filling_cw = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern_cw,
+            filled_slots=filled_slots_cw,
+            num_slots=self.n_slots,
+            allow_none=False)
+        filling_acw = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern_acw,
+            filled_slots=filled_slots_acw,
+            num_slots=self.n_slots,
+            allow_none=False)
+        if filling_cw.num_filled_slots == 0:
+            raise ValueError('Clockwise filling must contain a filled slot.')
+        if filling_acw.num_filled_slots == 0:
+            raise ValueError('Anticlockwise filling must contain a filled slot.')
+        num_particles_cw = _normalize_filling(
+            filling_cw, self._num_particles['cw'], self.n_slots, 'cw')
+        num_particles_acw = _normalize_filling(
+            filling_acw, self._num_particles['acw'], self.n_slots, 'acw')
+
+        self._filling_cw = filling_cw
+        self._filling_acw = filling_acw
+        self.num_particles_cw = num_particles_cw
+        self.num_particles_acw = num_particles_acw
 
         # Skipped before both elements and geometry exist. Once configured,
         # filling changes reset the slot-indexed opposing state in place.
@@ -571,12 +602,14 @@ class BeamBeamRigidBunchStudy:
         new.geom = self.geom
         new.meta = self.meta
         new.ip_offsets = self.ip_offsets
-        new.filling_pattern_cw = self.filling_pattern_cw
-        new.filling_pattern_acw = self.filling_pattern_acw
-        new.filled_slots_cw = self.filled_slots_cw
-        new.filled_slots_acw = self.filled_slots_acw
-        new.num_particles_cw = self.num_particles_cw
-        new.num_particles_acw = self.num_particles_acw
+        new._filling_cw = self._filling_cw
+        new._filling_acw = self._filling_acw
+        new.num_particles_cw = (
+            None if self.num_particles_cw is None
+            else self.num_particles_cw.copy())
+        new.num_particles_acw = (
+            None if self.num_particles_acw is None
+            else self.num_particles_acw.copy())
         new.bb_cw = {b: red_cw[new.bb_name(b, False)] for b in new.enc_names}
         new.bb_acw = {b: red_acw[new.bb_name(b, True)] for b in new.enc_names}
         # the reduced lines have their own env: re-create the beambeam_scale knob
@@ -1087,7 +1120,8 @@ def install_rigid_bunch_beambeam(
 
 def configure_rigid_bunch_beambeam(
         env, num_particles, nemitt_x, nemitt_y,
-        filling_pattern_cw=None, filling_pattern_acw=None):
+        filling_pattern_cw=None, filling_pattern_acw=None,
+        filled_slots_cw=None, filled_slots_acw=None):
     """Populate installed rigid-bunch elements and return their study.
 
     The elements retain all transverse covariance components computed from the
@@ -1095,10 +1129,14 @@ def configure_rigid_bunch_beambeam(
     the rigid-bunch kick. A :class:`RuntimeWarning` is emitted when its
     normalized correlation exceeds ``1e-2``.
     """
-    if (filling_pattern_cw is None) != (filling_pattern_acw is None):
+    has_filling_cw = (
+        filling_pattern_cw is not None or filled_slots_cw is not None)
+    has_filling_acw = (
+        filling_pattern_acw is not None or filled_slots_acw is not None)
+    if has_filling_cw != has_filling_acw:
         raise ValueError(
-            '`filling_pattern_cw` and `filling_pattern_acw` must be provided '
-            'together.')
+            'A filling representation must be provided for both beams or '
+            'neither beam.')
     installation = _discover_installation(env)
     config = installation.config
     cw = env[installation.line_names['cw']]
@@ -1129,8 +1167,10 @@ def configure_rigid_bunch_beambeam(
         study._compute_geometry()
     finally:
         env['beambeam_scale'] = previous_beambeam_scale
-    if filling_pattern_cw is not None:
+    if has_filling_cw:
         study.apply_filling_pattern(
             filling_pattern_cw=filling_pattern_cw,
-            filling_pattern_acw=filling_pattern_acw)
+            filling_pattern_acw=filling_pattern_acw,
+            filled_slots_cw=filled_slots_cw,
+            filled_slots_acw=filled_slots_acw)
     return study

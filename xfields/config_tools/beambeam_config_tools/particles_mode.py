@@ -14,6 +14,7 @@ from dataclasses import dataclass
 
 import numpy as np
 import xobjects as xo
+from xtrack._filling_pattern import _FillingPattern
 
 import xfields as xf
 
@@ -95,17 +96,33 @@ def configure_beambeam_interactions(
         env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
         use_antisymmetry=False, separation_bumps=None,
         filling_pattern_cw=None, filling_pattern_acw=None,
-        i_bunch_cw=None, i_bunch_acw=None):
+        i_bunch_cw=None, i_bunch_acw=None,
+        filled_slots_cw=None, filled_slots_acw=None):
     """Reanalyse the live lines and configure their tagged BB elements."""
-    filling_arguments = (
-        filling_pattern_cw, filling_pattern_acw, i_bunch_cw, i_bunch_acw)
-    num_filling_arguments = sum(value is not None for value in filling_arguments)
+    has_filling_cw = (
+        filling_pattern_cw is not None or filled_slots_cw is not None)
+    has_filling_acw = (
+        filling_pattern_acw is not None or filled_slots_acw is not None)
+    num_filling_arguments = sum((
+        has_filling_cw, has_filling_acw,
+        i_bunch_cw is not None, i_bunch_acw is not None))
     if num_filling_arguments not in (0, 4):
         raise ValueError(
             'Particles-mode filling requires both filling patterns and both '
             'selected bunch indices.')
 
     installation = _discover_installation(env)
+    if has_filling_cw:
+        filling_pattern_cw = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern_cw,
+            filled_slots=filled_slots_cw,
+            num_slots=installation.n_slots,
+            allow_none=False).filling_pattern
+        filling_pattern_acw = _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern_acw,
+            filled_slots=filled_slots_acw,
+            num_slots=installation.n_slots,
+            allow_none=False).filling_pattern
 
     for orientation in ('clockwise', 'anticlockwise'):
         line_name = installation.line_names[orientation]
@@ -643,13 +660,26 @@ def _to_stored_acw_sigma(sigma):
     return {name: signs[name] * value for name, value in sigma.items()}
 
 
-def apply_filling_pattern(env, filling_pattern_cw, filling_pattern_acw,
-                          i_bunch_cw, i_bunch_acw):
+def apply_filling_pattern(
+        env, filling_pattern_cw=None, filling_pattern_acw=None,
+        i_bunch_cw=None, i_bunch_acw=None, *,
+        filled_slots_cw=None, filled_slots_acw=None):
     """Enable tagged encounters having a filled opposing partner slot."""
+    if i_bunch_cw is None or i_bunch_acw is None:
+        raise ValueError(
+            'Both selected bunch indices are required with beam fillings.')
     installation = _discover_installation(env)
     filling_patterns = {
-        'clockwise': np.asarray(filling_pattern_cw, dtype=int),
-        'anticlockwise': np.asarray(filling_pattern_acw, dtype=int),
+        'clockwise': _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern_cw,
+            filled_slots=filled_slots_cw,
+            num_slots=installation.n_slots,
+            allow_none=False).filling_pattern,
+        'anticlockwise': _FillingPattern.from_inputs(
+            filling_pattern=filling_pattern_acw,
+            filled_slots=filled_slots_acw,
+            num_slots=installation.n_slots,
+            allow_none=False).filling_pattern,
     }
     selected_bunches = {
         'clockwise': i_bunch_cw,

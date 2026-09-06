@@ -58,8 +58,7 @@ if not ALL_BUNCHES:
     # restrict to a bounded window with all-IP pairings (offsets from geometry)
     s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
     rigid_bunch_study.apply_filling_pattern(
-        filling_pattern_cw=mb.filling_pattern_from_slots(s1),
-        filling_pattern_acw=mb.filling_pattern_from_slots(s2))
+        filled_slots_cw=s1, filled_slots_acw=s2)
 
 # Fast sector-map copy: the arcs between the encounters become second-order maps
 # (the beam-beam elements stay exact). Solving the reduced study is much faster.

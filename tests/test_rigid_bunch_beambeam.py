@@ -143,8 +143,8 @@ def _install_toy_rigid_bunch_beambeam():
         num_particles={'cw': intensity_cw, 'acw': intensity_acw},
         nemitt_x=NEMITT_X,
         nemitt_y=NEMITT_Y,
-        filling_pattern_cw=filling_pattern_cw,
-        filling_pattern_acw=filling_pattern_acw)
+        filled_slots_cw=np.flatnonzero(filling_pattern_cw),
+        filled_slots_acw=np.flatnonzero(filling_pattern_acw))
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')
     return (env, study, filling_pattern_cw, filling_pattern_acw,
             intensity_cw, intensity_acw)
@@ -561,3 +561,22 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
         study.apply_filling_pattern(
             filling_pattern_cw=[1, 0, 2, 1],
             filling_pattern_acw=filling_pattern)
+
+    source_slots = np.array([3, 0, 2], dtype=np.int64)
+    study.apply_filling_pattern(
+        filled_slots_cw=source_slots,
+        filled_slots_acw=[0, 2, 3])
+    source_slots[:] = 1
+    exposed_slots = study.filled_slots_cw
+    exposed_pattern = study.filling_pattern_cw
+    exposed_slots[:] = 1
+    exposed_pattern[:] = 0
+    xo.assert_allclose(study.filled_slots_cw, [0, 2, 3], rtol=0, atol=0)
+    xo.assert_allclose(
+        study.filling_pattern_cw, filling_pattern, rtol=0, atol=0)
+
+    with pytest.raises(ValueError, match='Only one'):
+        study.apply_filling_pattern(
+            filling_pattern_cw=filling_pattern,
+            filled_slots_cw=[0, 2, 3],
+            filled_slots_acw=[0, 2, 3])

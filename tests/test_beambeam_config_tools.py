@@ -443,8 +443,8 @@ def test_particles_element_state_drives_filling_pattern():
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11, nemitt_x=2e-6, nemitt_y=2.5e-6,
         crab_strong_beam=False,
-        filling_pattern_cw=filling_cw,
-        filling_pattern_acw=filling_acw,
+        filled_slots_cw=np.nonzero(filling_cw)[0],
+        filled_slots_acw=np.nonzero(filling_acw)[0],
         i_bunch_cw=0, i_bunch_acw=0)
 
     assert env.cw['bb_ho.c1b1_00'].scale_strength == 1
