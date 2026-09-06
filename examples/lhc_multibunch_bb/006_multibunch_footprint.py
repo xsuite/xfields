@@ -12,8 +12,8 @@ Workflow (multi-threaded OpenMP kernels by default, ``LHC_OMP=0`` for
 serial):
 
 1. Solve the multi-bunch problem on the sector-map machine (as in
-   ``002``/``004``): 2 iterations with the orbit-only ``fast_orbit`` twiss,
-   then 2 more with ``dynamic_beta=True`` (per-bunch effective sizes
+   ``002``/``004``): up to 4 iterations with the orbit-only ``fast_orbit``
+   twiss, then up to 4 more with ``dynamic_beta=True`` (per-bunch effective sizes
    recomputed from the live betas each iteration; the element state carries
    over between the two calls, so this continues the same iteration).
 2. Transfer the converged solution back to the FULL THICK lattice of beam 1:
@@ -95,15 +95,17 @@ slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
 # ----------------------------------------------------------------------------
-# 1) Self-consistent solve on the fast sector-map model: 4 iterations
-#    orbit-only, 4 with dynamic beta
+# 1) Self-consistent solve on the fast sector-map model: up to 4 iterations
+#    orbit-only, then up to 4 with dynamic beta
 # ----------------------------------------------------------------------------
-print('Self-consistent solve (4 iterations fast_orbit):')
+print('Self-consistent solve (up to 4 iterations fast_orbit):')
 t0 = time.time()
-study_red.solve(max_iterations=4)
-print('Self-consistent solve (4 more iterations with dynamic beta):')
+orbit_solution = study_red.solve(max_iterations=4)
+mb.print_solve_status(orbit_solution)
+print('Self-consistent solve (up to 4 more iterations with dynamic beta):')
 solution = study_red.solve(
     max_iterations=4, dynamic_beta=True)
+mb.print_solve_status(solution)
 mbtw_b1, mbtw_b2 = solution.b1, solution.b2
 print(f'  total solve time: {time.time() - t0:.1f} s')
 

@@ -118,7 +118,8 @@ def _run_xsuite_scenario(scenario):
 
     solution = study_red.solve(
         max_iterations=par['n_iter'], tol_sigma=0.0,
-        twiss_mode='fast_orbit', show_progress=False)
+        twiss_mode='fast_orbit', show_progress=False,
+        require_convergence=False)
     mbtw_b1, mbtw_b2 = solution.b1, solution.b2
 
     def extract(mbtw, slots, bare_qx, bare_qy, mirror):

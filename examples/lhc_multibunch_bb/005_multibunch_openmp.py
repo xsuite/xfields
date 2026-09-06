@@ -54,7 +54,10 @@ slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 
 print('Populating the beam-beam elements (one solve iteration):')
-study_red.solve(max_iterations=1, tol_sigma=0.0)
+population_result = study_red.solve(
+    max_iterations=1, tol_sigma=0.0,
+    require_convergence=False)
+mb.print_solve_status(population_result)
 
 # ----------------------------------------------------------------------------
 # Timing: batched rigid-bunch Twiss, serial vs multi-threaded kernels

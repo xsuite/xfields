@@ -71,9 +71,10 @@ print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 print('Self-consistent solve (head-on + long-range):')
 t0 = time.time()
 solution = study_red.solve(max_iterations=N_ITER)
+mb.print_solve_status(solution)
 mbtw_b1, mbtw_b2 = solution.b1, solution.b2
-print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches, {N_ITER} iters): '
-      f'{time.time() - t0:.1f} s')
+print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches, '
+      f'{solution.num_iterations} iters): {time.time() - t0:.1f} s')
 
 if COMPUTE_OPTICS_PARAMS:
     print('Final mode="fast" twiss (per-bunch optics + global quantities):')

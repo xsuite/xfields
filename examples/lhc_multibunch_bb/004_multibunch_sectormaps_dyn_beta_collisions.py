@@ -73,7 +73,9 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
     # forces it anyway; the static solve would otherwise default to fast_orbit).
     results[label] = study_red.solve(
         max_iterations=N_ITER, tol_sigma=0.0,
-        twiss_mode='fast', dynamic_beta=dynamic_beta)
+        twiss_mode='fast', dynamic_beta=dynamic_beta,
+        require_convergence=False)
+    mb.print_solve_status(results[label])
     print(f'  solve time ({N_ITER} iters): {time.time() - t0:.1f} s')
 
 # ----------------------------------------------------------------------------

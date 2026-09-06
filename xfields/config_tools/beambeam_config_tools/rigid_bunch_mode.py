@@ -745,15 +745,18 @@ class BeamBeamRigidBunchStudy:
 
     def solve(self, max_iterations=5, tol_sigma=1e-4, dynamic_beta=False,
               method='4d', chrom=False, twiss_mode=None, show_progress=True,
-              continue_on_closed_orbit_error=False):
+              continue_on_closed_orbit_error=False,
+              require_convergence=True):
         """Find the per-bunch self-consistent closed orbit: iterate the
         rigid-bunch Twiss on both beams, feeding each beam's per-bunch closed
         orbit (plus the survey separation) into the other beam's elements, until
         the closed orbit at every beam-beam element stops changing.
 
-        The elements are left holding the converged opposing-beam state, so a
-        subsequent :meth:`twiss` (or plain ``line.twiss()`` for
-        one bunch) reproduces the solution without re-iterating.
+        The elements are left holding the final opposing-beam state. After a
+        successful solve, a subsequent :meth:`twiss` (or plain ``line.twiss()``
+        for one bunch) reproduces the solution without re-iterating. If the
+        solve does not converge, the last iterate remains loaded even when the
+        default ``RuntimeError`` is raised.
 
         Parameters
         ----------
@@ -790,12 +793,27 @@ class BeamBeamRigidBunchStudy:
             Use it on lattices where the search cannot reach ``co_tol`` from a
             cold start but does once the opposing beam has settled. Default
             False (every iteration strict).
+        require_convergence : bool
+            If True (default), raise :class:`RuntimeError` when the maximum
+            number of iterations is reached without satisfying ``tol_sigma``.
+            If False, return the last iterate with ``converged=False`` and its
+            diagnostics attached. This is intended for deliberate
+            fixed-iteration studies; callers must inspect the convergence
+            metadata before treating the result as a solution.
 
         Returns
         -------
         RigidBunchTwiss
-            Two-beam solution with ``b1`` (clockwise) and ``b2``
-            (anticlockwise) bunch Twiss data, plus convergence metadata.
+            Two-beam result with ``b1`` (clockwise) and ``b2``
+            (anticlockwise) bunch Twiss data, plus convergence metadata. With
+            ``require_convergence=False``, this can be a non-converged
+            last iterate rather than a solution.
+
+        Raises
+        ------
+        RuntimeError
+            If the solve does not converge and
+            ``require_convergence`` is True.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
             raise RuntimeError(
@@ -861,6 +879,14 @@ class BeamBeamRigidBunchStudy:
         result.converged = err < tol_sigma
         result.num_iterations = it + 1
         result.max_orbit_change = err
+        if not result.converged and require_convergence:
+            raise RuntimeError(
+                'Rigid-bunch beam-beam solve did not converge after '
+                f'{result.num_iterations} iterations: maximum orbit change '
+                f'is {result.max_orbit_change:.3e} sigma, requested tolerance '
+                f'is {tol_sigma:.3e}. The last iterate remains loaded in the '
+                'beam-beam elements. Pass '
+                '`require_convergence=False` to return it explicitly.')
         return result
 
 

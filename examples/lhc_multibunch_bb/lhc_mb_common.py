@@ -70,6 +70,13 @@ def wrap_frac_tune(v):
     return (np.asarray(v) + 0.5) % 1.0 - 0.5
 
 
+def print_solve_status(result):
+    """Print the convergence metadata of a rigid-bunch solve result."""
+    print(f'  converged={result.converged}, '
+          f'iterations={result.num_iterations}, '
+          f'max orbit change={result.max_orbit_change:.3e} sigma')
+
+
 # ----------------------------------------------------------------------------
 # Environment-variable defaults shared by the examples
 # ----------------------------------------------------------------------------

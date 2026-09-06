@@ -318,16 +318,33 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert isinstance(
             reduced.acw_line[name], xf.BeamBeamBiGaussianRigidBunch2D)
 
+    with pytest.raises(RuntimeError, match=(
+            'did not converge.*require_convergence=False')):
+        reduced.solve(
+            max_iterations=1, tol_sigma=0,
+            twiss_mode='fast_orbit', show_progress=False)
+
     solution = reduced.solve(
         max_iterations=2,
         tol_sigma=0,
         twiss_mode='fast_orbit',
         show_progress=False,
+        require_convergence=False,
     )
     assert isinstance(solution, xf.RigidBunchTwiss)
     assert solution.converged is False
     assert solution.num_iterations == 2
     assert np.isfinite(solution.max_orbit_change)
+
+    converged_solution = reduced.solve(
+        max_iterations=3,
+        twiss_mode='fast_orbit',
+        show_progress=False,
+    )
+    assert converged_solution.converged is True
+    assert converged_solution.num_iterations <= 3
+    assert converged_solution.max_orbit_change < 1e-4
+
     mbtw_cw, mbtw_acw = solution.b1, solution.b2
     assert len(mbtw_cw) == len(study.filled_slots_cw)
     assert len(mbtw_acw) == len(study.filled_slots_acw)
@@ -380,6 +397,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         dynamic_beta=True,
         twiss_mode='fast',
         show_progress=False,
+        require_convergence=False,
     )
     mbtw_cw_dyn = dynamic_solution.b1
     mbtw_acw_dyn = dynamic_solution.b2

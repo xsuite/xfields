@@ -188,6 +188,12 @@ configured filling. `RigidBunchTwiss` contains the two beam results as `b1` and
 bunch. The containers live in Xfields together with
 `BeamBeamRigidBunchStudy` and its solver.
 
+``solve(...)`` raises ``RuntimeError`` by default if ``max_iterations`` is
+reached before ``tol_sigma``. A deliberate fixed-iteration study can pass
+``require_convergence=False`` and inspect ``converged``,
+``num_iterations`` and ``max_orbit_change`` on the returned result before using
+the last iterate.
+
 For the same ownership reason, the rigid-bunch installer, study, examples,
 tests and LHC regression data live in Xfields. Xtrack retains only a generic
 lazy environment façade: `env.xfields` constructs
@@ -548,12 +554,11 @@ be resolved before the rigid-bunch interface is treated as established.
   component. Convenience RMS-size inputs are converted to diagonal covariance.
   ``Sigma_13`` is represented structurally but ignored by the kick; a warning
   identifies large coupling while the coupled case remains unvalidated.
-- Make non-convergence explicit. ``BeamBeamRigidBunchStudy.solve()`` currently
-  returns the last iterate with ``result.converged == False`` after reaching
-  ``max_iterations``. Prefer raising by default, with an explicit option to
-  return the last iterate when desired. In all cases, examples must inspect and
-  report ``converged``, ``num_iterations`` and ``max_orbit_change`` before
-  treating, saving or plotting the result as a solution.
+- [x] Make non-convergence explicit. ``BeamBeamRigidBunchStudy.solve()`` raises
+  by default after reaching ``max_iterations``. Deliberate fixed-iteration
+  studies can request the last iterate with
+  ``require_convergence=False``. Examples report ``converged``,
+  ``num_iterations`` and ``max_orbit_change`` before using the result.
 - [x] Preserve ``beambeam_scale`` during configuration. Geometry analysis
   temporarily disables the knob and restores the previous value or expression
   with exception-safe handling.

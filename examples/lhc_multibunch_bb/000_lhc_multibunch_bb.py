@@ -62,6 +62,7 @@ print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
 print('Self-consistent solve on the full thick lattice:')
 t0 = time.time()
 solution = rigid_bunch_study.solve(max_iterations=N_ITER)
+mb.print_solve_status(solution)
 mbtw_b1, mbtw_b2 = solution.b1, solution.b2
 print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches): '
       f'{time.time() - t0:.1f} s')

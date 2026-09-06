@@ -77,6 +77,9 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
 # that state until the two per-bunch closed orbits are self-consistent.
 initial_twiss = rigid_bunch_study.twiss(mode='fast')
 solution = rigid_bunch_study.solve(max_iterations=6)
+print(f'converged={solution.converged}, '
+      f'iterations={solution.num_iterations}, '
+      f'max orbit change={solution.max_orbit_change:.3e} sigma')
 
 for beam, slots, twiss in (
         ('cw', rigid_bunch_study.filled_slots_cw, solution.b1),
