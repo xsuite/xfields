@@ -106,7 +106,7 @@ class BunchTwiss:
 class RigidBunchTwiss:
     """Twiss result for the two beams of a rigid-bunch study.
 
-    ``b1`` is the clockwise beam and ``b2`` is the anticlockwise beam. Each is
+    ``cw`` is the clockwise beam and ``acw`` is the anticlockwise beam. Each is
     a :class:`BunchTwiss` containing one :class:`TwissTable` per filled bunch.
     Results returned by :meth:`BeamBeamRigidBunchStudy.solve` additionally
     carry ``converged``, ``num_iterations`` and ``max_orbit_change``. The last
@@ -114,26 +114,26 @@ class RigidBunchTwiss:
     These three attributes are ``None`` on results returned by ``twiss()``.
     """
 
-    def __init__(self, b1, b2, *, converged=None, num_iterations=None,
+    def __init__(self, cw, acw, *, converged=None, num_iterations=None,
                  max_orbit_change=None):
-        if not isinstance(b1, BunchTwiss) or not isinstance(b2, BunchTwiss):
-            raise TypeError('`b1` and `b2` must be BunchTwiss objects.')
-        self.b1 = b1
-        self.b2 = b2
+        if not isinstance(cw, BunchTwiss) or not isinstance(acw, BunchTwiss):
+            raise TypeError('`cw` and `acw` must be BunchTwiss objects.')
+        self.cw = cw
+        self.acw = acw
         self.converged = converged
         self.num_iterations = num_iterations
         self.max_orbit_change = max_orbit_change
 
     def __getitem__(self, beam):
-        if beam == 'b1':
-            return self.b1
-        if beam == 'b2':
-            return self.b2
+        if beam == 'cw':
+            return self.cw
+        if beam == 'acw':
+            return self.acw
         raise KeyError(beam)
 
     def __repr__(self):
-        return (f'RigidBunchTwiss(B1={self.b1.num_bunches} bunches, '
-                f'B2={self.b2.num_bunches} bunches)')
+        return (f'RigidBunchTwiss(CW={self.cw.num_bunches} bunches, '
+                f'ACW={self.acw.num_bunches} bunches)')
 
 
 def _mb_co_search(line, zeta_t, delta_t, Z_init, hs, co_tol, max_iter_co,

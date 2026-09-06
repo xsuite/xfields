@@ -263,7 +263,7 @@ def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, mirror=F
 
     Columns: qx, qy (per-bunch tunes), dqx, dqy (beam-beam tune shift vs the
     bare tune), x, y (closed orbit at the head-on marker of ``ip``, in the
-    physical frame -- for the reversed beam-2 line pass ``mirror=True`` to flip
+    physical frame -- for the reversed ACW line pass ``mirror=True`` to flip
     x). ``dx``/``dy`` are the per-bunch orbit deviations from the beam average.
     """
     import pandas as pd
@@ -285,36 +285,38 @@ def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, mirror=F
 # ----------------------------------------------------------------------------
 # Plot
 # ----------------------------------------------------------------------------
-def plot_results(rigid_bunch_study, slots_b1, mbtw_b1, bare_qx, bare_qy, title_suffix=''):
+def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, bare_qx, bare_qy,
+                 title_suffix=''):
     import matplotlib.pyplot as plt
     mk = rigid_bunch_study.bb_name('bb_ip1_ho', False)
-    co_x = mbtw_b1['x', mk]
-    co_y = mbtw_b1['y', mk]
+    co_x = mbtw_cw['x', mk]
+    co_y = mbtw_cw['y', mk]
     # per-bunch orbit deviation from the bunch-averaged orbit (removes the common
     # crossing/separation-bump orbit, leaving the bunch-by-bunch beam-beam part)
     dco_x = (co_x - co_x.mean()) * 1e6
     dco_y = (co_y - co_y.mean()) * 1e6
     fig, axs = plt.subplots(2, 1, figsize=(9, 7))
-    axs[0].plot(slots_b1, wrap_frac_tune(mbtw_b1.qx - bare_qx) * 1e3, '.',
+    axs[0].plot(slots_cw, wrap_frac_tune(mbtw_cw.qx - bare_qx) * 1e3, '.',
                 label=r'$\Delta q_x$')
-    axs[0].plot(slots_b1, wrap_frac_tune(mbtw_b1.qy - bare_qy) * 1e3, '.',
+    axs[0].plot(slots_cw, wrap_frac_tune(mbtw_cw.qy - bare_qy) * 1e3, '.',
                 label=r'$\Delta q_y$')
     axs[0].set_xlabel('25 ns slot')
     axs[0].set_ylabel(r'beam-beam tune shift [$10^{-3}$]')
-    axs[0].set_title('LHC: per-bunch beam-beam tune shift (B1)'
+    axs[0].set_title('LHC: per-bunch beam-beam tune shift (CW)'
                      + title_suffix)
     axs[0].legend()
-    axs[1].plot(slots_b1, dco_x, '.', label='x')
-    axs[1].plot(slots_b1, dco_y, '.', label='y')
+    axs[1].plot(slots_cw, dco_x, '.', label='x')
+    axs[1].plot(slots_cw, dco_y, '.', label='y')
     axs[1].set_xlabel('25 ns slot')
     axs[1].set_ylabel('orbit dev. from mean at IP1 [$\\mu$m]')
-    axs[1].set_title('Per-bunch beam-beam closed-orbit deviation at IP1 (B1)')
+    axs[1].set_title('Per-bunch beam-beam closed-orbit deviation at IP1 (CW)')
     axs[1].legend()
     plt.tight_layout()
     return fig
 
 
-def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_b2):
+def plot_global_quantities(rigid_bunch_study, slots_cw, mbtw_cw,
+                           slots_acw, mbtw_acw):
     """Bunch-by-bunch orbit at IP1, beta* at IP1, tunes, chromaticity and
     coupling |C-| of both beams, from mode='fast' BunchTwiss results
     (which carry per-bunch optics and global quantities)."""
@@ -328,8 +330,8 @@ def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_
     fig, axs = plt.subplots(3, 2, figsize=(13, 10), sharex=True)
 
     ax = axs[0, 0]   # orbit deviation at IP1 (physical frame for both beams)
-    for slots, mbtw, mirror, lab in [(slots_b1, mbtw_b1, False, 'B1'),
-                                     (slots_b2, mbtw_b2, True, 'B2')]:
+    for slots, mbtw, mirror, lab in [(slots_cw, mbtw_cw, False, 'CW'),
+                                     (slots_acw, mbtw_acw, True, 'ACW')]:
         sgn = -1.0 if mirror else 1.0
         x = sgn * at_ip1(mbtw, 'x', mirror)
         y = at_ip1(mbtw, 'y', mirror)
@@ -340,8 +342,8 @@ def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_
     ax.legend(ncol=2, fontsize=8)
 
     ax = axs[0, 1]   # beta* at IP1
-    for slots, mbtw, mirror, lab in [(slots_b1, mbtw_b1, False, 'B1'),
-                                     (slots_b2, mbtw_b2, True, 'B2')]:
+    for slots, mbtw, mirror, lab in [(slots_cw, mbtw_cw, False, 'CW'),
+                                     (slots_acw, mbtw_acw, True, 'ACW')]:
         ax.plot(slots, at_ip1(mbtw, 'betx', mirror), '.', ms=3,
                 label=fr'{lab} $\beta_x^*$')
         ax.plot(slots, at_ip1(mbtw, 'bety', mirror), '.', ms=3,
@@ -351,8 +353,8 @@ def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_
     ax.legend(ncol=2, fontsize=8)
 
     ax = axs[1, 0]   # fractional tunes
-    for slots, mbtw, lab in [(slots_b1, mbtw_b1, 'B1'),
-                             (slots_b2, mbtw_b2, 'B2')]:
+    for slots, mbtw, lab in [(slots_cw, mbtw_cw, 'CW'),
+                             (slots_acw, mbtw_acw, 'ACW')]:
         ax.plot(slots, mbtw.qx_frac, '.', ms=3, label=f'{lab} $q_x$')
         ax.plot(slots, mbtw.qy_frac, '.', ms=3, label=f'{lab} $q_y$')
     ax.set_ylabel('fractional tune')
@@ -360,8 +362,8 @@ def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_
     ax.legend(ncol=2, fontsize=8)
 
     ax = axs[1, 1]   # chromaticity
-    for slots, mbtw, lab in [(slots_b1, mbtw_b1, 'B1'),
-                             (slots_b2, mbtw_b2, 'B2')]:
+    for slots, mbtw, lab in [(slots_cw, mbtw_cw, 'CW'),
+                             (slots_acw, mbtw_acw, 'ACW')]:
         ax.plot(slots, mbtw.dqx, '.', ms=3, label=f"{lab} $q'_x$")
         ax.plot(slots, mbtw.dqy, '.', ms=3, label=f"{lab} $q'_y$")
     ax.set_ylabel("chromaticity $q'$")
@@ -369,8 +371,8 @@ def plot_global_quantities(rigid_bunch_study, slots_b1, mbtw_b1, slots_b2, mbtw_
     ax.legend(ncol=2, fontsize=8)
 
     ax = axs[2, 0]   # coupling
-    for slots, mbtw, lab in [(slots_b1, mbtw_b1, 'B1'),
-                             (slots_b2, mbtw_b2, 'B2')]:
+    for slots, mbtw, lab in [(slots_cw, mbtw_cw, 'CW'),
+                             (slots_acw, mbtw_acw, 'ACW')]:
         ax.plot(slots, mbtw.c_minus, '.', ms=3, label=lab)
     ax.set_xlabel('25 ns slot')
     ax.set_ylabel('$|C^-|$')

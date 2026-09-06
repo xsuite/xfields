@@ -58,8 +58,8 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 print('  building second-order maps between the beam-beam elements...')
 study_red = rigid_bunch_study.second_order_maps(context=par['context'])
-slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
-print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
+slots_cw, slots_acw = study_red.filled_slots_cw, study_red.filled_slots_acw
+print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 
 # ----------------------------------------------------------------------------
 # Solve with static sizes, then with dynamic beta
@@ -79,7 +79,7 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
     print(f'  solve time ({N_ITER} iters): {time.time() - t0:.1f} s')
 
 # ----------------------------------------------------------------------------
-# Compare per-bunch tunes, orbit and beta* at IP1 (B1)
+# Compare per-bunch tunes, orbit and beta* at IP1 (CW)
 # ----------------------------------------------------------------------------
 mk_b1 = study_red.bb_name('bb_ip1_ho', False)
 
@@ -93,22 +93,23 @@ def extract(mbtw):
     )
 
 
-stat = extract(results['static'].b1)
-dyn = extract(results['dynamic beta'].b1)
+stat = extract(results['static'].cw)
+dyn = extract(results['dynamic beta'].cw)
 
-df_b1 = mb.results_dataframe(study_red, results['dynamic beta'].b1, slots_b1,
+df_cw = mb.results_dataframe(study_red, results['dynamic beta'].cw, slots_cw,
                              rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
                              mirror=False)
-df_b2 = mb.results_dataframe(study_red, results['dynamic beta'].b2, slots_b2,
+df_acw = mb.results_dataframe(study_red, results['dynamic beta'].acw, slots_acw,
                              rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'],
                              mirror=True)
-df_b1.to_pickle(os.path.join(mb.HERE, 'results_b1_coll_dynbeta.pkl'))
-df_b2.to_pickle(os.path.join(mb.HERE, 'results_b2_coll_dynbeta.pkl'))
+# Keep the established comparison filenames used by the PyTRAIN workflow.
+df_cw.to_pickle(os.path.join(mb.HERE, 'results_b1_coll_dynbeta.pkl'))
+df_acw.to_pickle(os.path.join(mb.HERE, 'results_b2_coll_dynbeta.pkl'))
 print('saved results_b1_coll_dynbeta.pkl / results_b2_coll_dynbeta.pkl')
 
 dqx = mb.wrap_frac_tune(dyn['qx'] - stat['qx'])
 dqy = mb.wrap_frac_tune(dyn['qy'] - stat['qy'])
-print(f"\nDynamic-beta impact (B1):")
+print(f"\nDynamic-beta impact (CW):")
 print(f"  tune change dqx in [{dqx.min():+.2e}, {dqx.max():+.2e}] "
       f"(rms {dqx.std():.2e})")
 print(f"  tune change dqy in [{dqy.min():+.2e}, {dqy.max():+.2e}] "
@@ -120,22 +121,22 @@ print(f"  betx* at IP1: static [{stat['betx'].min():.4f}, "
 
 fig, axs = plt.subplots(3, 1, figsize=(10, 9), sharex=True)
 
-axs[0].plot(slots_b1, dqx * 1e3, '.', ms=3, label=r'$\Delta q_x$')
-axs[0].plot(slots_b1, dqy * 1e3, '.', ms=3, label=r'$\Delta q_y$')
+axs[0].plot(slots_cw, dqx * 1e3, '.', ms=3, label=r'$\Delta q_x$')
+axs[0].plot(slots_cw, dqy * 1e3, '.', ms=3, label=r'$\Delta q_y$')
 axs[0].set_ylabel(r'tune change [$10^{-3}$]')
 axs[0].set_title('Per-bunch effect of dynamic beta on the closed solution '
-                 '(B1, collision)')
+                 '(CW, collision)')
 axs[0].legend()
 
-axs[1].plot(slots_b1, (dyn['x'] - stat['x']) * 1e9, '.', ms=3, label='x')
+axs[1].plot(slots_cw, (dyn['x'] - stat['x']) * 1e9, '.', ms=3, label='x')
 axs[1].set_ylabel('orbit change at IP1 [nm]')
 axs[1].legend()
 
-axs[2].plot(slots_b1, stat['betx'], '.', ms=3, label=r'$\beta_x^*$ static')
-axs[2].plot(slots_b1, dyn['betx'], '.', ms=3,
+axs[2].plot(slots_cw, stat['betx'], '.', ms=3, label=r'$\beta_x^*$ static')
+axs[2].plot(slots_cw, dyn['betx'], '.', ms=3,
             label=r'$\beta_x^*$ dynamic beta')
-axs[2].plot(slots_b1, stat['bety'], '.', ms=3, label=r'$\beta_y^*$ static')
-axs[2].plot(slots_b1, dyn['bety'], '.', ms=3,
+axs[2].plot(slots_cw, stat['bety'], '.', ms=3, label=r'$\beta_y^*$ static')
+axs[2].plot(slots_cw, dyn['bety'], '.', ms=3,
             label=r'$\beta_y^*$ dynamic beta')
 axs[2].set_ylabel(r'$\beta^*$ at IP1 [m]')
 axs[2].set_xlabel('25 ns slot')

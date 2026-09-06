@@ -82,14 +82,14 @@ print(f'converged={solution.converged}, '
       f'max orbit change={solution.max_orbit_change:.3e} sigma')
 
 for beam, slots, twiss in (
-        ('cw', rigid_bunch_study.filled_slots_cw, solution.b1),
-        ('acw', rigid_bunch_study.filled_slots_acw, solution.b2)):
+        ('cw', rigid_bunch_study.filled_slots_cw, solution.cw),
+        ('acw', rigid_bunch_study.filled_slots_acw, solution.acw)):
     print(f'{beam} per-bunch tunes:')
     for slot, qx, qy in zip(slots, twiss.qx, twiss.qy):
         print(f'  slot {slot}: qx={qx:.8f}, qy={qy:.8f}')
 
-plt.plot(rigid_bunch_study.filled_slots_cw, solution.b1.qx, 'o-', label='cw')
-plt.plot(rigid_bunch_study.filled_slots_acw, solution.b2.qx, 's-', label='acw')
+plt.plot(rigid_bunch_study.filled_slots_cw, solution.cw.qx, 'o-', label='cw')
+plt.plot(rigid_bunch_study.filled_slots_acw, solution.acw.qx, 's-', label='acw')
 plt.xlabel('physical RF slot')
 plt.ylabel('$q_x$')
 plt.legend()

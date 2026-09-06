@@ -54,33 +54,35 @@ if not ALL_BUNCHES:
         filling_pattern_cw=mb.filling_scheme_from_slots(s1),
         filling_pattern_acw=mb.filling_scheme_from_slots(s2))
 
-slots_b1, slots_b2 = rigid_bunch_study.filled_slots_cw, rigid_bunch_study.filled_slots_acw
+slots_cw = rigid_bunch_study.filled_slots_cw
+slots_acw = rigid_bunch_study.filled_slots_acw
 for ip in par['ips']:
     print(f'  {ip}: head-on offset = {rigid_bunch_study.geom[f"bb_{ip}_ho"]["offset"]} slots')
-print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
+print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 
 print('Self-consistent solve on the full thick lattice:')
 t0 = time.time()
 solution = rigid_bunch_study.solve(max_iterations=N_ITER)
 mb.print_solve_status(solution)
-mbtw_b1, mbtw_b2 = solution.b1, solution.b2
-print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches): '
+mbtw_cw, mbtw_acw = solution.cw, solution.acw
+print(f'  solve time ({len(slots_cw)}+{len(slots_acw)} bunches): '
       f'{time.time() - t0:.1f} s')
 
 bare = rigid_bunch_study.meta
-dqx_b1 = mb.wrap_frac_tune(mbtw_b1.qx - bare['qx_cw'])
-print(f"\nB1 tune shift: dqx in [{dqx_b1.min():.2e}, {dqx_b1.max():.2e}]")
+dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - bare['qx_cw'])
+print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
-df_b1 = mb.results_dataframe(rigid_bunch_study, mbtw_b1, slots_b1,
+df_cw = mb.results_dataframe(rigid_bunch_study, mbtw_cw, slots_cw,
                              bare['qx_cw'], bare['qy_cw'], mirror=False)
-df_b2 = mb.results_dataframe(rigid_bunch_study, mbtw_b2, slots_b2,
+df_acw = mb.results_dataframe(rigid_bunch_study, mbtw_acw, slots_acw,
                              bare['qx_acw'], bare['qy_acw'], mirror=True)
+# Keep the established comparison filenames used by the PyTRAIN workflow.
 out_b1 = os.path.join(mb.HERE, 'results_b1_coll_full.pkl')
 out_b2 = os.path.join(mb.HERE, 'results_b2_coll_full.pkl')
-df_b1.to_pickle(out_b1)
-df_b2.to_pickle(out_b2)
+df_cw.to_pickle(out_b1)
+df_acw.to_pickle(out_b2)
 print(f'saved {out_b1}\nsaved {out_b2}')
 
-mb.plot_results(rigid_bunch_study, slots_b1, mbtw_b1, bare['qx_cw'], bare['qy_cw'],
+mb.plot_results(rigid_bunch_study, slots_cw, mbtw_cw, bare['qx_cw'], bare['qy_cw'],
                 title_suffix='  [full thick lattice, collision]')
 plt.show()

@@ -362,7 +362,7 @@ class BeamBeamRigidBunchStudy:
         n_acw = (0 if self.filled_slots_acw is None
                  else len(self.filled_slots_acw))
         return (f'BeamBeamRigidBunchStudy({len(self.enc_names)} encounters, '
-                f'n_slots={self.n_slots}, B1={n_cw} B2={n_acw} bunches)')
+                f'n_slots={self.n_slots}, CW={n_cw} ACW={n_acw} bunches)')
 
     def apply_filling_pattern(
             self, filling_pattern_cw, filling_pattern_acw):
@@ -686,8 +686,8 @@ class BeamBeamRigidBunchStudy:
         live beta functions of the solution; its ``Sigma_13`` is set to zero.
         This does not change the kick, which currently ignores ``Sigma_13``.
         """
-        mbtw_clockwise = rigid_bunch_twiss.b1
-        mbtw_anticlockwise = rigid_bunch_twiss.b2
+        mbtw_clockwise = rigid_bunch_twiss.cw
+        mbtw_anticlockwise = rigid_bunch_twiss.acw
         covariances_cw = covariances_acw = None
         if dynamic_beta:
             covariances_cw = self._compute_covariances(
@@ -719,7 +719,7 @@ class BeamBeamRigidBunchStudy:
         Returns
         -------
         RigidBunchTwiss
-            Two-beam result with ``b1`` (clockwise) and ``b2``
+            Two-beam result with ``cw`` (clockwise) and ``acw``
             (anticlockwise) bunch Twiss data.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
@@ -741,7 +741,7 @@ class BeamBeamRigidBunchStudy:
             zeta_bunches=self.bunch_zeta(mirror=True),
             bunch_names=[f'slot_{slot}' for slot in self.filled_slots_acw],
             **common)
-        return RigidBunchTwiss(b1=twiss_cw, b2=twiss_acw)
+        return RigidBunchTwiss(cw=twiss_cw, acw=twiss_acw)
 
     def solve(self, max_iterations=5, tol_sigma=1e-4, dynamic_beta=False,
               method='4d', chrom=False, twiss_mode=None, show_progress=True,
@@ -804,7 +804,7 @@ class BeamBeamRigidBunchStudy:
         Returns
         -------
         RigidBunchTwiss
-            Two-beam result with ``b1`` (clockwise) and ``b2``
+            Two-beam result with ``cw`` (clockwise) and ``acw``
             (anticlockwise) bunch Twiss data, plus convergence metadata. With
             ``require_convergence=False``, this can be a non-converged
             last iterate rather than a solution.
@@ -841,8 +841,8 @@ class BeamBeamRigidBunchStudy:
                 show_progress=show_progress, **co_kwargs)
 
             cur = np.concatenate([
-                _orbit_vector(result.b1, self.bb_names_cw),
-                _orbit_vector(result.b2, self.bb_names_acw)])
+                _orbit_vector(result.cw, self.bb_names_cw),
+                _orbit_vector(result.acw, self.bb_names_acw)])
             sig = np.concatenate([self._sigma_vector(self.bb_cw, mirror=False),
                                   self._sigma_vector(self.bb_acw, mirror=True)])
             err = (np.inf if prev is None

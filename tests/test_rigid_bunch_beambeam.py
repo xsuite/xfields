@@ -345,7 +345,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     assert converged_solution.num_iterations <= 3
     assert converged_solution.max_orbit_change < 1e-4
 
-    mbtw_cw, mbtw_acw = solution.b1, solution.b2
+    mbtw_cw, mbtw_acw = solution.cw, solution.acw
     assert len(mbtw_cw) == len(study.filled_slots_cw)
     assert len(mbtw_acw) == len(study.filled_slots_acw)
 
@@ -399,8 +399,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         show_progress=False,
         require_convergence=False,
     )
-    mbtw_cw_dyn = dynamic_solution.b1
-    mbtw_acw_dyn = dynamic_solution.b2
+    mbtw_cw_dyn = dynamic_solution.cw
+    mbtw_acw_dyn = dynamic_solution.acw
     gamma0_cw = float(reduced.cw_line.particle_ref.gamma0[0])
     gamma0_acw = float(reduced.acw_line.particle_ref.gamma0[0])
     indices_cw = N_SLOTS - 1 - study.filled_slots_cw

@@ -173,8 +173,8 @@ lines, their filling schemes and their physical RF slots. The public API is:
 twiss = rigid_bunch_study.twiss(mode='fast')
 solution = rigid_bunch_study.solve(...)
 
-twiss.b1.qx
-twiss.b2.qx
+twiss.cw.qx
+twiss.acw.qx
 rigid_bunch_study.load_solution(solution)
 ```
 
@@ -183,8 +183,8 @@ loaded in the elements; `rigid_bunch_study.solve(...)` repeatedly calls that
 operation while feeding the two beams back into each other. Bunch positions
 are derived from the study, so
 users cannot accidentally provide a `zeta_bunches` array inconsistent with the
-configured filling. `RigidBunchTwiss` contains the two beam results as `b1` and
-`b2`; each is a `BunchTwiss` collection with one Xtrack `TwissTable` per filled
+configured filling. `RigidBunchTwiss` contains the two beam results as `cw` and
+`acw`; each is a `BunchTwiss` collection with one Xtrack `TwissTable` per filled
 bunch. The containers live in Xfields together with
 `BeamBeamRigidBunchStudy` and its solver.
 
@@ -486,7 +486,7 @@ Cover:
 - `full`, `fast` and `fast_orbit` on the same bunches;
 - closed-orbit and fractional-tune agreement against `full`;
 - beta, alpha, dispersion and phase from `fast` against `full`;
-- `RigidBunchTwiss.b1` / `.b2` access and `BunchTwiss` integer, named-row and
+- `RigidBunchTwiss.cw` / `.acw` access and `BunchTwiss` integer, named-row and
   attribute access;
 - bunch positions and labels derived from the study filling;
 - unsupported modes, methods and kwargs;
@@ -568,10 +568,11 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### Public API decisions
 
-- Use one orientation vocabulary consistently. The study exposes ``cw`` /
-  ``acw`` state (for example ``filled_slots_cw``), while ``RigidBunchTwiss``
-  exposes ``b1`` / ``b2``. Prefer ``cw`` / ``acw`` for the machine-independent
-  API, optionally retaining ``b1`` / ``b2`` as convenience aliases.
+- [x] Use one orientation vocabulary consistently. The machine-independent
+  study and result APIs expose ``cw`` / ``acw`` state (for example
+  ``filled_slots_cw`` and ``RigidBunchTwiss.cw``). The result container has no
+  ``b1`` / ``b2`` aliases; machine-specific external formats may retain their
+  native beam labels.
 - Resolve ``filling_scheme`` versus ``filling_pattern`` before release. The
   bunch-pattern contract in this document calls the slot-indexed occupancy a
   filling scheme, while the implemented beam-beam entry points use

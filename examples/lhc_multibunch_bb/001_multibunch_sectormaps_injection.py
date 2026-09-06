@@ -67,15 +67,15 @@ print(f'  fractional tunes reduced/full: '
       f'qx {tw_red.qx % 1:.5f} / {rigid_bunch_study.meta["qx_cw"] % 1:.5f}   '
       f'qy {tw_red.qy % 1:.5f} / {rigid_bunch_study.meta["qy_cw"] % 1:.5f}')
 
-slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
-print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
+slots_cw, slots_acw = study_red.filled_slots_cw, study_red.filled_slots_acw
+print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 
 print('Self-consistent solve on the reduced (second-order-map) lines:')
 t0 = time.time()
 solution = study_red.solve(max_iterations=N_ITER)
 mb.print_solve_status(solution)
-mbtw_b1, mbtw_b2 = solution.b1, solution.b2
-print(f'  solve time ({len(slots_b1)}+{len(slots_b2)} bunches, '
+mbtw_cw, mbtw_acw = solution.cw, solution.acw
+print(f'  solve time ({len(slots_cw)}+{len(slots_acw)} bunches, '
       f'{solution.num_iterations} iters): {time.time() - t0:.1f} s')
 
 # Optional: per-bunch optics (dynamic beta*) and global quantities (tunes, chromaticity, coupling)
@@ -83,28 +83,30 @@ if COMPUTE_OPTICS_PARAMS:
     print('Final mode="fast" twiss (per-bunch optics + global quantities):')
     t0 = time.time()
     final_twiss = study_red.twiss(mode='fast')
-    mbtw_b1, mbtw_b2 = final_twiss.b1, final_twiss.b2
+    mbtw_cw, mbtw_acw = final_twiss.cw, final_twiss.acw
     print(f'  final twiss (both beams): {time.time() - t0:.1f} s')
 
 # Reference the tune shift to the bare tune (second-order maps preserve the
 # linear optics, so the reduced-line tunes equal the full-lattice rigid_bunch_study.meta)
-dqx_b1 = mb.wrap_frac_tune(mbtw_b1.qx - rigid_bunch_study.meta['qx_cw'])
-print(f"\nB1 tune shift: dqx in [{dqx_b1.min():.2e}, {dqx_b1.max():.2e}]")
+dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - rigid_bunch_study.meta['qx_cw'])
+print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 # Save per-bunch results of both beams as DataFrames
-df_b1 = mb.results_dataframe(study_red, mbtw_b1, slots_b1,
+df_cw = mb.results_dataframe(study_red, mbtw_cw, slots_cw,
                              rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'], mirror=False)
-df_b2 = mb.results_dataframe(study_red, mbtw_b2, slots_b2,
+df_acw = mb.results_dataframe(study_red, mbtw_acw, slots_acw,
                              rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'], mirror=True)
+# Keep the established comparison filenames used by the PyTRAIN workflow.
 out_b1 = os.path.join(mb.HERE, 'results_b1.pkl')
 out_b2 = os.path.join(mb.HERE, 'results_b2.pkl')
-df_b1.to_pickle(out_b1)
-df_b2.to_pickle(out_b2)
+df_cw.to_pickle(out_b1)
+df_acw.to_pickle(out_b2)
 print(f'saved {out_b1}\nsaved {out_b2}')
 
-mb.plot_results(study_red, slots_b1, mbtw_b1,
+mb.plot_results(study_red, slots_cw, mbtw_cw,
                 rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
                 title_suffix='  [second-order maps]')
 if COMPUTE_OPTICS_PARAMS:
-    mb.plot_global_quantities(study_red, slots_b1, mbtw_b1, slots_b2, mbtw_b2)
+    mb.plot_global_quantities(
+        study_red, slots_cw, mbtw_cw, slots_acw, mbtw_acw)
 plt.show()

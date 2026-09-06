@@ -91,8 +91,8 @@ study_mo = rigid_bunch_study.second_order_maps(keep_extra_cw=mo_names,
 # beam-1 lines and lens handles used for the footprints below
 red_b1, red_mo_b1 = study_red.cw_line, study_mo.cw_line
 bb_b1, bb_thick_b1, bb_mo_b1 = study_red.bb_cw, rigid_bunch_study.bb_cw, study_mo.bb_cw
-slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
-print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
+slots_cw, slots_acw = study_red.filled_slots_cw, study_red.filled_slots_acw
+print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 
 # ----------------------------------------------------------------------------
 # 1) Self-consistent solve on the fast sector-map model: up to 4 iterations
@@ -106,7 +106,7 @@ print('Self-consistent solve (up to 4 more iterations with dynamic beta):')
 solution = study_red.solve(
     max_iterations=4, dynamic_beta=True)
 mb.print_solve_status(solution)
-mbtw_b1, mbtw_b2 = solution.b1, solution.b2
+mbtw_cw, mbtw_acw = solution.cw, solution.acw
 print(f'  total solve time: {time.time() - t0:.1f} s')
 
 # ----------------------------------------------------------------------------
@@ -114,7 +114,7 @@ print(f'  total solve time: {time.time() - t0:.1f} s')
 #    the maps+MO line (their beam-beam lenses are loaded with the converged
 #    per-bunch orbits and dynamic sizes)
 # ----------------------------------------------------------------------------
-print('Loading the converged solution on the full thick lattice (B1) and '
+print('Loading the converged solution on the full thick lattice (CW) and '
       'on the maps+MO line...')
 rigid_bunch_study.load_solution(solution, dynamic_beta=True)
 study_mo.load_solution(solution, dynamic_beta=True)
@@ -141,12 +141,12 @@ pos_in_train = np.round(np.linspace(0, len(train) - 1, 12)).astype(int)
 family = [(train[k], f'train bunch {k + 1}') for k in pos_in_train]
 
 # cross-check the transferred lattices on the family bunches
-idx_fam = np.searchsorted(slots_b1, [sl for sl, _ in family])
+idx_fam = np.searchsorted(slots_cw, [sl for sl, _ in family])
 for label, transferred in (('thick', rigid_bunch_study), ('maps+MO', study_mo)):
     check = transferred.twiss(mode='fast_orbit', show_progress=False)
     dq_check = mb.wrap_frac_tune(
-        np.asarray(check.b1.qx)[idx_fam]
-        - np.asarray(mbtw_b1.qx)[idx_fam])
+        np.asarray(check.cw.qx)[idx_fam]
+        - np.asarray(mbtw_cw.qx)[idx_fam])
     print(f'  transfer check ({label} vs sector maps, family bunches): '
           f'max |dqx| = {np.max(np.abs(dq_check)):.2e}')
 

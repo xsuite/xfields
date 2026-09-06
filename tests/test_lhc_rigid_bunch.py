@@ -120,22 +120,22 @@ def _run_xsuite_scenario(scenario):
         max_iterations=par['n_iter'], tol_sigma=0.0,
         twiss_mode='fast_orbit', show_progress=False,
         require_convergence=False)
-    mbtw_b1, mbtw_b2 = solution.b1, solution.b2
+    mbtw_cw, mbtw_acw = solution.cw, solution.acw
 
     def extract(mbtw, slots, bare_qx, bare_qy, mirror):
         bb = study_red.bb_name('bb_ip1_ho', mirror)
         x = mbtw['x', bb]
         if mirror:
-            x = -x   # reversed beam-2 line -> physical frame
+            x = -x   # reversed ACW line -> physical frame
         y = mbtw['y', bb]
         return dict(slots=slots,
                     dx=x - x.mean(), dy=y - y.mean(),
                     dqx=_wrap_frac_tune(mbtw.qx - bare_qx),
                     dqy=_wrap_frac_tune(mbtw.qy - bare_qy))
 
-    return (extract(mbtw_b1, study_red.filled_slots_cw,
+    return (extract(mbtw_cw, study_red.filled_slots_cw,
                     bare['qx_cw'], bare['qy_cw'], mirror=False),
-            extract(mbtw_b2, study_red.filled_slots_acw,
+            extract(mbtw_acw, study_red.filled_slots_acw,
                     bare['qx_acw'], bare['qy_acw'], mirror=True))
 
 
@@ -146,9 +146,10 @@ def test_lhc_rigid_bunch_against_pytrain(scenario):
         ref = json.load(fid)
     tol = TOLERANCES[scenario]
 
-    res_b1, res_b2 = _run_xsuite_scenario(scenario)
+    res_cw, res_acw = _run_xsuite_scenario(scenario)
 
-    for beam, res in (('b1', res_b1), ('b2', res_b2)):
+    # The reference file retains PyTRAIN's external LHC beam keys.
+    for beam, res in (('b1', res_cw), ('b2', res_acw)):
         rr = ref[beam]
         assert np.array_equal(res['slots'], np.asarray(rr['slots']))
 

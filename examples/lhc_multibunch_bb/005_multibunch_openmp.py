@@ -50,8 +50,8 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 print('  building second-order maps between the beam-beam elements...')
 study_red = rigid_bunch_study.second_order_maps(context=ctx_mt)
-slots_b1, slots_b2 = study_red.filled_slots_cw, study_red.filled_slots_acw
-print(f'  populated bunches: B1 = {len(slots_b1)}, B2 = {len(slots_b2)}')
+slots_cw, slots_acw = study_red.filled_slots_cw, study_red.filled_slots_acw
+print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 
 print('Populating the beam-beam elements (one solve iteration):')
 population_result = study_red.solve(
@@ -65,7 +65,7 @@ mb.print_solve_status(population_result)
 contexts = (('serial', xo.ContextCpu()),
             (f'openmp ({n_threads} threads)', ctx_mt))
 
-print(f'\nBatched rigid-bunch Twiss ({len(slots_b1)}+{len(slots_b2)} bunches):')
+print(f'\nBatched rigid-bunch Twiss ({len(slots_cw)}+{len(slots_acw)} bunches):')
 for mode in ('fast_orbit', 'fast'):
     timings = []
     for label, ctx in contexts:
