@@ -239,11 +239,12 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
             n_other = n_bunches[not mirror]
             bb.update_from_own_beam(
                 zeta=rigid_bunch_study.bunch_zeta(mirror),
-                sigma_x=own[0], sigma_y=own[1])
+                own_beam_sigma_x=own[0], own_beam_sigma_y=own[1])
             other_order = np.argsort(rigid_bunch_study.bunch_zeta(not mirror),
                                      kind='stable')
-            bb.other_beam_sigma_x[:n_other] = other[0][other_order]
-            bb.other_beam_sigma_y[:n_other] = other[1][other_order]
+            bb.other_beam_Sigma_11[:n_other] = other[0][other_order]**2
+            bb.other_beam_Sigma_13[:n_other] = 0
+            bb.other_beam_Sigma_33[:n_other] = other[1][other_order]**2
 
 
 # ----------------------------------------------------------------------------

@@ -61,7 +61,11 @@ the scalar element.
 For coherent tracking, the effective covariance is the sum of the matched own
 and opposing bunch covariances. Using covariances instead of separate
 `sigma_x`/`sigma_y` logic remains consistent with scalar BB2D and leaves room
-for transverse coupling.
+for transverse coupling. The API and serialized layout include ``Sigma_11``,
+``Sigma_13`` and ``Sigma_33``. Coupled rigid-bunch operation is not yet
+validated, so ``Sigma_13`` is currently ignored by the kick and a warning is
+emitted when the normalized correlation
+``abs(Sigma_13) / sqrt(Sigma_11 * Sigma_33)`` exceeds ``1e-2``.
 
 In the high-level ring workflow, rigid-bunch arrays have one entry per physical
 RF slot. ``harmonic_number`` and ``bunch_spacing_buckets`` determine that size
@@ -538,14 +542,12 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### Required fixes
 
-- Reconcile the covariance contract with the implementation. This document
-  specifies per-bunch transverse covariances and coherent covariance
-  convolution, including the possibility of transverse coupling. The current
-  rigid-bunch element stores only ``sigma_x`` and ``sigma_y`` and supplies zero
-  cross-plane covariance to the common BB2D kick. Either add slot-indexed
-  ``Sigma_11``, ``Sigma_13`` and ``Sigma_33`` support for both beams, or
-  explicitly narrow the documented model to uncoupled transverse Gaussian
-  distributions.
+- [x] Reconcile the covariance contract with the implementation. The
+  rigid-bunch element stores slot-indexed ``Sigma_11``, ``Sigma_13`` and
+  ``Sigma_33`` for both beams and adds the matched covariances component by
+  component. Convenience RMS-size inputs are converted to diagonal covariance.
+  ``Sigma_13`` is represented structurally but ignored by the kick; a warning
+  identifies large coupling while the coupled case remains unvalidated.
 - Make non-convergence explicit. ``BeamBeamRigidBunchStudy.solve()`` currently
   returns the last iterate with ``result.converged == False`` after reaching
   ``max_iterations``. Prefer raising by default, with an explicit option to

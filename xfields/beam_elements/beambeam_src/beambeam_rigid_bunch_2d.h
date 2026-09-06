@@ -81,15 +81,15 @@ void BeamBeamBiGaussianRigidBunch2D_track_local_particle(
     int64_t const num_own_bunches = BeamBeamBiGaussianRigidBunch2DData_get_num_own_bunches(el);
 
     // Sorted zeta grids of both beams (for the binary-search bunch matching)
-    // and this beam's own per-bunch sizes.
+    // and this beam's own per-bunch covariance.
     GPUGLMEM double const* other_beam_zeta =
         BeamBeamBiGaussianRigidBunch2DData_getp1_other_beam_zeta(el, 0);
     GPUGLMEM double const* own_beam_zeta =
         BeamBeamBiGaussianRigidBunch2DData_getp1_own_beam_zeta(el, 0);
-    GPUGLMEM double const* own_sigma_x_arr =
-        BeamBeamBiGaussianRigidBunch2DData_getp1_sigma_x(el, 0);
-    GPUGLMEM double const* own_sigma_y_arr =
-        BeamBeamBiGaussianRigidBunch2DData_getp1_sigma_y(el, 0);
+    GPUGLMEM double const* own_beam_Sigma_11 =
+        BeamBeamBiGaussianRigidBunch2DData_getp1_own_beam_Sigma_11(el, 0);
+    GPUGLMEM double const* own_beam_Sigma_33 =
+        BeamBeamBiGaussianRigidBunch2DData_getp1_own_beam_Sigma_33(el, 0);
 
     START_PER_PARTICLE_BLOCK(part0, part);
         double const x = LocalParticle_get_x(part);
@@ -108,18 +108,18 @@ void BeamBeamBiGaussianRigidBunch2D_track_local_particle(
             continue;
         }
 
-        double const other_beam_shift_x = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_x(el, i_match);
-        double const other_beam_shift_y = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_y(el, i_match);
+        double const other_beam_shift_x = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_shift_x(el, i_match);
+        double const other_beam_shift_y = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_shift_y(el, i_match);
         double const other_beam_num_particles =
             BeamBeamBiGaussianRigidBunch2DData_get_other_beam_num_particles(el, i_match);
 
-        // Transverse size of the matched opposing bunch (indexed by the OTHER
-        // beam). In the coherent (rigid-bunch) mode the effective Gaussian size
-        // is the convolution with this beam's OWN size: the own size is indexed
-        // by THIS beam -- the particle is matched to its own bunch on the
-        // own-beam zeta grid (a single own bunch -> uniform size, index 0).
-        double sigma_x = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_sigma_x(el, i_match);
-        double sigma_y = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_sigma_y(el, i_match);
+        // Diagonal transverse covariance of the matched opposing bunch
+        // (indexed by the OTHER beam). In coherent mode the effective diagonal
+        // covariance is the sum with this beam's OWN covariance. Sigma_13 is
+        // intentionally ignored until coupled rigid-bunch operation is
+        // validated.
+        double Sigma_11 = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_Sigma_11(el, i_match);
+        double Sigma_33 = BeamBeamBiGaussianRigidBunch2DData_get_other_beam_Sigma_33(el, i_match);
         if (coherent){
             int64_t i_own = 0;
             if (num_own_bunches > 1){
@@ -128,10 +128,8 @@ void BeamBeamBiGaussianRigidBunch2D_track_local_particle(
                     zeta_match_tol, zeta_period);
                 if (i_own < 0) i_own = 0;   // fall back to the first own bunch
             }
-            double const own_sigma_x = own_sigma_x_arr[i_own];
-            double const own_sigma_y = own_sigma_y_arr[i_own];
-            sigma_x = sqrt(sigma_x*sigma_x + own_sigma_x*own_sigma_x);
-            sigma_y = sqrt(sigma_y*sigma_y + own_sigma_y*own_sigma_y);
+            Sigma_11 += own_beam_Sigma_11[i_own];
+            Sigma_33 += own_beam_Sigma_33[i_own];
         }
 
         double const x_bar = x - other_beam_shift_x;
@@ -144,9 +142,9 @@ void BeamBeamBiGaussianRigidBunch2D_track_local_particle(
             other_beam_num_particles,
             other_beam_q0,
             other_beam_beta0,
-            sigma_x*sigma_x,
-            0.,
-            sigma_y*sigma_y,
+            Sigma_11,
+            0., // Transverse coupling is stored but not yet used by this model.
+            Sigma_33,
             min_sigma_diff,
             0.,
             0.);

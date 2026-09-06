@@ -30,8 +30,9 @@ def beam_beam_rigid_bunch_study():
             zeta_period=0.6,
             other_beam_q0=1,
             other_beam_beta0=float(opposing.beta0[0]),
-            other_beam_sigma_x=[1.0e-3, 1.2e-3, 0.9e-3],
-            other_beam_sigma_y=[1.3e-3, 0.8e-3, 1.1e-3],
+            other_beam_Sigma_11=np.array([1.0e-3, 1.2e-3, 0.9e-3])**2,
+            other_beam_Sigma_13=0,
+            other_beam_Sigma_33=np.array([1.3e-3, 0.8e-3, 1.1e-3])**2,
         )
         arc = xt.LineSegmentMap(
             length=0.6,

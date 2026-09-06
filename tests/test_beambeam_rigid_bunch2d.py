@@ -83,7 +83,8 @@ def test_multibunch_coherent(test_context):
         other_particles=opp, zeta_offset=0.0,
         zeta_match_tol=0.4 * DZ, zeta_period=N_SLOTS * DZ,
         other_beam_q0=1.0, other_beam_beta0=BETA0,
-        coherent=True, sigma_x=sig_own_x, sigma_y=sig_own_y,
+        coherent=True,
+        own_beam_sigma_x=sig_own_x, own_beam_sigma_y=sig_own_y,
         other_beam_sigma_x=SIGMA, other_beam_sigma_y=SIGMA,
         _context=test_context)
 
@@ -114,17 +115,18 @@ def test_multibunch_coherent(test_context):
             other_particles=opp,
             other_beam_q0=1.0, other_beam_beta0=BETA0,
             coherent=True, _context=test_context)
-        raise AssertionError('coherent=True without sigma_x/y must raise')
+        raise AssertionError(
+            'coherent=True without own-beam covariance must raise')
     except ValueError:
         pass
 
 
 @for_all_test_contexts
 def test_multibunch_coherent_per_bunch_own_size(test_context):
-    # coherent=True with PER-BUNCH own sizes: sigma_x/sigma_y are indexed by THIS
-    # beam (own_beam_zeta), other_beam_sigma_x/y by the opposing beam; the kernel
-    # matches the tracked particle to its own bunch AND to its opposing partner
-    # independently. The own- and opposing-bunch INDEXING differs here: 2 own
+    # coherent=True with PER-BUNCH covariance: own_beam_Sigma_* is indexed by
+    # THIS beam (own_beam_zeta), other_beam_Sigma_* by the opposing beam; the
+    # kernel matches the tracked particle to its own bunch AND to its opposing
+    # partner independently. The own- and opposing-bunch INDEXING differs: 2 own
     # bunches at slots [0, 20] with offset +10 pair with opposing bunches at
     # slots 10 (index 0) and 30 (index 2) among opposing slots [10, 20, 30, 40].
     off = 10
@@ -143,12 +145,14 @@ def test_multibunch_coherent_per_bunch_own_size(test_context):
         other_particles=opp, zeta_offset=off * DZ,
         zeta_match_tol=0.4 * DZ, zeta_period=N_SLOTS * DZ,
         other_beam_q0=1.0, other_beam_beta0=BETA0, coherent=True,
-        own_beam_zeta=own_slots * DZ, sigma_x=own_sx, sigma_y=own_sy,
+        own_beam_zeta=own_slots * DZ,
+        own_beam_sigma_x=own_sx, own_beam_sigma_y=own_sy,
         other_beam_sigma_x=oth_sx, other_beam_sigma_y=oth_sy,
         _context=test_context)
     assert bb.num_own_bunches == 2
-    assert np.allclose(bb.sigma_x, own_sx, rtol=1e-15)
-    assert np.allclose(bb.sigma_y, own_sy, rtol=1e-15)
+    assert np.allclose(bb.own_beam_Sigma_11, own_sx**2, rtol=1e-15)
+    assert np.allclose(bb.own_beam_Sigma_13, 0, rtol=0, atol=0)
+    assert np.allclose(bb.own_beam_Sigma_33, own_sy**2, rtol=1e-15)
 
     # own bunch k (slot own_slots[k]) pairs with opposing bunch i_opp
     for k, slot in enumerate(own_slots):
@@ -212,9 +216,9 @@ def test_multibunch_zeta_period(test_context):
     assert max(abs(v) for v in kick_wrap) > 0
     assert np.allclose(kick_wrap, kick_direct, rtol=1e-14, atol=0)
 
-    # 5) unsorted opposing bunches WITH per-bunch sizes:
-    #    update_from_other_beam must sort bunches AND their sigmas in zeta
-    #    (the kernel partner search is a binary search); pairing and sizes
+    # 5) unsorted opposing bunches WITH per-bunch covariance:
+    #    update_from_other_beam must sort bunches AND covariance in zeta
+    #    (the kernel partner search is a binary search); pairing and covariance
     #    must be unchanged.
     sig_arr = SIGMA * (1.0 + 0.1 * (slots_opp - 200))
     bb_sig = _make_element(test_context, opp, 2, period,
@@ -233,9 +237,12 @@ def test_multibunch_zeta_period(test_context):
     kick_shuffled = _kick(test_context, bb_shuffled, 200)
     assert max(abs(v) for v in kick_sig) > 0
     assert np.allclose(kick_shuffled, kick_sig, rtol=1e-14, atol=0)
-    # stored sizes follow the zeta ordering
-    assert np.allclose(bb_shuffled.other_beam_sigma_x, sig_arr, rtol=1e-15)
-    assert np.allclose(bb_shuffled.other_beam_sigma_y, sig_arr[::-1], rtol=1e-15)
+    # stored covariance follows the zeta ordering
+    assert np.allclose(
+        bb_shuffled.other_beam_Sigma_11, sig_arr**2, rtol=1e-15)
+    assert np.allclose(bb_shuffled.other_beam_Sigma_13, 0, rtol=0, atol=0)
+    assert np.allclose(
+        bb_shuffled.other_beam_Sigma_33, sig_arr[::-1]**2, rtol=1e-15)
 
 
 @for_all_test_contexts
@@ -342,3 +349,112 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
         weight=populations[:2])
     with pytest.raises(ValueError, match='reconfigure the element'):
         bb.update_from_other_beam(opposing_with_different_filling)
+
+
+def test_rigid_bunch_covariance_api_and_coupling_warning():
+    opposing = xp.Particles(
+        p0c=P0C, q0=1, mass0=xp.PROTON_MASS_EV,
+        zeta=[0, DZ], weight=INTENSITY)
+    own_sigma_x = np.array([0.8, 1.2]) * SIGMA
+    own_sigma_y = np.array([1.1, 1.4]) * SIGMA
+    other_sigma_x = np.array([0.9, 1.3]) * SIGMA
+    other_sigma_y = np.array([1.5, 0.7]) * SIGMA
+
+    from_sigmas = xf.BeamBeamBiGaussianRigidBunch2D(
+        other_particles=opposing,
+        other_beam_q0=1,
+        other_beam_beta0=BETA0,
+        coherent=True,
+        own_beam_zeta=[0, DZ],
+        own_beam_sigma_x=own_sigma_x,
+        own_beam_sigma_y=own_sigma_y,
+        other_beam_sigma_x=other_sigma_x,
+        other_beam_sigma_y=other_sigma_y)
+    from_covariance = xf.BeamBeamBiGaussianRigidBunch2D(
+        other_particles=opposing,
+        other_beam_q0=1,
+        other_beam_beta0=BETA0,
+        coherent=True,
+        own_beam_zeta=[0, DZ],
+        own_beam_Sigma_11=own_sigma_x**2,
+        own_beam_Sigma_13=0,
+        own_beam_Sigma_33=own_sigma_y**2,
+        other_beam_Sigma_11=other_sigma_x**2,
+        other_beam_Sigma_13=0,
+        other_beam_Sigma_33=other_sigma_y**2)
+
+    for field in (
+            'own_beam_Sigma_11', 'own_beam_Sigma_13',
+            'own_beam_Sigma_33', 'other_beam_Sigma_11',
+            'other_beam_Sigma_13', 'other_beam_Sigma_33'):
+        xo.assert_allclose(
+            getattr(from_sigmas, field), getattr(from_covariance, field),
+            rtol=0, atol=0)
+
+    probe_from_sigmas = xp.Particles(
+        p0c=P0C, q0=1, mass0=xp.PROTON_MASS_EV,
+        x=[0.7e-3, -0.4e-3], y=[0.2e-3, 0.5e-3], zeta=[0, DZ])
+    probe_from_covariance = probe_from_sigmas.copy()
+    from_sigmas.track(probe_from_sigmas)
+    from_covariance.track(probe_from_covariance)
+    xo.assert_allclose(
+        probe_from_sigmas.px, probe_from_covariance.px, rtol=0, atol=0)
+    xo.assert_allclose(
+        probe_from_sigmas.py, probe_from_covariance.py, rtol=0, atol=0)
+
+    serialized = from_covariance.to_dict()
+    for field in (
+            'own_beam_Sigma_11', 'own_beam_Sigma_13',
+            'own_beam_Sigma_33', 'other_beam_Sigma_11',
+            'other_beam_Sigma_13', 'other_beam_Sigma_33'):
+        assert field in serialized
+    assert 'sigma_x' not in serialized
+    assert 'other_beam_sigma_x' not in serialized
+
+    with pytest.raises(ValueError, match='not both'):
+        xf.BeamBeamBiGaussianRigidBunch2D(
+            other_particles=opposing,
+            other_beam_Sigma_11=SIGMA**2,
+            other_beam_Sigma_33=SIGMA**2,
+            other_beam_sigma_x=SIGMA,
+            other_beam_sigma_y=SIGMA)
+    with pytest.raises(ValueError, match='must be provided together'):
+        xf.BeamBeamBiGaussianRigidBunch2D(
+            other_particles=opposing,
+            other_beam_sigma_x=SIGMA)
+    large_correlation = 2e-2
+    with pytest.warns(RuntimeWarning, match='has not yet been validated'):
+        coupled = xf.BeamBeamBiGaussianRigidBunch2D(
+            other_particles=opposing,
+            other_beam_q0=1,
+            other_beam_beta0=BETA0,
+            other_beam_Sigma_11=SIGMA**2,
+            other_beam_Sigma_13=large_correlation * SIGMA**2,
+            other_beam_Sigma_33=SIGMA**2)
+    xo.assert_allclose(
+        coupled.other_beam_Sigma_13,
+        large_correlation * SIGMA**2, rtol=0, atol=0)
+    uncoupled = coupled.copy()
+    uncoupled.other_beam_Sigma_13[:] = 0
+    coupled_probe = xp.Particles(
+        p0c=P0C, q0=1, mass0=xp.PROTON_MASS_EV,
+        x=0.7 * SIGMA, y=0.4 * SIGMA, zeta=0)
+    uncoupled_probe = coupled_probe.copy()
+    coupled.track(coupled_probe)
+    uncoupled.track(uncoupled_probe)
+    xo.assert_allclose(coupled_probe.px, uncoupled_probe.px, rtol=0, atol=0)
+    xo.assert_allclose(coupled_probe.py, uncoupled_probe.py, rtol=0, atol=0)
+
+    with pytest.warns(RuntimeWarning, match='has not yet been validated'):
+        from_covariance.update_from_own_beam(
+            own_beam_Sigma_11=own_sigma_x**2,
+            own_beam_Sigma_13=(
+                large_correlation * own_sigma_x * own_sigma_y),
+            own_beam_Sigma_33=own_sigma_y**2)
+    with pytest.warns(RuntimeWarning, match='has not yet been validated'):
+        from_covariance.update_from_other_beam(
+            opposing,
+            other_beam_Sigma_11=other_sigma_x**2,
+            other_beam_Sigma_13=(
+                large_correlation * other_sigma_x * other_sigma_y),
+            other_beam_Sigma_33=other_sigma_y**2)

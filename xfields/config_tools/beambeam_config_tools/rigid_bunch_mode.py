@@ -66,6 +66,10 @@ import numpy as np
 
 from xtrack.general import _print
 
+from ...beam_elements.beambeam_rigid_bunch_2d import (
+    _warn_if_large_transverse_coupling,
+)
+
 from .config_tools import (
     BEAMBEAM_CONFIG_KEY,
     BEAMBEAM_CONFIG_VERSION,
@@ -163,8 +167,12 @@ def _new_beambeam_element(line, other_line, n_slots, bunch_spacing_zeta):
         other_beam_q0=float(other_line.particle_ref.q0),
         other_beam_beta0=_beta0(other_line),
         coherent=True,
-        sigma_x=1.0, sigma_y=1.0,
-        other_beam_sigma_x=1.0, other_beam_sigma_y=1.0,
+        own_beam_Sigma_11=1.0,
+        own_beam_Sigma_13=0.0,
+        own_beam_Sigma_33=1.0,
+        other_beam_Sigma_11=1.0,
+        other_beam_Sigma_13=0.0,
+        other_beam_Sigma_33=1.0,
         _context=line._context)
 
 
@@ -430,6 +438,7 @@ class BeamBeamRigidBunchStudy:
         self.ip_offsets = self._resolve_ip_offsets(tw_cw)
 
         geom = {}
+        covariance_components = []
         for base, ip, signed_identifier in self.enc_specs:
             offset = (self.ip_offsets[ip] + signed_identifier) % n_slots
             encounter = compute_beambeam_geometry(
@@ -438,17 +447,26 @@ class BeamBeamRigidBunchStudy:
                 element_name_acw=self.bb_name(base, True))
             cw = encounter['cw']
             acw = encounter['acw']
+            covariance_components.extend(
+                (beam['sigma'][11], beam['sigma'][13], beam['sigma'][33])
+                for beam in (cw, acw))
             geom[base] = dict(
                 ip=ip, offset=offset, signed_n=signed_identifier,
                 betx_cw=cw['betx'], bety_cw=cw['bety'],
                 betx_acw=acw['betx'], bety_acw=acw['bety'],
-                sigma_x_cw=np.sqrt(cw['sigma'][11]),
-                sigma_y_cw=np.sqrt(cw['sigma'][33]),
-                sigma_x_acw=np.sqrt(acw['sigma'][11]),
-                sigma_y_acw=np.sqrt(acw['sigma'][33]),
+                Sigma_11_cw=cw['sigma'][11],
+                Sigma_13_cw=cw['sigma'][13],
+                Sigma_33_cw=cw['sigma'][33],
+                Sigma_11_acw=acw['sigma'][11],
+                Sigma_13_acw=acw['sigma'][13],
+                Sigma_33_acw=acw['sigma'][33],
                 sep_x=encounter['separation_x'],
                 sep_y=encounter['separation_y'],
             )
+        # Report significant coupling once for the complete set of encounters.
+        Sigma_11, Sigma_13, Sigma_33 = map(np.asarray,
+                                           zip(*covariance_components))
+        _warn_if_large_transverse_coupling(Sigma_11, Sigma_13, Sigma_33)
         self.geom = geom
         self.meta = dict(
             qx_cw=float(tw_cw.qx), qy_cw=float(tw_cw.qy),
@@ -456,12 +474,11 @@ class BeamBeamRigidBunchStudy:
         self._configure_bb()
 
     def _configure_bb(self):
-        """Set the pairing ``zeta_offset`` and the (static) opposing sizes on the
+        """Set the pairing offset and static opposing-beam covariance on the
         placed beam-beam elements from the computed geometry, then register the
-        own bunch grid and own sizes (:meth:`_register_own_sizes`). With the
-        design (static) optics the covariance-derived sizes are the same for all
-        bunches, so the opposing per-bunch sizes (indexed by the OTHER beam) are
-        filled with a single value broadcast over the opposing bunches."""
+        own bunch grid and covariance (:meth:`_register_own_covariance`). With
+        the design optics, the covariance is the same for all bunches and is
+        broadcast over the slot-indexed arrays."""
         for mirror, bb_dict in ((False, self.bb_cw), (True, self.bb_acw)):
             oth = 'cw' if mirror else 'acw'
             for base in self.enc_names:
@@ -472,11 +489,12 @@ class BeamBeamRigidBunchStudy:
                 # ``zeta_own - offset * spacing``; ACW uses the inverse map.
                 bb.zeta_offset = (e['offset'] if mirror else -e['offset']) \
                     * self.bunch_spacing_zeta
-                bb.other_beam_sigma_x = np.full(
-                    self.n_slots, e[f'sigma_x_{oth}'])
-                bb.other_beam_sigma_y = np.full(
-                    self.n_slots, e[f'sigma_y_{oth}'])
-        self._register_own_sizes()
+                for component in (11, 13, 33):
+                    setattr(
+                        bb, f'other_beam_Sigma_{component}',
+                        np.full(self.n_slots,
+                                e[f'Sigma_{component}_{oth}']))
+        self._register_own_covariance()
         for line, mirror, bb_dict in (
                 (self.cw_line, False, self.bb_cw),
                 (self.acw_line, True, self.bb_acw)):
@@ -484,11 +502,10 @@ class BeamBeamRigidBunchStudy:
             for bb in bb_dict.values():
                 bb.update_from_other_beam(particles)
 
-    def _register_own_sizes(self):
+    def _register_own_covariance(self):
         """(Re)register each element's OWN bunch grid (``own_beam_zeta``) and
-        static design sizes (``sigma_x``/``sigma_y``, indexed by THIS beam) for
-        every RF slot. Uses the covariance-derived bare-optics sizes cached in
-        ``self.geom`` (uniform over slots)."""
+        static design covariance, indexed by THIS beam, for every RF slot.
+        Uses the bare-optics covariance cached in ``self.geom``."""
         for mirror, bb_dict in ((False, self.bb_cw), (True, self.bb_acw)):
             own = 'acw' if mirror else 'cw'
             own_zeta = -np.arange(self.n_slots) * self.bunch_spacing_zeta
@@ -496,8 +513,9 @@ class BeamBeamRigidBunchStudy:
                 e = self.geom[base]
                 bb_dict[base].update_from_own_beam(
                     own_zeta,
-                    sigma_x=e[f'sigma_x_{own}'],
-                    sigma_y=e[f'sigma_y_{own}'])
+                    own_beam_Sigma_11=e[f'Sigma_11_{own}'],
+                    own_beam_Sigma_13=e[f'Sigma_13_{own}'],
+                    own_beam_Sigma_33=e[f'Sigma_33_{own}'])
 
     # ------------------------------------------------------------------
     # Sector-map reduction
@@ -553,12 +571,12 @@ class BeamBeamRigidBunchStudy:
     # ------------------------------------------------------------------
     # Solve / solution feed-in
     # ------------------------------------------------------------------
-    def _compute_sigmas(self, mbtw, bb_names, gamma0):
-        """Per-encounter transverse sizes from LIVE per-bunch beta functions
-        (dynamic beta). Returns (sigma_x, sigma_y), each (n_bunches, n_enc)."""
-        sigma_x = np.sqrt(mbtw['betx', bb_names] * self.nemitt_x / gamma0)
-        sigma_y = np.sqrt(mbtw['bety', bb_names] * self.nemitt_y / gamma0)
-        return sigma_x, sigma_y
+    def _compute_covariances(self, mbtw, bb_names, gamma0):
+        """Diagonal covariance from live per-bunch beta functions."""
+        Sigma_11 = mbtw['betx', bb_names] * self.nemitt_x / gamma0
+        Sigma_33 = mbtw['bety', bb_names] * self.nemitt_y / gamma0
+        Sigma_13 = np.zeros_like(Sigma_11)
+        return Sigma_11, Sigma_13, Sigma_33
 
     def _sigma_vector(self, bb_dict, mirror):
         """Own-beam per-bunch sizes laid out to match :func:`_orbit_vector` (x
@@ -574,24 +592,24 @@ class BeamBeamRigidBunchStudy:
             n = int(bb.num_own_bunches)
             stored_zeta = np.asarray(bb.own_beam_zeta)[:n]
             indices = np.searchsorted(stored_zeta, zeta)
-            return (np.asarray(bb.sigma_x)[:n][indices],
-                    np.asarray(bb.sigma_y)[:n][indices])
+            return (np.sqrt(np.asarray(bb.own_beam_Sigma_11)[:n][indices]),
+                    np.sqrt(np.asarray(bb.own_beam_Sigma_33)[:n][indices]))
         cols = [active(bb_dict[b]) for b in self.enc_names]
         sx = np.stack([c[0] for c in cols], axis=1)   # (n_bunches, n_enc)
         sy = np.stack([c[1] for c in cols], axis=1)
         return np.concatenate([sx.ravel(), sy.ravel()])
 
     def _update_opposing(self, bb_dict, mbtw_other, slots_other, slots_own,
-                         bb_names_other, num_particles_other, sigmas_other=None,
-                         sigmas_own=None):
+                         bb_names_other, num_particles_other,
+                         covariances_other=None, covariances_own=None):
         """Write the opposing beam's per-bunch orbit (+ survey separation) into
         the beam-beam elements ``bb_dict`` (optionally also the dynamic-beta
-        sizes). Between the two (opposite-parity) beam lines x flips and y does
+        covariance). Between the two (opposite-parity) beam lines x flips and y does
         not; matching TRAIN/pytrain and the reversed-line x-flip, the survey
         separation enters as ``-sep_x`` in x for BOTH beams.
 
-        The opposing sizes (``sigmas_other``) are indexed by the OTHER beam; the
-        own sizes (``sigmas_own``) are indexed by THIS beam."""
+        The opposing covariance is indexed by the OTHER beam; the own
+        covariance is indexed by THIS beam."""
         import xtrack as xt
         xs = -mbtw_other['x', bb_names_other]
         ys = mbtw_other['y', bb_names_other]
@@ -616,28 +634,34 @@ class BeamBeamRigidBunchStudy:
             p.x[:] = x_all
             p.y[:] = y_all
             kw = {}
-            if sigmas_other is not None:
-                sigma_x_other = np.full(
-                    self.n_slots, self.geom[base][f'sigma_x_{other}'])
-                sigma_y_other = np.full(
-                    self.n_slots, self.geom[base][f'sigma_y_{other}'])
-                sigma_x_other[slots_other] = sigmas_other[0][:, j]
-                sigma_y_other[slots_other] = sigmas_other[1][:, j]
-                kw = dict(other_beam_sigma_x=sigma_x_other,
-                          other_beam_sigma_y=sigma_y_other)
+            if covariances_other is not None:
+                covariance_other = []
+                for component, values in zip(
+                        (11, 13, 33), covariances_other):
+                    value_all = np.full(
+                        self.n_slots,
+                        self.geom[base][f'Sigma_{component}_{other}'])
+                    value_all[slots_other] = values[:, j]
+                    covariance_other.append(value_all)
+                kw = dict(
+                    other_beam_Sigma_11=covariance_other[0],
+                    other_beam_Sigma_13=covariance_other[1],
+                    other_beam_Sigma_33=covariance_other[2])
             bb = bb_dict[base]
             bb.update_from_other_beam(p, **kw)
-            if sigmas_own is not None:
-                sigma_x_own = np.full(
-                    self.n_slots, self.geom[base][f'sigma_x_{own}'])
-                sigma_y_own = np.full(
-                    self.n_slots, self.geom[base][f'sigma_y_{own}'])
-                sigma_x_own[slots_own] = sigmas_own[0][:, j]
-                sigma_y_own[slots_own] = sigmas_own[1][:, j]
+            if covariances_own is not None:
+                covariance_own = []
+                for component, values in zip((11, 13, 33), covariances_own):
+                    value_all = np.full(
+                        self.n_slots,
+                        self.geom[base][f'Sigma_{component}_{own}'])
+                    value_all[slots_own] = values[:, j]
+                    covariance_own.append(value_all)
                 bb.update_from_own_beam(
                     zeta=zeta_all,
-                    sigma_x=sigma_x_own,
-                    sigma_y=sigma_y_own)
+                    own_beam_Sigma_11=covariance_own[0],
+                    own_beam_Sigma_13=covariance_own[1],
+                    own_beam_Sigma_33=covariance_own[2])
 
     def load_solution(self, rigid_bunch_twiss, dynamic_beta=False):
         """Load a converged per-bunch solution (e.g. from a reduced-model
@@ -649,23 +673,25 @@ class BeamBeamRigidBunchStudy:
         functions of the solution."""
         mbtw_clockwise = rigid_bunch_twiss.b1
         mbtw_anticlockwise = rigid_bunch_twiss.b2
-        sizes_cw = sizes_acw = None
+        covariances_cw = covariances_acw = None
         if dynamic_beta:
-            sizes_cw = self._compute_sigmas(mbtw_clockwise, self.bb_names_cw,
-                                            _gamma0(self.cw_line))
-            sizes_acw = self._compute_sigmas(mbtw_anticlockwise,
-                                             self.bb_names_acw,
-                                             _gamma0(self.acw_line))
+            covariances_cw = self._compute_covariances(
+                mbtw_clockwise, self.bb_names_cw, _gamma0(self.cw_line))
+            covariances_acw = self._compute_covariances(
+                mbtw_anticlockwise, self.bb_names_acw,
+                _gamma0(self.acw_line))
         self._update_opposing(
             self.bb_cw, mbtw_anticlockwise,
             self.filled_slots_acw, self.filled_slots_cw,
             self.bb_names_acw, self.num_particles_acw,
-            sigmas_other=sizes_acw, sigmas_own=sizes_cw)
+            covariances_other=covariances_acw,
+            covariances_own=covariances_cw)
         self._update_opposing(
             self.bb_acw, mbtw_clockwise,
             self.filled_slots_cw, self.filled_slots_acw,
             self.bb_names_cw, self.num_particles_cw,
-            sigmas_other=sizes_cw, sigmas_own=sizes_acw)
+            covariances_other=covariances_cw,
+            covariances_own=covariances_acw)
 
     def twiss(self, method='4d', mode='fast', show_progress=True, **kwargs):
         """Compute per-bunch optics for both beams using the opposing-beam

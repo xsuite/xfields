@@ -236,29 +236,33 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         # The shared covariance API includes relativistic beta in the
         # normalized-to-geometric emittance conversion.
         xo.assert_allclose(
-            geom['sigma_x_cw'], np.sqrt(
-                geom['betx_cw'] * NEMITT_X / (beta0_cw * gamma0_cw)),
+            geom['Sigma_11_cw'],
+            geom['betx_cw'] * NEMITT_X / (beta0_cw * gamma0_cw),
             rtol=1e-14)
         xo.assert_allclose(
-            geom['sigma_y_cw'], np.sqrt(
-                geom['bety_cw'] * NEMITT_Y / (beta0_cw * gamma0_cw)),
+            geom['Sigma_33_cw'],
+            geom['bety_cw'] * NEMITT_Y / (beta0_cw * gamma0_cw),
             rtol=1e-14)
         xo.assert_allclose(
-            geom['sigma_x_acw'], np.sqrt(
-                geom['betx_acw'] * NEMITT_X / (beta0_acw * gamma0_acw)),
+            geom['Sigma_11_acw'],
+            geom['betx_acw'] * NEMITT_X / (beta0_acw * gamma0_acw),
             rtol=1e-14)
         xo.assert_allclose(
-            geom['sigma_y_acw'], np.sqrt(
-                geom['bety_acw'] * NEMITT_Y / (beta0_acw * gamma0_acw)),
+            geom['Sigma_33_acw'],
+            geom['bety_acw'] * NEMITT_Y / (beta0_acw * gamma0_acw),
             rtol=1e-14)
         xo.assert_allclose(
-            bb_cw.sigma_x, geom['sigma_x_cw'], rtol=0, atol=0)
+            bb_cw.own_beam_Sigma_11, geom['Sigma_11_cw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.sigma_y, geom['sigma_y_cw'], rtol=0, atol=0)
+            bb_cw.own_beam_Sigma_13, geom['Sigma_13_cw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.other_beam_sigma_x, geom['sigma_x_acw'], rtol=0, atol=0)
+            bb_cw.own_beam_Sigma_33, geom['Sigma_33_cw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.other_beam_sigma_y, geom['sigma_y_acw'], rtol=0, atol=0)
+            bb_cw.other_beam_Sigma_11, geom['Sigma_11_acw'], rtol=0, atol=0)
+        xo.assert_allclose(
+            bb_cw.other_beam_Sigma_13, geom['Sigma_13_acw'], rtol=0, atol=0)
+        xo.assert_allclose(
+            bb_cw.other_beam_Sigma_33, geom['Sigma_33_acw'], rtol=0, atol=0)
 
     # The study geometry is the normalized view of the shared per-encounter
     # Reduced Twiss tables and MadPoints.
@@ -286,18 +290,12 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
             xo.assert_allclose(
                 geom[f'bety_{orientation}'],
                 encounter[orientation]['bety'], rtol=0, atol=0)
-        xo.assert_allclose(
-            geom['sigma_x_cw'], np.sqrt(encounter['cw']['sigma'][11]),
-            rtol=0, atol=0)
-        xo.assert_allclose(
-            geom['sigma_y_cw'], np.sqrt(encounter['cw']['sigma'][33]),
-            rtol=0, atol=0)
-        xo.assert_allclose(
-            geom['sigma_x_acw'], np.sqrt(encounter['acw']['sigma'][11]),
-            rtol=0, atol=0)
-        xo.assert_allclose(
-            geom['sigma_y_acw'], np.sqrt(encounter['acw']['sigma'][33]),
-            rtol=0, atol=0)
+        for orientation in ('cw', 'acw'):
+            for component in (11, 13, 33):
+                xo.assert_allclose(
+                    geom[f'Sigma_{component}_{orientation}'],
+                    encounter[orientation]['sigma'][component],
+                    rtol=0, atol=0)
         xo.assert_allclose(
             geom['sep_x'], encounter['separation_x'], rtol=0, atol=0)
         xo.assert_allclose(
@@ -366,15 +364,16 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
                 (study.bb_acw[base], reduced.bb_acw[base])):
             assert full_bb.num_other_bunches == N_SLOTS
             for field in (
-                    'other_beam_zeta', 'other_beam_x', 'other_beam_y',
+                    'other_beam_zeta', 'other_beam_shift_x',
+                    'other_beam_shift_y',
                     'other_beam_num_particles'):
                 xo.assert_allclose(
                     getattr(full_bb, field),
                     getattr(reduced_bb, field),
                     rtol=0, atol=0)
 
-    # Dynamic-beta sizes arrive in public filled-slot order from Twiss and are
-    # reordered together with the negative-zeta grids inside each element.
+    # Dynamic-beta covariance arrives in public filled-slot order from Twiss
+    # and is reordered with the negative-zeta grids inside each element.
     dynamic_solution = reduced.solve(
         max_iterations=1,
         tol_sigma=0,
@@ -391,21 +390,20 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     for base in expected_encounters:
         name_cw = reduced.bb_name(base, mirror=False)
         name_acw = reduced.bb_name(base, mirror=True)
-        sigma_x_cw = np.sqrt(
-            mbtw_cw_dyn['betx', name_cw] * NEMITT_X / gamma0_cw)
-        sigma_x_acw = np.sqrt(
-            mbtw_acw_dyn['betx', name_acw] * NEMITT_X / gamma0_acw)
-        xo.assert_allclose(np.asarray(reduced.bb_cw[base].sigma_x)[indices_cw],
-                           sigma_x_cw, rtol=1e-14)
+        Sigma_11_cw = mbtw_cw_dyn['betx', name_cw] * NEMITT_X / gamma0_cw
+        Sigma_11_acw = mbtw_acw_dyn['betx', name_acw] * NEMITT_X / gamma0_acw
         xo.assert_allclose(
-            np.asarray(reduced.bb_acw[base].sigma_x)[indices_acw],
-                           sigma_x_acw, rtol=1e-14)
+            np.asarray(reduced.bb_cw[base].own_beam_Sigma_11)[indices_cw],
+            Sigma_11_cw, rtol=1e-14)
         xo.assert_allclose(
-            np.asarray(reduced.bb_cw[base].other_beam_sigma_x)[indices_acw],
-            sigma_x_acw, rtol=1e-14)
+            np.asarray(reduced.bb_acw[base].own_beam_Sigma_11)[indices_acw],
+            Sigma_11_acw, rtol=1e-14)
         xo.assert_allclose(
-            np.asarray(reduced.bb_acw[base].other_beam_sigma_x)[indices_cw],
-            sigma_x_cw, rtol=1e-14)
+            np.asarray(reduced.bb_cw[base].other_beam_Sigma_11)[indices_acw],
+            Sigma_11_acw, rtol=1e-14)
+        xo.assert_allclose(
+            np.asarray(reduced.bb_acw[base].other_beam_Sigma_11)[indices_cw],
+            Sigma_11_cw, rtol=1e-14)
 
     # A changed filling updates the full-slot arrays in place. No element is
     # rebuilt, and empty slots retain zero opposing population.

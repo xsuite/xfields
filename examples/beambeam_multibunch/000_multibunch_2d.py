@@ -91,6 +91,10 @@ common_bb_kwargs = dict(
     # per-bunch transverse sizes (sigma = sqrt(beta * nemitt / gamma0))
     other_beam_sigma_x=np.sqrt(betx_ip * nemitt_x / gamma0),
     other_beam_sigma_y=np.sqrt(bety_ip * nemitt_y / gamma0),
+    own_beam_sigma_x=np.sqrt(betx_ip * nemitt_x / gamma0),
+    own_beam_sigma_y=np.sqrt(bety_ip * nemitt_y / gamma0),
+    own_beam_zeta=zeta_bunches,
+    coherent=True,
 )
 
 # The opposing beam is passed as a Particles object (each active macroparticle
@@ -101,8 +105,10 @@ bb_on_beam2 = xf.BeamBeamBiGaussianRigidBunch2D(
     other_particles=beam1, **common_bb_kwargs)  # other = beam1
 
 # Report the per-bunch transverse sizes derived from the emittances and betas.
-print('opposing bunch sigma_x [um]:', bb_on_beam1.other_beam_sigma_x * 1e6)
-print('opposing bunch sigma_y [um]:', bb_on_beam1.other_beam_sigma_y * 1e6)
+print('opposing bunch sigma_x [um]:',
+      np.sqrt(bb_on_beam1.other_beam_Sigma_11) * 1e6)
+print('opposing bunch sigma_y [um]:',
+      np.sqrt(bb_on_beam1.other_beam_Sigma_33) * 1e6)
 
 # ----------------------------------------------------------------------------
 # Simple linear one-turn maps (transverse rotation by the tune)
