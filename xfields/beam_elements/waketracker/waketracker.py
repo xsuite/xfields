@@ -3,6 +3,7 @@ import numpy as np
 
 import xobjects as xo
 from ..element_with_slicer import ElementWithSlicer
+from ..._filling_pattern import _resolve_filling_pattern
 from .convolution import _ConvData
 
 
@@ -20,11 +21,13 @@ class WakeTracker(ElementWithSlicer):
         Number of slices per bunch used in the underlying slicer.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
-    filling_scheme: np.ndarray
-        List of zeros and ones representing the filling scheme. The length
+    filling_pattern: np.ndarray
+        List of zeros and ones representing the filling pattern. The length
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
+    filling_scheme: np.ndarray
+        Compatibility alias for ``filling_pattern``.
     fake_coupled_bunch_phase_x : float
         Phase [rad] between the horizontal positon and momentum of consecutive
         bunches used when applying the wakefields of 'fake' bunches participating
@@ -34,7 +37,7 @@ class WakeTracker(ElementWithSlicer):
         bunches used when applying the wakefields of 'fake' bunches participating 
         to a coupled mode assuming a uniformly filled machine
     bunch_selection: np.ndarray
-        List of the bunches indicating which slots from the filling scheme are
+        List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
     num_turns : int
         Number of turns which are consiered for the multi-turn wake.
@@ -50,7 +53,7 @@ class WakeTracker(ElementWithSlicer):
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
-                 filling_scheme=None,
+                 filling_pattern=None,
                  bunch_selection=None,
                  num_turns=1,
                  fake_coupled_bunch_phase_x = None,
@@ -59,7 +62,11 @@ class WakeTracker(ElementWithSlicer):
                  circumference=None,
                  log_moments=None,
                  _flatten=False,
+                 filling_scheme=None,
                  **kwargs):
+
+        filling_pattern = _resolve_filling_pattern(
+            filling_pattern, filling_scheme)
 
         self.xoinitialize(**kwargs)
 
@@ -77,7 +84,7 @@ class WakeTracker(ElementWithSlicer):
             assert beta_y is not None and beta_y > 0
             self.betas['y'] = beta_y
         if self.fake_coupled_bunch_phases:
-            assert bunch_selection is not None and filling_scheme is not None
+            assert bunch_selection is not None and filling_pattern is not None
             assert bunch_selection, "When faking a coupled bunch mode, only one bunch should be selected as ref."
 
         all_slicer_moments = []
@@ -98,7 +105,7 @@ class WakeTracker(ElementWithSlicer):
             zeta_range=zeta_range,  # These are [a, b] in the paper
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-            filling_scheme=filling_scheme,
+            filling_pattern=filling_pattern,
             bunch_selection=bunch_selection,
             num_turns=num_turns,
             circumference=circumference,
@@ -109,7 +116,7 @@ class WakeTracker(ElementWithSlicer):
             zeta_range=zeta_range,  # These are [a, b] in the paper
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-            filling_scheme=filling_scheme,
+            filling_pattern=filling_pattern,
             bunch_selection=bunch_selection,
             num_turns=num_turns,
             circumference=circumference)
@@ -218,7 +225,7 @@ class WakeTracker(ElementWithSlicer):
             xo.assert_allclose(self.bunch_spacing_zeta, other.bunch_spacing_zeta, atol=1e-12, rtol=0)
         if self.filling_scheme is None:
             assert other.filling_scheme is None, (
-                'Filling scheme is not consistent')
+                'Filling pattern is not consistent')
         else:
             xo.assert_allclose(self.filling_scheme, other.filling_scheme, atol=0, rtol=0)
         xo.assert_allclose(self.bunch_selection, other.bunch_selection, atol=0, rtol=0)

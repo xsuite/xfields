@@ -21,8 +21,8 @@ particles = xt.Particles(
                          for bid in range(num_bunches)]),
     _context=context,
 )
-# dummy filling scheme
-filling_scheme = np.ones(num_bunches, dtype=int)
+# dummy filling pattern
+filling_pattern = np.ones(num_bunches, dtype=int)
 bunch_selection = np.arange(num_bunches, dtype=int)
 
 # wake from which the compressed profile is taken
@@ -37,10 +37,10 @@ wf.configure_for_tracking(
     zeta_range=(-1, 1),
     num_slices=20,
     bunch_spacing_zeta=bunch_spacing_zeta,
-    filling_scheme=filling_scheme,
+    filling_pattern=filling_pattern,
     bunch_selection=bunch_selection,
     num_turns=1,
-    circumference=bunch_spacing_zeta*len(filling_scheme),
+    circumference=bunch_spacing_zeta*len(filling_pattern),
     _context=context,
 )
 

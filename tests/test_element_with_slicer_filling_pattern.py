@@ -7,13 +7,32 @@ import pytest
 
 from xfields.beam_elements.element_with_slicer import ElementWithSlicer
 
+
+def test_filling_scheme_compatibility_alias():
+    legacy = xf.UniformBinSlicer(
+        zeta_range=(-1, 1), num_slices=2,
+        filling_scheme=[1, 0, 1], bunch_spacing_zeta=5)
+    assert np.array_equal(legacy.filled_slots, [0, 2])
+
+    with pytest.raises(ValueError, match='Only one'):
+        xf.UniformBinSlicer(
+            zeta_range=(-1, 1), num_slices=2,
+            filling_pattern=[1, 0, 1], filling_scheme=[1, 0, 1],
+            bunch_spacing_zeta=5)
+
+    with pytest.raises(ValueError, match='only zero and one'):
+        xf.UniformBinSlicer(
+            zeta_range=(-1, 1), num_slices=2,
+            filling_pattern=[1, 0, 2], bunch_spacing_zeta=5)
+
+
 @pytest.mark.parametrize('buffer_round_trip', [True, False])
 @pytest.mark.parametrize('num_turns', [1, 2, 3])
-def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
+def test_element_with_slicer_filling_pattern(buffer_round_trip, num_turns):
     ele = ElementWithSlicer(
         zeta_range=(-1, 1),
         num_slices=10,
-        filling_scheme=[1, 0, 1, 1],
+        filling_pattern=[1, 0, 1, 1],
         bunch_spacing_zeta=5,
         num_turns=num_turns,
         circumference=100,
@@ -23,7 +42,7 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
     ele1 = ElementWithSlicer(
         zeta_range=(-1, 1),
         num_slices=10,
-        filling_scheme=[1, 0, 1, 1],
+        filling_pattern=[1, 0, 1, 1],
         bunch_spacing_zeta=5,
         num_turns=num_turns,
         circumference=100,
@@ -34,7 +53,7 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
     ele2 = ElementWithSlicer(
         zeta_range=(-1, 1),
         num_slices=10,
-        filling_scheme=[1, 0, 1, 1],
+        filling_pattern=[1, 0, 1, 1],
         bunch_spacing_zeta=5,
         num_turns=num_turns,
         circumference=100,
@@ -186,4 +205,3 @@ def test_element_with_slicer_filling_scheme(buffer_round_trip, num_turns):
         xo.assert_allclose(z_prof2_turn, z_prof, rtol=0, atol=1e-12)
 
         xo.assert_allclose(prof_turn, (2**(num_turns-1-i_check)) * prof, rtol=0, atol=1e-12)
-

@@ -5,7 +5,7 @@
 
 """Per-bunch rigid-beam optics through ``BeamBeamRigidBunchStudy``.
 
-The rigid-bunch study owns both the filling scheme and the beam-beam state. Its ``twiss``
+The rigid-bunch study owns both the filling pattern and the beam-beam state. Its ``twiss``
 method therefore needs no separate bunch-position argument, while ``solve``
 iterates the two beams to a self-consistent closed orbit.
 """

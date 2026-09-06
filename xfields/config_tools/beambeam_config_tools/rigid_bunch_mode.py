@@ -235,7 +235,10 @@ def _normalize_filling(filling_pattern, num_particles, n_slots, beam_name):
             f'of length n_slots={n_slots}.')
     if not np.all(np.isfinite(pattern)):
         raise ValueError(f'`filling_pattern_{beam_name}` must be finite.')
-    pattern = (pattern != 0).astype(np.int64)
+    if not np.all((pattern == 0) | (pattern == 1)):
+        raise ValueError(
+            f'`filling_pattern_{beam_name}` can contain only zero and one.')
+    pattern = pattern.astype(np.int64)
     filled_slots = np.nonzero(pattern)[0].astype(np.int64)
     if len(filled_slots) == 0:
         raise ValueError(

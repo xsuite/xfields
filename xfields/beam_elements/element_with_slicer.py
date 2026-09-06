@@ -4,6 +4,8 @@ import xfields as xf
 import xtrack as xt
 from xfields.slicers.compressed_profile import CompressedProfile
 
+from .._filling_pattern import _resolve_filling_pattern
+
 
 class ElementWithSlicer(xt.BeamElement):
     """
@@ -19,13 +21,15 @@ class ElementWithSlicer(xt.BeamElement):
         Number of slices per bunch used in the underlying slicer.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
-    filling_scheme: np.ndarray
-        List of zeros and ones representing the filling scheme. The length
+    filling_pattern: np.ndarray
+        List of zeros and ones representing the filling pattern. The length
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
+    filling_scheme: np.ndarray
+        Compatibility alias for ``filling_pattern``.
     bunch_selection: np.ndarray
-        List of the bunches indicating which slots from the filling scheme are
+        List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
     num_turns : int
         Number of turns which are consiered for the multi-turn wake.
@@ -43,12 +47,16 @@ class ElementWithSlicer(xt.BeamElement):
                  zeta_range=None,  # These are [a, b] in the paper
                  num_slices=None,  # Per bunch, this is N_1 in the paper
                  bunch_spacing_zeta=None,  # This is P in the paper
-                 filling_scheme=None,
+                 filling_pattern=None,
                  bunch_selection=None,
                  num_turns=1,
                  circumference=None,
                  with_compressed_profile=False,
+                 filling_scheme=None,
                  **kwargs):
+
+        filling_pattern = _resolve_filling_pattern(
+            filling_pattern, filling_scheme)
 
         self.xoinitialize(**kwargs)
 
@@ -68,7 +76,7 @@ class ElementWithSlicer(xt.BeamElement):
 
         self.init_slicer(zeta_range=zeta_range,
                          num_slices=num_slices,
-                         filling_scheme=filling_scheme,
+                         filling_pattern=filling_pattern,
                          bunch_selection=bunch_selection,
                          bunch_spacing_zeta=bunch_spacing_zeta,
                          slicer_moments=slicer_moments)
@@ -78,25 +86,25 @@ class ElementWithSlicer(xt.BeamElement):
                 zeta_range=zeta_range,  # These are [a, b] in the paper
                 num_slices=num_slices,  # Per bunch, this is N_1 in the paper
                 bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-                filling_scheme=filling_scheme,
+                filling_pattern=filling_pattern,
                 bunch_selection=bunch_selection,
                 num_turns=num_turns,
                 circumference=circumference)
 
     @staticmethod
-    def _check_filling_scheme_info(filling_scheme, bunch_numbers, num_slots):
-        if filling_scheme is None and bunch_numbers is None:
+    def _check_filling_pattern_info(filling_pattern, bunch_numbers, num_slots):
+        if filling_pattern is None and bunch_numbers is None:
             if num_slots is None:
                 num_slots = 1
-            filling_scheme = np.ones(num_slots, dtype=np.int64)
+            filling_pattern = np.ones(num_slots, dtype=np.int64)
             bunch_numbers = np.arange(num_slots, dtype=np.int64)
         else:
-            assert (num_slots is None and filling_scheme is not None and
+            assert (num_slots is None and filling_pattern is not None and
                     bunch_numbers is not None)
 
-        return filling_scheme, bunch_numbers
+        return filling_pattern, bunch_numbers
 
-    def init_slicer(self, zeta_range, num_slices, filling_scheme,
+    def init_slicer(self, zeta_range, num_slices, filling_pattern,
                     bunch_selection, bunch_spacing_zeta, slicer_moments):
         if zeta_range is not None:
             if 'num_particles' in slicer_moments:
@@ -104,7 +112,7 @@ class ElementWithSlicer(xt.BeamElement):
             self.slicer = xf.UniformBinSlicer(
                 zeta_range=zeta_range,
                 num_slices=num_slices,
-                filling_scheme=filling_scheme,
+                filling_pattern=filling_pattern,
                 bunch_selection=bunch_selection,
                 bunch_spacing_zeta=bunch_spacing_zeta,
                 moments=slicer_moments,
@@ -119,14 +127,14 @@ class ElementWithSlicer(xt.BeamElement):
             zeta_range=None,  # These are [a, b] in the paper
             num_slices=None,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=None,  # This is P in the paper
-            filling_scheme=None,
+            filling_pattern=None,
             bunch_selection=None,
             num_turns=1,
             circumference=None):
 
 
-        if filling_scheme is not None:
-            i_last_bunch = np.where(filling_scheme)[0][-1]
+        if filling_pattern is not None:
+            i_last_bunch = np.where(filling_pattern)[0][-1]
             num_periods = i_last_bunch + 1
         else:
             num_periods = 1

@@ -87,21 +87,21 @@ def _make_toy_environment():
 
 
 def _toy_filling():
-    filling_scheme_cw = np.zeros(N_SLOTS, dtype=int)
-    filling_scheme_acw = np.zeros(N_SLOTS, dtype=int)
-    filling_scheme_cw[[0, 2, 5]] = 1
-    filling_scheme_acw[[0, 3, 6]] = 1
+    filling_pattern_cw = np.zeros(N_SLOTS, dtype=int)
+    filling_pattern_acw = np.zeros(N_SLOTS, dtype=int)
+    filling_pattern_cw[[0, 2, 5]] = 1
+    filling_pattern_acw[[0, 3, 6]] = 1
     intensity_cw = np.full(N_SLOTS, 1.0e11)
     intensity_acw = np.full(N_SLOTS, 1.0e11)
     intensity_cw[[0, 2, 5]] = [1.0e11, 2.0e11, 3.0e11]
     intensity_acw[[0, 3, 6]] = [1.5e11, 2.5e11, 3.5e11]
-    return (filling_scheme_cw, filling_scheme_acw,
+    return (filling_pattern_cw, filling_pattern_acw,
             intensity_cw, intensity_acw)
 
 
 def _install_toy_rigid_bunch_beambeam():
     env = _make_toy_environment()
-    (filling_scheme_cw, filling_scheme_acw,
+    (filling_pattern_cw, filling_pattern_acw,
      intensity_cw, intensity_acw) = _toy_filling()
 
     env.xfields.install_beambeam_interactions(
@@ -143,17 +143,17 @@ def _install_toy_rigid_bunch_beambeam():
         num_particles={'cw': intensity_cw, 'acw': intensity_acw},
         nemitt_x=NEMITT_X,
         nemitt_y=NEMITT_Y,
-        filling_pattern_cw=filling_scheme_cw,
-        filling_pattern_acw=filling_scheme_acw)
+        filling_pattern_cw=filling_pattern_cw,
+        filling_pattern_acw=filling_pattern_acw)
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')
-    return (env, study, filling_scheme_cw, filling_scheme_acw,
+    return (env, study, filling_pattern_cw, filling_pattern_acw,
             intensity_cw, intensity_acw)
 
 
 def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     # Characterize the consolidated install/configure path through a normalized
     # set of encounter, element and solution properties.
-    (env, study, filling_scheme_cw, filling_scheme_acw,
+    (env, study, filling_pattern_cw, filling_pattern_acw,
      intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam()
     assert isinstance(study, BeamBeamRigidBunchStudy)
 
@@ -173,9 +173,9 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     assert study.ip_offsets == {'ip1': 0, 'ip2': 6}
     assert study.n_slots == N_SLOTS
     assert study.bunch_spacing_zeta == SLOT_LENGTH
-    xo.assert_allclose(study.filling_pattern_cw, filling_scheme_cw,
+    xo.assert_allclose(study.filling_pattern_cw, filling_pattern_cw,
                        rtol=0, atol=0)
-    xo.assert_allclose(study.filling_pattern_acw, filling_scheme_acw,
+    xo.assert_allclose(study.filling_pattern_acw, filling_pattern_acw,
                        rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_cw, [0, 2, 5], rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_acw, [0, 3, 6], rtol=0, atol=0)
@@ -353,12 +353,12 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert bb.num_other_bunches == N_SLOTS
         xo.assert_allclose(
             bb.other_beam_num_particles,
-            (filling_scheme_acw * intensity_acw)[::-1], rtol=0, atol=0)
+            (filling_pattern_acw * intensity_acw)[::-1], rtol=0, atol=0)
     for bb in reduced.bb_acw.values():
         assert bb.num_other_bunches == N_SLOTS
         xo.assert_allclose(
             bb.other_beam_num_particles,
-            (filling_scheme_cw * intensity_cw)[::-1], rtol=0, atol=0)
+            (filling_pattern_cw * intensity_cw)[::-1], rtol=0, atol=0)
 
     # At the +1-slot encounter, physical slot 0 faces an empty slot and gets no
     # kick, while the remaining two bunches have partners. This checks the
@@ -425,16 +425,16 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
 
     # A changed filling updates the full-slot arrays in place. No element is
     # rebuilt, and empty slots retain zero opposing population.
-    filling_scheme_cw_new = np.zeros(N_SLOTS, dtype=int)
-    filling_scheme_acw_new = np.zeros(N_SLOTS, dtype=int)
-    filling_scheme_cw_new[[1, 4]] = 1
-    filling_scheme_acw_new[[0, 2, 5, 7]] = 1
+    filling_pattern_cw_new = np.zeros(N_SLOTS, dtype=int)
+    filling_pattern_acw_new = np.zeros(N_SLOTS, dtype=int)
+    filling_pattern_cw_new[[1, 4]] = 1
+    filling_pattern_acw_new[[0, 2, 5, 7]] = 1
     env.cw['beambeam_scale'] = 0.29
     original_cw = dict(study.bb_cw)
     original_acw = dict(study.bb_acw)
     study.apply_filling_pattern(
-        filling_pattern_cw=filling_scheme_cw_new,
-        filling_pattern_acw=filling_scheme_acw_new)
+        filling_pattern_cw=filling_pattern_cw_new,
+        filling_pattern_acw=filling_pattern_acw_new)
 
     xo.assert_allclose(study.filled_slots_cw, [1, 4], rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_acw, [0, 2, 5, 7], rtol=0, atol=0)
@@ -459,7 +459,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
 
 
 def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
-    (env, first, filling_scheme_cw, filling_scheme_acw,
+    (env, first, filling_pattern_cw, filling_pattern_acw,
      intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam()
 
     env.cw['beambeam_scale'] = 0.41
@@ -468,8 +468,8 @@ def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
         nemitt_x=NEMITT_X,
         nemitt_y=NEMITT_Y)
     second.apply_filling_pattern(
-        filling_pattern_cw=filling_scheme_cw,
-        filling_pattern_acw=filling_scheme_acw)
+        filling_pattern_cw=filling_pattern_cw,
+        filling_pattern_acw=filling_pattern_acw)
 
     assert second is not first
     assert second.geom.keys() == first.geom.keys()
@@ -508,10 +508,10 @@ def test_rigid_bunch_configuration_restores_scale_expression_on_error(
 
 
 def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
-    # Beam-beam and BeamStatsMonitor interpret filling schemes as occupancy
+    # Beam-beam and BeamStatsMonitor interpret filling patterns as occupancy
     # patterns over physical slots. Slot i is centred at
     # zeta = -i * bunch_spacing_zeta; intensities are a separate input.
-    filling_scheme = np.array([1, 0, 1, 1])
+    filling_pattern = np.array([1, 0, 1, 1])
     bunch_spacing_zeta = 5.0
     slot_intensities = np.array([1.0e11, 0.0, 2.0e11, 3.0e11])
 
@@ -524,11 +524,11 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
         nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
         num_particles={'cw': 4.0e11, 'acw': slot_intensities})
     study.apply_filling_pattern(
-        filling_pattern_cw=filling_scheme,
-        filling_pattern_acw=filling_scheme)
+        filling_pattern_cw=filling_pattern,
+        filling_pattern_acw=filling_pattern)
 
     monitor = xt.BeamStatsMonitor(
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         selected_slots=[0, 3],
         bunch_spacing_zeta=bunch_spacing_zeta)
 
@@ -554,5 +554,10 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
                 'cw': [1.0e11, 2.0e11, 3.0e11],
                 'acw': 1.0e11})
         invalid.apply_filling_pattern(
-            filling_pattern_cw=filling_scheme,
-            filling_pattern_acw=filling_scheme)
+            filling_pattern_cw=filling_pattern,
+            filling_pattern_acw=filling_pattern)
+
+    with pytest.raises(ValueError, match='only zero and one'):
+        study.apply_filling_pattern(
+            filling_pattern_cw=[1, 0, 2, 1],
+            filling_pattern_acw=filling_pattern)

@@ -57,8 +57,8 @@ def test_bunch_monitor_hdf5(test_context):
     beta = particles.beta0[0]
     gamma = np.sqrt(1 / (1 - beta ** 2))
 
-    # dummy filling scheme
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    # dummy filling pattern
+    filling_pattern = np.ones(n_bunches, dtype=int)
     bunch_numbers = np.arange(n_bunches, dtype=int)
 
     flush_data_every = 10
@@ -71,7 +71,7 @@ def test_bunch_monitor_hdf5(test_context):
         monitor_particles=False,
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         bunch_spacing_zeta=bunch_spacing_zeta,
         _context=test_context
     )
@@ -177,8 +177,8 @@ def test_bunch_monitor_json(test_context):
     beta = particles.beta0[0]
     gamma = np.sqrt(1 / (1 - beta ** 2))
 
-    # dummy filling scheme
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    # dummy filling pattern
+    filling_pattern = np.ones(n_bunches, dtype=int)
     bunch_numbers = np.arange(n_bunches, dtype=int)
 
     n_turns = 10
@@ -191,7 +191,7 @@ def test_bunch_monitor_json(test_context):
         monitor_particles=False,
         flush_data_every=n_turns,
         zeta_range=zeta_range,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         bunch_spacing_zeta=bunch_spacing_zeta,
         _context=test_context
     )
@@ -267,9 +267,9 @@ def test_slice_monitor_hdf5(test_context):
     sigma_py = 9
     sigma_delta = 10
 
-    # dummy filling scheme
+    # dummy filling pattern
     n_bunches = 3
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    filling_pattern = np.ones(n_bunches, dtype=int)
     bunch_numbers = np.arange(n_bunches, dtype=int)
     bunch_spacing_zeta = 10
 
@@ -285,7 +285,7 @@ def test_slice_monitor_hdf5(test_context):
         zeta_range=zeta_range,
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         _context=test_context
     )
 
@@ -425,9 +425,9 @@ def test_slice_monitor_json(test_context):
     sigma_py = 9
     sigma_delta = 10
 
-    # dummy filling scheme
+    # dummy filling pattern
     n_bunches = 3
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    filling_pattern = np.ones(n_bunches, dtype=int)
     bunch_numbers = np.arange(n_bunches, dtype=int)
     bunch_spacing_zeta = 10
 
@@ -443,7 +443,7 @@ def test_slice_monitor_json(test_context):
         zeta_range=zeta_range,
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         _context=test_context
     )
 

@@ -51,8 +51,8 @@ if not ALL_BUNCHES:
     # solve fast
     s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
     rigid_bunch_study.apply_filling_pattern(
-        filling_pattern_cw=mb.filling_scheme_from_slots(s1),
-        filling_pattern_acw=mb.filling_scheme_from_slots(s2))
+        filling_pattern_cw=mb.filling_pattern_from_slots(s1),
+        filling_pattern_acw=mb.filling_pattern_from_slots(s2))
 
 slots_cw = rigid_bunch_study.filled_slots_cw
 slots_acw = rigid_bunch_study.filled_slots_acw

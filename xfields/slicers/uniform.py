@@ -4,6 +4,8 @@ import xfields as xf
 import xobjects as xo
 import xtrack as xt
 
+from .._filling_pattern import _resolve_filling_pattern
+
 _configure_grid = xf.fieldmaps.interpolated._configure_grid
 
 COORDS = ['x', 'px', 'y', 'py', 'zeta', 'delta']
@@ -57,13 +59,15 @@ class UniformBinSlicer(xt.BeamElement):
         z position of the slice edges
     num_bunches:
         Number of bunches
-    filling_scheme: np.ndarray
-        List of zeros and ones representing the filling scheme. The length
+    filling_pattern: np.ndarray
+        List of zeros and ones representing the filling pattern. The length
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
+    filling_scheme: np.ndarray
+        Compatibility alias for ``filling_pattern``.
     bunch_selection: np.ndarray
-        List of the bunches indicating which slots from the filling scheme are
+        List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
     bunch_spacing_zeta : float
         Bunch spacing in meters.
@@ -93,19 +97,30 @@ class UniformBinSlicer(xt.BeamElement):
         }
 
     def __init__(self, zeta_range=None, num_slices=None, dzeta=None,
-                 zeta_slice_edges=None, num_bunches=None, filling_scheme=None,
+                 zeta_slice_edges=None, num_bunches=None, filling_pattern=None,
                  bunch_selection=None, bunch_spacing_zeta=None,
-                 moments='all', **kwargs):
+                 moments='all', filling_scheme=None, **kwargs):
 
         if '_xobject' in kwargs:
             self.xoinitialize(_xobject=kwargs['_xobject'])
             return
 
-        # for now we require that the first slot of the filling scheme is filled
+        filling_pattern = _resolve_filling_pattern(
+            filling_pattern, filling_scheme)
+
+        if filling_pattern is not None:
+            filling_pattern = np.asarray(filling_pattern)
+            if filling_pattern.ndim != 1:
+                raise ValueError('`filling_pattern` must be one-dimensional.')
+            if not np.all((filling_pattern == 0) | (filling_pattern == 1)):
+                raise ValueError(
+                    '`filling_pattern` can contain only zero and one.')
+
+        # for now we require that the first slot of the filling pattern is filled
         # needs to be tested otherwise (especially computation of _z_a, _z_b in
         # in compressed profile)
-        if filling_scheme is not None:
-            assert filling_scheme[0] == 1, 'First slot must be filled'
+        if filling_pattern is not None:
+            assert filling_pattern[0] == 1, 'First slot must be filled'
 
         num_edges = None
         if num_slices is not None:
@@ -116,13 +131,13 @@ class UniformBinSlicer(xt.BeamElement):
                                                         _zeta_slice_edges[0])/2
 
 
-        if filling_scheme is None and num_bunches is None:
+        if filling_pattern is None and num_bunches is None:
             filled_slots = np.zeros(1, dtype=np.int64)
-        elif filling_scheme is None:
+        elif filling_pattern is None:
             filled_slots = np.arange(num_bunches, dtype=np.int64)
         else:
-            filling_scheme = np.array(filling_scheme, dtype=np.int64)
-            filled_slots = filling_scheme.nonzero()[0]
+            filling_pattern = np.array(filling_pattern, dtype=np.int64)
+            filled_slots = filling_pattern.nonzero()[0]
 
         if bunch_selection is None:
             bunch_selection = np.arange(len(filled_slots), dtype=np.int64)

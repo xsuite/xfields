@@ -167,7 +167,7 @@ multibunch tracking. The generic name therefore promises a wider contract than
 the implementation provides.
 
 Rigid-bunch optics belongs to the beam-beam study that already knows both
-lines, their filling schemes and their physical RF slots. The public API is:
+lines, their filling patterns and their physical RF slots. The public API is:
 
 ```python
 twiss = rigid_bunch_study.twiss(mode='fast')
@@ -206,7 +206,7 @@ Xtrack from acquiring beam-beam-specific implementation code.
 The rigid-bunch beam-beam API should use the same bunch-pattern concepts as
 Xpart, Xwakes and `BeamStatsMonitor`. Their common public model is:
 
-- `filling_scheme` is a slot-indexed boolean/integer occupancy pattern;
+- `filling_pattern` is a slot-indexed boolean/integer occupancy pattern;
 - `filled_slots` contains the corresponding physical slot numbers;
 - `bunch_spacing_zeta` is the positive physical distance between adjacent
   slots of that pattern; and
@@ -214,7 +214,7 @@ Xpart, Xwakes and `BeamStatsMonitor`. Their common public model is:
 
 Occupancy and intensity must remain separate. In particular, a floating-point
 array containing the population of every slot should not be called a filling
-scheme. Rigid-bunch configuration therefore accepts `num_particles` as either
+pattern. Rigid-bunch configuration therefore accepts `num_particles` as either
 a common scalar or a `cw` / `acw` mapping. Each value can be uniform or
 slot-indexed when bunch populations are not uniform. The separate
 `apply_filling_pattern(...)` operation selects occupied slots. The study
@@ -223,7 +223,7 @@ exposes the derived physical slot identifiers as `filled_slots_cw` and
 
 The high-level installer allocates own- and opposing-beam arrays for every RF
 slot. This is not a user-selected reserve capacity: the ring topology fixes it
-uniquely as ``harmonic_number // bunch_spacing_buckets``. The filling schemes
+uniquely as ``harmonic_number // bunch_spacing_buckets``. The filling patterns
 select populated physical slots, while empty slots remain present with zero
 population. This keeps the public filling semantics aligned with
 `BeamStatsMonitor` and Xwakes, and lets `apply_filling_pattern(...)` update
@@ -243,19 +243,24 @@ not spread further:
 - Xpart and Xwakes `bunch_selection` contains ordinal indices into the compact
   list of filled bunches.
 
-For example, with `filling_scheme=[1, 0, 1, 1]`,
+For example, with `filling_pattern=[1, 0, 1, 1]`,
 `BeamStatsMonitor(selected_slots=[0, 2])` selects physical slots 0 and 2,
 whereas the Xpart/Xwakes `bunch_selection=[0, 2]` selects physical slots 0 and
 3. The new beam-beam API should use physical slot numbers whenever it exposes
 a selection and should call that argument `selected_slots`.
 
-### Scope decision
+### Cross-package naming decision
 
-This PR will not change Xpart, Xwakes or `BeamStatsMonitor`. The latter already
-provides the desired physical-slot terminology. Changing the meaning of the
-established Xpart/Xwakes `bunch_selection` argument would require a separate
-backward-compatible API migration. A possible follow-up is to add
-`selected_slots` to those packages, make it mutually exclusive with the legacy
+`filling_pattern` is the canonical public term in Xpart, Xfields, Xwakes and
+Xtrack. Existing `filling_scheme` keyword arguments remain supported as
+compatibility aliases, while new documentation and examples use
+`filling_pattern`. Supplying both names is an error. Internal serialized and
+Xobject fields may retain their established names to avoid a data-format
+migration.
+
+This naming migration does not change the meaning of the established
+Xpart/Xwakes `bunch_selection` argument. A possible follow-up is to add
+`selected_slots` to those packages, make it mutually exclusive with
 `bunch_selection`, and perform the physical-slot to compact-index conversion
 internally.
 
@@ -263,7 +268,7 @@ Add a small cross-package contract test, without Xmask, using a sparse pattern
 such as:
 
 ```python
-filling_scheme = [1, 0, 1, 1]
+filling_pattern = [1, 0, 1, 1]
 bunch_spacing_zeta = 5
 selected_slots = [0, 3]
 ```
@@ -310,7 +315,7 @@ argument is needed.
 Keep the train on `BeamBeamBiGaussianRigidBunch2D` and apply the bunch-pattern
 API decisions:
 
-- separate `filling_scheme_cw` / `filling_scheme_acw` from the corresponding
+- separate `filling_pattern_cw` / `filling_pattern_acw` from the corresponding
   `bunch_intensity_particles_*` inputs;
 - expose `filled_slots_cw`, `filled_slots_acw` and `bunch_spacing_zeta`; and
 - translate the common public negative-`zeta` slot convention at the kernel
@@ -360,7 +365,7 @@ mode-specific and unchanged.
 
 Steps 4--6 are complete behind the explicit ``mode='rigid_bunch'`` selection.
 In this mode installation places serializable elements with arrays covering
-every RF slot. Configuration receives the two filling schemes, populations and
+every RF slot. Configuration receives the two filling patterns, populations and
 emittances, loads geometry and per-slot state, and returns
 ``BeamBeamRigidBunchStudy``. A bridge test compares the result with the
 temporary all-in-one installer during migration. Permanent tests now protect
@@ -573,12 +578,11 @@ be resolved before the rigid-bunch interface is treated as established.
   ``filled_slots_cw`` and ``RigidBunchTwiss.cw``). The result container has no
   ``b1`` / ``b2`` aliases; machine-specific external formats may retain their
   native beam labels.
-- Resolve ``filling_scheme`` versus ``filling_pattern`` before release. The
-  bunch-pattern contract in this document calls the slot-indexed occupancy a
-  filling scheme, while the implemented beam-beam entry points use
-  ``filling_pattern_cw`` / ``filling_pattern_acw``. Choose one public term and
-  make the design, code, tests and examples consistent. Compatibility with the
-  established particles-mode beam-beam API should be considered explicitly.
+- [x] Use ``filling_pattern`` consistently across new public APIs,
+  documentation and examples. Existing ``filling_scheme`` inputs remain
+  supported as compatibility aliases in Xpart, Xfields, Xwakes and Xtrack;
+  supplying both names is an error. Beam-beam retains its established
+  ``filling_pattern_cw`` / ``filling_pattern_acw`` arguments.
 - Avoid boolean orientation in public-looking helpers such as
   ``bb_name(base, mirror)`` and ``bunch_zeta(mirror)``. Use named CW/ACW
   accessors or an explicit orientation value, or make these helpers private.

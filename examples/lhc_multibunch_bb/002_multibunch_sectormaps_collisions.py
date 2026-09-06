@@ -11,7 +11,7 @@ Scenario following LHC 2025/2026 physics at end of levelling: head-on collisions
 at IP1/IP5 (flat optics, H crossing in 1, V crossing in 5, separations off),
 levelling offsets at IP2/IP8, spectrometers/solenoids on, octupoles powered,
 tunes/chromaticity matched to 62.316/60.322 and Q' = 10. 1.1e11 p/bunch,
-2.3 um normalized emittance, full 2460-bunch filling scheme.
+2.3 um normalized emittance, full 2460-bunch filling pattern.
 
 The standard beam-beam workflow in ``mode='rigid_bunch'`` installs and
 configures the head-on + long-range lenses on the full lattice;
@@ -58,8 +58,8 @@ if not ALL_BUNCHES:
     # restrict to a bounded window with all-IP pairings (offsets from geometry)
     s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
     rigid_bunch_study.apply_filling_pattern(
-        filling_pattern_cw=mb.filling_scheme_from_slots(s1),
-        filling_pattern_acw=mb.filling_scheme_from_slots(s2))
+        filling_pattern_cw=mb.filling_pattern_from_slots(s1),
+        filling_pattern_acw=mb.filling_pattern_from_slots(s2))
 
 # Fast sector-map copy: the arcs between the encounters become second-order maps
 # (the beam-beam elements stay exact). Solving the reduced study is much faster.

@@ -5,6 +5,8 @@ import xfields as xf
 import xtrack as xt
 from xfields.slicers.compressed_profile import CompressedProfile
 
+from .._filling_pattern import _resolve_filling_pattern
+
 
 class TransverseDamper(xt.BeamElement):
     """
@@ -22,9 +24,11 @@ class TransverseDamper(xt.BeamElement):
         the range of zetas covered by the underlying slicer.
     num_slices : int
         the number of slices per bunch used by the underlying slicer.
-    filling_scheme : np.ndarray, optional
-        an array of zeros and ones representing the filling scheme. Only
+    filling_pattern : np.ndarray, optional
+        an array of zeros and ones representing the filling pattern. Only
         needed for multi-bunch tracking.
+    filling_scheme : np.ndarray, optional
+        Compatibility alias for ``filling_pattern``.
     bunch_selection : np.ndarray, optional
         an array indicating which slot each bunch occupies in the filling
         scheme. Only needed for multi-bunch tracking
@@ -36,8 +40,11 @@ class TransverseDamper(xt.BeamElement):
     """
 
     def __init__(self, gain_x, gain_y, zeta_range, num_slices,
-                 circumference=None, bunch_spacing_zeta=None, filling_scheme=None,
-                 bunch_selection=None, **kwargs):
+                 circumference=None, bunch_spacing_zeta=None,
+                 filling_pattern=None, bunch_selection=None,
+                 filling_scheme=None, **kwargs):
+        filling_pattern = _resolve_filling_pattern(
+            filling_pattern, filling_scheme)
         self.gains = {
             'px': gain_x,
             'py': gain_y,
@@ -48,7 +55,7 @@ class TransverseDamper(xt.BeamElement):
         self.xoinitialize(**kwargs)
 
         self.slicer = xf.UniformBinSlicer(
-            filling_scheme=filling_scheme,
+            filling_pattern=filling_pattern,
             bunch_selection=bunch_selection,
             zeta_range=zeta_range,
             num_slices=num_slices,
@@ -57,8 +64,8 @@ class TransverseDamper(xt.BeamElement):
             _context=self._context
         )
 
-        if filling_scheme is not None:
-            i_last_bunch = np.where(filling_scheme)[0][-1]
+        if filling_pattern is not None:
+            i_last_bunch = np.where(filling_pattern)[0][-1]
             num_periods = i_last_bunch + 1
         else:
             num_periods = 1
@@ -81,12 +88,11 @@ class TransverseDamper(xt.BeamElement):
                         dtype=np.int64)
         scheme[filled_slots] = 1
 
-        split_scheme = xp.matched_gaussian.split_scheme
-        bunch_selection_rank = split_scheme(filling_scheme=scheme,
-                                             n_chunk=int(n_procs))
+        bunch_selection_rank = xp.split_filling_pattern(
+            filling_pattern=scheme, n_chunk=int(n_procs))
 
         self.slicer = xf.UniformBinSlicer(
-            filling_scheme=scheme,
+            filling_pattern=scheme,
             bunch_selection=bunch_selection_rank[my_rank],
             zeta_range=self.slicer.zeta_range,
             num_slices=self.slicer.num_slices,

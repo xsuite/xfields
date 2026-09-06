@@ -35,7 +35,7 @@ def test_bunch_monitor_hdf5(test_context):
 
     n_bunches = 3
 
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    filling_pattern = np.ones(n_bunches, dtype=int)
 
     flush_data_every = 10
     my_rank = MPI.COMM_WORLD.Get_rank()
@@ -48,7 +48,7 @@ def test_bunch_monitor_hdf5(test_context):
         monitor_particles=False,
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         bunch_spacing_zeta=bunch_spacing_zeta,
     )
 
@@ -57,8 +57,8 @@ def test_bunch_monitor_hdf5(test_context):
 
     n_procs = MPI.COMM_WORLD.Get_size()
 
-    split_scheme = xp.matched_gaussian.split_scheme
-    bunch_selection_rank = split_scheme(filling_scheme=filling_scheme,
+    split_pattern = xp.split_filling_pattern
+    bunch_selection_rank = split_pattern(filling_pattern=filling_pattern,
                                             n_chunk=int(n_procs))
 
     bunch_selection = bunch_selection_rank[my_rank]
@@ -175,7 +175,7 @@ def test_bunch_monitor_json(test_context):
     n_procs = MPI.COMM_WORLD.Get_size()
     my_rank = MPI.COMM_WORLD.Get_rank()
 
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    filling_pattern = np.ones(n_bunches, dtype=int)
 
     n_turns = 10
 
@@ -187,12 +187,12 @@ def test_bunch_monitor_json(test_context):
         monitor_particles=False,
         flush_data_every=n_turns,
         zeta_range=zeta_range,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         bunch_spacing_zeta=bunch_spacing_zeta,
     )
 
-    split_scheme = xp.matched_gaussian.split_scheme
-    bunch_selection_rank = split_scheme(filling_scheme=filling_scheme,
+    split_pattern = xp.split_filling_pattern
+    bunch_selection_rank = split_pattern(filling_pattern=filling_pattern,
                                             n_chunk=int(n_procs))
 
     bunch_selection = bunch_selection_rank[my_rank]
@@ -215,8 +215,8 @@ def test_bunch_monitor_json(test_context):
     beta = particles.beta0[0]
     gamma = np.sqrt(1 / (1 - beta ** 2))
 
-    # dummy filling scheme
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    # dummy filling pattern
+    filling_pattern = np.ones(n_bunches, dtype=int)
 
     # track for twice flush_data_every turns so that we test the reshaping
     for _ in range(2 * n_turns):
@@ -289,9 +289,9 @@ def test_slice_monitor_hdf5(test_context):
     sigma_py = 9
     sigma_delta = 10
 
-    # dummy filling scheme
+    # dummy filling pattern
     n_bunches = 3
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    filling_pattern = np.ones(n_bunches, dtype=int)
     bunch_spacing_zeta = 10
 
     flush_data_every = 10
@@ -308,7 +308,7 @@ def test_slice_monitor_hdf5(test_context):
         zeta_range=zeta_range,
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
     )
 
     particles = xt.Particles(
@@ -335,8 +335,8 @@ def test_slice_monitor_hdf5(test_context):
 
     n_procs = MPI.COMM_WORLD.Get_size()
 
-    split_scheme = xp.matched_gaussian.split_scheme
-    bunch_selection_rank = split_scheme(filling_scheme=filling_scheme,
+    split_pattern = xp.split_filling_pattern
+    bunch_selection_rank = split_pattern(filling_pattern=filling_pattern,
                                             n_chunk=int(n_procs))
 
     bunch_selection = bunch_selection_rank[my_rank]
@@ -462,9 +462,9 @@ def test_slice_monitor_json(test_context):
     sigma_py = 9
     sigma_delta = 10
 
-    # dummy filling scheme
+    # dummy filling pattern
     n_bunches = 3
-    filling_scheme = np.ones(n_bunches, dtype=int)
+    filling_pattern = np.ones(n_bunches, dtype=int)
     bunch_spacing_zeta = 10
 
     flush_data_every = 10
@@ -481,7 +481,7 @@ def test_slice_monitor_json(test_context):
         zeta_range=zeta_range,
         num_slices=num_slices,
         bunch_spacing_zeta=bunch_spacing_zeta,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
     )
 
     particles = xt.Particles(
@@ -508,8 +508,8 @@ def test_slice_monitor_json(test_context):
 
     n_procs = MPI.COMM_WORLD.Get_size()
 
-    split_scheme = xp.matched_gaussian.split_scheme
-    bunch_selection_rank = split_scheme(filling_scheme=filling_scheme,
+    split_pattern = xp.split_filling_pattern
+    bunch_selection_rank = split_pattern(filling_pattern=filling_pattern,
                                         n_chunk=int(n_procs))
 
     bunch_selection = bunch_selection_rank[my_rank]
@@ -627,7 +627,7 @@ def test_particle_monitor_hdf5(test_context):
     my_rank = MPI.COMM_WORLD.Get_rank()
     n_procs = MPI.COMM_WORLD.Get_size()
 
-    filling_scheme = np.ones(n_procs, dtype=int)
+    filling_pattern = np.ones(n_procs, dtype=int)
 
     particles = xt.Particles(
         _context=test_context, p0c=7e12,
@@ -653,7 +653,7 @@ def test_particle_monitor_hdf5(test_context):
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
         particle_monitor_mask=particle_monitor_mask,
-        filling_scheme=filling_scheme
+        filling_pattern=filling_pattern
     )
 
     n_procs = MPI.COMM_WORLD.Get_size()
@@ -681,7 +681,7 @@ def test_particle_monitor_json(test_context):
     my_rank = MPI.COMM_WORLD.Get_rank()
     n_procs = MPI.COMM_WORLD.Get_size()
 
-    filling_scheme = np.ones(n_procs, dtype=int)
+    filling_pattern = np.ones(n_procs, dtype=int)
 
     particles = xt.Particles(
         _context=test_context, p0c=7e12,
@@ -707,7 +707,7 @@ def test_particle_monitor_json(test_context):
         flush_data_every=flush_data_every,
         zeta_range=zeta_range,
         particle_monitor_mask=particle_monitor_mask,
-        filling_scheme=filling_scheme
+        filling_pattern=filling_pattern
     )
 
     n_procs = MPI.COMM_WORLD.Get_size()

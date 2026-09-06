@@ -1,6 +1,7 @@
 import numpy as np
 
 from .element_with_slicer import ElementWithSlicer
+from .._filling_pattern import _resolve_filling_pattern
 import json
 import os
 import xfields as xf
@@ -56,13 +57,15 @@ class CollectiveMonitor(ElementWithSlicer):
         specified if the slice-by-slice data is monitored.
     bunch_spacing_zeta : float
         Bunch spacing in meters.
-    filling_scheme: np.ndarray
-        List of zeros and ones representing the filling scheme. The length
+    filling_pattern: np.ndarray
+        List of zeros and ones representing the filling pattern. The length
         of the array is equal to the number of slots in the machine and each
         element of the array holds a one if the slot is filled or a zero
         otherwise.
+    filling_scheme: np.ndarray
+        Compatibility alias for ``filling_pattern``.
     bunch_selection: np.ndarray
-        List of the bunches indicating which slots from the filling scheme are
+        List of the bunches indicating which slots from the filling pattern are
         used (not all the bunches are used when using multi-processing)
     _flatten: bool
         Use flattened wakes
@@ -109,13 +112,17 @@ class CollectiveMonitor(ElementWithSlicer):
                  zeta_range=None,
                  num_slices=1,
                  bunch_spacing_zeta=None,
-                 filling_scheme=None,
+                 filling_pattern=None,
                  bunch_selection=None,
                  stats_to_store=None,
                  stats_to_store_particles=None,
                  backend='hdf5',
                  _flatten=False,
+                 filling_scheme=None,
                  **kwargs):
+
+        filling_pattern = _resolve_filling_pattern(
+            filling_pattern, filling_scheme)
 
         slicer_moments = []
         if stats_to_store is not None:
@@ -186,7 +193,7 @@ class CollectiveMonitor(ElementWithSlicer):
             zeta_range=zeta_range,  # These are [a, b] in the paper
             num_slices=num_slices,  # Per bunch, this is N_1 in the paper
             bunch_spacing_zeta=bunch_spacing_zeta,  # This is P in the paper
-            filling_scheme=filling_scheme,
+            filling_pattern=filling_pattern,
             bunch_selection=bunch_selection,
             with_compressed_profile=False,
            **kwargs
@@ -198,12 +205,11 @@ class CollectiveMonitor(ElementWithSlicer):
                           dtype=np.int64)
         scheme[filled_slots] = 1
 
-        split_scheme = xp.matched_gaussian.split_scheme
-        bunch_selection_rank = split_scheme(filling_scheme=scheme,
-                                            n_chunk=int(n_procs))
+        bunch_selection_rank = xp.split_filling_pattern(
+            filling_pattern=scheme, n_chunk=int(n_procs))
 
         self.slicer = xf.UniformBinSlicer(
-            filling_scheme=scheme,
+            filling_pattern=scheme,
             bunch_selection=bunch_selection_rank[my_rank],
             zeta_range=self.slicer.zeta_range,
             num_slices=self.slicer.num_slices,

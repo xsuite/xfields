@@ -91,8 +91,8 @@ def _run_xsuite_scenario(scenario):
 
     with open(lhc_data / '25ns_2460b_2448_2092_2239_144bpi_20inj.json') as f:
         scheme = json.load(f)
-    filling_scheme_b1 = np.array(scheme['schemebeam1']) > 0
-    filling_scheme_b2 = np.array(scheme['schemebeam2']) > 0
+    filling_pattern_b1 = np.array(scheme['schemebeam1']) > 0
+    filling_pattern_b2 = np.array(scheme['schemebeam2']) > 0
 
     # Install head-on + long-range beam-beam at IP1/2/5/8 (offsets derived from
     # the ring geometry since the IPs are given as a list of names) on the full
@@ -108,8 +108,8 @@ def _run_xsuite_scenario(scenario):
     study = env.xfields.configure_beambeam_interactions(
         num_particles=par['bunch_intensity'],
         nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
-        filling_pattern_cw=filling_scheme_b1,
-        filling_pattern_acw=filling_scheme_b2)
+        filling_pattern_cw=filling_pattern_b1,
+        filling_pattern_acw=filling_pattern_b2)
     study_red = study.second_order_maps()
 
     # bare per-bunch tunes (second-order maps preserve the linear optics, so the

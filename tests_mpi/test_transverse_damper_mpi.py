@@ -48,8 +48,8 @@ def test_transverse_damper_mpi(test_context):
     bucket_length = circumference / h_rf
     zeta_range = (-0.5*bucket_length, 0.5*bucket_length)
 
-    filling_scheme = np.zeros(int(h_rf/bunch_spacing_buckets))
-    filling_scheme[0: num_bunches] = 1
+    filling_pattern = np.zeros(int(h_rf/bunch_spacing_buckets))
+    filling_pattern[0: num_bunches] = 1
 
     one_turn_map = xt.LineSegmentMap(
         length=circumference,
@@ -65,7 +65,7 @@ def test_transverse_damper_mpi(test_context):
 
     transverse_damper = xf.TransverseDamper(
         gain_x=gain_x, gain_y=gain_y,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         zeta_range=zeta_range,
         num_slices=n_slices,
         bunch_spacing_zeta=bunch_spacing_buckets*bucket_length,
@@ -80,7 +80,7 @@ def test_transverse_damper_mpi(test_context):
 
     particles = xp.generate_matched_gaussian_multibunch_beam(
         _context=test_context,
-        filling_scheme=filling_scheme,
+        filling_pattern=filling_pattern,
         bunch_num_particles=n_macroparticles,
         bunch_intensity_particles=intensity,
         nemitt_x=epsn_x, nemitt_y=epsn_y, sigma_z=sigma_z,

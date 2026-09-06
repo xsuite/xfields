@@ -19,7 +19,7 @@ holds the LHC-specific bits the generic tools cannot know about:
 * :func:`load_lhc` and the ``SCENARIOS`` presets (sequence, optics files, beam
   parameters for injection / collision);
 * the filling-scheme helpers (:func:`load_scheme`, :func:`all_filled_slots`,
-  :func:`filling_scheme_from_slots`, :func:`windowed_slots`
+  :func:`filling_pattern_from_slots`, :func:`windowed_slots`
   -- which reuses the ``rigid_bunch_study.ip_offsets`` derived from geometry);
 * the DataFrame / plotting utilities (:func:`results_dataframe`,
   :func:`plot_results`, :func:`plot_global_quantities`).
@@ -145,7 +145,7 @@ def load_lhc(scenario=None, *, p0c=None, bunch_intensity=None, nemitt=None,
 
 
 # ----------------------------------------------------------------------------
-# Filling scheme
+# Filling pattern
 # ----------------------------------------------------------------------------
 def load_scheme():
     with open(SCHEME_FILE) as fid:
@@ -158,11 +158,11 @@ def all_filled_slots(scheme_b1, scheme_b2):
             sorted(np.where(scheme_b2 > 0)[0].tolist()))
 
 
-def filling_scheme_from_slots(slots, n_slots=N_SLOTS):
+def filling_pattern_from_slots(slots, n_slots=N_SLOTS):
     """Slot-indexed occupancy pattern populated at physical ``slots``."""
-    filling_scheme = np.zeros(n_slots, dtype=int)
-    filling_scheme[np.asarray(slots, dtype=int)] = 1
-    return filling_scheme
+    filling_pattern = np.zeros(n_slots, dtype=int)
+    filling_pattern[np.asarray(slots, dtype=int)] = 1
+    return filling_pattern
 
 
 def windowed_slots(ho_offsets, scheme_b1, scheme_b2, window, n_slots=N_SLOTS):
