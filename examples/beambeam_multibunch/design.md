@@ -607,18 +607,22 @@ be resolved before the rigid-bunch interface is treated as established.
   established defaults in particles mode. Supplying any particles-only option
   explicitly in rigid-bunch mode raises an error; the mode-dependent contract
   is also documented in the public method.
+- Review the structure of the rigid-bunch solution object and make it
+  homogeneous with the rest of the Xsuite API. In particular, review how beam
+  results, physical slot labels, convergence information and bare/reference
+  quantities are exposed.
 
 ### LHC example cleanup
 
-- In ``000_lhc_multibunch_bb.py``, avoid configuring the complete filling and
+- [x] In ``000_lhc_multibunch_bb.py``, avoid configuring the complete filling and
   immediately replacing it with the bounded filling. Configure without a
   filling, derive the IP offsets, and apply the selected filling once.
-- Make it obvious in the example output and introductory text that the default
+- [x] Make it obvious in the example output and introductory text that the default
   calculation uses a bounded bunch subset, controlled by ``LHC_ALL`` and
   ``LHC_WINDOW``, even though it uses the full thick lattice.
-- Do not unconditionally write fixed pickle files into the source directory.
+- [x] Do not unconditionally write fixed pickle files into the source directory.
   Make result export explicit and direct outputs to a user-selected directory.
-- Remove the unused ``line_b1`` / ``line_b2`` return values in the example, or
+- [x] Remove the unused ``line_b1`` / ``line_b2`` return values in the example, or
   simplify ``load_lhc()`` if callers generally use the lines through the
   environment.
 - Keep the full-lattice LHC script as a realistic application example, but use
