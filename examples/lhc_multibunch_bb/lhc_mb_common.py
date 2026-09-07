@@ -222,33 +222,34 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
     ``load_solution`` as long as ``dynamic_beta`` is False -- those keep the
     stored sizes.
     """
-    line = {False: rigid_bunch_study.cw_line, True: rigid_bunch_study.acw_line}
-    gamma = {mirror: float(line[mirror].particle_ref.gamma0[0])
-             for mirror in (False, True)}
-    emit = {False: nemitt_cw, True: nemitt_acw}
+    line = {'cw': rigid_bunch_study.cw_line,
+            'acw': rigid_bunch_study.acw_line}
+    gamma = {beam: float(line[beam].particle_ref.gamma0[0])
+             for beam in ('cw', 'acw')}
+    emit = {'cw': nemitt_cw, 'acw': nemitt_acw}
     n_bunches = {
-        False: len(rigid_bunch_study.filled_slots_cw),
-        True: len(rigid_bunch_study.filled_slots_acw),
+        'cw': len(rigid_bunch_study.filled_slots_cw),
+        'acw': len(rigid_bunch_study.filled_slots_acw),
     }
     for base in rigid_bunch_study.enc_names:
         geom = rigid_bunch_study.geom[base]
         sigma = {}
-        for mirror, tag in ((False, 'cw'), (True, 'acw')):
-            sigma[mirror] = (
-                np.sqrt(geom[f'betx_{tag}'] * emit[mirror][0] / gamma[mirror]),
-                np.sqrt(geom[f'bety_{tag}'] * emit[mirror][1] / gamma[mirror]))
-        for mirror in (False, True):
+        for beam in ('cw', 'acw'):
+            sigma[beam] = (
+                np.sqrt(geom[f'betx_{beam}'] * emit[beam][0] / gamma[beam]),
+                np.sqrt(geom[f'bety_{beam}'] * emit[beam][1] / gamma[beam]))
+        for beam, other_beam in (('cw', 'acw'), ('acw', 'cw')):
             # The raw element (and hence `rigid_bunch_study.bb_cw[...]`) is
             # an expression view, whose array slices are not assignable
-            bb_name = rigid_bunch_study.bb_name(base, mirror)
-            bb = line[mirror].element_dict[bb_name]
-            own, other = sigma[mirror], sigma[not mirror]
-            n_other = n_bunches[not mirror]
+            bb_name = rigid_bunch_study.bb_name(base, beam=beam)
+            bb = line[beam].element_dict[bb_name]
+            own, other = sigma[beam], sigma[other_beam]
+            n_other = n_bunches[other_beam]
             bb.update_from_own_beam(
-                zeta=rigid_bunch_study.bunch_zeta(mirror),
+                zeta=rigid_bunch_study.bunch_zeta(beam=beam),
                 own_beam_sigma_x=own[0], own_beam_sigma_y=own[1])
-            other_order = np.argsort(rigid_bunch_study.bunch_zeta(not mirror),
-                                     kind='stable')
+            other_order = np.argsort(
+                rigid_bunch_study.bunch_zeta(beam=other_beam), kind='stable')
             bb.other_beam_Sigma_11[:n_other] = other[0][other_order]**2
             bb.other_beam_Sigma_13[:n_other] = 0
             bb.other_beam_Sigma_33[:n_other] = other[1][other_order]**2
@@ -257,18 +258,19 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
 # ----------------------------------------------------------------------------
 # Results as a DataFrame
 # ----------------------------------------------------------------------------
-def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, mirror=False,
+def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, beam,
                       ip='ip1'):
     """Per-bunch results as a pandas DataFrame, indexed by 25 ns slot.
 
     Columns: qx, qy (per-bunch tunes), dqx, dqy (beam-beam tune shift vs the
     bare tune), x, y (closed orbit at the head-on marker of ``ip``, in the
-    physical frame -- for the reversed ACW line pass ``mirror=True`` to flip
-    x). ``dx``/``dy`` are the per-bunch orbit deviations from the beam average.
+    physical frame; select the corresponding beam with ``beam='cw'`` or
+    ``beam='acw'``. ``dx``/``dy`` are the per-bunch orbit deviations from the
+    beam average.
     """
     import pandas as pd
-    marker = rigid_bunch_study.bb_name(f'bb_{ip}_ho', mirror)
-    x = mbtw['x', marker] * (-1.0 if mirror else 1.0)
+    marker = rigid_bunch_study.bb_name(f'bb_{ip}_ho', beam=beam)
+    x = mbtw['x', marker] * (-1.0 if beam == 'acw' else 1.0)
     y = mbtw['y', marker]
 
     df = pd.DataFrame({
@@ -288,7 +290,7 @@ def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, mirror=F
 def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, bare_qx, bare_qy,
                  title_suffix=''):
     import matplotlib.pyplot as plt
-    mk = rigid_bunch_study.bb_name('bb_ip1_ho', False)
+    mk = rigid_bunch_study.bb_name('bb_ip1_ho', beam='cw')
     co_x = mbtw_cw['x', mk]
     co_y = mbtw_cw['y', mk]
     # per-bunch orbit deviation from the bunch-averaged orbit (removes the common
@@ -321,20 +323,20 @@ def plot_global_quantities(rigid_bunch_study, slots_cw, mbtw_cw,
     coupling |C-| of both beams, from mode='fast' BunchTwiss results
     (which carry per-bunch optics and global quantities)."""
     import matplotlib.pyplot as plt
-    mk = {False: rigid_bunch_study.bb_name('bb_ip1_ho', False),
-          True: rigid_bunch_study.bb_name('bb_ip1_ho', True)}
+    mk = {beam: rigid_bunch_study.bb_name('bb_ip1_ho', beam=beam)
+          for beam in ('cw', 'acw')}
 
-    def at_ip1(mbtw, col, mirror):
-        return mbtw[col, mk[mirror]]
+    def at_ip1(mbtw, col, beam):
+        return mbtw[col, mk[beam]]
 
     fig, axs = plt.subplots(3, 2, figsize=(13, 10), sharex=True)
 
     ax = axs[0, 0]   # orbit deviation at IP1 (physical frame for both beams)
-    for slots, mbtw, mirror, lab in [(slots_cw, mbtw_cw, False, 'CW'),
-                                     (slots_acw, mbtw_acw, True, 'ACW')]:
-        sgn = -1.0 if mirror else 1.0
-        x = sgn * at_ip1(mbtw, 'x', mirror)
-        y = at_ip1(mbtw, 'y', mirror)
+    for slots, mbtw, beam, lab in [(slots_cw, mbtw_cw, 'cw', 'CW'),
+                                   (slots_acw, mbtw_acw, 'acw', 'ACW')]:
+        sgn = -1.0 if beam == 'acw' else 1.0
+        x = sgn * at_ip1(mbtw, 'x', beam)
+        y = at_ip1(mbtw, 'y', beam)
         ax.plot(slots, (x - x.mean()) * 1e6, '.', ms=3, label=f'{lab} x')
         ax.plot(slots, (y - y.mean()) * 1e6, '.', ms=3, label=f'{lab} y')
     ax.set_ylabel(r'orbit dev. at IP1 [$\mu$m]')
@@ -342,11 +344,11 @@ def plot_global_quantities(rigid_bunch_study, slots_cw, mbtw_cw,
     ax.legend(ncol=2, fontsize=8)
 
     ax = axs[0, 1]   # beta* at IP1
-    for slots, mbtw, mirror, lab in [(slots_cw, mbtw_cw, False, 'CW'),
-                                     (slots_acw, mbtw_acw, True, 'ACW')]:
-        ax.plot(slots, at_ip1(mbtw, 'betx', mirror), '.', ms=3,
+    for slots, mbtw, beam, lab in [(slots_cw, mbtw_cw, 'cw', 'CW'),
+                                   (slots_acw, mbtw_acw, 'acw', 'ACW')]:
+        ax.plot(slots, at_ip1(mbtw, 'betx', beam), '.', ms=3,
                 label=fr'{lab} $\beta_x^*$')
-        ax.plot(slots, at_ip1(mbtw, 'bety', mirror), '.', ms=3,
+        ax.plot(slots, at_ip1(mbtw, 'bety', beam), '.', ms=3,
                 label=fr'{lab} $\beta_y^*$')
     ax.set_ylabel(r'$\beta^*$ at IP1 [m]')
     ax.set_title('Per-bunch $\\beta^*$ at IP1 (dynamic beta)')

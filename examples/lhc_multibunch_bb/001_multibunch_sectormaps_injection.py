@@ -92,9 +92,11 @@ print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 # Save per-bunch results of both beams as DataFrames
 df_cw = mb.results_dataframe(study_red, mbtw_cw, slots_cw,
-                             rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'], mirror=False)
+                             rigid_bunch_study.meta['qx_cw'],
+                             rigid_bunch_study.meta['qy_cw'], beam='cw')
 df_acw = mb.results_dataframe(study_red, mbtw_acw, slots_acw,
-                             rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'], mirror=True)
+                              rigid_bunch_study.meta['qx_acw'],
+                              rigid_bunch_study.meta['qy_acw'], beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 out_b1 = os.path.join(mb.HERE, 'results_b1.pkl')
 out_b2 = os.path.join(mb.HERE, 'results_b2.pkl')

@@ -81,7 +81,7 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
 # ----------------------------------------------------------------------------
 # Compare per-bunch tunes, orbit and beta* at IP1 (CW)
 # ----------------------------------------------------------------------------
-mk_b1 = study_red.bb_name('bb_ip1_ho', False)
+mk_b1 = study_red.bb_name('bb_ip1_ho', beam='cw')
 
 
 def extract(mbtw):
@@ -97,11 +97,13 @@ stat = extract(results['static'].cw)
 dyn = extract(results['dynamic beta'].cw)
 
 df_cw = mb.results_dataframe(study_red, results['dynamic beta'].cw, slots_cw,
-                             rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
-                             mirror=False)
+                             rigid_bunch_study.meta['qx_cw'],
+                             rigid_bunch_study.meta['qy_cw'],
+                             beam='cw')
 df_acw = mb.results_dataframe(study_red, results['dynamic beta'].acw, slots_acw,
-                             rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'],
-                             mirror=True)
+                              rigid_bunch_study.meta['qx_acw'],
+                              rigid_bunch_study.meta['qy_acw'],
+                              beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 df_cw.to_pickle(os.path.join(mb.HERE, 'results_b1_coll_dynbeta.pkl'))
 df_acw.to_pickle(os.path.join(mb.HERE, 'results_b2_coll_dynbeta.pkl'))

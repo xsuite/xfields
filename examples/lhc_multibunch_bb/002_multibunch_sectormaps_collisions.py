@@ -88,11 +88,13 @@ dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - rigid_bunch_study.meta['qx_cw'])
 print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 df_cw = mb.results_dataframe(study_red, mbtw_cw, slots_cw,
-                             rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
-                             mirror=False)
+                             rigid_bunch_study.meta['qx_cw'],
+                             rigid_bunch_study.meta['qy_cw'],
+                             beam='cw')
 df_acw = mb.results_dataframe(study_red, mbtw_acw, slots_acw,
-                             rigid_bunch_study.meta['qx_acw'], rigid_bunch_study.meta['qy_acw'],
-                             mirror=True)
+                              rigid_bunch_study.meta['qx_acw'],
+                              rigid_bunch_study.meta['qy_acw'],
+                              beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 df_cw.to_pickle(os.path.join(mb.HERE, 'results_b1_coll.pkl'))
 df_acw.to_pickle(os.path.join(mb.HERE, 'results_b2_coll.pkl'))

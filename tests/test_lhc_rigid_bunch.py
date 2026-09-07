@@ -122,10 +122,10 @@ def _run_xsuite_scenario(scenario):
         require_convergence=False)
     mbtw_cw, mbtw_acw = solution.cw, solution.acw
 
-    def extract(mbtw, slots, bare_qx, bare_qy, mirror):
-        bb = study_red.bb_name('bb_ip1_ho', mirror)
+    def extract(mbtw, slots, bare_qx, bare_qy, beam):
+        bb = study_red.bb_name('bb_ip1_ho', beam=beam)
         x = mbtw['x', bb]
-        if mirror:
+        if beam == 'acw':
             x = -x   # reversed ACW line -> physical frame
         y = mbtw['y', bb]
         return dict(slots=slots,
@@ -134,9 +134,9 @@ def _run_xsuite_scenario(scenario):
                     dqy=_wrap_frac_tune(mbtw.qy - bare_qy))
 
     return (extract(mbtw_cw, study_red.filled_slots_cw,
-                    bare['qx_cw'], bare['qy_cw'], mirror=False),
+                    bare['qx_cw'], bare['qy_cw'], beam='cw'),
             extract(mbtw_acw, study_red.filled_slots_acw,
-                    bare['qx_acw'], bare['qy_acw'], mirror=True))
+                    bare['qx_acw'], bare['qy_acw'], beam='acw'))
 
 
 @pytest.mark.parametrize('scenario', ['injection', 'collision'])

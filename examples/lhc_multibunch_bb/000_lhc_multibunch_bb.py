@@ -72,9 +72,9 @@ dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - bare['qx_cw'])
 print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 df_cw = mb.results_dataframe(rigid_bunch_study, mbtw_cw, slots_cw,
-                             bare['qx_cw'], bare['qy_cw'], mirror=False)
+                             bare['qx_cw'], bare['qy_cw'], beam='cw')
 df_acw = mb.results_dataframe(rigid_bunch_study, mbtw_acw, slots_acw,
-                             bare['qx_acw'], bare['qy_acw'], mirror=True)
+                              bare['qx_acw'], bare['qy_acw'], beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 out_b1 = os.path.join(mb.HERE, 'results_b1_coll_full.pkl')
 out_b2 = os.path.join(mb.HERE, 'results_b2_coll_full.pkl')

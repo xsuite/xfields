@@ -269,9 +269,9 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     names_by_ip = {'cw': {}, 'acw': {}}
     for base, ip, _ in study.enc_specs:
         names_by_ip['cw'].setdefault(ip, []).append(
-            study.bb_name(base, False))
+            study.bb_name(base, beam='cw'))
         names_by_ip['acw'].setdefault(ip, []).append(
-            study.bb_name(base, True))
+            study.bb_name(base, beam='acw'))
     twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=env.cw, line_acw=env.acw,
         element_names_by_ip=names_by_ip,
@@ -281,20 +281,20 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         geom = study.geom[base]
         encounter = compute_beambeam_geometry(
             twiss_and_madpoints=twiss_and_madpoints,
-            element_name_cw=study.bb_name(base, False),
-            element_name_acw=study.bb_name(base, True))
-        for orientation in ('cw', 'acw'):
+            element_name_cw=study.bb_name(base, beam='cw'),
+            element_name_acw=study.bb_name(base, beam='acw'))
+        for beam in ('cw', 'acw'):
             xo.assert_allclose(
-                geom[f'betx_{orientation}'],
-                encounter[orientation]['betx'], rtol=0, atol=0)
+                geom[f'betx_{beam}'],
+                encounter[beam]['betx'], rtol=0, atol=0)
             xo.assert_allclose(
-                geom[f'bety_{orientation}'],
-                encounter[orientation]['bety'], rtol=0, atol=0)
-        for orientation in ('cw', 'acw'):
+                geom[f'bety_{beam}'],
+                encounter[beam]['bety'], rtol=0, atol=0)
+        for beam in ('cw', 'acw'):
             for component in (11, 13, 33):
                 xo.assert_allclose(
-                    geom[f'Sigma_{component}_{orientation}'],
-                    encounter[orientation]['sigma'][component],
+                    geom[f'Sigma_{component}_{beam}'],
+                    encounter[beam]['sigma'][component],
                     rtol=0, atol=0)
         xo.assert_allclose(
             geom['sep_x'], encounter['separation_x'], rtol=0, atol=0)
@@ -363,13 +363,13 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     # At the +1-slot encounter, physical slot 0 faces an empty slot and gets no
     # kick, while the remaining two bunches have partners. This checks the
     # offset-sign conversion together with the public negative-zeta convention.
-    for mirror, bb in (
-            (False, reduced.bb_cw['bb_ip1_r01']),
-            (True, reduced.bb_acw['bb_ip1_r01'])):
+    for beam, bb in (
+            ('cw', reduced.bb_cw['bb_ip1_r01']),
+            ('acw', reduced.bb_acw['bb_ip1_r01'])):
         probe = xt.Particles(
             p0c=7e12,
             x=np.full(3, 1.0e-3),
-            zeta=reduced.bunch_zeta(mirror))
+            zeta=reduced.bunch_zeta(beam=beam))
         bb.track(probe)
         assert probe.px[0] == 0
         assert np.all(np.abs(probe.px[1:]) > 0)
@@ -406,8 +406,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     indices_cw = N_SLOTS - 1 - study.filled_slots_cw
     indices_acw = N_SLOTS - 1 - study.filled_slots_acw
     for base in expected_encounters:
-        name_cw = reduced.bb_name(base, mirror=False)
-        name_acw = reduced.bb_name(base, mirror=True)
+        name_cw = reduced.bb_name(base, beam='cw')
+        name_acw = reduced.bb_name(base, beam='acw')
         Sigma_11_cw = mbtw_cw_dyn['betx', name_cw] * NEMITT_X / gamma0_cw
         Sigma_11_acw = mbtw_acw_dyn['betx', name_acw] * NEMITT_X / gamma0_acw
         xo.assert_allclose(
@@ -535,8 +535,10 @@ def test_rigid_bunch_pattern_contract_matches_beam_stats_monitor():
     xo.assert_allclose(study.filled_slots_cw, [0, 2, 3], rtol=0, atol=0)
     xo.assert_allclose(study.filled_slots_cw, monitor.filled_slots,
                        rtol=0, atol=0)
-    xo.assert_allclose(study.bunch_zeta(mirror=False), [0, -10, -15],
+    xo.assert_allclose(study.bunch_zeta(beam='cw'), [0, -10, -15],
                        rtol=0, atol=0)
+    with pytest.raises(ValueError, match="'cw'.*'acw'"):
+        study.bunch_zeta(beam=False)
     xo.assert_allclose(
         monitor.zeta_centers_unwrapped(line_length=20)[0], [0, -15],
         rtol=0, atol=0)

@@ -358,7 +358,7 @@ and compare its normalized output against the consolidated path. Remove it once
 the examples and permanent behavioral tests use the standard workflow.
 
 Step 1 is complete: Xfields now provides one logical encounter table containing
-the IP, encounter type, signed long-range index, orientation-specific
+the IP, encounter type, signed long-range index, beam-specific
 displacement from the IP and CW/ACW bunch-pairing offsets. The particles
 installer expands head-on slices from this table, while the rigid-bunch path
 renders its own element names and consumes the same
@@ -589,7 +589,7 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### Public API decisions
 
-- [x] Use one orientation vocabulary consistently. The machine-independent
+- [x] Use one beam vocabulary consistently. The machine-independent
   study and result APIs expose ``cw`` / ``acw`` state (for example
   ``filled_slots_cw`` and ``RigidBunchTwiss.cw``). The result container has no
   ``b1`` / ``b2`` aliases; machine-specific external formats may retain their
@@ -599,9 +599,9 @@ be resolved before the rigid-bunch interface is treated as established.
   supported as compatibility aliases in Xpart, Xfields, Xwakes and Xtrack;
   supplying both names is an error. Beam-beam retains its established
   ``filling_pattern_cw`` / ``filling_pattern_acw`` arguments.
-- Avoid boolean orientation in public-looking helpers such as
-  ``bb_name(base, mirror)`` and ``bunch_zeta(mirror)``. Use named CW/ACW
-  accessors or an explicit orientation value, or make these helpers private.
+- [x] Avoid boolean beam selectors in public-looking helpers. ``bb_name`` and
+  ``bunch_zeta`` now take an explicit ``beam='cw'`` or ``beam='acw'``;
+  mirroring remains a private coordinate-transformation detail.
 - Clarify mode-specific configuration arguments. The shared
   ``configure_beambeam_interactions()`` signature contains both particles-only
   and rigid-bunch-only options; particle-only defaults such as

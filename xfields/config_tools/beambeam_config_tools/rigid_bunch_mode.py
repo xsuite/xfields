@@ -251,17 +251,22 @@ def _normalize_filling(filling, num_particles, n_slots, beam_name):
     return intensity
 
 
-def _num_particles_by_orientation(num_particles):
+def _num_particles_by_beam(num_particles):
     if isinstance(num_particles, dict):
-        missing = [orientation for orientation in ('cw', 'acw')
-                   if orientation not in num_particles]
+        missing = [beam for beam in ('cw', 'acw')
+                   if beam not in num_particles]
         if missing:
             raise ValueError(
                 '`num_particles` is missing rigid-bunch entries: '
                 + ', '.join(missing))
-        return {orientation: num_particles[orientation]
-                for orientation in ('cw', 'acw')}
+        return {beam: num_particles[beam] for beam in ('cw', 'acw')}
     return {'cw': num_particles, 'acw': num_particles}
+
+
+def _validate_beam(beam):
+    if beam not in ('cw', 'acw'):
+        raise ValueError("`beam` must be either 'cw' or 'acw'.")
+    return beam
 
 
 class BeamBeamRigidBunchStudy:
@@ -308,7 +313,7 @@ class BeamBeamRigidBunchStudy:
         self.nemitt_y = nemitt_y
         self._num_particles = (
             None if num_particles is None
-            else _num_particles_by_orientation(num_particles))
+            else _num_particles_by_beam(num_particles))
         self.enc_specs = list(_encounter_specs(
             self.ip_names, num_long_range_encounters_per_side))
         self.enc_names = [b for b, _, _ in self.enc_specs]
@@ -338,14 +343,34 @@ class BeamBeamRigidBunchStudy:
     # ------------------------------------------------------------------
     # Naming / bookkeeping
     # ------------------------------------------------------------------
-    def bb_name(self, base, mirror):
-        """Beam-beam element name of one beam (``mirror=True`` -> acw)."""
-        orientation = 'acw' if mirror else 'cw'
-        return self._bb_names[orientation][base]
+    def bb_name(self, base, beam):
+        """Return the beam-beam element name for the selected beam.
 
-    def bunch_zeta(self, mirror):
-        """Bunch centres in ascending physical-slot order."""
-        slots = self.filled_slots_acw if mirror else self.filled_slots_cw
+        Parameters
+        ----------
+        base : str
+            Beam-independent encounter name, for example ``'bb_ip1_ho'``.
+        beam : {'cw', 'acw'}
+            Clockwise or anticlockwise beam.
+        """
+        return self._bb_names[_validate_beam(beam)][base]
+
+    def bunch_zeta(self, beam):
+        """Return the bunch centres for the selected beam.
+
+        Parameters
+        ----------
+        beam : {'cw', 'acw'}
+            Clockwise or anticlockwise beam.
+
+        Returns
+        -------
+        numpy.ndarray
+            Longitudinal bunch centres, ordered by increasing physical slot.
+        """
+        beam = _validate_beam(beam)
+        slots = (self.filled_slots_cw if beam == 'cw'
+                 else self.filled_slots_acw)
         return -np.asarray(slots) * self.bunch_spacing_zeta
 
     @property
@@ -453,9 +478,9 @@ class BeamBeamRigidBunchStudy:
         if isinstance(self.ips, dict):
             return {ip: int(v) % self.n_slots for ip, v in self.ips.items()}
         ref = self.ip_names[0]
-        s_ref = tw_cw['s', self.bb_name(f'bb_{ref}_ho', False)]
+        s_ref = tw_cw['s', self.bb_name(f'bb_{ref}_ho', beam='cw')]
         return {ip: int(round(2 * (tw_cw['s', self.bb_name(f'bb_{ip}_ho',
-                                                           False)] - s_ref)
+                                                           beam='cw')] - s_ref)
                               / self.bunch_spacing_zeta)) % self.n_slots
                 for ip in self.ip_names}
 
@@ -471,9 +496,9 @@ class BeamBeamRigidBunchStudy:
         names_by_ip = {'cw': {}, 'acw': {}}
         for base, ip, _ in self.enc_specs:
             names_by_ip['cw'].setdefault(ip, []).append(
-                self.bb_name(base, False))
+                self.bb_name(base, beam='cw'))
             names_by_ip['acw'].setdefault(ip, []).append(
-                self.bb_name(base, True))
+                self.bb_name(base, beam='acw'))
         twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
             line_cw=self.cw_line, line_acw=self.acw_line,
             element_names_by_ip=names_by_ip,
@@ -490,8 +515,8 @@ class BeamBeamRigidBunchStudy:
             offset = (self.ip_offsets[ip] + signed_identifier) % n_slots
             encounter = compute_beambeam_geometry(
                 twiss_and_madpoints=twiss_and_madpoints,
-                element_name_cw=self.bb_name(base, False),
-                element_name_acw=self.bb_name(base, True))
+                element_name_cw=self.bb_name(base, beam='cw'),
+                element_name_acw=self.bb_name(base, beam='acw'))
             cw = encounter['cw']
             acw = encounter['acw']
             covariance_components.extend(
@@ -610,8 +635,10 @@ class BeamBeamRigidBunchStudy:
         new.num_particles_acw = (
             None if self.num_particles_acw is None
             else self.num_particles_acw.copy())
-        new.bb_cw = {b: red_cw[new.bb_name(b, False)] for b in new.enc_names}
-        new.bb_acw = {b: red_acw[new.bb_name(b, True)] for b in new.enc_names}
+        new.bb_cw = {
+            b: red_cw[new.bb_name(b, beam='cw')] for b in new.enc_names}
+        new.bb_acw = {
+            b: red_acw[new.bb_name(b, beam='acw')] for b in new.enc_names}
         # the reduced lines have their own env: re-create the beambeam_scale knob
         _bind_beambeam_scale(red_cw, new.bb_names_cw)
         _bind_beambeam_scale(red_acw, new.bb_names_acw)
@@ -635,7 +662,7 @@ class BeamBeamRigidBunchStudy:
         follows increasing physical slot number (decreasing zeta), so the
         filled slots are selected and mapped back to public order before
         stacking."""
-        zeta = self.bunch_zeta(mirror)
+        zeta = self.bunch_zeta(beam='acw' if mirror else 'cw')
 
         def active(bb):
             n = int(bb.num_own_bunches)
@@ -769,12 +796,12 @@ class BeamBeamRigidBunchStudy:
                       show_progress=show_progress, **kwargs)
         twiss_cw = _twiss_rigid_bunch_line(
             self.cw_line,
-            zeta_bunches=self.bunch_zeta(mirror=False),
+            zeta_bunches=self.bunch_zeta(beam='cw'),
             bunch_names=[f'slot_{slot}' for slot in self.filled_slots_cw],
             **common)
         twiss_acw = _twiss_rigid_bunch_line(
             self.acw_line,
-            zeta_bunches=self.bunch_zeta(mirror=True),
+            zeta_bunches=self.bunch_zeta(beam='acw'),
             bunch_names=[f'slot_{slot}' for slot in self.filled_slots_acw],
             **common)
         return RigidBunchTwiss(cw=twiss_cw, acw=twiss_acw)
@@ -967,7 +994,7 @@ def _discover_installation(env):
     }
     ip_names = list(config['ip_names'])
     elements = {'cw': {}, 'acw': {}}
-    for orientation, line_name in line_names.items():
+    for beam, line_name in line_names.items():
         if line_name not in env.lines:
             raise RuntimeError(
                 f'Configured beam-beam line `{line_name}` is not present in '
@@ -981,24 +1008,24 @@ def _discover_installation(env):
                 raise RuntimeError(
                     f'Tagged beam-beam element `{element_name}` refers to '
                     f'unknown IP `{metadata["ip_name"]}`.')
-            elements[orientation][element_name] = metadata
-        if not elements[orientation]:
+            elements[beam][element_name] = metadata
+        if not elements[beam]:
             raise RuntimeError(
                 f'No tagged rigid-bunch beam-beam elements were found in '
                 f'configured line `{line_name}`.')
         installed_ips = {
             metadata['ip_name']
-            for metadata in elements[orientation].values()}
+            for metadata in elements[beam].values()}
         if installed_ips != set(ip_names):
             raise RuntimeError(
                 f'Rigid-bunch elements in line `{line_name}` do not cover '
                 'the configured interaction points.')
-        elements[orientation] = dict(sorted(elements[orientation].items()))
+        elements[beam] = dict(sorted(elements[beam].items()))
 
-    for orientation, other_orientation in (('cw', 'acw'), ('acw', 'cw')):
-        for element_name, metadata in elements[orientation].items():
+    for beam, other_beam in (('cw', 'acw'), ('acw', 'cw')):
+        for element_name, metadata in elements[beam].items():
             other_name = metadata['other_element_name']
-            if other_name not in elements[other_orientation]:
+            if other_name not in elements[other_beam]:
                 raise RuntimeError(
                     f'Rigid-bunch element `{element_name}` refers to missing '
                     f'opposing element `{other_name}`.')
@@ -1148,11 +1175,11 @@ def configure_rigid_bunch_beambeam(
         nemitt_x=nemitt_x, nemitt_y=nemitt_y,
         num_particles=num_particles)
     elements_by_encounter = {
-        orientation: {
+        beam: {
             metadata['encounter_name']: line[element_name]
             for element_name, metadata
-            in installation.elements[orientation].items()}
-        for orientation, line in (('cw', cw), ('acw', acw))
+            in installation.elements[beam].items()}
+        for beam, line in (('cw', cw), ('acw', acw))
     }
     study.bb_cw = elements_by_encounter['cw']
     study.bb_acw = elements_by_encounter['acw']
