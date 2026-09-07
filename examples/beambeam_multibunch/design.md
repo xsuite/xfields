@@ -602,12 +602,11 @@ be resolved before the rigid-bunch interface is treated as established.
 - [x] Avoid boolean beam selectors in public-looking helpers. ``bb_name`` and
   ``bunch_zeta`` now take an explicit ``beam='cw'`` or ``beam='acw'``;
   mirroring remains a private coordinate-transformation detail.
-- Clarify mode-specific configuration arguments. The shared
-  ``configure_beambeam_interactions()`` signature contains both particles-only
-  and rigid-bunch-only options; particle-only defaults such as
-  ``crab_strong_beam=True`` are silently ignored in rigid-bunch mode. Use
-  sentinel defaults and validation, or document the mode-dependent contract
-  prominently.
+- [x] Clarify mode-specific configuration arguments. Particles-only boolean
+  options use ``None`` as the shared-signature sentinel and retain their
+  established defaults in particles mode. Supplying any particles-only option
+  explicitly in rigid-bunch mode raises an error; the mode-dependent contract
+  is also documented in the public method.
 
 ### LHC example cleanup
 

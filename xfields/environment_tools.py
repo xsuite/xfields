@@ -103,7 +103,7 @@ class XfieldsEnvironmentAPI:
 
     def configure_beambeam_interactions(
             self, num_particles=None, nemitt_x=None, nemitt_y=None,
-            crab_strong_beam=True, use_antisymmetry=False,
+            crab_strong_beam=None, use_antisymmetry=None,
             separation_bumps=None, filling_pattern_cw=None,
             filling_pattern_acw=None, i_bunch_cw=None, i_bunch_acw=None,
             filled_slots_cw=None, filled_slots_acw=None):
@@ -123,8 +123,15 @@ class XfieldsEnvironmentAPI:
             of scalar or slot-indexed populations.
         nemitt_x, nemitt_y : float
             Normalized transverse emittances.
-        crab_strong_beam, use_antisymmetry, separation_bumps
-            Particles-mode beam-beam configuration options.
+        crab_strong_beam : bool, optional
+            Particles-mode option. Defaults to ``True`` in particles mode and
+            must not be supplied in rigid-bunch mode.
+        use_antisymmetry : bool, optional
+            Particles-mode option. Defaults to ``False`` in particles mode and
+            must not be supplied in rigid-bunch mode.
+        separation_bumps : mapping, optional
+            Particles-mode option. It must not be supplied in rigid-bunch
+            mode.
         filling_pattern_cw, filling_pattern_acw : array-like, optional
             Slot-indexed filling patterns. Either provide both or neither.
         filled_slots_cw, filled_slots_acw : array-like, optional
@@ -152,6 +159,10 @@ class XfieldsEnvironmentAPI:
                 'neither beam.')
 
         if mode != 'rigid_bunch':
+            if crab_strong_beam is None:
+                crab_strong_beam = True
+            if use_antisymmetry is None:
+                use_antisymmetry = False
             if num_particles is None or nemitt_x is None or nemitt_y is None:
                 raise ValueError(
                     '`num_particles`, `nemitt_x` and `nemitt_y` are required '
@@ -183,10 +194,18 @@ class XfieldsEnvironmentAPI:
                 filled_slots_cw=filled_slots_cw,
                 filled_slots_acw=filled_slots_acw)
 
-        if use_antisymmetry or separation_bumps is not None:
+        particles_only_arguments = [
+            name for name, value in (
+                ('crab_strong_beam', crab_strong_beam),
+                ('use_antisymmetry', use_antisymmetry),
+                ('separation_bumps', separation_bumps),
+            ) if value is not None]
+        if particles_only_arguments:
             raise ValueError(
-                '`use_antisymmetry` and `separation_bumps` do not apply when '
-                "mode='rigid_bunch'.")
+                'Particles-only arguments do not apply when '
+                "mode='rigid_bunch': "
+                + ', '.join(f'`{name}`' for name in particles_only_arguments)
+                + '.')
         if i_bunch_cw is not None or i_bunch_acw is not None:
             raise ValueError(
                 '`i_bunch_cw` and `i_bunch_acw` do not apply when '

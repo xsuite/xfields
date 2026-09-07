@@ -480,6 +480,26 @@ def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')
 
 
+def test_rigid_bunch_configuration_rejects_particles_only_arguments():
+    (env, _, _, _, intensity_cw,
+     intensity_acw) = _install_toy_rigid_bunch_beambeam()
+
+    required = {
+        'num_particles': {'cw': intensity_cw, 'acw': intensity_acw},
+        'nemitt_x': NEMITT_X,
+        'nemitt_y': NEMITT_Y,
+    }
+    for argument, value in (
+            ('crab_strong_beam', True),
+            ('crab_strong_beam', False),
+            ('use_antisymmetry', True),
+            ('use_antisymmetry', False),
+            ('separation_bumps', {'ip1': 'x'})):
+        with pytest.raises(ValueError, match=f'`{argument}`'):
+            env.xfields.configure_beambeam_interactions(
+                **required, **{argument: value})
+
+
 def test_rigid_bunch_configuration_restores_scale_expression_on_error(
         monkeypatch):
     (env, _, _, _, intensity_cw,
