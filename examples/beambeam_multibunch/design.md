@@ -614,16 +614,17 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### LHC example cleanup
 
-- [x] In ``000_lhc_multibunch_bb.py``, avoid configuring the complete filling and
-  immediately replacing it with the bounded filling. Configure without a
-  filling, derive the IP offsets, and apply the selected filling once.
+- [x] In ``000_lhc_multibunch_bb.py``, avoid configuring the complete filling
+  and immediately replacing it with a bounded filling. Load the prepared
+  example subset and configure it directly.
 - [x] Make it obvious in the example output and introductory text that the default
-  calculation uses a bounded bunch subset, controlled by the editable
-  ``ALL_BUNCHES`` and ``WINDOW`` constants, even though it uses the full thick
-  lattice.
+  calculation uses a prepared 104-bunch subset, selected through the editable
+  ``FILLING_FILE`` constant, even though it uses the full thick lattice.
 - [x] Keep the LHC operational filling format out of the example. A preparation
   script in ``test_data/lhc_2024`` converts it to a committed dataset exposing
-  ``num_slots`` and ``filled_slots_cw`` / ``filled_slots_acw``.
+  ``num_slots`` and ``filled_slots_cw`` / ``filled_slots_acw``. It also prepares
+  the bounded filling used by the full-lattice example, keeping selection
+  policy out of the runtime workflow.
 - [x] Do not unconditionally write fixed pickle files into the source directory.
   Make result export explicit and direct outputs to a user-selected directory.
 - [x] Remove the unused ``line_b1`` / ``line_b2`` return values in the example, or

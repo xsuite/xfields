@@ -10,10 +10,10 @@ the two LHC lines, install the beam-beam elements, configure the rigid-bunch
 study, apply a filling, and solve for the self-consistent per-bunch closed
 orbit and tunes.
 
-The default run uses a bounded subset of the real LHC filling because every
-iteration twisses the full thick lattice once per beam. Set
-``ALL_BUNCHES = True`` below to use the complete filling, or edit ``WINDOW``
-to control the bounded subset. The lattice itself is never reduced; see
+The default run uses a prepared 104-bunch subset of the real LHC filling
+because every iteration twisses the full thick lattice once per beam. Edit
+``FILLING_FILE`` below to use another prepared filling, for example the
+complete 2460-bunch pattern. The lattice itself is never reduced; see
 ``002_multibunch_sectormaps_collisions.py`` for the faster second-order-map
 workflow.
 """
@@ -38,8 +38,7 @@ N_SLOTS = HARMONIC_NUMBER // BUNCH_SPACING_BUCKETS
 IP_NAMES = ['ip1', 'ip2', 'ip5', 'ip8']
 N_LONG_RANGE = 45
 N_ITERATIONS = 6
-ALL_BUNCHES = False
-WINDOW = 48
+FILLING_FILE = '../../test_data/lhc_2024/filling_25ns_104b.json'
 
 
 def wrap_tune_difference(value):
@@ -58,8 +57,7 @@ for lname in ('lhcb1', 'lhcb2'):
     env[lname].twiss_default['method'] = '4d'
     env[lname].cycle(name_first_element='ip3', inplace=True)
 
-with open(
-        '../../test_data/lhc_2024/filling_25ns_2460b.json') as fid:
+with open(FILLING_FILE) as fid:
     filling_data = json.load(fid)
 if filling_data['num_slots'] != N_SLOTS:
     raise ValueError(f'The filling must describe {N_SLOTS} slots.')
@@ -77,40 +75,16 @@ env.xfields.install_beambeam_interactions(
     bunch_spacing_buckets=BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
 
-# Configuration computes the bare optics, encounter geometry, and IP pairing
-# offsets. The filling is applied below, once the desired subset is known.
 study = env.xfields.configure_beambeam_interactions(
     num_particles=BUNCH_INTENSITY,
     nemitt_x=NEMITT_X,
-    nemitt_y=NEMITT_Y)
-
-if ALL_BUNCHES:
-    slots_cw = filled_slots_cw
-    slots_acw = filled_slots_acw
-    print('Filling selection: complete LHC filling (ALL_BUNCHES=True)')
-else:
-    # Take a window from the longest CW train and the regions paired with it
-    # by the head-on collisions at all IPs. Intersecting with each beam's
-    # filling retains the real PACMAN structure in the selected regions.
-    train_breaks = np.flatnonzero(np.diff(filled_slots_cw) > 1) + 1
-    trains_cw = np.split(filled_slots_cw, train_breaks)
-    reference_slots = max(trains_cw, key=len)[:WINDOW]
-    candidate_slots = np.unique(np.concatenate([
-        (reference_slots + sign * offset) % N_SLOTS
-        for offset in set(study.ip_offsets.values())
-        for sign in (-1, 1)
-    ]))
-    slots_cw = np.intersect1d(candidate_slots, filled_slots_cw)
-    slots_acw = np.intersect1d(candidate_slots, filled_slots_acw)
-    print(f'Filling selection: bounded subset (WINDOW={WINDOW}; '
-          'set ALL_BUNCHES=True for the complete filling)')
-
-study.apply_filling_pattern(
-    filled_slots_cw=slots_cw,
-    filled_slots_acw=slots_acw)
+    nemitt_y=NEMITT_Y,
+    filled_slots_cw=filled_slots_cw,
+    filled_slots_acw=filled_slots_acw)
 
 slots_cw = study.filled_slots_cw
 slots_acw = study.filled_slots_acw
+print(f'Filling: {filling_data["name"]}')
 for ip in IP_NAMES:
     print(f'  {ip}: head-on pairing offset = {study.ip_offsets[ip]} slots')
 print(f'  populated bunches: CW={len(slots_cw)}, ACW={len(slots_acw)}')
