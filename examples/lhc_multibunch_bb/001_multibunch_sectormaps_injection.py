@@ -47,6 +47,12 @@ if not ALL_BUNCHES:
     rigid_bunch_study.apply_filling_pattern(
         filled_slots_cw=s1, filled_slots_acw=s2)
 
+# Compute the reference optics with the configured beam-beam elements disabled.
+env['beambeam_scale'] = 0
+twiss_no_bb_cw = line_b1.twiss()
+twiss_no_bb_acw = line_b2.twiss()
+env['beambeam_scale'] = 1
+
 print('  building second-order maps between the beam-beam elements...')
 study_red = rigid_bunch_study.get_study_with_second_order_maps(
     context=par['context'])
@@ -56,7 +62,7 @@ red_b1 = study_red.cw_line
 # Timing comparison
 # ----------------------------------------------------------------------------
 line_b1.twiss(); red_b1.twiss()
-t0 = time.time(); line_b1.twiss(); t_full = time.time() - t0
+t0 = time.time(); tw_full = line_b1.twiss(); t_full = time.time() - t0
 t0 = time.time(); tw_red = red_b1.twiss(); t_red = time.time() - t0
 print(f'  one full-lattice twiss: {t_full:.3f} s ({len(line_b1.element_names)} elements)')
 print(f'  one reduced-line twiss: {t_red:.3f} s ({len(red_b1.element_names)} elements)'
@@ -64,8 +70,8 @@ print(f'  one reduced-line twiss: {t_red:.3f} s ({len(red_b1.element_names)} ele
 # The reduced line reproduces the FRACTIONAL tunes (its integer tune is not
 # meaningful -- the maps carry phase advance only modulo 2 pi).
 print(f'  fractional tunes reduced/full: '
-      f'qx {tw_red.qx % 1:.5f} / {rigid_bunch_study.meta["qx_cw"] % 1:.5f}   '
-      f'qy {tw_red.qy % 1:.5f} / {rigid_bunch_study.meta["qy_cw"] % 1:.5f}')
+      f'qx {tw_red.qx % 1:.5f} / {tw_full.qx % 1:.5f}   '
+      f'qy {tw_red.qy % 1:.5f} / {tw_full.qy % 1:.5f}')
 
 slots_cw, slots_acw = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
@@ -86,18 +92,16 @@ if COMPUTE_OPTICS_PARAMS:
     mbtw_cw, mbtw_acw = final_twiss.cw, final_twiss.acw
     print(f'  final twiss (both beams): {time.time() - t0:.1f} s')
 
-# Reference the tune shift to the bare tune (second-order maps preserve the
-# linear optics, so the reduced-line tunes equal the full-lattice rigid_bunch_study.meta)
-dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - rigid_bunch_study.meta['qx_cw'])
+# Reference the tune shift to the optics without beam-beam.
+dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - twiss_no_bb_cw.qx)
 print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 # Save per-bunch results of both beams as DataFrames
 df_cw = mb.results_dataframe(study_red, mbtw_cw, slots_cw,
-                             rigid_bunch_study.meta['qx_cw'],
-                             rigid_bunch_study.meta['qy_cw'], beam='cw')
+                             twiss_no_bb_cw.qx, twiss_no_bb_cw.qy, beam='cw')
 df_acw = mb.results_dataframe(study_red, mbtw_acw, slots_acw,
-                              rigid_bunch_study.meta['qx_acw'],
-                              rigid_bunch_study.meta['qy_acw'], beam='acw')
+                              twiss_no_bb_acw.qx, twiss_no_bb_acw.qy,
+                              beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 out_b1 = os.path.join(mb.HERE, 'results_b1.pkl')
 out_b2 = os.path.join(mb.HERE, 'results_b2.pkl')
@@ -106,7 +110,7 @@ df_acw.to_pickle(out_b2)
 print(f'saved {out_b1}\nsaved {out_b2}')
 
 mb.plot_results(study_red, slots_cw, mbtw_cw,
-                rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
+                twiss_no_bb_cw.qx, twiss_no_bb_cw.qy,
                 title_suffix='  [second-order maps]')
 if COMPUTE_OPTICS_PARAMS:
     mb.plot_global_quantities(

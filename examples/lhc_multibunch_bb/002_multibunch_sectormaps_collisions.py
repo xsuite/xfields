@@ -51,8 +51,15 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
-print(f'  bare tunes CW {rigid_bunch_study.meta["qx_cw"]:.5f}/{rigid_bunch_study.meta["qy_cw"]:.5f}  '
-      f'ACW {rigid_bunch_study.meta["qx_acw"]:.5f}/{rigid_bunch_study.meta["qy_acw"]:.5f}')
+
+# Compute the reference optics with the configured beam-beam elements disabled.
+env['beambeam_scale'] = 0
+twiss_no_bb_cw = line_b1.twiss()
+twiss_no_bb_acw = line_b2.twiss()
+env['beambeam_scale'] = 1
+print(f'  tunes without BB, CW '
+      f'{twiss_no_bb_cw.qx:.5f}/{twiss_no_bb_cw.qy:.5f}  '
+      f'ACW {twiss_no_bb_acw.qx:.5f}/{twiss_no_bb_acw.qy:.5f}')
 
 if not ALL_BUNCHES:
     # restrict to a bounded window with all-IP pairings (offsets from geometry)
@@ -83,18 +90,15 @@ if COMPUTE_OPTICS_PARAMS:
     mbtw_cw, mbtw_acw = final_twiss.cw, final_twiss.acw
     print(f'  final twiss (both beams): {time.time() - t0:.1f} s')
 
-# bare per-bunch tunes: second-order maps preserve the linear optics, so the
-# reduced-line tunes equal the full-lattice ones in rigid_bunch_study.meta
-dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - rigid_bunch_study.meta['qx_cw'])
+# Reference the tune shift to the optics without beam-beam.
+dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - twiss_no_bb_cw.qx)
 print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 df_cw = mb.results_dataframe(study_red, mbtw_cw, slots_cw,
-                             rigid_bunch_study.meta['qx_cw'],
-                             rigid_bunch_study.meta['qy_cw'],
+                             twiss_no_bb_cw.qx, twiss_no_bb_cw.qy,
                              beam='cw')
 df_acw = mb.results_dataframe(study_red, mbtw_acw, slots_acw,
-                              rigid_bunch_study.meta['qx_acw'],
-                              rigid_bunch_study.meta['qy_acw'],
+                              twiss_no_bb_acw.qx, twiss_no_bb_acw.qy,
                               beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 df_cw.to_pickle(os.path.join(mb.HERE, 'results_b1_coll.pkl'))
@@ -102,7 +106,7 @@ df_acw.to_pickle(os.path.join(mb.HERE, 'results_b2_coll.pkl'))
 print('saved results_b1_coll.pkl / results_b2_coll.pkl')
 
 mb.plot_results(study_red, slots_cw, mbtw_cw,
-                rigid_bunch_study.meta['qx_cw'], rigid_bunch_study.meta['qy_cw'],
+                twiss_no_bb_cw.qx, twiss_no_bb_cw.qy,
                 title_suffix='  [collision, 6.8 TeV]')
 if COMPUTE_OPTICS_PARAMS:
     mb.plot_global_quantities(

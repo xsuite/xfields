@@ -9,7 +9,8 @@ LHC collision scenario (6.8 TeV squeezed flat optics, head-on + BBLR).
 
 The beam-beam elements take the effective (convolved) transverse sizes of
 the colliding bunch pairs. By default these are STATIC, computed once from
-the bare optics: ``sigma^2 = (beta_b1 + beta_b2) * nemitt / gamma0``. But
+the optics without beam-beam:
+``sigma^2 = (beta_b1 + beta_b2) * nemitt / gamma0``. But
 head-on beam-beam changes the per-bunch beta functions at the encounters
 (dynamic beta, ~10% spread of beta* in this scenario), which in turn changes
 the sizes, the kicks, and hence the per-bunch closed solution.
@@ -56,6 +57,13 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
+
+# Compute the reference optics with the configured beam-beam elements disabled.
+env['beambeam_scale'] = 0
+twiss_no_bb_cw = line_b1.twiss()
+twiss_no_bb_acw = line_b2.twiss()
+env['beambeam_scale'] = 1
+
 print('  building second-order maps between the beam-beam elements...')
 study_red = rigid_bunch_study.get_study_with_second_order_maps(
     context=par['context'])
@@ -98,12 +106,10 @@ stat = extract(results['static'].cw)
 dyn = extract(results['dynamic beta'].cw)
 
 df_cw = mb.results_dataframe(study_red, results['dynamic beta'].cw, slots_cw,
-                             rigid_bunch_study.meta['qx_cw'],
-                             rigid_bunch_study.meta['qy_cw'],
+                             twiss_no_bb_cw.qx, twiss_no_bb_cw.qy,
                              beam='cw')
 df_acw = mb.results_dataframe(study_red, results['dynamic beta'].acw, slots_acw,
-                              rigid_bunch_study.meta['qx_acw'],
-                              rigid_bunch_study.meta['qy_acw'],
+                              twiss_no_bb_acw.qx, twiss_no_bb_acw.qy,
                               beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
 df_cw.to_pickle(os.path.join(mb.HERE, 'results_b1_coll_dynbeta.pkl'))

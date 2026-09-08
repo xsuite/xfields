@@ -111,11 +111,13 @@ def _run_xsuite_scenario(scenario):
         nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
         filling_pattern_cw=filling_pattern_b1,
         filling_pattern_acw=filling_pattern_b2)
-    study_red = study.get_study_with_second_order_maps()
 
-    # bare per-bunch tunes (second-order maps preserve the linear optics, so the
-    # reduced-line tunes equal the full-lattice ones stored in study.meta)
-    bare = study.meta
+    env['beambeam_scale'] = 0
+    twiss_no_bb_cw = line_b1.twiss()
+    twiss_no_bb_acw = line_b2.twiss()
+    env['beambeam_scale'] = 1
+
+    study_red = study.get_study_with_second_order_maps()
 
     solution = study_red.solve(
         max_iterations=par['n_iter'], tol_sigma=0.0,
@@ -123,7 +125,7 @@ def _run_xsuite_scenario(scenario):
         require_convergence=False)
     mbtw_cw, mbtw_acw = solution.cw, solution.acw
 
-    def extract(mbtw, slots, bare_qx, bare_qy, beam):
+    def extract(mbtw, slots, qx_no_bb, qy_no_bb, beam):
         bb = study_red.bb_name('bb_ip1_ho', beam=beam)
         x = mbtw['x', bb]
         if beam == 'acw':
@@ -131,13 +133,13 @@ def _run_xsuite_scenario(scenario):
         y = mbtw['y', bb]
         return dict(slots=slots,
                     dx=x - x.mean(), dy=y - y.mean(),
-                    dqx=_wrap_frac_tune(mbtw.qx - bare_qx),
-                    dqy=_wrap_frac_tune(mbtw.qy - bare_qy))
+                    dqx=_wrap_frac_tune(mbtw.qx - qx_no_bb),
+                    dqy=_wrap_frac_tune(mbtw.qy - qy_no_bb))
 
     return (extract(mbtw_cw, study_red.filled_slots_cw,
-                    bare['qx_cw'], bare['qy_cw'], beam='cw'),
+                    twiss_no_bb_cw.qx, twiss_no_bb_cw.qy, beam='cw'),
             extract(mbtw_acw, study_red.filled_slots_acw,
-                    bare['qx_acw'], bare['qy_acw'], beam='acw'))
+                    twiss_no_bb_acw.qx, twiss_no_bb_acw.qy, beam='acw'))
 
 
 @pytest.mark.parametrize('scenario', ['injection', 'collision'])

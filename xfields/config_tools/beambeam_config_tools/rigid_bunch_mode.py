@@ -288,8 +288,9 @@ class BeamBeamRigidBunchStudy:
     e.g. ``bb_ho.c1b1_00`` and ``bb_ho.c1b2_00``. The element itself is the
     observation point used for the geometry and the orbit feedback.
 
-    The configured elements retain ``Sigma_13`` from the bare optics, but the
-    rigid-bunch kick ignores it and uses the diagonal covariance only. A
+    The configured elements retain ``Sigma_13`` from optics computed with
+    beam-beam disabled, but the rigid-bunch kick ignores it and uses the
+    diagonal covariance only. A
     :class:`RuntimeWarning` reports a normalized transverse correlation above
     ``1e-2``.
     """
@@ -331,7 +332,6 @@ class BeamBeamRigidBunchStudy:
             self._bb_names['acw'][name] for name in self.enc_names]
 
         self.geom = {}               # base_name -> geometry dict
-        self.meta = {}
         self.bb_cw = {}              # base_name -> element (in cw line)
         self.bb_acw = {}             # base_name -> element (in acw line)
         # Occupancy stays slot-indexed; populations are compact arrays aligned
@@ -464,7 +464,7 @@ class BeamBeamRigidBunchStudy:
         """One inactive-kick representative per opposing RF slot.
 
         All representatives remain active so their count allocates full-slot
-        storage, while zero weight preserves the bare-lattice cold start until
+        storage, while zero weight preserves the state without beam-beam until
         a solution update loads the physical bunch populations.
         """
         other_line = self.cw_line if mirror else self.acw_line
@@ -490,7 +490,8 @@ class BeamBeamRigidBunchStudy:
 
         The beam-beam elements are the observation points. They must already
         be placed and inactive, so the shared Twiss and covariance calculation
-        sees the bare optics. All three transverse covariance components are
+        sees the optics with beam-beam disabled. All three transverse
+        covariance components are
         retained; ``Sigma_13`` is ignored by the kick, with a warning when its
         normalized correlation exceeds ``1e-2``.
         """
@@ -541,9 +542,6 @@ class BeamBeamRigidBunchStudy:
                                            zip(*covariance_components))
         _warn_if_large_transverse_coupling(Sigma_11, Sigma_13, Sigma_33)
         self.geom = geom
-        self.meta = dict(
-            qx_cw=float(tw_cw.qx), qy_cw=float(tw_cw.qy),
-            qx_acw=float(tw_acw.qx), qy_acw=float(tw_acw.qy))
         self._configure_bb()
 
     def _configure_bb(self):
@@ -578,7 +576,8 @@ class BeamBeamRigidBunchStudy:
     def _register_own_covariance(self):
         """(Re)register each element's OWN bunch grid (``own_beam_zeta``) and
         static design covariance, indexed by THIS beam, for every RF slot.
-        Uses the bare-optics covariance cached in ``self.geom``."""
+        Uses the covariance computed without beam-beam and cached in
+        ``self.geom``."""
         for mirror, bb_dict in ((False, self.bb_cw), (True, self.bb_acw)):
             own = 'acw' if mirror else 'cw'
             own_zeta = -np.arange(self.n_slots) * self.bunch_spacing_zeta
@@ -626,7 +625,6 @@ class BeamBeamRigidBunchStudy:
             self.bunch_spacing_buckets, self.nemitt_x, self.nemitt_y,
             self._num_particles)
         new.geom = self.geom
-        new.meta = self.meta
         new.ip_offsets = self.ip_offsets
         new._filling_cw = self._filling_cw
         new._filling_acw = self._filling_acw
@@ -1152,10 +1150,10 @@ def configure_rigid_bunch_beambeam(
         filled_slots_cw=None, filled_slots_acw=None):
     """Populate installed rigid-bunch elements and return their study.
 
-    The elements retain all transverse covariance components computed from the
-    bare optics. ``Sigma_13`` is stored and serialized but currently ignored by
-    the rigid-bunch kick. A :class:`RuntimeWarning` is emitted when its
-    normalized correlation exceeds ``1e-2``.
+    The elements retain all transverse covariance components from optics
+    computed with beam-beam disabled. ``Sigma_13`` is stored and serialized but
+    currently ignored by the rigid-bunch kick. A :class:`RuntimeWarning` is
+    emitted when its normalized correlation exceeds ``1e-2``.
     """
     has_filling_cw = (
         filling_pattern_cw is not None or filled_slots_cw is not None)
@@ -1185,7 +1183,8 @@ def configure_rigid_bunch_beambeam(
     study.bb_cw = elements_by_encounter['cw']
     study.bb_acw = elements_by_encounter['acw']
 
-    # Reanalyse the bare lines even when configuration is repeated. Preserve
+    # Reanalyse the lines with beam-beam disabled even when configuration is
+    # repeated. Preserve
     # the user's knob value or expression, including when geometry fails.
     previous_beambeam_scale = env.ref['beambeam_scale'].xdeps.expr
     if previous_beambeam_scale is None:

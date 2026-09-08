@@ -77,6 +77,11 @@ study = env.xfields.configure_beambeam_interactions(
     filled_slots_cw=filled_slots_cw,
     filled_slots_acw=filled_slots_acw)
 
+# Compute the reference optics with the configured beam-beam elements disabled.
+env['beambeam_scale'] = 0
+twiss_no_bb_cw = env.lhcb1.twiss()
+env['beambeam_scale'] = 1
+
 slots_cw = study.filled_slots_cw
 slots_acw = study.filled_slots_acw
 print(f'Filling: {filling_data["name"]}')
@@ -94,12 +99,10 @@ print(f'  converged={solution.converged}, '
 print(f'  solve time: {time.time() - start_time:.1f} s')
 
 # Inspect and plot the clockwise-beam result ---------------------------------
-# The reference-tune interface and the structure of the solution object will
-# be reviewed separately. For now, the configured bare tunes live in `meta`.
-bare_qx = study.meta['qx_cw']
-bare_qy = study.meta['qy_cw']
-dqx = wrap_tune_difference(solution.cw.qx - bare_qx)
-dqy = wrap_tune_difference(solution.cw.qy - bare_qy)
+qx_no_bb = twiss_no_bb_cw.qx
+qy_no_bb = twiss_no_bb_cw.qy
+dqx = wrap_tune_difference(solution.cw.qx - qx_no_bb)
+dqy = wrap_tune_difference(solution.cw.qy - qy_no_bb)
 
 ip1_element = study.bb_name('bb_ip1_ho', beam='cw')
 x_ip1 = solution.cw['x', ip1_element]

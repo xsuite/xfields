@@ -66,7 +66,7 @@ SCENARIOS = {
 
 def wrap_frac_tune(v):
     """Tune difference on the fractional-tune circle, wrapped to (-0.5, 0.5]
-    (fast-mode twiss returns fractional tunes while the bare reference may
+    (fast-mode twiss returns fractional tunes while the no-BB reference may
     carry an integer part)."""
     return (np.asarray(v) + 0.5) % 1.0 - 0.5
 
@@ -212,8 +212,8 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
     arrays aligned with ``rigid_bunch_study.filled_slots_cw`` /
     ``rigid_bunch_study.filled_slots_acw``. The sizes follow the tools' own
     convention,
-    ``sigma = sqrt(beta nemitt / gamma)`` with the bare-optics beta functions
-    cached in ``rigid_bunch_study.geom``;
+    ``sigma = sqrt(beta nemitt / gamma)`` with the beta functions computed
+    without beam-beam and cached in ``rigid_bunch_study.geom``;
     only the single design emittance is replaced by the per-bunch one, so the
     kick between bunch ``i`` and bunch ``j`` uses the convolved size
     ``sqrt(eps_i beta_1 / gamma + eps_j beta_2 / gamma)``, as in pytrain.
@@ -264,15 +264,14 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
 # ----------------------------------------------------------------------------
 # Results as a DataFrame
 # ----------------------------------------------------------------------------
-def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, beam,
+def results_dataframe(rigid_bunch_study, mbtw, slots, qx_no_bb, qy_no_bb, beam,
                       ip='ip1'):
     """Per-bunch results as a pandas DataFrame, indexed by 25 ns slot.
 
-    Columns: qx, qy (per-bunch tunes), dqx, dqy (beam-beam tune shift vs the
-    bare tune), x, y (closed orbit at the head-on marker of ``ip``, in the
-    physical frame; select the corresponding beam with ``beam='cw'`` or
-    ``beam='acw'``. ``dx``/``dy`` are the per-bunch orbit deviations from the
-    beam average.
+    Columns: qx, qy (per-bunch tunes), dqx, dqy (beam-beam tune shift relative
+    to the tune without beam-beam), x, y (closed orbit at the head-on marker of
+    ``ip`` in the physical frame selected by ``beam``), and dx, dy (per-bunch
+    orbit deviations from the beam average).
     """
     import pandas as pd
     marker = rigid_bunch_study.bb_name(f'bb_{ip}_ho', beam=beam)
@@ -282,8 +281,8 @@ def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, beam,
     df = pd.DataFrame({
         'slot': np.asarray(slots),
         'qx': mbtw.qx, 'qy': mbtw.qy,
-        'dqx': wrap_frac_tune(mbtw.qx - bare_qx),
-        'dqy': wrap_frac_tune(mbtw.qy - bare_qy),
+        'dqx': wrap_frac_tune(mbtw.qx - qx_no_bb),
+        'dqy': wrap_frac_tune(mbtw.qy - qy_no_bb),
         'x': x, 'y': y,
         'dx': x - x.mean(), 'dy': y - y.mean(),
     }).set_index('slot')
@@ -293,7 +292,7 @@ def results_dataframe(rigid_bunch_study, mbtw, slots, bare_qx, bare_qy, beam,
 # ----------------------------------------------------------------------------
 # Plot
 # ----------------------------------------------------------------------------
-def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, bare_qx, bare_qy,
+def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, qx_no_bb, qy_no_bb,
                  title_suffix=''):
     import matplotlib.pyplot as plt
     mk = rigid_bunch_study.bb_name('bb_ip1_ho', beam='cw')
@@ -304,9 +303,9 @@ def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, bare_qx, bare_qy,
     dco_x = (co_x - co_x.mean()) * 1e6
     dco_y = (co_y - co_y.mean()) * 1e6
     fig, axs = plt.subplots(2, 1, figsize=(9, 7))
-    axs[0].plot(slots_cw, wrap_frac_tune(mbtw_cw.qx - bare_qx) * 1e3, '.',
+    axs[0].plot(slots_cw, wrap_frac_tune(mbtw_cw.qx - qx_no_bb) * 1e3, '.',
                 label=r'$\Delta q_x$')
-    axs[0].plot(slots_cw, wrap_frac_tune(mbtw_cw.qy - bare_qy) * 1e3, '.',
+    axs[0].plot(slots_cw, wrap_frac_tune(mbtw_cw.qy - qy_no_bb) * 1e3, '.',
                 label=r'$\Delta q_y$')
     axs[0].set_xlabel('25 ns slot')
     axs[0].set_ylabel(r'beam-beam tune shift [$10^{-3}$]')

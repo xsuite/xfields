@@ -309,6 +309,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     env.cw['beambeam_scale'] = 1.0
 
     reduced = study.get_study_with_second_order_maps()
+    assert not hasattr(study, 'meta')
+    assert not hasattr(reduced, 'meta')
     assert reduced.enc_names == study.enc_names
     assert reduced.geom == study.geom
     for name in reduced.bb_names_cw:
