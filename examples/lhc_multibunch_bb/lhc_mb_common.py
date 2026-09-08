@@ -42,7 +42,7 @@ import xtrack as xt
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 DATA = os.path.join(HERE, '..', '..', 'test_data', 'lhc_2024')
-SCHEME_FILE = os.path.join(DATA, '25ns_2460b_2448_2092_2239_144bpi_20inj.json')
+FILLING_FILE = os.path.join(DATA, 'filling_25ns_2460b.json')
 
 # LHC RF / slot layout: 3564 25-ns slots (h = 35640, 10 buckets per slot)
 N_SLOTS = 3564
@@ -148,9 +148,14 @@ def load_lhc(scenario=None, *, p0c=None, bunch_intensity=None, nemitt=None,
 # Filling pattern
 # ----------------------------------------------------------------------------
 def load_scheme():
-    with open(SCHEME_FILE) as fid:
-        scheme = json.load(fid)
-    return np.array(scheme['schemebeam1']), np.array(scheme['schemebeam2'])
+    with open(FILLING_FILE) as fid:
+        filling = json.load(fid)
+    if filling['num_slots'] != N_SLOTS:
+        raise ValueError(f'The filling must describe {N_SLOTS} slots.')
+    return (
+        filling_pattern_from_slots(filling['filled_slots_cw']),
+        filling_pattern_from_slots(filling['filled_slots_acw']),
+    )
 
 
 def all_filled_slots(scheme_b1, scheme_b2):

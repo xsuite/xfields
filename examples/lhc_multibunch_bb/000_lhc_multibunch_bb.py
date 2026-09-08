@@ -38,44 +38,9 @@ N_SLOTS = HARMONIC_NUMBER // BUNCH_SPACING_BUCKETS
 
 IP_NAMES = ['ip1', 'ip2', 'ip5', 'ip8']
 N_LONG_RANGE = 45
-N_ITERATIONS = 3
+N_ITERATIONS = 6
 ALL_BUNCHES = False
 WINDOW = 48
-
-
-def select_bounded_filling(ip_offsets, filling_cw, filling_acw, window):
-    """Select a train window and all regions paired with it at the IPs.
-
-    This is only a runtime policy for this full-lattice example. It preserves
-    representative PACMAN pairings without making filling selection part of
-    the rigid-bunch beam-beam API.
-    """
-    filled_cw = np.asarray(filling_cw) > 0
-
-    # Find the longest contiguous train in the clockwise beam.
-    best_length = best_start = current_length = current_start = 0
-    for slot, is_filled in enumerate(filled_cw):
-        if is_filled:
-            if current_length == 0:
-                current_start = slot
-            current_length += 1
-            if current_length > best_length:
-                best_length = current_length
-                best_start = current_start
-        else:
-            current_length = 0
-
-    window = min(window, best_length)
-    candidate_slots = set()
-    for offset in set(ip_offsets.values()):
-        for signed_offset in (offset, -offset):
-            candidate_slots.update(
-                (best_start + signed_offset + ii) % N_SLOTS
-                for ii in range(window))
-
-    slots_cw = sorted(slot for slot in candidate_slots if filling_cw[slot])
-    slots_acw = sorted(slot for slot in candidate_slots if filling_acw[slot])
-    return slots_cw, slots_acw
 
 
 def wrap_tune_difference(value):
@@ -102,13 +67,12 @@ for line_name in ('lhcb1', 'lhcb2'):
     line.build_tracker(_context=context)
 
 with open(
-        '../../test_data/lhc_2024/'
-        '25ns_2460b_2448_2092_2239_144bpi_20inj.json') as fid:
+        '../../test_data/lhc_2024/filling_25ns_2460b.json') as fid:
     filling_data = json.load(fid)
-filling_cw = np.asarray(filling_data['schemebeam1'])
-filling_acw = np.asarray(filling_data['schemebeam2'])
-if len(filling_cw) != N_SLOTS or len(filling_acw) != N_SLOTS:
-    raise ValueError(f'The filling patterns must contain {N_SLOTS} slots.')
+if filling_data['num_slots'] != N_SLOTS:
+    raise ValueError(f'The filling must describe {N_SLOTS} slots.')
+filled_slots_cw = np.asarray(filling_data['filled_slots_cw'])
+filled_slots_acw = np.asarray(filling_data['filled_slots_acw'])
 
 
 # Install and configure rigid-bunch beam-beam --------------------------------
@@ -129,12 +93,23 @@ study = env.xfields.configure_beambeam_interactions(
     nemitt_y=NEMITT_Y)
 
 if ALL_BUNCHES:
-    slots_cw = np.flatnonzero(filling_cw)
-    slots_acw = np.flatnonzero(filling_acw)
+    slots_cw = filled_slots_cw
+    slots_acw = filled_slots_acw
     print('Filling selection: complete LHC filling (ALL_BUNCHES=True)')
 else:
-    slots_cw, slots_acw = select_bounded_filling(
-        study.ip_offsets, filling_cw, filling_acw, WINDOW)
+    # Take a window from the longest CW train and the regions paired with it
+    # by the head-on collisions at all IPs. Intersecting with each beam's
+    # filling retains the real PACMAN structure in the selected regions.
+    train_breaks = np.flatnonzero(np.diff(filled_slots_cw) > 1) + 1
+    trains_cw = np.split(filled_slots_cw, train_breaks)
+    reference_slots = max(trains_cw, key=len)[:WINDOW]
+    candidate_slots = np.unique(np.concatenate([
+        (reference_slots + sign * offset) % N_SLOTS
+        for offset in set(study.ip_offsets.values())
+        for sign in (-1, 1)
+    ]))
+    slots_cw = np.intersect1d(candidate_slots, filled_slots_cw)
+    slots_acw = np.intersect1d(candidate_slots, filled_slots_acw)
     print(f'Filling selection: bounded subset (WINDOW={WINDOW}; '
           'set ALL_BUNCHES=True for the complete filling)')
 

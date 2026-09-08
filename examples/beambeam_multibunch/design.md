@@ -618,8 +618,12 @@ be resolved before the rigid-bunch interface is treated as established.
   immediately replacing it with the bounded filling. Configure without a
   filling, derive the IP offsets, and apply the selected filling once.
 - [x] Make it obvious in the example output and introductory text that the default
-  calculation uses a bounded bunch subset, controlled by ``LHC_ALL`` and
-  ``LHC_WINDOW``, even though it uses the full thick lattice.
+  calculation uses a bounded bunch subset, controlled by the editable
+  ``ALL_BUNCHES`` and ``WINDOW`` constants, even though it uses the full thick
+  lattice.
+- [x] Keep the LHC operational filling format out of the example. A preparation
+  script in ``test_data/lhc_2024`` converts it to a committed dataset exposing
+  ``num_slots`` and ``filled_slots_cw`` / ``filled_slots_acw``.
 - [x] Do not unconditionally write fixed pickle files into the source directory.
   Make result export explicit and direct outputs to a user-selected directory.
 - [x] Remove the unused ``line_b1`` / ``line_b2`` return values in the example, or
