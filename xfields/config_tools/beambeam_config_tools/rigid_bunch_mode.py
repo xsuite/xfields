@@ -303,7 +303,7 @@ class BeamBeamRigidBunchStudy:
         self.acw_line = anticlockwise_line
         self.ips = ips                          # dict {ip: offset} or list
         self.ip_names = list(ips)
-        self.ip_offsets = None                  # resolved by _compute_geometry
+        self.ip_offsets = None  # resolved by _compute_encounter_config
         self.num_long_range_encounters_per_side = \
             num_long_range_encounters_per_side
         self.harmonic_number = int(harmonic_number)
@@ -331,7 +331,7 @@ class BeamBeamRigidBunchStudy:
         self.bb_names_acw = [
             self._bb_names['acw'][name] for name in self.enc_names]
 
-        self.geom = {}               # base_name -> geometry dict
+        self._encounter_config = {}  # encounter name -> fixed configuration
         self.bb_cw = {}              # base_name -> element (in cw line)
         self.bb_acw = {}             # base_name -> element (in acw line)
         # Occupancy stays slot-indexed; populations are compact arrays aligned
@@ -454,7 +454,7 @@ class BeamBeamRigidBunchStudy:
 
         # Skipped before both elements and geometry exist. Once configured,
         # filling changes reset the slot-indexed opposing state in place.
-        if self.bb_cw and self.geom:
+        if self.bb_cw and self._encounter_config:
             self._configure_bb()
 
     # ------------------------------------------------------------------
@@ -485,8 +485,8 @@ class BeamBeamRigidBunchStudy:
                               / self.bunch_spacing_zeta)) % self.n_slots
                 for ip in self.ip_names}
 
-    def _compute_geometry(self):
-        """Fill ``self.geom`` from the shared Xfields geometry description.
+    def _compute_encounter_config(self):
+        """Build the fixed per-encounter configuration.
 
         The beam-beam elements are the observation points. They must already
         be placed and inactive, so the shared Twiss and covariance calculation
@@ -511,7 +511,7 @@ class BeamBeamRigidBunchStudy:
         n_slots = self.n_slots
         self.ip_offsets = self._resolve_ip_offsets(tw_cw)
 
-        geom = {}
+        encounter_config = {}
         covariance_components = []
         for base, ip, signed_identifier in self.enc_specs:
             offset = (self.ip_offsets[ip] + signed_identifier) % n_slots
@@ -524,16 +524,16 @@ class BeamBeamRigidBunchStudy:
             covariance_components.extend(
                 (beam['sigma'][11], beam['sigma'][13], beam['sigma'][33])
                 for beam in (cw, acw))
-            geom[base] = dict(
+            encounter_config[base] = dict(
                 ip=ip, offset=offset, signed_n=signed_identifier,
-                betx_cw=cw['betx'], bety_cw=cw['bety'],
-                betx_acw=acw['betx'], bety_acw=acw['bety'],
-                Sigma_11_cw=cw['sigma'][11],
-                Sigma_13_cw=cw['sigma'][13],
-                Sigma_33_cw=cw['sigma'][33],
-                Sigma_11_acw=acw['sigma'][11],
-                Sigma_13_acw=acw['sigma'][13],
-                Sigma_33_acw=acw['sigma'][33],
+                betx_no_bb_cw=cw['betx'], bety_no_bb_cw=cw['bety'],
+                betx_no_bb_acw=acw['betx'], bety_no_bb_acw=acw['bety'],
+                Sigma_11_no_bb_cw=cw['sigma'][11],
+                Sigma_13_no_bb_cw=cw['sigma'][13],
+                Sigma_33_no_bb_cw=cw['sigma'][33],
+                Sigma_11_no_bb_acw=acw['sigma'][11],
+                Sigma_13_no_bb_acw=acw['sigma'][13],
+                Sigma_33_no_bb_acw=acw['sigma'][33],
                 sep_x=encounter['separation_x'],
                 sep_y=encounter['separation_y'],
             )
@@ -541,7 +541,7 @@ class BeamBeamRigidBunchStudy:
         Sigma_11, Sigma_13, Sigma_33 = map(np.asarray,
                                            zip(*covariance_components))
         _warn_if_large_transverse_coupling(Sigma_11, Sigma_13, Sigma_33)
-        self.geom = geom
+        self._encounter_config = encounter_config
         self._configure_bb()
 
     def _configure_bb(self):
@@ -553,18 +553,20 @@ class BeamBeamRigidBunchStudy:
         for mirror, bb_dict in ((False, self.bb_cw), (True, self.bb_acw)):
             oth = 'cw' if mirror else 'acw'
             for base in self.enc_names:
-                e = self.geom[base]
+                config = self._encounter_config[base]
                 bb = bb_dict[base]
                 # Public bunch centres use zeta = -slot * spacing. For the CW
                 # beam, an opposing slot ``own + offset`` is therefore at
                 # ``zeta_own - offset * spacing``; ACW uses the inverse map.
-                bb.zeta_offset = (e['offset'] if mirror else -e['offset']) \
+                bb.zeta_offset = (
+                    config['offset'] if mirror else -config['offset']) \
                     * self.bunch_spacing_zeta
                 for component in (11, 13, 33):
                     setattr(
                         bb, f'other_beam_Sigma_{component}',
                         np.full(self.n_slots,
-                                e[f'Sigma_{component}_{oth}']))
+                                config[
+                                    f'Sigma_{component}_no_bb_{oth}']))
         self._register_own_covariance()
         for line, mirror, bb_dict in (
                 (self.cw_line, False, self.bb_cw),
@@ -577,17 +579,17 @@ class BeamBeamRigidBunchStudy:
         """(Re)register each element's OWN bunch grid (``own_beam_zeta``) and
         static design covariance, indexed by THIS beam, for every RF slot.
         Uses the covariance computed without beam-beam and cached in
-        ``self.geom``."""
+        ``self._encounter_config``."""
         for mirror, bb_dict in ((False, self.bb_cw), (True, self.bb_acw)):
             own = 'acw' if mirror else 'cw'
             own_zeta = -np.arange(self.n_slots) * self.bunch_spacing_zeta
             for base in self.enc_names:
-                e = self.geom[base]
+                config = self._encounter_config[base]
                 bb_dict[base].update_from_own_beam(
                     own_zeta,
-                    own_beam_Sigma_11=e[f'Sigma_11_{own}'],
-                    own_beam_Sigma_13=e[f'Sigma_13_{own}'],
-                    own_beam_Sigma_33=e[f'Sigma_33_{own}'])
+                    own_beam_Sigma_11=config[f'Sigma_11_no_bb_{own}'],
+                    own_beam_Sigma_13=config[f'Sigma_13_no_bb_{own}'],
+                    own_beam_Sigma_33=config[f'Sigma_33_no_bb_{own}'])
 
     # ------------------------------------------------------------------
     # Sector-map reduction
@@ -624,7 +626,7 @@ class BeamBeamRigidBunchStudy:
             self.num_long_range_encounters_per_side, self.harmonic_number,
             self.bunch_spacing_buckets, self.nemitt_x, self.nemitt_y,
             self._num_particles)
-        new.geom = self.geom
+        new._encounter_config = self._encounter_config
         new.ip_offsets = self.ip_offsets
         new._filling_cw = self._filling_cw
         new._filling_acw = self._filling_acw
@@ -704,8 +706,9 @@ class BeamBeamRigidBunchStudy:
         for j, base in enumerate(self.enc_names):
             x_all = np.zeros(self.n_slots)
             y_all = np.zeros(self.n_slots)
-            x_all[slots_other] = xs[:, j] - self.geom[base]['sep_x']
-            y_all[slots_other] = ys[:, j] - self.geom[base]['sep_y']
+            config = self._encounter_config[base]
+            x_all[slots_other] = xs[:, j] - config['sep_x']
+            y_all[slots_other] = ys[:, j] - config['sep_y']
             p.x[:] = x_all
             p.y[:] = y_all
             kw = {}
@@ -715,7 +718,7 @@ class BeamBeamRigidBunchStudy:
                         (11, 13, 33), covariances_other):
                     value_all = np.full(
                         self.n_slots,
-                        self.geom[base][f'Sigma_{component}_{other}'])
+                        config[f'Sigma_{component}_no_bb_{other}'])
                     value_all[slots_other] = values[:, j]
                     covariance_other.append(value_all)
                 kw = dict(
@@ -729,7 +732,7 @@ class BeamBeamRigidBunchStudy:
                 for component, values in zip((11, 13, 33), covariances_own):
                     value_all = np.full(
                         self.n_slots,
-                        self.geom[base][f'Sigma_{component}_{own}'])
+                        config[f'Sigma_{component}_no_bb_{own}'])
                     value_all[slots_own] = values[:, j]
                     covariance_own.append(value_all)
                 bb.update_from_own_beam(
@@ -1191,7 +1194,7 @@ def configure_rigid_bunch_beambeam(
         previous_beambeam_scale = env['beambeam_scale']
     try:
         env['beambeam_scale'] = 0.0
-        study._compute_geometry()
+        study._compute_encounter_config()
     finally:
         env['beambeam_scale'] = previous_beambeam_scale
     if has_filling_cw:

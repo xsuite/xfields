@@ -213,7 +213,7 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
     ``rigid_bunch_study.filled_slots_acw``. The sizes follow the tools' own
     convention,
     ``sigma = sqrt(beta nemitt / gamma)`` with the beta functions computed
-    without beam-beam and cached in ``rigid_bunch_study.geom``;
+    without beam-beam and cached internally by the study;
     only the single design emittance is replaced by the per-bunch one, so the
     kick between bunch ``i`` and bunch ``j`` uses the convolved size
     ``sqrt(eps_i beta_1 / gamma + eps_j beta_2 / gamma)``, as in pytrain.
@@ -238,12 +238,14 @@ def set_per_bunch_sizes(rigid_bunch_study, nemitt_cw, nemitt_acw):
         'acw': len(rigid_bunch_study.filled_slots_acw),
     }
     for base in rigid_bunch_study.enc_names:
-        geom = rigid_bunch_study.geom[base]
+        config = rigid_bunch_study._encounter_config[base]
         sigma = {}
         for beam in ('cw', 'acw'):
             sigma[beam] = (
-                np.sqrt(geom[f'betx_{beam}'] * emit[beam][0] / gamma[beam]),
-                np.sqrt(geom[f'bety_{beam}'] * emit[beam][1] / gamma[beam]))
+                np.sqrt(config[f'betx_no_bb_{beam}']
+                        * emit[beam][0] / gamma[beam]),
+                np.sqrt(config[f'bety_no_bb_{beam}']
+                        * emit[beam][1] / gamma[beam]))
         for beam, other_beam in (('cw', 'acw'), ('acw', 'cw')):
             # The raw element (and hence `rigid_bunch_study.bb_cw[...]`) is
             # an expression view, whose array slices are not assignable

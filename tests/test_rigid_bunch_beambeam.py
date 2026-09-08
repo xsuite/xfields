@@ -187,13 +187,17 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         intensity_acw[[0, 3, 6]], rtol=0, atol=0)
 
     expected_offsets = [0, 1, 7, 6, 7, 5]
-    assert [study.geom[name]['offset'] for name in expected_encounters] \
-        == expected_offsets
-    assert [study.geom[name]['signed_n'] for name in expected_encounters] \
-        == [0, 1, -1, 0, 1, -1]
-    for geom in study.geom.values():
-        assert geom['sep_x'] == 0
-        assert geom['sep_y'] == 0
+    assert (
+        [study._encounter_config[name]['offset']
+         for name in expected_encounters]
+        == expected_offsets)
+    assert (
+        [study._encounter_config[name]['signed_n']
+         for name in expected_encounters]
+        == [0, 1, -1, 0, 1, -1])
+    for config in study._encounter_config.values():
+        assert config['sep_x'] == 0
+        assert config['sep_y'] == 0
 
     xo.assert_allclose(
         env.cw.get_table()['s', study.bb_names_cw],
@@ -232,40 +236,46 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert len(bb_cw.other_beam_zeta) == N_SLOTS
         assert len(bb_acw.other_beam_zeta) == N_SLOTS
 
-        geom = study.geom[base]
+        config = study._encounter_config[base]
         # The shared covariance API includes relativistic beta in the
         # normalized-to-geometric emittance conversion.
         xo.assert_allclose(
-            geom['Sigma_11_cw'],
-            geom['betx_cw'] * NEMITT_X / (beta0_cw * gamma0_cw),
+            config['Sigma_11_no_bb_cw'],
+            config['betx_no_bb_cw'] * NEMITT_X / (beta0_cw * gamma0_cw),
             rtol=1e-14)
         xo.assert_allclose(
-            geom['Sigma_33_cw'],
-            geom['bety_cw'] * NEMITT_Y / (beta0_cw * gamma0_cw),
+            config['Sigma_33_no_bb_cw'],
+            config['bety_no_bb_cw'] * NEMITT_Y / (beta0_cw * gamma0_cw),
             rtol=1e-14)
         xo.assert_allclose(
-            geom['Sigma_11_acw'],
-            geom['betx_acw'] * NEMITT_X / (beta0_acw * gamma0_acw),
+            config['Sigma_11_no_bb_acw'],
+            config['betx_no_bb_acw'] * NEMITT_X / (beta0_acw * gamma0_acw),
             rtol=1e-14)
         xo.assert_allclose(
-            geom['Sigma_33_acw'],
-            geom['bety_acw'] * NEMITT_Y / (beta0_acw * gamma0_acw),
+            config['Sigma_33_no_bb_acw'],
+            config['bety_no_bb_acw'] * NEMITT_Y / (beta0_acw * gamma0_acw),
             rtol=1e-14)
         xo.assert_allclose(
-            bb_cw.own_beam_Sigma_11, geom['Sigma_11_cw'], rtol=0, atol=0)
+            bb_cw.own_beam_Sigma_11,
+            config['Sigma_11_no_bb_cw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.own_beam_Sigma_13, geom['Sigma_13_cw'], rtol=0, atol=0)
+            bb_cw.own_beam_Sigma_13,
+            config['Sigma_13_no_bb_cw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.own_beam_Sigma_33, geom['Sigma_33_cw'], rtol=0, atol=0)
+            bb_cw.own_beam_Sigma_33,
+            config['Sigma_33_no_bb_cw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.other_beam_Sigma_11, geom['Sigma_11_acw'], rtol=0, atol=0)
+            bb_cw.other_beam_Sigma_11,
+            config['Sigma_11_no_bb_acw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.other_beam_Sigma_13, geom['Sigma_13_acw'], rtol=0, atol=0)
+            bb_cw.other_beam_Sigma_13,
+            config['Sigma_13_no_bb_acw'], rtol=0, atol=0)
         xo.assert_allclose(
-            bb_cw.other_beam_Sigma_33, geom['Sigma_33_acw'], rtol=0, atol=0)
+            bb_cw.other_beam_Sigma_33,
+            config['Sigma_33_no_bb_acw'], rtol=0, atol=0)
 
-    # The study geometry is the normalized view of the shared per-encounter
-    # Reduced Twiss tables and MadPoints.
+    # The internal encounter configuration is the normalized view of the
+    # shared per-encounter Reduced Twiss tables and MadPoints.
     names_by_ip = {'cw': {}, 'acw': {}}
     for base, ip, _ in study.enc_specs:
         names_by_ip['cw'].setdefault(ip, []).append(
@@ -278,28 +288,28 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
         survey_separation=False)
     for base, ip, _ in study.enc_specs:
-        geom = study.geom[base]
+        config = study._encounter_config[base]
         encounter = compute_beambeam_geometry(
             twiss_and_madpoints=twiss_and_madpoints,
             element_name_cw=study.bb_name(base, beam='cw'),
             element_name_acw=study.bb_name(base, beam='acw'))
         for beam in ('cw', 'acw'):
             xo.assert_allclose(
-                geom[f'betx_{beam}'],
+                config[f'betx_no_bb_{beam}'],
                 encounter[beam]['betx'], rtol=0, atol=0)
             xo.assert_allclose(
-                geom[f'bety_{beam}'],
+                config[f'bety_no_bb_{beam}'],
                 encounter[beam]['bety'], rtol=0, atol=0)
         for beam in ('cw', 'acw'):
             for component in (11, 13, 33):
                 xo.assert_allclose(
-                    geom[f'Sigma_{component}_{beam}'],
+                    config[f'Sigma_{component}_no_bb_{beam}'],
                     encounter[beam]['sigma'][component],
                     rtol=0, atol=0)
         xo.assert_allclose(
-            geom['sep_x'], encounter['separation_x'], rtol=0, atol=0)
+            config['sep_x'], encounter['separation_x'], rtol=0, atol=0)
         xo.assert_allclose(
-            geom['sep_y'], encounter['separation_y'], rtol=0, atol=0)
+            config['sep_y'], encounter['separation_y'], rtol=0, atol=0)
 
     env.cw['beambeam_scale'] = 0.37
     for name in study.bb_names_cw:
@@ -311,8 +321,10 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     reduced = study.get_study_with_second_order_maps()
     assert not hasattr(study, 'meta')
     assert not hasattr(reduced, 'meta')
+    assert not hasattr(study, 'geom')
+    assert not hasattr(reduced, 'geom')
     assert reduced.enc_names == study.enc_names
-    assert reduced.geom == study.geom
+    assert reduced._encounter_config == study._encounter_config
     for name in reduced.bb_names_cw:
         assert isinstance(
             reduced.cw_line[name], xf.BeamBeamBiGaussianRigidBunch2D)
@@ -474,9 +486,10 @@ def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():
         filling_pattern_acw=filling_pattern_acw)
 
     assert second is not first
-    assert second.geom.keys() == first.geom.keys()
-    for encounter_name in first.geom:
-        assert second.geom[encounter_name] == first.geom[encounter_name]
+    assert second._encounter_config.keys() == first._encounter_config.keys()
+    for encounter_name in first._encounter_config:
+        assert (second._encounter_config[encounter_name]
+                == first._encounter_config[encounter_name])
     assert env.cw['beambeam_scale'] == 0.41
     assert env.acw['beambeam_scale'] == 0.41
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')
@@ -514,7 +527,7 @@ def test_rigid_bunch_configuration_restores_scale_expression_on_error(
     def fail_geometry(self):
         raise RuntimeError('geometry failed')
 
-    monkeypatch.setattr(BeamBeamRigidBunchStudy, '_compute_geometry',
+    monkeypatch.setattr(BeamBeamRigidBunchStudy, '_compute_encounter_config',
                         fail_geometry)
     with pytest.raises(RuntimeError, match='geometry failed'):
         env.xfields.configure_beambeam_interactions(
