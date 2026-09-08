@@ -157,7 +157,7 @@ stateful rigid-bunch operations:
 - `apply_filling_pattern(...)`;
 - `twiss(...)`;
 - `solve(...)`;
-- `second_order_maps(...)`;
+- `get_study_with_second_order_maps(...)`;
 - `load_solution(...)`;
 - convergence and optional dynamic-beta updates.
 
@@ -494,7 +494,8 @@ Test the stateful study independently:
 - a short symmetric two-beam solve;
 - `load_solution(...)`;
 - static and dynamic-beta updates;
-- `second_order_maps(...)` preserving the exact beam-beam elements.
+- `get_study_with_second_order_maps(...)` preserving the exact beam-beam
+  elements.
 
 ### 3. Rigid-bunch Twiss tests
 

@@ -83,11 +83,12 @@ rigid_bunch_study = env.xfields.configure_beambeam_interactions(
 mo_names = [nn for nn in line_b1.element_names if re.match(r'^mo\.', nn)]
 
 print('  building second-order maps between the beam-beam elements...')
-study_red = rigid_bunch_study.second_order_maps(context=par['context'])
+study_red = rigid_bunch_study.get_study_with_second_order_maps(
+    context=par['context'])
 print(f'  ... and a variant keeping the {len(mo_names)} lattice octupoles '
       'of beam 1 exact...')
-study_mo = rigid_bunch_study.second_order_maps(keep_extra_cw=mo_names,
-                                   context=par['context'])
+study_mo = rigid_bunch_study.get_study_with_second_order_maps(
+    keep_extra_cw=mo_names, context=par['context'])
 # beam-1 lines and lens handles used for the footprints below
 red_b1, red_mo_b1 = study_red.cw_line, study_mo.cw_line
 bb_b1, bb_thick_b1, bb_mo_b1 = study_red.bb_cw, rigid_bunch_study.bb_cw, study_mo.bb_cw

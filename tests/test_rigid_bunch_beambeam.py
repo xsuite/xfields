@@ -308,7 +308,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert env.acw[name].scale_strength == 0.37
     env.cw['beambeam_scale'] = 1.0
 
-    reduced = study.second_order_maps()
+    reduced = study.get_study_with_second_order_maps()
     assert reduced.enc_names == study.enc_names
     assert reduced.geom == study.geom
     for name in reduced.bb_names_cw:

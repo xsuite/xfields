@@ -15,7 +15,7 @@ tunes/chromaticity matched to 62.316/60.322 and Q' = 10. 1.1e11 p/bunch,
 
 The standard beam-beam workflow in ``mode='rigid_bunch'`` installs and
 configures the head-on + long-range lenses on the full lattice;
-``rigid_bunch_study.second_order_maps``
+``rigid_bunch_study.get_study_with_second_order_maps``
 then makes a fast copy where the arcs between the encounters are replaced by
 second-order Taylor maps (the lenses stay exact), and ``study_red.solve`` finds
 the per-bunch self-consistent closed solution on it. The flattened collision
@@ -63,7 +63,8 @@ if not ALL_BUNCHES:
 # Fast sector-map copy: the arcs between the encounters become second-order maps
 # (the beam-beam elements stay exact). Solving the reduced study is much faster.
 print('  building second-order maps between the beam-beam elements...')
-study_red = rigid_bunch_study.second_order_maps(context=par['context'])
+study_red = rigid_bunch_study.get_study_with_second_order_maps(
+    context=par['context'])
 slots_cw, slots_acw = study_red.filled_slots_cw, study_red.filled_slots_acw
 print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 

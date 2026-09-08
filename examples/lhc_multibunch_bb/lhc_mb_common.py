@@ -10,7 +10,8 @@ The rigid-bunch beam-beam machinery itself is machine-independent and lives in
 Xfields. The standard beam-beam install/configure workflow with
 ``mode='rigid_bunch'`` returns a ``BeamBeamRigidBunchStudy``; all
 further operations are methods on it (``rigid_bunch_study.twiss()``,
-``rigid_bunch_study.solve()``, ``rigid_bunch_study.second_order_maps()``,
+``rigid_bunch_study.solve()``,
+``rigid_bunch_study.get_study_with_second_order_maps()``,
 ``rigid_bunch_study.load_solution(...)``, and
 ``rigid_bunch_study.apply_filling_pattern(...)``). The examples use these
 methods when changing an already configured rigid-bunch study; this module only

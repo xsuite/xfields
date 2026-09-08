@@ -34,7 +34,8 @@ bunch-pairing offset, convolved sizes, survey separation) and returns a
 * :meth:`BeamBeamRigidBunchStudy.solve` -- self-consistent per-bunch closed orbit;
 * :meth:`BeamBeamRigidBunchStudy.twiss` -- per-bunch optics for the currently loaded
   opposing-beam state;
-* :meth:`BeamBeamRigidBunchStudy.second_order_maps` -- a fast sector-map copy: the arcs
+* :meth:`BeamBeamRigidBunchStudy.get_study_with_second_order_maps` -- a fast
+  sector-map copy: the arcs
   between the encounters are replaced by second-order maps (splitting the lines
   at the beam-beam elements, which stay exact) and a NEW study on the reduced
   lines is returned; solving it is orders of magnitude faster and gives the same
@@ -280,7 +281,7 @@ class BeamBeamRigidBunchStudy:
     (``bb_cw`` / ``bb_acw``, keyed by encounter base name) and the per-beam bunch
     filling. Per-bunch optics, the self-consistent solve, sector-map reduction
     and solution transfer are methods (:meth:`twiss`, :meth:`solve`,
-    :meth:`second_order_maps`, :meth:`load_solution`,
+    :meth:`get_study_with_second_order_maps`, :meth:`load_solution`,
     :meth:`apply_filling_pattern`).
 
     Beam-beam elements use the same names as the particles-mode infrastructure,
@@ -592,8 +593,8 @@ class BeamBeamRigidBunchStudy:
     # ------------------------------------------------------------------
     # Sector-map reduction
     # ------------------------------------------------------------------
-    def second_order_maps(self, keep_extra_cw=None, keep_extra_acw=None,
-                          context=None):
+    def get_study_with_second_order_maps(
+            self, keep_extra_cw=None, keep_extra_acw=None, context=None):
         """Return a NEW :class:`BeamBeamRigidBunchStudy` on second-order-map copies of
         the two lines: the arcs between the encounters are replaced by
         second-order maps (the beam-beam elements, kept as split points, stay

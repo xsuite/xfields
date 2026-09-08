@@ -48,7 +48,8 @@ if not ALL_BUNCHES:
         filled_slots_cw=s1, filled_slots_acw=s2)
 
 print('  building second-order maps between the beam-beam elements...')
-study_red = rigid_bunch_study.second_order_maps(context=par['context'])
+study_red = rigid_bunch_study.get_study_with_second_order_maps(
+    context=par['context'])
 red_b1 = study_red.cw_line
 
 # ----------------------------------------------------------------------------

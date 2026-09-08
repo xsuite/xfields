@@ -5,7 +5,8 @@
 
 """Cross-check of the rigid-bunch beam-beam machinery against pytrain
 (TRAIN): drives the machine-independent tools in Xfields
-(standard rigid-bunch install/configure -> ``study.second_order_maps`` ->
+(standard rigid-bunch install/configure ->
+``study.get_study_with_second_order_maps`` ->
 ``study_red.solve``) on the LHC sector-map model, for both the injection
 (BBLR only) and the collision (6.8 TeV squeezed, head-on + BBLR) scenarios --
 all 2460+2460 bunches -- and compares the per-bunch closed-orbit deviations and
@@ -110,7 +111,7 @@ def _run_xsuite_scenario(scenario):
         nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
         filling_pattern_cw=filling_pattern_b1,
         filling_pattern_acw=filling_pattern_b2)
-    study_red = study.second_order_maps()
+    study_red = study.get_study_with_second_order_maps()
 
     # bare per-bunch tunes (second-order maps preserve the linear optics, so the
     # reduced-line tunes equal the full-lattice ones stored in study.meta)
