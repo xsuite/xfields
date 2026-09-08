@@ -33,7 +33,6 @@ NEMITT_X = 2.3e-6
 NEMITT_Y = 2.3e-6
 HARMONIC_NUMBER = 35640
 BUNCH_SPACING_BUCKETS = 10
-N_SLOTS = HARMONIC_NUMBER // BUNCH_SPACING_BUCKETS
 
 IP_NAMES = ['ip1', 'ip2', 'ip5', 'ip8']
 N_LONG_RANGE = 45
@@ -57,13 +56,9 @@ for lname in ('lhcb1', 'lhcb2'):
     env[lname].twiss_default['method'] = '4d'
     env[lname].cycle(name_first_element='ip3', inplace=True)
 
-with open(FILLING_FILE) as fid:
-    filling_data = json.load(fid)
-if filling_data['num_slots'] != N_SLOTS:
-    raise ValueError(f'The filling must describe {N_SLOTS} slots.')
+filling_data = xt.json.load(FILLING_FILE)
 filled_slots_cw = np.asarray(filling_data['filled_slots_cw'])
 filled_slots_acw = np.asarray(filling_data['filled_slots_acw'])
-
 
 # Install and configure rigid-bunch beam-beam --------------------------------
 env.xfields.install_beambeam_interactions(
@@ -89,7 +84,6 @@ for ip in IP_NAMES:
     print(f'  {ip}: head-on pairing offset = {study.ip_offsets[ip]} slots')
 print(f'  populated bunches: CW={len(slots_cw)}, ACW={len(slots_acw)}')
 
-
 # Solve the self-consistent two-beam closed-orbit problem --------------------
 print('Self-consistent solve on the full thick lattice:')
 start_time = time.time()
@@ -98,7 +92,6 @@ print(f'  converged={solution.converged}, '
       f'iterations={solution.num_iterations}, '
       f'max orbit change={solution.max_orbit_change:.3e} sigma')
 print(f'  solve time: {time.time() - start_time:.1f} s')
-
 
 # Inspect and plot the clockwise-beam result ---------------------------------
 # The reference-tune interface and the structure of the solution object will
