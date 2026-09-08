@@ -79,7 +79,7 @@ for label, dynamic_beta in (('static', False), ('dynamic beta', True)):
     t0 = time.time()
     # 'fast' twiss (per-bunch optics) in both cases so the returned tables carry
     # betx/bety for the static-vs-dynamic beta* comparison below (dynamic_beta
-    # forces it anyway; the static solve would otherwise default to fast_orbit).
+    # requires it; the static solve would otherwise default to fast_orbit).
     results[label] = study_red.solve(
         max_iterations=N_ITER, tol_sigma=0.0,
         twiss_mode='fast', dynamic_beta=dynamic_beta,

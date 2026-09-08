@@ -352,7 +352,6 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
 
     converged_solution = reduced.solve(
         max_iterations=3,
-        twiss_mode='fast_orbit',
         show_progress=False,
     )
     assert converged_solution.converged is True
@@ -409,7 +408,6 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         max_iterations=1,
         tol_sigma=0,
         dynamic_beta=True,
-        twiss_mode='fast',
         show_progress=False,
         require_convergence=False,
     )
@@ -470,6 +468,41 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         assert bb.scale_strength == 0.29
         xo.assert_allclose(
             bb.other_beam_num_particles, np.zeros(N_SLOTS), rtol=0, atol=0)
+
+
+def test_rigid_bunch_solve_selects_and_validates_twiss_mode(monkeypatch):
+    (_, study, _, _, _, _) = _install_toy_rigid_bunch_beambeam()
+
+    class StopTwiss(RuntimeError):
+        pass
+
+    selected_modes = []
+
+    def record_mode(**kwargs):
+        selected_modes.append(kwargs['mode'])
+        raise StopTwiss
+
+    monkeypatch.setattr(study, 'twiss', record_mode)
+    for solve_kwargs, expected_mode in (
+            ({}, 'fast_orbit'),
+            ({'dynamic_beta': True}, 'fast'),
+            ({'method': '6d'}, 'full')):
+        with pytest.raises(StopTwiss):
+            study.solve(show_progress=False, **solve_kwargs)
+        assert selected_modes[-1] == expected_mode
+
+    with pytest.raises(ValueError, match=(
+            'dynamic_beta=True.*fast.*full.*fast_orbit')):
+        study.solve(
+            dynamic_beta=True, twiss_mode='fast_orbit',
+            show_progress=False)
+
+    for twiss_mode in ('fast_orbit', 'fast'):
+        with pytest.raises(ValueError, match=(
+                'requires.*method.*4d.*full.*6D')):
+            study.solve(
+                method='6d', twiss_mode=twiss_mode,
+                show_progress=False)
 
 
 def test_rigid_bunch_configuration_is_rediscovered_and_repeatable():

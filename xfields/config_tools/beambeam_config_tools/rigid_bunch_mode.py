@@ -834,17 +834,27 @@ class BeamBeamRigidBunchStudy:
             each normalised by that element's own-beam transverse size, is below
             this (default 1e-4).
         dynamic_beta : bool
-            If True, recompute the per-bunch effective (convolved) sizes from the
-            live per-bunch beta functions at each iteration. Forces the
-            optics-carrying twiss. Default False.
+            If True, recompute each beam's per-bunch transverse covariance from
+            the live beta functions at every iteration. This requires an
+            optics-carrying Twiss mode (``'fast'`` or ``'full'``). Default
+            False, which keeps the sizes obtained from the optics without
+            beam-beam.
         method : str
             Twiss method, ``'4d'`` (default) or ``'6d'``.
         chrom : bool
             Whether to compute chromatic properties in the multi-bunch twiss.
         twiss_mode : str, optional
-            ``'fast_orbit'`` (orbit only, the default when ``dynamic_beta`` is
-            False), ``'fast'`` (adds per-bunch optics, forced when
-            ``dynamic_beta`` is True) or ``'full'``.
+            Per-bunch Twiss implementation used at each iteration. If None,
+            select ``'fast_orbit'`` for a 4D solve with fixed beam sizes,
+            ``'fast'`` for a 4D solve with ``dynamic_beta=True``, or ``'full'``
+            for a 6D solve. Explicitly selected modes are never changed:
+            incompatible combinations raise :class:`ValueError`.
+
+            ``'fast_orbit'`` computes the closed orbit and fractional tunes;
+            ``'fast'`` additionally computes per-bunch linear optics; both are
+            batched modes that require ``method='4d'``. ``'full'`` runs a
+            standard Twiss separately for every bunch and supports both 4D and
+            6D.
         show_progress : bool
             Print per-iteration convergence information (default True).
         continue_on_closed_orbit_error : bool
@@ -879,6 +889,9 @@ class BeamBeamRigidBunchStudy:
         RuntimeError
             If the solve does not converge and
             ``require_convergence`` is True.
+        ValueError
+            If the explicitly selected ``twiss_mode`` is incompatible with
+            ``dynamic_beta`` or ``method``.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
             raise RuntimeError(
@@ -886,9 +899,18 @@ class BeamBeamRigidBunchStudy:
         if max_iterations < 1:
             raise ValueError('`max_iterations` must be at least one.')
         if twiss_mode is None:
-            twiss_mode = 'fast' if dynamic_beta else 'fast_orbit'
+            if method == '6d':
+                twiss_mode = 'full'
+            else:
+                twiss_mode = 'fast' if dynamic_beta else 'fast_orbit'
         if dynamic_beta and twiss_mode == 'fast_orbit':
-            twiss_mode = 'fast'
+            raise ValueError(
+                "`dynamic_beta=True` requires `twiss_mode='fast'` or "
+                "`twiss_mode='full'`; got 'fast_orbit'.")
+        if method != '4d' and twiss_mode in ('fast', 'fast_orbit'):
+            raise ValueError(
+                f"`twiss_mode={twiss_mode!r}` requires `method='4d'`; "
+                "use `twiss_mode='full'` for a 6D solve.")
 
         # The intermediate rounds may keep going on a closed-orbit error: their
         # orbit is only an input to the next round, so a few bunches short of
