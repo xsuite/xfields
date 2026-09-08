@@ -39,12 +39,6 @@ N_LONG_RANGE = 45
 N_ITERATIONS = 6
 FILLING_FILE = '../../test_data/lhc_2024/filling_25ns_104b.json'
 
-
-def wrap_tune_difference(value):
-    """Wrap a tune difference to ``[-0.5, 0.5)``."""
-    return (np.asarray(value) + 0.5) % 1.0 - 0.5
-
-
 # Load and prepare the two LHC lines ------------------------------------------
 env = xt.load('../../test_data/lhc_2024/lhc.seq', reverse_lines=['lhcb2'])
 env.vars.load('../../test_data/lhc_2024/collision_optics_15cm_flat_2026.madx')
@@ -99,10 +93,10 @@ print(f'  converged={solution.converged}, '
 print(f'  solve time: {time.time() - start_time:.1f} s')
 
 # Inspect and plot the clockwise-beam result ---------------------------------
-qx_no_bb = twiss_no_bb_cw.qx
-qy_no_bb = twiss_no_bb_cw.qy
-dqx = wrap_tune_difference(solution.cw.qx - qx_no_bb)
-dqy = wrap_tune_difference(solution.cw.qy - qy_no_bb)
+qx_no_bb = twiss_no_bb_cw.qx % 1 # only fractional part
+qy_no_bb = twiss_no_bb_cw.qy % 1 # only fractional part
+dqx = solution.cw.qx - qx_no_bb
+dqy = solution.cw.qy - qy_no_bb
 
 ip1_element = study.bb_name('bb_ip1_ho', beam='cw')
 x_ip1 = solution.cw['x', ip1_element]
