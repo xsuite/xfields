@@ -11,16 +11,14 @@ study, apply a filling, and solve for the self-consistent per-bunch closed
 orbit and tunes.
 
 The default run uses a bounded subset of the real LHC filling because every
-iteration twisses the full thick lattice once per beam. Set ``LHC_ALL=1`` to
-use the complete filling, or change ``LHC_WINDOW`` (default 48) to control the
-bounded subset. The lattice itself is never reduced; see
+iteration twisses the full thick lattice once per beam. Set
+``ALL_BUNCHES = True`` below to use the complete filling, or edit ``WINDOW``
+to control the bounded subset. The lattice itself is never reduced; see
 ``002_multibunch_sectormaps_collisions.py`` for the faster second-order-map
 workflow.
 """
 
 import json
-import os
-from pathlib import Path
 import time
 
 import matplotlib.pyplot as plt
@@ -30,11 +28,6 @@ import xtrack as xt
 
 
 # LHC collision configuration ------------------------------------------------
-THIS_DIR = Path(__file__).parent
-LHC_DATA = THIS_DIR / '..' / '..' / 'test_data' / 'lhc_2024'
-FILLING_FILE = LHC_DATA / '25ns_2460b_2448_2092_2239_144bpi_20inj.json'
-OPTICS_FILE = LHC_DATA / 'collision_optics_15cm_flat_2026.madx'
-
 P0C = 6.8e12
 BUNCH_INTENSITY = 1.1e11
 NEMITT_X = 2.3e-6
@@ -43,12 +36,11 @@ HARMONIC_NUMBER = 35640
 BUNCH_SPACING_BUCKETS = 10
 N_SLOTS = HARMONIC_NUMBER // BUNCH_SPACING_BUCKETS
 
-IP_NAMES = [f'ip{ip.strip()}'
-            for ip in os.environ.get('LHC_IPS', '1,2,5,8').split(',')]
-N_LONG_RANGE = int(os.environ.get('LHC_NPAR', '45'))
-N_ITERATIONS = int(os.environ.get('LHC_NITER', '3'))
-ALL_BUNCHES = os.environ.get('LHC_ALL', '0') == '1'
-WINDOW = int(os.environ.get('LHC_WINDOW', '48'))
+IP_NAMES = ['ip1', 'ip2', 'ip5', 'ip8']
+N_LONG_RANGE = 45
+N_ITERATIONS = 3
+ALL_BUNCHES = False
+WINDOW = 48
 
 
 def select_bounded_filling(ip_offsets, filling_cw, filling_acw, window):
@@ -94,20 +86,24 @@ def wrap_tune_difference(value):
 # Load and prepare the two LHC lines ------------------------------------------
 context = xo.ContextCpu()
 env = xt.load(
-    str(LHC_DATA / 'lhc.seq'), format='madx', reverse_lines=['lhcb2'])
+    '../../test_data/lhc_2024/lhc.seq',
+    format='madx', reverse_lines=['lhcb2'])
 
 for line_name in ('lhcb1', 'lhcb2'):
     env[line_name].particle_ref = xt.Particles(
         mass0=xt.PROTON_MASS_EV, p0c=P0C)
 
-env.vars.load(str(OPTICS_FILE))
+env.vars.load(
+    '../../test_data/lhc_2024/collision_optics_15cm_flat_2026.madx')
 for line_name in ('lhcb1', 'lhcb2'):
     line = env[line_name]
     line.twiss_default['method'] = '4d'
     line.cycle(name_first_element='ip3', inplace=True)
     line.build_tracker(_context=context)
 
-with open(FILLING_FILE) as fid:
+with open(
+        '../../test_data/lhc_2024/'
+        '25ns_2460b_2448_2092_2239_144bpi_20inj.json') as fid:
     filling_data = json.load(fid)
 filling_cw = np.asarray(filling_data['schemebeam1'])
 filling_acw = np.asarray(filling_data['schemebeam2'])
@@ -135,12 +131,12 @@ study = env.xfields.configure_beambeam_interactions(
 if ALL_BUNCHES:
     slots_cw = np.flatnonzero(filling_cw)
     slots_acw = np.flatnonzero(filling_acw)
-    print('Filling selection: complete LHC filling (LHC_ALL=1)')
+    print('Filling selection: complete LHC filling (ALL_BUNCHES=True)')
 else:
     slots_cw, slots_acw = select_bounded_filling(
         study.ip_offsets, filling_cw, filling_acw, WINDOW)
-    print(f'Filling selection: bounded subset (LHC_WINDOW={WINDOW}; '
-          'set LHC_ALL=1 for the complete filling)')
+    print(f'Filling selection: bounded subset (WINDOW={WINDOW}; '
+          'set ALL_BUNCHES=True for the complete filling)')
 
 study.apply_filling_pattern(
     filled_slots_cw=slots_cw,
