@@ -23,7 +23,6 @@ import time
 
 import matplotlib.pyplot as plt
 import numpy as np
-import xobjects as xo
 import xtrack as xt
 
 
@@ -49,22 +48,15 @@ def wrap_tune_difference(value):
 
 
 # Load and prepare the two LHC lines ------------------------------------------
-context = xo.ContextCpu()
-env = xt.load(
-    '../../test_data/lhc_2024/lhc.seq',
-    format='madx', reverse_lines=['lhcb2'])
+env = xt.load('../../test_data/lhc_2024/lhc.seq', reverse_lines=['lhcb2'])
+env.vars.load('../../test_data/lhc_2024/collision_optics_15cm_flat_2026.madx')
 
-for line_name in ('lhcb1', 'lhcb2'):
-    env[line_name].particle_ref = xt.Particles(
-        mass0=xt.PROTON_MASS_EV, p0c=P0C)
+env.lhcb1.set_particle_ref('proton', p0c=P0C)
+env.lhcb2.set_particle_ref('proton', p0c=P0C)
 
-env.vars.load(
-    '../../test_data/lhc_2024/collision_optics_15cm_flat_2026.madx')
-for line_name in ('lhcb1', 'lhcb2'):
-    line = env[line_name]
-    line.twiss_default['method'] = '4d'
-    line.cycle(name_first_element='ip3', inplace=True)
-    line.build_tracker(_context=context)
+for lname in ('lhcb1', 'lhcb2'):
+    env[lname].twiss_default['method'] = '4d'
+    env[lname].cycle(name_first_element='ip3', inplace=True)
 
 with open(
         '../../test_data/lhc_2024/filling_25ns_2460b.json') as fid:
