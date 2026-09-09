@@ -623,7 +623,7 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### LHC example cleanup
 
-- [x] In ``002_lhc_rigid_bunch.py``, avoid configuring the complete filling
+- [x] In ``002_lhc_rigid_bunch_full_lattice.py``, avoid configuring the complete filling
   and immediately replacing it with a bounded filling. Load the prepared
   example subset and configure it directly.
 - [x] Make it obvious in the example output and introductory text that the default
