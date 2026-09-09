@@ -592,7 +592,7 @@ be resolved before the rigid-bunch interface is treated as established.
 - [x] Preserve ``beambeam_scale`` during configuration. Geometry analysis
   temporarily disables the knob and restores the previous value or expression
   with exception-safe handling.
-- [x] Fix ``examples/beambeam_multibunch/000_multibunch_2d.py``: the coherent
+- [x] Fix ``examples/beambeam_rigid_bunch/000_multibunch_2d.py``: the coherent
   calculation now explicitly enables ``coherent=True`` and provides the
   own-beam sizes and bunch grid.
 

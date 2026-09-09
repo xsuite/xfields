@@ -2,7 +2,7 @@
 LHC injection multi-bunch beam-beam scenario (BBLR only, 45 LR/side at
 IP1/2/5/8, 450 GeV, 1.8e11 p/bunch, 1.5 um, full 2460-bunch scheme, 3 solver
 iterations) -- the same scenario as the xsuite example
-``xfields/examples/lhc_multibunch_bb/001_multibunch_sectormaps_injection.py``
+``xfields/examples/beambeam_rigid_bunch/001_multibunch_sectormaps_injection.py``
 and the test ``test_lhc_multibunch_train.py``.
 
 Requires pytrain + cpymad (NOT installable in the xsuite environment), e.g.:

@@ -5,7 +5,7 @@ R2025aRP 15 cm flat optics with end-of-levelling knobs (head-on at IP1/5,
 levelling offsets at IP2/8), tunes/chroma matched to 62.316/60.322, Q'=10,
 1.1e11 p/bunch, 2.3 um, full 2460-bunch scheme, 6 solver iterations. Same
 scenario as the xsuite example
-``xfields/examples/lhc_multibunch_bb/002_multibunch_sectormaps_collisions.py``
+``xfields/examples/beambeam_rigid_bunch/002_multibunch_sectormaps_collisions.py``
 and the test ``test_lhc_multibunch_train.py``.
 
 The squeezed optics generate their knobs via MAD-X matching, which xsuite
