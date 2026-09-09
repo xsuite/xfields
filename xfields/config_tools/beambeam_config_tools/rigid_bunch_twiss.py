@@ -243,8 +243,9 @@ class MultiBunchTwiss:
         """
         index = self._element_indices(element_name)
         data = dict(self._table._data)
+        deprecated = self._twiss_tables[0]._DEPRECATED_FIELDS or {}
         for column in self._twiss_tables[0]._col_names:
-            if column == 'name':
+            if column == 'name' or column in deprecated:
                 continue
             data[column] = np.asarray(
                 [twiss[column][index] for twiss in self._twiss_tables])
