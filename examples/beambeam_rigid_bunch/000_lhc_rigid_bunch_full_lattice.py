@@ -14,7 +14,7 @@ The default run uses a prepared 104-bunch subset of the real LHC filling
 because every iteration twisses the full thick lattice once per beam. Edit
 ``FILLING_FILE`` below to use another prepared filling, for example the
 complete 2460-bunch pattern. The lattice itself is never reduced; see
-``004_lhc_rigid_bunch_collision_reduced.py`` for the faster second-order-map
+``002_lhc_rigid_bunch_collision_reduced.py`` for the faster second-order-map
 workflow.
 """
 

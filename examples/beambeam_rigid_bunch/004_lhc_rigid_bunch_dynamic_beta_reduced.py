@@ -17,7 +17,7 @@ the sizes, the kicks, and hence the per-bunch closed solution.
 
 This script solves the same machine twice:
 
-1. static sizes (as ``004_lhc_rigid_bunch_collision_reduced.py``);
+1. static sizes (as ``002_lhc_rigid_bunch_collision_reduced.py``);
 2. ``dynamic_beta=True``: at every iteration the per-bunch effective sizes
    of all encounters are recomputed from the LIVE per-bunch betas of both
    beams (requires the optics-carrying mode='fast' twiss in the loop).
@@ -26,7 +26,7 @@ and compares per-bunch tunes, orbits and beta* at IP1.
 
 By default the MULTI-THREADED CPU kernels (OpenMP) are used (set
 ``LHC_OMP=0`` for serial, ``LHC_OMP=<n>`` for a specific thread count; see
-``007_lhc_rigid_bunch_openmp_reduced.py`` for the speed-up measurement).
+``005_lhc_rigid_bunch_openmp_reduced.py`` for the speed-up measurement).
 """
 
 import os

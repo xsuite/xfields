@@ -592,7 +592,7 @@ be resolved before the rigid-bunch interface is treated as established.
 - [x] Preserve ``beambeam_scale`` during configuration. Geometry analysis
   temporarily disables the knob and restores the previous value or expression
   with exception-safe handling.
-- [x] Fix ``examples/beambeam_rigid_bunch/000_rigid_bunch_2d.py``: the coherent
+- [x] Fix ``examples/beambeam_rigid_bunch/008_rigid_bunch_2d.py``: the coherent
   calculation now explicitly enables ``coherent=True`` and provides the
   own-beam sizes and bunch grid.
 
@@ -623,7 +623,7 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### LHC example cleanup
 
-- [x] In ``002_lhc_rigid_bunch_full_lattice.py``, avoid configuring the complete filling
+- [x] In ``000_lhc_rigid_bunch_full_lattice.py``, avoid configuring the complete filling
   and immediately replacing it with a bounded filling. Load the prepared
   example subset and configure it directly.
 - [x] Make it obvious in the example output and introductory text that the default

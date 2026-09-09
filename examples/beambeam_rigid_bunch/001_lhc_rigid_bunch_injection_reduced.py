@@ -6,7 +6,7 @@
 """
 Rigid-bunch beam-beam on the LHC at injection, sped up with second-order maps.
 
-Same physics as ``002_lhc_rigid_bunch_full_lattice.py`` (long-range beam-beam
+Same physics as ``000_lhc_rigid_bunch_full_lattice.py`` (long-range beam-beam
 at injection -- separation bumps kept on, so no head-on collisions -- with
 per-bunch self-consistent closed solution), but the machine between the
 beam-beam encounters is replaced by second-order Taylor maps:

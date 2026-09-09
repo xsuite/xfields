@@ -12,7 +12,7 @@ Workflow (multi-threaded OpenMP kernels by default, ``LHC_OMP=0`` for
 serial):
 
 1. Solve the rigid-bunch problem on the second-order-map machine (as in
-   ``004``/``006``): up to 4 iterations with the orbit-only ``fast_orbit``
+   ``002``/``004``): up to 4 iterations with the orbit-only ``fast_orbit``
    twiss, then up to 4 more with ``dynamic_beta=True`` (per-bunch effective sizes
    recomputed from the live betas each iteration; the element state carries
    over between the two calls, so this continues the same iteration).
