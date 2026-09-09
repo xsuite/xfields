@@ -847,18 +847,19 @@ class BeamBeamRigidBunchStudy:
             Twiss method, ``'4d'`` (default) or ``'6d'``.
         chrom : bool
             Whether to compute chromatic properties in the multi-bunch twiss.
-        twiss_mode : str, optional
-            Per-bunch Twiss implementation used at each iteration. If None,
-            select ``'fast_orbit'`` for a 4D solve with fixed beam sizes,
-            ``'fast'`` for a 4D solve with ``dynamic_beta=True``, or ``'full'``
-            for a 6D solve. Explicitly selected modes are never changed:
-            incompatible combinations raise :class:`ValueError`.
-
+        twiss_mode : {'fast_orbit', 'fast', 'full'}, optional
+            Per-bunch Twiss implementation used at each iteration.
             ``'fast_orbit'`` computes the closed orbit and fractional tunes;
             ``'fast'`` additionally computes per-bunch linear optics; both are
             batched modes that require ``method='4d'``. ``'full'`` runs a
             standard Twiss separately for every bunch and supports both 4D and
             6D.
+
+            When None (default), the mode is chosen automatically:
+            ``'fast_orbit'`` for a 4D solve with fixed beam sizes, ``'fast'``
+            for a 4D solve with ``dynamic_beta=True``, and ``'full'`` for a 6D
+            solve. An explicitly selected mode is never changed; incompatible
+            combinations raise :class:`ValueError`.
         show_progress : bool
             Print per-iteration convergence information (default True).
         continue_on_closed_orbit_error : bool
