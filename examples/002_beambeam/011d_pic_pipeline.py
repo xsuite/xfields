@@ -1,16 +1,17 @@
-import numpy as np
+# copyright ################################# #
+# This file is part of the Xfields Package.   #
+# Copyright (c) CERN, 2026.                   #
+# ########################################### #
+
+"""Strong-strong beam-beam collision with the 3D PIC model on CPU."""
 
 import time
+
+import matplotlib.pyplot as plt
+import numpy as np
+
 import xfields as xf
 import xtrack as xt
-import xobjects as xo
-# xo.context_default._kernels.clear()
-
-from scipy.constants import e as qe
-from scipy.constants import c as clight
-
-constant_charge_slicing_gaussian = \
-    xf.config_tools.beambeam_config_tools.config_tools.constant_charge_slicing_gaussian
 
 # LHC-like parameter
 mass0 = xt.PROTON_MASS_EV
@@ -24,7 +25,6 @@ nemitt_x = 1.5e-6
 nemitt_y = 2e-6
 bunch_intensity = 2e10
 num_slices = 101
-slice_mode = 'constant_charge'
 
 lntwiss = xt.Line(elements=[xt.Marker()])
 lntwiss.particle_ref = xt.Particles(p0c=p0c, mass0=mass0)
@@ -70,11 +70,11 @@ for ii in range(2):
 bbpic_b1 = pics[0]
 bbpic_b2 = pics[1]
 
-# Pipeline configuration (some rationalization needed here!)
+# Connect the two PIC elements through the pipeline
 pipeline_manager = xt.PipelineManager()
 pipeline_manager.add_particles('p_b1', rank=0)
 pipeline_manager.add_particles('p_b2', rank=0)
-pipeline_manager.add_element('IP1') # needs to be the same for the two lines (I guess...)
+pipeline_manager.add_element('IP1')
 bbpic_b1.name = 'IP1'
 bbpic_b2.name = 'IP1'
 particles_b1.init_pipeline('p_b1')
@@ -105,16 +105,15 @@ multitracker.track(num_turns=1)
 
 print(f"@@@ Multitracker on CPU took {time.time() - time_start} s")
 
-# Compare against hirata
-z_centroids, z_cuts, num_part_per_slice = constant_charge_slicing_gaussian(
-                                bunch_intensity, sigma_z, num_slices)
-z_centroids_from_tail = z_centroids[::-1]
+# Compare against the analytical Hirata model
+slicer = xf.TempSlicer(
+    n_slices=num_slices, sigma_z=sigma_z, mode='unicharge')
 bbg = xf.BeamBeamBiGaussian3D(
     phi=phi,
     alpha=alpha,
     other_beam_q0=1.,
-    slices_other_beam_num_particles=num_part_per_slice,
-    slices_other_beam_zeta_center=z_centroids_from_tail,
+    slices_other_beam_num_particles=slicer.bin_weights * bunch_intensity,
+    slices_other_beam_zeta_center=slicer.bin_centers,
     slices_other_beam_Sigma_11=cov.Sigma11[0],
     slices_other_beam_Sigma_12=cov.Sigma12[0],
     slices_other_beam_Sigma_22=cov.Sigma22[0],
@@ -125,7 +124,6 @@ bbg = xf.BeamBeamBiGaussian3D(
 p_bbg = p_test.copy()
 bbg.track(p_bbg)
 
-import matplotlib.pyplot as plt
 plt.close('all')
 fig4 = plt.figure(4, figsize=(6.4*0.9, 4.8*0.8))
 plt.plot(p_bbg.zeta, p_bbg.px, label='Hirata')
