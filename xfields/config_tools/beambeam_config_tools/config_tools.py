@@ -7,6 +7,7 @@
 
 import copy
 import numpy as np
+from scipy.special import erfinv
 
 from ._madpoint import MadPoint
 
@@ -16,6 +17,71 @@ BEAMBEAM_CONFIG_KEY = 'xfields_beambeam'
 BEAMBEAM_CONFIG_VERSION = 1
 BEAMBEAM_ELEMENT_EXTRA_KEY = '_xfields_beambeam'
 BEAMBEAM_ELEMENT_EXTRA_VERSION = 1
+
+
+def constant_charge_slicing_gaussian(N_part_tot, sigmaz, N_slices):
+    """Slice a Gaussian bunch into intervals of equal charge.
+
+    Parameters
+    ----------
+    N_part_tot : float
+        Total number of particles in the bunch.
+    sigmaz : float
+        RMS bunch length.
+    N_slices : int
+        Number of equal-charge slices.
+
+    Returns
+    -------
+    z_centroids : numpy.ndarray
+        Longitudinal charge centroids of the slices.
+    z_cuts : numpy.ndarray or list
+        Boundaries between adjacent slices. An empty list is returned for a
+        single slice, preserving the historical API.
+    N_part_per_slice : numpy.ndarray
+        Number of particles assigned to each slice.
+    """
+    if N_slices > 1:
+        # Work with unit intensity and rescale the slice charges at the end.
+        quantiles = (np.arange(N_slices) / float(N_slices))[1:]
+        z_cuts = np.sqrt(2) * sigmaz * erfinv(2 * quantiles - 1)
+
+        z_centroids = []
+        first_centroid = (
+            -sigmaz / np.sqrt(2 * np.pi)
+            * np.exp(-z_cuts[0] ** 2 / (2 * sigmaz * sigmaz))
+            * float(N_slices)
+        )
+        z_centroids.append(first_centroid)
+        for ii in range(N_slices - 2):
+            this_centroid = (
+                -sigmaz / np.sqrt(2 * np.pi)
+                * (
+                    np.exp(-z_cuts[ii + 1] ** 2 / (2 * sigmaz * sigmaz))
+                    - np.exp(-z_cuts[ii] ** 2 / (2 * sigmaz * sigmaz))
+                )
+                * float(N_slices)
+            )
+            z_centroids.append(this_centroid)
+
+        last_centroid = (
+            sigmaz / np.sqrt(2 * np.pi)
+            * np.exp(-z_cuts[-1] ** 2 / (2 * sigmaz * sigmaz))
+            * float(N_slices)
+        )
+        z_centroids.append(last_centroid)
+        z_centroids = np.array(z_centroids)
+        N_part_per_slice = (
+            z_centroids * 0.0 + N_part_tot / float(N_slices)
+        )
+    elif N_slices == 1:
+        z_centroids = np.array([0.0])
+        z_cuts = []
+        N_part_per_slice = np.array([N_part_tot])
+    else:
+        raise ValueError('Invalid number of slices')
+
+    return z_centroids, z_cuts, N_part_per_slice
 
 
 def _beambeam_element_name(label, ip_name, beam_name, identifier):
