@@ -6,10 +6,10 @@
 """
 Plot the per-bunch beam-beam results of both beams for BOTH scenarios:
 
-* injection (BBLR only), saved by ``001_lhc_rigid_bunch_injection_reduced.py``
-  as ``results_b{1,2}.pkl``;
+* injection (BBLR only), saved by
+  ``002b_lhc_rigid_bunch_injection_reduced.py`` as ``results_b{1,2}.pkl``;
 * collision (6.8 TeV squeezed, head-on + BBLR), saved by
-  ``002_lhc_rigid_bunch_collision_reduced.py`` as ``results_b{1,2}_coll.pkl``.
+  ``002a_lhc_rigid_bunch_collision_reduced.py`` as ``results_b{1,2}_coll.pkl``.
 
 One figure per scenario. Top row: per-bunch tune offsets (beam-beam tune
 shift) dqx, dqy for B1 and B2. Bottom row: per-bunch closed-orbit offsets

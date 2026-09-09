@@ -7,7 +7,7 @@
 Multi-threaded (OpenMP) CPU kernels for the rigid-bunch beam-beam machinery.
 
 Builds the collision machine on second-order maps (as
-``002_lhc_rigid_bunch_collision_reduced.py``), populates the beam-beam
+``002a_lhc_rigid_bunch_collision_reduced.py``), populates the beam-beam
 elements with one self-consistent iteration, then times the batched
 rigid-bunch Twiss of both beams -- both the orbit-only ``fast_orbit`` mode (used
 in the solver loop) and the optics-carrying ``fast`` mode -- with the SERIAL
@@ -35,7 +35,7 @@ print(f'multi-threaded context: {ctx_mt.omp_num_threads} '
       f'({n_threads} threads)')
 
 # ----------------------------------------------------------------------------
-# Build the machine (as in 002) and populate the beam-beam elements
+# Build the machine (as in 002a) and populate the beam-beam elements
 # ----------------------------------------------------------------------------
 scheme_b1, scheme_b2 = rb.load_scheme()
 env.xfields.install_beambeam_interactions(

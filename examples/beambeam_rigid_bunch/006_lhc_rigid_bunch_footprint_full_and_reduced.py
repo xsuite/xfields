@@ -12,7 +12,7 @@ Workflow (multi-threaded OpenMP kernels by default, ``LHC_OMP=0`` for
 serial):
 
 1. Solve the rigid-bunch problem on the second-order-map machine (as in
-   ``002``/``004``): up to 4 iterations with the orbit-only ``fast_orbit``
+   ``002a``/``004``): up to 4 iterations with the orbit-only ``fast_orbit``
    twiss, then up to 4 more with ``dynamic_beta=True`` (per-bunch effective sizes
    recomputed from the live betas each iteration; the element state carries
    over between the two calls, so this continues the same iteration).
@@ -63,7 +63,7 @@ os.environ.setdefault('LHC_OMP', 'auto')
 env, line_b1, line_b2, par = rb.load_lhc('collision')
 
 # ----------------------------------------------------------------------------
-# Build the machine (as in 002/004): install + geometry on the full lattice
+# Build the machine (as in 002a/004): install + geometry on the full lattice
 # ----------------------------------------------------------------------------
 scheme_b1, scheme_b2 = rb.load_scheme()
 env.xfields.install_beambeam_interactions(

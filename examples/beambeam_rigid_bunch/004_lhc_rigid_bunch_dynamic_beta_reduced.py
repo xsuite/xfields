@@ -17,7 +17,7 @@ the sizes, the kicks, and hence the per-bunch closed solution.
 
 This script solves the same machine twice:
 
-1. static sizes (as ``002_lhc_rigid_bunch_collision_reduced.py``);
+1. static sizes (as ``002a_lhc_rigid_bunch_collision_reduced.py``);
 2. ``dynamic_beta=True``: at every iteration the per-bunch effective sizes
    of all encounters are recomputed from the LIVE per-bunch betas of both
    beams (requires the optics-carrying mode='fast' twiss in the loop).
@@ -43,7 +43,7 @@ os.environ.setdefault('LHC_OMP', 'auto')
 env, line_b1, line_b2, par = rb.load_lhc('collision')
 
 # ----------------------------------------------------------------------------
-# Build the machine (as in 002): install + geometry on the full lattice, then
+# Build the machine (as in 002a): install + geometry on the full lattice, then
 # a fast second-order-map copy
 # ----------------------------------------------------------------------------
 scheme_b1, scheme_b2 = rb.load_scheme()
