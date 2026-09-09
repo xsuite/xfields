@@ -22,17 +22,28 @@ class MultiBunchTwiss:
     """
     Per-bunch Twiss results for one multi-bunch beam.
 
-    Each bunch of the beam sits at a distinct longitudinal position ``zeta`` and,
-    through a multi-bunch beam-beam element, experiences a different force. As a
-    The object keeps the independent :class:`TwissTable` returned for each
-    bunch. Its table interface has one row per bunch and exposes the scalar
-    Twiss quantities as columns. The row names are normally the physical
-    filling slots (for example ``slot_123``).
+    Each bunch sits at a distinct longitudinal position ``zeta`` and experiences
+    a different force. The object keeps the independent :class:`TwissTable`
+    returned for each bunch. Its table interface has one row per bunch and
+    exposes the scalar Twiss quantities as columns. The row names are normally
+    the physical filling slots (for example ``slot_123``).
 
     Use :meth:`bunch` to obtain the ordinary lattice-indexed Twiss table of one
     bunch, and :meth:`at_element` to obtain a :class:`Table` with one row per
     bunch at a selected lattice element. Bunch, slot and element indices are
     cached, so repeated named access does not repeat linear searches.
+
+    Parameters
+    ----------
+    twiss_tables : sequence of TwissTable
+        Independent lattice-indexed Twiss tables, one per bunch.
+    zeta_bunches : array-like
+        Longitudinal bunch positions, in the same order as ``twiss_tables``.
+    bunch_names : sequence of str, optional
+        Unique table row names. If omitted, names are derived from
+        ``filled_slots`` or from the positional bunch indices.
+    filled_slots : array-like of int, optional
+        Unique physical filling slots, aligned with ``twiss_tables``.
 
     Examples
     --------
@@ -98,7 +109,13 @@ class MultiBunchTwiss:
 
     @property
     def twiss_tables(self):
-        """Tuple containing the independent per-bunch Twiss tables."""
+        """Independent per-bunch Twiss tables.
+
+        Returns
+        -------
+        tuple of TwissTable
+            The original lattice-indexed tables in bunch order.
+        """
         return self._twiss_tables
 
     def _make_summary_table(self):
@@ -173,6 +190,19 @@ class MultiBunchTwiss:
             :class:`BeamBeamRigidBunchStudy`.
         index : int, optional
             Positional bunch index.
+
+        Returns
+        -------
+        TwissTable
+            Lattice-indexed Twiss result for the selected bunch.
+
+        Raises
+        ------
+        ValueError
+            If exactly one selector is not provided, or slot information is
+            unavailable.
+        KeyError
+            If the requested name or physical slot does not exist.
         """
         num_selectors = sum(selector is not None
                             for selector in (name, slot, index))
@@ -194,6 +224,22 @@ class MultiBunchTwiss:
         the scalar per-bunch Twiss quantities, and the available local Twiss
         columns at ``element_name``. The element position is resolved from the
         first bunch table and cached; all bunch tables have the same row order.
+
+        Parameters
+        ----------
+        element_name : str
+            Exact lattice element name, including an occurrence suffix when
+            selecting a repeated element.
+
+        Returns
+        -------
+        xtrack.Table
+            Table indexed by bunch name at the selected element.
+
+        Raises
+        ------
+        KeyError
+            If ``element_name`` is not present in the Twiss tables.
         """
         index = self._element_indices(element_name)
         data = dict(self._table._data)
@@ -216,6 +262,18 @@ class BeamBeamRigidBunchTwiss:
     a :class:`MultiBunchTwiss` containing one :class:`TwissTable` per filled
     bunch. This is the result type returned by
     :meth:`BeamBeamRigidBunchStudy.twiss`.
+
+    Parameters
+    ----------
+    cw, acw : MultiBunchTwiss
+        Clockwise and anticlockwise per-bunch Twiss results. Each is expressed
+        in the proper local reference frame of its corresponding line.
+
+    Attributes
+    ----------
+    cw, acw : MultiBunchTwiss
+        Per-beam results, also accessible as ``result['cw']`` and
+        ``result['acw']``.
     """
 
     def __init__(self, cw, acw):
@@ -245,6 +303,17 @@ class BeamBeamRigidBunchSolution(BeamBeamRigidBunchTwiss):
     ``converged``, ``num_iterations`` and ``max_orbit_change``. A result with
     ``converged=False`` is returned only when the caller explicitly passes
     ``require_convergence=False`` to the solve.
+
+    Parameters
+    ----------
+    cw, acw : MultiBunchTwiss
+        Clockwise and anticlockwise per-bunch Twiss results.
+    converged : bool
+        Whether the requested orbit-change tolerance was reached.
+    num_iterations : int
+        Number of self-consistency iterations performed.
+    max_orbit_change : float
+        Largest final orbit change, normalized by the local beam size.
     """
 
     def __init__(self, cw, acw, *, converged, num_iterations,

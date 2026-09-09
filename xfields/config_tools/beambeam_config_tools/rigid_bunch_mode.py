@@ -293,6 +293,25 @@ class BeamBeamRigidBunchStudy:
     diagonal covariance only. A
     :class:`RuntimeWarning` reports a normalized transverse correlation above
     ``1e-2``.
+
+    Parameters
+    ----------
+    clockwise_line, anticlockwise_line : xtrack.Line
+        Clockwise line and already-reversed anticlockwise line, both oriented
+        along their beam's direction of travel.
+    ips : sequence of str or mapping
+        Interaction-point names, optionally mapped to bunch-pairing offsets.
+    num_long_range_encounters_per_side : int or sequence of int
+        Long-range encounters on each side of every interaction point.
+    harmonic_number : int
+        RF harmonic number.
+    bunch_spacing_buckets : int
+        Bunch spacing in RF buckets.
+    nemitt_x, nemitt_y : float, optional
+        Normalized transverse emittances.
+    num_particles : float, array-like or mapping, optional
+        Bunch population specification, common to both beams or keyed by
+        ``'cw'`` and ``'acw'``.
     """
 
     def __init__(self, clockwise_line, anticlockwise_line, ips,
@@ -353,6 +372,16 @@ class BeamBeamRigidBunchStudy:
             Beam-independent encounter name, for example ``'bb_ip1_ho'``.
         beam : {'cw', 'acw'}
             Clockwise or anticlockwise beam.
+
+        Returns
+        -------
+        str
+            Installed beam-beam element name.
+
+        Raises
+        ------
+        ValueError
+            If ``beam`` is invalid.
         """
         return self._bb_names[_validate_beam(beam)][base]
 
@@ -376,25 +405,49 @@ class BeamBeamRigidBunchStudy:
 
     @property
     def filling_pattern_cw(self):
-        """Clockwise slot-indexed occupancy as a copy, or ``None``."""
+        """Clockwise slot-indexed occupancy.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            A copy of the filling pattern, or ``None`` before configuration.
+        """
         return (None if self._filling_cw is None
                 else self._filling_cw.filling_pattern)
 
     @property
     def filling_pattern_acw(self):
-        """Anticlockwise slot-indexed occupancy as a copy, or ``None``."""
+        """Anticlockwise slot-indexed occupancy.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            A copy of the filling pattern, or ``None`` before configuration.
+        """
         return (None if self._filling_acw is None
                 else self._filling_acw.filling_pattern)
 
     @property
     def filled_slots_cw(self):
-        """Clockwise filled physical slots as a copy, or ``None``."""
+        """Clockwise filled physical slots.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            A copy of the filled slots, or ``None`` before configuration.
+        """
         return (None if self._filling_cw is None
                 else self._filling_cw.filled_slots)
 
     @property
     def filled_slots_acw(self):
-        """Anticlockwise filled physical slots as a copy, or ``None``."""
+        """Anticlockwise filled physical slots.
+
+        Returns
+        -------
+        numpy.ndarray or None
+            A copy of the filled slots, or ``None`` before configuration.
+        """
         return (None if self._filling_acw is None
                 else self._filling_acw.filled_slots)
 
@@ -423,7 +476,28 @@ class BeamBeamRigidBunchStudy:
 
         The installed elements have one entry per RF slot, so any filling
         change updates their slot-indexed data in place without reallocating
-        the Xobjects."""
+        the Xobjects.
+
+        Parameters
+        ----------
+        filling_pattern_cw, filling_pattern_acw : array-like, optional
+            Slot-indexed occupancies of length ``n_slots``.
+        filled_slots_cw, filled_slots_acw : array-like of int, optional
+            Sparse physical filling slots. Mutually exclusive with the
+            corresponding filling pattern.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If the filling representations are missing, inconsistent, or
+            invalid.
+        RuntimeError
+            If no population was configured on the study.
+        """
         if self._num_particles is None:
             raise RuntimeError(
                 '`num_particles` was not provided when the rigid-bunch study '
@@ -604,10 +678,19 @@ class BeamBeamRigidBunchStudy:
         untouched; transfer a converged reduced solution back with
         :meth:`load_solution`.
 
-        ``keep_extra_cw`` / ``keep_extra_acw`` are extra element names to
-        preserve exactly (e.g. lattice octupoles for amplitude-detuning
-        studies). ``context`` selects the CPU context for the reduced trackers
-        (default: the clockwise line's context).
+        Parameters
+        ----------
+        keep_extra_cw, keep_extra_acw : sequence of str, optional
+            Additional elements to preserve exactly, for example lattice
+            octupoles used in amplitude-detuning studies.
+        context : xobjects.Context, optional
+            Context for both reduced trackers. The clockwise line's context is
+            used by default.
+
+        Returns
+        -------
+        BeamBeamRigidBunchStudy
+            New study owning the reduced line copies.
         """
         if context is None:
             context = self.cw_line._context
@@ -752,6 +835,18 @@ class BeamBeamRigidBunchStudy:
         ``dynamic_beta`` the per-bunch diagonal covariance is taken from the
         live beta functions of the solution; its ``Sigma_13`` is set to zero.
         This does not change the kick, which currently ignores ``Sigma_13``.
+
+        Parameters
+        ----------
+        rigid_bunch_twiss : BeamBeamRigidBunchTwiss
+            Two-beam result whose per-bunch state is loaded into this study.
+        dynamic_beta : bool, optional
+            If True, also load diagonal covariance computed from the result's
+            live per-bunch beta functions. Default is False.
+
+        Returns
+        -------
+        None
         """
         mbtw_clockwise = rigid_bunch_twiss.cw
         mbtw_anticlockwise = rigid_bunch_twiss.acw
@@ -783,11 +878,32 @@ class BeamBeamRigidBunchStudy:
         self-consistency. Bunch positions and labels come directly from the
         filling patterns stored in this study.
 
+        Parameters
+        ----------
+        method : {'4d', '6d'}, optional
+            Twiss method. The batched modes require ``'4d'``. Default is
+            ``'4d'``.
+        mode : {'fast_orbit', 'fast', 'full'}, optional
+            Per-bunch implementation. ``'fast_orbit'`` computes orbit and
+            fractional tunes, ``'fast'`` adds linear optics, and ``'full'``
+            runs a standard Twiss for every bunch. Default is ``'fast'``.
+        show_progress : bool, optional
+            Show progress for ``mode='full'``. Default is True.
+        **kwargs
+            Additional options forwarded to the selected Twiss implementation.
+
         Returns
         -------
         BeamBeamRigidBunchTwiss
             Two-beam result with ``cw`` (clockwise) and ``acw``
             (anticlockwise) bunch Twiss data.
+
+        Raises
+        ------
+        RuntimeError
+            If no filling has been applied.
+        ValueError
+            If the mode, method, or forwarded options are incompatible.
         """
         if self.filled_slots_cw is None or self.filled_slots_acw is None:
             raise RuntimeError(

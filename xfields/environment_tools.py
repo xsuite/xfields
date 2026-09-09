@@ -7,7 +7,13 @@
 
 
 class XfieldsEnvironmentAPI:
-    """Accessor exposed as ``env.xfields``."""
+    """Xfields accessor exposed as ``env.xfields``.
+
+    Parameters
+    ----------
+    env : xtrack.Environment
+        Environment on which Xfields operations are performed.
+    """
 
     def __init__(self, env):
         self.env = env
@@ -47,6 +53,15 @@ class XfieldsEnvironmentAPI:
         mode : {None, 'particles', 'rigid_bunch'}, optional
             Beam representation used by the beam-beam model. The default is
             ``'particles'``.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If required arguments are missing or incompatible with ``mode``.
         """
         if mode not in (None, 'particles', 'rigid_bunch'):
             raise ValueError(
@@ -146,6 +161,12 @@ class XfieldsEnvironmentAPI:
         -------
         BeamBeamRigidBunchStudy or None
             The rigid-bunch study, or the particles-mode helper's result.
+
+        Raises
+        ------
+        ValueError
+            If required arguments, filling inputs, or mode-specific options
+            are invalid.
         """
         config = self.env.extra_config.get('xfields_beambeam', {})
         mode = config.get('mode', 'particles')
@@ -245,6 +266,26 @@ class XfieldsEnvironmentAPI:
         This helper belongs to the particle-based, potentially
         pipeline-enabled workflow. Rigid-bunch fillings are changed with
         :meth:`BeamBeamRigidBunchStudy.apply_filling_pattern`.
+
+        Parameters
+        ----------
+        filling_pattern_cw, filling_pattern_acw : array-like, optional
+            Slot-indexed filling patterns for both beams.
+        i_bunch_cw, i_bunch_acw : int, optional
+            Selected bunch indices within the two filling patterns.
+        filled_slots_cw, filled_slots_acw : array-like of int, optional
+            Sparse filling representation accepted as an alternative to the
+            corresponding filling pattern.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If the filling representations or selected bunch indices are
+            inconsistent.
         """
         from .config_tools.beambeam_config_tools.particles_mode import (
             apply_filling_pattern,

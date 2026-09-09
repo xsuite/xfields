@@ -175,60 +175,74 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
                     **kwargs):
 
         """
-        Args:
-            scale_strength (float): Used to scale the beam-beam force strength.
+        Parameters
+        ----------
+        scale_strength : float, optional
+                Used to scale the beam-beam force strength.
                 Scales ``other_beam_q0``.
-            zeta_offset (float): A particle of this beam at ``zeta`` interacts
+        zeta_offset : float, optional
+                A particle of this beam at ``zeta`` interacts
                 with the opposing bunch located at ``zeta + zeta_offset``.
-            zeta_match_tol (float): Maximum allowed distance in ``zeta`` between
+        zeta_match_tol : float, optional
+                Maximum allowed distance in ``zeta`` between
                 a particle's encounter position (``zeta + zeta_offset``) and the
                 centroid of an opposing bunch for them to interact.
-            zeta_period (float): Periodicity of the ``zeta`` bunch-label axis
+        zeta_period : float, optional
+                Periodicity of the ``zeta`` bunch-label axis
                 (e.g. ``n_slots * slot_spacing`` for a circular machine). If
                 larger than zero, the encounter distance is evaluated modulo
                 this period, so encounter offsets that wrap around the ring
                 still find their partner. Zero (default) disables wrapping.
-            other_beam_q0 (float): Charge sign of the opposing beam. -1 for
+        other_beam_q0 : float, optional
+                Charge sign of the opposing beam. -1 for
                 electrons, +1 for protons or positrons.
-            other_beam_beta0 (float): Relativistic beta of the opposing beam.
-            coherent (bool): If False (default, incoherent weak-strong) the
+        other_beam_beta0 : float, optional
+                Relativistic beta of the opposing beam.
+        coherent : bool, optional
+                If False (default, incoherent weak-strong) the
                 kick uses each opposing bunch's covariance and the own-beam
                 covariance is ignored. If True (coherent rigid-bunch model),
                 the effective covariance is the sum of the matched own- and
                 opposing-beam covariances; own-beam covariance inputs are then
                 required.
-            own_beam_zeta (float array): Longitudinal positions (bunch labels)
+        own_beam_zeta : array-like, optional
+                Longitudinal positions (bunch labels)
                 of this beam's bunches, one per bunch, used by the kernel to
                 match each tracked particle to its own bunch (and hence its own
                 size) -- the OWN-beam analogue of ``other_beam_zeta``. Required
                 for per-bunch own sizes; omit it (single own bunch) for a
                 uniform own size.
-            own_beam_Sigma_11, own_beam_Sigma_13, own_beam_Sigma_33
+        own_beam_Sigma_11, own_beam_Sigma_13, own_beam_Sigma_33 : array-like, optional
                 Transverse covariance components of THIS (the tracked) beam,
                 used only with ``coherent=True``. Values are indexed by
                 ``own_beam_zeta`` and scalars are broadcast. ``Sigma_13`` is
                 stored but currently ignored by the kick.
-            other_particles (xpart.Particles): Particles object of the opposing
+        other_particles : xpart.Particles, optional
+                Particles object of the opposing
                 beam in which each active macroparticle represents one bunch.
                 Its centroids (``x``, ``y``), longitudinal positions (``zeta``)
                 and populations (``weight``) are loaded into the element (as by
                 :meth:`update_from_other_beam`). The active particles determine
                 the exact lengths of the opposing-bunch arrays.
-            other_beam_Sigma_11, other_beam_Sigma_13, other_beam_Sigma_33
+        other_beam_Sigma_11, other_beam_Sigma_13, other_beam_Sigma_33 : array-like, optional
                 Transverse covariance components of each opposing bunch,
                 aligned with the active particles of ``other_particles``.
                 Scalars are broadcast. The names and meaning match
                 :class:`BeamBeamBiGaussian2D`, although ``Sigma_13`` is stored
                 but currently ignored by the rigid-bunch kick.
-            own_beam_sigma_x, own_beam_sigma_y (float or float array):
+        own_beam_sigma_x, own_beam_sigma_y : float or array-like, optional
                 Convenience alternative to the own-beam covariance inputs.
                 Both must be supplied and are converted to diagonal covariance.
-            other_beam_sigma_x, other_beam_sigma_y (float or float array):
+        other_beam_sigma_x, other_beam_sigma_y : float or array-like, optional
                 Convenience alternative to the opposing-beam covariance inputs.
                 Both must be supplied and are converted to diagonal covariance.
-            min_sigma_diff (float): Round-beam kick (~2x faster) is used instead
+        min_sigma_diff : float, optional
+                Round-beam kick (~2x faster) is used instead
                 of the elliptical kick if
                 ``fabs(sigma_x - sigma_y) < min_sigma_diff``.
+        **kwargs
+                Xobject construction arguments used for deserialization and
+                context/buffer placement.
         """
 
         if '_xobject' in kwargs.keys():
@@ -366,6 +380,26 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
         ``own_beam_Sigma_13`` is stored and serialized but is currently ignored
         by the rigid-bunch kick. A :class:`RuntimeWarning` is emitted if
         ``abs(Sigma_13) / sqrt(Sigma_11 * Sigma_33)`` exceeds ``1e-2``.
+
+        Parameters
+        ----------
+        zeta : array-like, optional
+            Longitudinal positions of this beam's bunches.
+        own_beam_Sigma_11, own_beam_Sigma_13, own_beam_Sigma_33 : array-like, optional
+            Per-bunch transverse covariance components. Scalars are broadcast.
+        own_beam_sigma_x, own_beam_sigma_y : float or array-like, optional
+            RMS-size alternative to the covariance components. Both are
+            required when this representation is used.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If inputs are incomplete or incompatible with the allocated bunch
+            capacity.
         """
         covariance = _resolve_covariance_inputs(
             Sigma_11=own_beam_Sigma_11,
@@ -427,6 +461,28 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
         ``other_beam_Sigma_13`` is stored and serialized but is currently
         ignored by the rigid-bunch kick. A :class:`RuntimeWarning` is emitted
         if ``abs(Sigma_13) / sqrt(Sigma_11 * Sigma_33)`` exceeds ``1e-2``.
+
+        Parameters
+        ----------
+        other_particles : xpart.Particles
+            Opposing-beam bunch centroids, longitudinal positions, populations,
+            and active-particle mask.
+        other_beam_Sigma_11, other_beam_Sigma_13, other_beam_Sigma_33 : array-like, optional
+            Opposing-beam transverse covariance components. Scalars are
+            broadcast.
+        other_beam_sigma_x, other_beam_sigma_y : float or array-like, optional
+            RMS-size alternative to the covariance components. Both are
+            required when this representation is used.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        ValueError
+            If inputs are incomplete or the active bunch count differs from
+            the element's allocated capacity.
         """
 
         covariance = _resolve_covariance_inputs(
