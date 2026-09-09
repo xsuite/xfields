@@ -127,10 +127,11 @@ def _run_xsuite_scenario(scenario):
 
     def extract(mbtw, slots, qx_no_bb, qy_no_bb, beam):
         bb = study_red.bb_name('bb_ip1_ho', beam=beam)
-        x = mbtw['x', bb]
+        at_bb = mbtw.at_element(bb)
+        x = at_bb.x
         if beam == 'acw':
             x = -x   # reversed ACW line -> physical frame
-        y = mbtw['y', bb]
+        y = at_bb.y
         return dict(slots=slots,
                     dx=x - x.mean(), dy=y - y.mean(),
                     dqx=_wrap_frac_tune(mbtw.qx - qx_no_bb),

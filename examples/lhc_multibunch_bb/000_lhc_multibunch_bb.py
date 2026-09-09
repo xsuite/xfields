@@ -99,8 +99,9 @@ dqx = solution.cw.qx - qx_no_bb
 dqy = solution.cw.qy - qy_no_bb
 
 ip1_element = study.bb_name('bb_ip1_ho', beam='cw')
-x_ip1 = solution.cw['x', ip1_element]
-y_ip1 = solution.cw['y', ip1_element]
+twiss_at_ip1 = solution.cw.at_element(ip1_element)
+x_ip1 = twiss_at_ip1.x
+y_ip1 = twiss_at_ip1.y
 dx_ip1 = (x_ip1 - np.mean(x_ip1)) * 1e6
 dy_ip1 = (y_ip1 - np.mean(y_ip1)) * 1e6
 

@@ -14,115 +14,216 @@ from xtrack.twiss.transfer_matrices import (
 )
 from xtrack.twiss.twiss import twiss_line
 from xtrack.twiss.twiss_table import TwissTable
+from xtrack.table import Table
 
 
-class BunchTwiss:
+class MultiBunchTwiss:
 
     """
-    Container for the per-bunch Twiss results of one multi-bunch beam.
+    Per-bunch Twiss results for one multi-bunch beam.
 
     Each bunch of the beam sits at a distinct longitudinal position ``zeta`` and,
     through a multi-bunch beam-beam element, experiences a different force. As a
-    consequence its closed orbit and linear optics (in particular the tunes)
-    differ from bunch to bunch. This object holds one :class:`TwissTable` per
-    bunch and offers convenient per-bunch access to scalar quantities.
+    The object keeps the independent :class:`TwissTable` returned for each
+    bunch. Its table interface has one row per bunch and exposes the scalar
+    Twiss quantities as columns. The row names are normally the physical
+    filling slots (for example ``slot_123``).
 
-    - ``mbtw[i]`` returns the :class:`TwissTable` of bunch ``i``.
-    - ``mbtw['qx']`` (or any scalar Twiss quantity) returns a numpy array with
-      the value for each bunch; for a column quantity (e.g. ``mbtw['x']``)
-      the full per-bunch columns are stacked into an (n_bunches, n_rows)
-      array.
-    - ``mbtw['x', 'ip1']`` / ``mbtw['x', list_of_names]`` return the column
-      values at the given element(s) for every bunch, shape (n_bunches,) /
-      (n_bunches, n_names). The row positions are resolved once (all bunch
-      tables share the same row order), so this is the FAST way to extract
-      per-bunch values at many elements.
-    - Scalar quantities are also available as attributes, e.g. ``mbtw.qx``.
-    - ``mbtw.zeta_bunches`` is the array of the bunch longitudinal positions.
+    Use :meth:`bunch` to obtain the ordinary lattice-indexed Twiss table of one
+    bunch, and :meth:`at_element` to obtain a :class:`Table` with one row per
+    bunch at a selected lattice element. Bunch, slot and element indices are
+    cached, so repeated named access does not repeat linear searches.
+
+    Examples
+    --------
+    The scalar Twiss quantities follow the usual table syntax::
+
+        mbtw['qx']
+        mbtw['qx', 'slot_123']
+        mbtw.rows['slot_100':'slot_200'].cols['slot zeta qx qy']
+
+    Select an individual bunch by physical slot, or compare all bunches at one
+    lattice element::
+
+        bunch_twiss = mbtw.bunch(slot=123)
+        twiss_at_ip1 = mbtw.at_element('ip1')
+        x_at_ip1 = twiss_at_ip1['x']
+        x_slot_123 = twiss_at_ip1['x', 'slot_123']
     """
 
-    def __init__(self, bunch_twiss, zeta_bunches, bunch_names=None):
-        self.bunch_twiss = list(bunch_twiss)
-        self.zeta_bunches = np.atleast_1d(np.asarray(zeta_bunches, dtype=float))
-        self.num_bunches = len(self.bunch_twiss)
+    def __init__(self, twiss_tables, zeta_bunches, bunch_names=None,
+                 filled_slots=None):
+        self._twiss_tables = tuple(twiss_tables)
+        self.zeta_bunches = np.atleast_1d(
+            np.array(zeta_bunches, dtype=float, copy=True))
+        self.zeta_bunches.flags.writeable = False
+        self.num_bunches = len(self._twiss_tables)
         if len(self.zeta_bunches) != self.num_bunches:
             raise ValueError(
-                '`bunch_twiss` and `zeta_bunches` must have the same length.')
+                'twiss_tables and zeta_bunches must have the same length.')
+        if filled_slots is not None:
+            filled_slots = np.atleast_1d(
+                np.array(filled_slots, dtype=int, copy=True))
+            if len(filled_slots) != self.num_bunches:
+                raise ValueError(
+                    'twiss_tables and filled_slots must have the same length.')
+            if len(set(filled_slots.tolist())) != self.num_bunches:
+                raise ValueError('filled_slots must not contain duplicates.')
+            filled_slots.flags.writeable = False
+        self.filled_slots = filled_slots
         if bunch_names is None:
-            bunch_names = [f'bunch_{i}' for i in range(self.num_bunches)]
-        self.bunch_names = list(bunch_names)
+            if filled_slots is None:
+                bunch_names = [f'bunch_{i}' for i in range(self.num_bunches)]
+            else:
+                bunch_names = [f'slot_{slot}' for slot in filled_slots]
+        self.bunch_names = tuple(bunch_names)
         if len(self.bunch_names) != self.num_bunches:
             raise ValueError(
-                '`bunch_twiss` and `bunch_names` must have the same length.')
-        self._name_pos = None
+                'twiss_tables and bunch_names must have the same length.')
+        if len(set(self.bunch_names)) != self.num_bunches:
+            raise ValueError('bunch_names must not contain duplicates.')
+
+        self._name_index = {
+            name: ii for ii, name in enumerate(self.bunch_names)}
+        self._slot_index = (None if filled_slots is None else {
+            int(slot): ii for ii, slot in enumerate(filled_slots)})
+        self._element_index_cache = {}
+        self._table = self._make_summary_table()
 
     def __len__(self):
         return self.num_bunches
 
     def __iter__(self):
-        return iter(self.bunch_twiss)
+        return iter(self._twiss_tables)
 
-    def rows_index(self, names):
-        """Row index (or index array) of the given element name(s), shared by
-        all bunch tables."""
-        if self._name_pos is None:
-            self._name_pos = {nn: ii for ii, nn in
-                              enumerate(self.bunch_twiss[0].name)}
-        if isinstance(names, str):
-            return self._name_pos[names]
-        return np.array([self._name_pos[nn] for nn in names])
+    @property
+    def twiss_tables(self):
+        """Tuple containing the independent per-bunch Twiss tables."""
+        return self._twiss_tables
+
+    def _make_summary_table(self):
+        names = np.asarray(self.bunch_names, dtype=object)
+        names.flags.writeable = False
+        data = {'name': names}
+        if self.filled_slots is not None:
+            data['slot'] = self.filled_slots
+        data['zeta'] = self.zeta_bunches
+
+        if self._twiss_tables:
+            deprecated = self._twiss_tables[0]._DEPRECATED_FIELDS or {}
+            for key in self._twiss_tables[0]._data:
+                if (key.startswith('_') or key in data or key == 'zeta0'
+                        or key in deprecated):
+                    continue
+                values = []
+                for twiss in self._twiss_tables:
+                    try:
+                        value = twiss._data[key]
+                    except KeyError:
+                        break
+                    array = np.asarray(value)
+                    if array.ndim != 0 or array.dtype.kind == 'O':
+                        break
+                    values.append(value)
+                else:
+                    data[key] = np.asarray(values)
+        return Table(data, index='name')
+
+    def _element_indices(self, element_names):
+        if not self._twiss_tables:
+            raise ValueError('No bunch Twiss tables are available.')
+        if isinstance(element_names, str):
+            cached = self._element_index_cache.get(element_names)
+            if cached is None:
+                cached = self._twiss_tables[0]._get_row_index(element_names)
+                self._element_index_cache[element_names] = cached
+            return cached
+        return np.asarray(
+            [self._element_indices(name) for name in element_names], dtype=int)
+
+    def _values_at_elements(self, column, element_names):
+        indices = self._element_indices(element_names)
+        return np.asarray(
+            [twiss[column][indices] for twiss in self._twiss_tables])
 
     def __getitem__(self, key):
-        if isinstance(key, (int, np.integer, slice)):
-            return self.bunch_twiss[key]
-        if isinstance(key, tuple):
-            col, names = key
-            idx = self.rows_index(names)
-            return np.array([tw[col][idx] for tw in self.bunch_twiss])
-        return np.array([tw[key] for tw in self.bunch_twiss])
+        return self._table[key]
 
     def __getattr__(self, name):
         if name.startswith('_'):
             raise AttributeError(name)
         try:
-            values = [tw[name] for tw in self.bunch_twiss]
-        except (KeyError, NameError):
+            table = object.__getattribute__(self, '_table')
+            return getattr(table, name)
+        except (AttributeError, KeyError, NameError):
             raise AttributeError(name)
-        if np.isscalar(values[0]):
-            return np.array(values)
-        raise AttributeError(
-            f"'{name}' is not a per-bunch scalar quantity; use "
-            f"mbtw['{name}'] or mbtw['{name}', element_names]")
 
-    def bunch(self, name):
-        """Return the TwissTable of the bunch with the given name."""
-        return self.bunch_twiss[self.bunch_names.index(name)]
+    def bunch(self, name=None, *, slot=None, index=None):
+        """Return one bunch's :class:`TwissTable`.
+
+        Select the bunch by row name, physical filling slot, or positional
+        index. Exactly one selector must be provided.
+
+        Parameters
+        ----------
+        name : str, optional
+            Bunch row name, normally ``'slot_<slot>'``.
+        slot : int, optional
+            Physical filling slot. Available on results produced by a
+            :class:`BeamBeamRigidBunchStudy`.
+        index : int, optional
+            Positional bunch index.
+        """
+        num_selectors = sum(selector is not None
+                            for selector in (name, slot, index))
+        if num_selectors != 1:
+            raise ValueError(
+                'Provide exactly one of name, slot, or index.')
+        if name is not None:
+            index = self._name_index[name]
+        elif slot is not None:
+            if self._slot_index is None:
+                raise ValueError('Physical filling slots are not available.')
+            index = self._slot_index[int(slot)]
+        return self._twiss_tables[index]
+
+    def at_element(self, element_name):
+        """Return a bunch-indexed table at one lattice element.
+
+        The returned :class:`Table` contains ``name``, ``slot`` and ``zeta``,
+        the scalar per-bunch Twiss quantities, and the available local Twiss
+        columns at ``element_name``. The element position is resolved from the
+        first bunch table and cached; all bunch tables have the same row order.
+        """
+        index = self._element_indices(element_name)
+        data = dict(self._table._data)
+        for column in self._twiss_tables[0]._col_names:
+            if column == 'name':
+                continue
+            data[column] = np.asarray(
+                [twiss[column][index] for twiss in self._twiss_tables])
+        return Table(data, index='name')
 
     def __repr__(self):
-        return (f'BunchTwiss({self.num_bunches} bunches, '
+        return (f'MultiBunchTwiss({self.num_bunches} bunches, '
                 f'zeta={np.array2string(self.zeta_bunches, precision=3)})')
 
 
-class RigidBunchTwiss:
+class BeamBeamRigidBunchTwiss:
     """Twiss result for the two beams of a rigid-bunch study.
 
     ``cw`` is the clockwise beam and ``acw`` is the anticlockwise beam. Each is
-    a :class:`BunchTwiss` containing one :class:`TwissTable` per filled bunch.
-    Results returned by :meth:`BeamBeamRigidBunchStudy.solve` additionally
-    carry ``converged``, ``num_iterations`` and ``max_orbit_change``. The last
-    quantity is the largest orbit change normalized by the local beam size.
-    These three attributes are ``None`` on results returned by ``twiss()``.
+    a :class:`MultiBunchTwiss` containing one :class:`TwissTable` per filled
+    bunch. This is the result type returned by
+    :meth:`BeamBeamRigidBunchStudy.twiss`.
     """
 
-    def __init__(self, cw, acw, *, converged=None, num_iterations=None,
-                 max_orbit_change=None):
-        if not isinstance(cw, BunchTwiss) or not isinstance(acw, BunchTwiss):
-            raise TypeError('`cw` and `acw` must be BunchTwiss objects.')
+    def __init__(self, cw, acw):
+        if (not isinstance(cw, MultiBunchTwiss)
+                or not isinstance(acw, MultiBunchTwiss)):
+            raise TypeError('cw and acw must be MultiBunchTwiss objects.')
         self.cw = cw
         self.acw = acw
-        self.converged = converged
-        self.num_iterations = num_iterations
-        self.max_orbit_change = max_orbit_change
 
     def __getitem__(self, beam):
         if beam == 'cw':
@@ -132,8 +233,32 @@ class RigidBunchTwiss:
         raise KeyError(beam)
 
     def __repr__(self):
-        return (f'RigidBunchTwiss(CW={self.cw.num_bunches} bunches, '
+        return (f'BeamBeamRigidBunchTwiss(CW={self.cw.num_bunches} bunches, '
                 f'ACW={self.acw.num_bunches} bunches)')
+
+
+class BeamBeamRigidBunchSolution(BeamBeamRigidBunchTwiss):
+    """Result of :meth:`BeamBeamRigidBunchStudy.solve`.
+
+    In addition to the clockwise and anticlockwise per-bunch Twiss results
+    inherited from :class:`BeamBeamRigidBunchTwiss`, this object reports
+    ``converged``, ``num_iterations`` and ``max_orbit_change``. A result with
+    ``converged=False`` is returned only when the caller explicitly passes
+    ``require_convergence=False`` to the solve.
+    """
+
+    def __init__(self, cw, acw, *, converged, num_iterations,
+                 max_orbit_change):
+        super().__init__(cw=cw, acw=acw)
+        self.converged = bool(converged)
+        self.num_iterations = int(num_iterations)
+        self.max_orbit_change = float(max_orbit_change)
+
+    def __repr__(self):
+        return (f'BeamBeamRigidBunchSolution('
+                f'CW={self.cw.num_bunches} bunches, '
+                f'ACW={self.acw.num_bunches} bunches, '
+                f'converged={self.converged})')
 
 
 def _mb_co_search(line, zeta_t, delta_t, Z_init, hs, co_tol, max_iter_co,
@@ -438,7 +563,7 @@ def _twiss_rigid_bunch_fast(line, zeta_bunches, steps_R_matrix=None,
 
 
 def _twiss_rigid_bunch_line(line, zeta_bunches=None, particles=None,
-                            method='4d', bunch_names=None,
+                            method='4d', bunch_names=None, filled_slots=None,
                             show_progress=True, mode='fast', **kwargs):
 
     """
@@ -475,7 +600,11 @@ def _twiss_rigid_bunch_line(line, zeta_bunches=None, particles=None,
         problem).
     bunch_names : list of str, optional
         Names for the bunches (used for labelling). Defaults to
-        ``['bunch_0', 'bunch_1', ...]``.
+        ``['slot_0', 'slot_1', ...]`` when ``filled_slots`` is provided, or
+        ``['bunch_0', 'bunch_1', ...]`` otherwise.
+    filled_slots : array_like of int, optional
+        Physical filling slot of each bunch. This enables cached access with
+        ``result.bunch(slot=...)``.
     show_progress : bool, optional
         If True (default), display a ``tqdm`` progress bar over the bunches
         (``mode='full'`` only).
@@ -510,10 +639,10 @@ def _twiss_rigid_bunch_line(line, zeta_bunches=None, particles=None,
 
     Returns
     -------
-    BunchTwiss
+    MultiBunchTwiss
         Container with one table per bunch (a full :class:`TwissTable` in
         ``mode='full'``, a lightweight orbit/tunes table in ``mode='fast'``).
-        See :class:`BunchTwiss`.
+        See :class:`MultiBunchTwiss`.
     """
 
     if 'zeta0' in kwargs:
@@ -562,5 +691,6 @@ def _twiss_rigid_bunch_line(line, zeta_bunches=None, particles=None,
         raise ValueError(
             f'Unknown mode {mode!r} (use "fast", "fast_orbit" or "full")')
 
-    return BunchTwiss(
-        bunch_twiss, zeta_bunches, bunch_names=bunch_names)
+    return MultiBunchTwiss(
+        bunch_twiss, zeta_bunches, bunch_names=bunch_names,
+        filled_slots=filled_slots)

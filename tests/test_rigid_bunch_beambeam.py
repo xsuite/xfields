@@ -345,7 +345,7 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         show_progress=False,
         require_convergence=False,
     )
-    assert isinstance(solution, xf.RigidBunchTwiss)
+    assert isinstance(solution, xf.BeamBeamRigidBunchSolution)
     assert solution.converged is False
     assert solution.num_iterations == 2
     assert np.isfinite(solution.max_orbit_change)
@@ -420,8 +420,10 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
     for base in expected_encounters:
         name_cw = reduced.bb_name(base, beam='cw')
         name_acw = reduced.bb_name(base, beam='acw')
-        Sigma_11_cw = mbtw_cw_dyn['betx', name_cw] * NEMITT_X / gamma0_cw
-        Sigma_11_acw = mbtw_acw_dyn['betx', name_acw] * NEMITT_X / gamma0_acw
+        Sigma_11_cw = (mbtw_cw_dyn.at_element(name_cw).betx
+                       * NEMITT_X / gamma0_cw)
+        Sigma_11_acw = (mbtw_acw_dyn.at_element(name_acw).betx
+                        * NEMITT_X / gamma0_acw)
         xo.assert_allclose(
             np.asarray(reduced.bb_cw[base].own_beam_Sigma_11)[indices_cw],
             Sigma_11_cw, rtol=1e-14)

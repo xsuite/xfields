@@ -277,8 +277,9 @@ def results_dataframe(rigid_bunch_study, mbtw, slots, qx_no_bb, qy_no_bb, beam,
     """
     import pandas as pd
     marker = rigid_bunch_study.bb_name(f'bb_{ip}_ho', beam=beam)
-    x = mbtw['x', marker] * (-1.0 if beam == 'acw' else 1.0)
-    y = mbtw['y', marker]
+    twiss_at_marker = mbtw.at_element(marker)
+    x = twiss_at_marker.x * (-1.0 if beam == 'acw' else 1.0)
+    y = twiss_at_marker.y
 
     df = pd.DataFrame({
         'slot': np.asarray(slots),
@@ -298,8 +299,9 @@ def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, qx_no_bb, qy_no_bb,
                  title_suffix=''):
     import matplotlib.pyplot as plt
     mk = rigid_bunch_study.bb_name('bb_ip1_ho', beam='cw')
-    co_x = mbtw_cw['x', mk]
-    co_y = mbtw_cw['y', mk]
+    twiss_at_marker = mbtw_cw.at_element(mk)
+    co_x = twiss_at_marker.x
+    co_y = twiss_at_marker.y
     # per-bunch orbit deviation from the bunch-averaged orbit (removes the common
     # crossing/separation-bump orbit, leaving the bunch-by-bunch beam-beam part)
     dco_x = (co_x - co_x.mean()) * 1e6
@@ -327,23 +329,27 @@ def plot_results(rigid_bunch_study, slots_cw, mbtw_cw, qx_no_bb, qy_no_bb,
 def plot_global_quantities(rigid_bunch_study, slots_cw, mbtw_cw,
                            slots_acw, mbtw_acw):
     """Bunch-by-bunch orbit at IP1, beta* at IP1, tunes, chromaticity and
-    coupling |C-| of both beams, from mode='fast' BunchTwiss results
+    coupling |C-| of both beams, from mode='fast' MultiBunchTwiss results
     (which carry per-bunch optics and global quantities)."""
     import matplotlib.pyplot as plt
     mk = {beam: rigid_bunch_study.bb_name('bb_ip1_ho', beam=beam)
           for beam in ('cw', 'acw')}
+    twiss_at_ip1 = {
+        'cw': mbtw_cw.at_element(mk['cw']),
+        'acw': mbtw_acw.at_element(mk['acw']),
+    }
 
-    def at_ip1(mbtw, col, beam):
-        return mbtw[col, mk[beam]]
+    def at_ip1(col, beam):
+        return twiss_at_ip1[beam][col]
 
     fig, axs = plt.subplots(3, 2, figsize=(13, 10), sharex=True)
 
     ax = axs[0, 0]   # orbit deviation at IP1 (physical frame for both beams)
-    for slots, mbtw, beam, lab in [(slots_cw, mbtw_cw, 'cw', 'CW'),
-                                   (slots_acw, mbtw_acw, 'acw', 'ACW')]:
+    for slots, beam, lab in [(slots_cw, 'cw', 'CW'),
+                             (slots_acw, 'acw', 'ACW')]:
         sgn = -1.0 if beam == 'acw' else 1.0
-        x = sgn * at_ip1(mbtw, 'x', beam)
-        y = at_ip1(mbtw, 'y', beam)
+        x = sgn * at_ip1('x', beam)
+        y = at_ip1('y', beam)
         ax.plot(slots, (x - x.mean()) * 1e6, '.', ms=3, label=f'{lab} x')
         ax.plot(slots, (y - y.mean()) * 1e6, '.', ms=3, label=f'{lab} y')
     ax.set_ylabel(r'orbit dev. at IP1 [$\mu$m]')
@@ -351,11 +357,11 @@ def plot_global_quantities(rigid_bunch_study, slots_cw, mbtw_cw,
     ax.legend(ncol=2, fontsize=8)
 
     ax = axs[0, 1]   # beta* at IP1
-    for slots, mbtw, beam, lab in [(slots_cw, mbtw_cw, 'cw', 'CW'),
-                                   (slots_acw, mbtw_acw, 'acw', 'ACW')]:
-        ax.plot(slots, at_ip1(mbtw, 'betx', beam), '.', ms=3,
+    for slots, beam, lab in [(slots_cw, 'cw', 'CW'),
+                             (slots_acw, 'acw', 'ACW')]:
+        ax.plot(slots, at_ip1('betx', beam), '.', ms=3,
                 label=fr'{lab} $\beta_x^*$')
-        ax.plot(slots, at_ip1(mbtw, 'bety', beam), '.', ms=3,
+        ax.plot(slots, at_ip1('bety', beam), '.', ms=3,
                 label=fr'{lab} $\beta_y^*$')
     ax.set_ylabel(r'$\beta^*$ at IP1 [m]')
     ax.set_title('Per-bunch $\\beta^*$ at IP1 (dynamic beta)')

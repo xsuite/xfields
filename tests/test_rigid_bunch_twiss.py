@@ -78,8 +78,8 @@ def test_rigid_bunch_twiss_fast_modes_against_full(beam_beam_rigid_bunch_study):
         co_tol=1e-12,
     )
 
-    assert isinstance(fast_result, xf.RigidBunchTwiss)
-    assert isinstance(fast_result.cw, xf.BunchTwiss)
+    assert isinstance(fast_result, xf.BeamBeamRigidBunchTwiss)
+    assert isinstance(fast_result.cw, xf.MultiBunchTwiss)
     assert fast_result['cw'] is fast_result.cw
     assert fast_result['acw'] is fast_result.acw
     with pytest.raises(KeyError):
@@ -92,23 +92,42 @@ def test_rigid_bunch_twiss_fast_modes_against_full(beam_beam_rigid_bunch_study):
     fast_orbit_acw = fast_orbit_result.acw
 
     assert len(full) == len(fast) == len(fast_orbit) == len(ZETA_BUNCHES)
-    assert fast.bunch_names == names
-    assert fast.bunch('slot_1') is fast[1]
+    assert fast.bunch_names == tuple(names)
+    assert np.array_equal(fast.filled_slots, [0, 1, 2])
+    assert fast.bunch('slot_1') is fast.bunch(index=1)
+    assert fast.bunch(slot=1) is fast.bunch(index=1)
+    assert fast['qx', 'slot_1'] == fast.qx[1]
+    assert np.array_equal(fast.rows['slot_1'].slot, [1])
+    with pytest.raises(ValueError, match='exactly one'):
+        fast.bunch()
+    with pytest.raises(ValueError, match='exactly one'):
+        fast.bunch('slot_1', slot=1)
+    with pytest.raises(ValueError, match='read-only'):
+        fast.filled_slots[0] = 2
+    with pytest.raises(ValueError, match='read-only'):
+        fast.slot[0] = 2
     xo.assert_allclose(fast.zeta_bunches, ZETA_BUNCHES, rtol=0, atol=1e-15)
-    xo.assert_allclose(fast_acw['x'], fast['x'], rtol=0, atol=0)
-    xo.assert_allclose(full_acw['x'], full['x'], rtol=0, atol=0)
-    xo.assert_allclose(fast_orbit_acw['x'], fast_orbit['x'], rtol=0, atol=0)
+
+    def stack(mbtw, column):
+        return np.asarray([tw[column] for tw in mbtw.twiss_tables])
+
+    xo.assert_allclose(stack(fast_acw, 'x'), stack(fast, 'x'), rtol=0, atol=0)
+    xo.assert_allclose(stack(full_acw, 'x'), stack(full, 'x'), rtol=0, atol=0)
+    xo.assert_allclose(
+        stack(fast_orbit_acw, 'x'), stack(fast_orbit, 'x'), rtol=0, atol=0)
 
     for column in ('x', 'px', 'y', 'py'):
         xo.assert_allclose(
-            fast[column], full[column], rtol=0, atol=5e-13)
+            stack(fast, column), stack(full, column), rtol=0, atol=5e-13)
         xo.assert_allclose(
-            fast_orbit[column], full[column], rtol=0, atol=5e-13)
+            stack(fast_orbit, column), stack(full, column),
+            rtol=0, atol=5e-13)
     for column in (
             'betx', 'alfx', 'bety', 'alfy', 'mux', 'muy',
             'dx', 'dpx', 'dy', 'dpy'):
         xo.assert_allclose(
-            fast[column], full[column], rtol=2e-10, atol=2e-10)
+            stack(fast, column), stack(full, column),
+            rtol=2e-10, atol=2e-10)
 
     xo.assert_allclose(fast.qx, full.qx, rtol=0, atol=2e-10)
     xo.assert_allclose(fast.qy, full.qy, rtol=0, atol=2e-10)
@@ -117,7 +136,8 @@ def test_rigid_bunch_twiss_fast_modes_against_full(beam_beam_rigid_bunch_study):
     xo.assert_allclose(fast_orbit.qx, full.qx, rtol=0, atol=2e-10)
     xo.assert_allclose(fast_orbit.qy, full.qy, rtol=0, atol=2e-10)
     xo.assert_allclose(
-        fast['x', 'bb'], full['x', 'bb'], rtol=0, atol=5e-13)
+        fast.at_element('bb').x, full.at_element('bb').x,
+        rtol=0, atol=5e-13)
 
 
 def test_rigid_bunch_twiss_rejects_invalid_inputs(beam_beam_rigid_bunch_study):

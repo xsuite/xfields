@@ -650,8 +650,10 @@ class BeamBeamRigidBunchStudy:
     # ------------------------------------------------------------------
     def _compute_covariances(self, mbtw, bb_names, gamma0):
         """Diagonal covariance from live per-bunch beta functions."""
-        Sigma_11 = mbtw['betx', bb_names] * self.nemitt_x / gamma0
-        Sigma_33 = mbtw['bety', bb_names] * self.nemitt_y / gamma0
+        Sigma_11 = (mbtw._values_at_elements('betx', bb_names)
+                    * self.nemitt_x / gamma0)
+        Sigma_33 = (mbtw._values_at_elements('bety', bb_names)
+                    * self.nemitt_y / gamma0)
         Sigma_13 = np.zeros_like(Sigma_11)
         return Sigma_11, Sigma_13, Sigma_33
 
@@ -688,8 +690,8 @@ class BeamBeamRigidBunchStudy:
         The opposing covariance is indexed by the OTHER beam; the own
         covariance is indexed by THIS beam."""
         import xtrack as xt
-        xs = -mbtw_other['x', bb_names_other]
-        ys = mbtw_other['y', bb_names_other]
+        xs = -mbtw_other._values_at_elements('x', bb_names_other)
+        ys = mbtw_other._values_at_elements('y', bb_names_other)
         slots_other = np.asarray(slots_other, dtype=np.int64)
         slots_own = np.asarray(slots_own, dtype=np.int64)
         all_slots = np.arange(self.n_slots)
@@ -783,7 +785,7 @@ class BeamBeamRigidBunchStudy:
 
         Returns
         -------
-        RigidBunchTwiss
+        BeamBeamRigidBunchTwiss
             Two-beam result with ``cw`` (clockwise) and ``acw``
             (anticlockwise) bunch Twiss data.
         """
@@ -792,7 +794,7 @@ class BeamBeamRigidBunchStudy:
                 'bunch filling not set; call apply_filling_pattern first')
 
         from .rigid_bunch_twiss import (
-            RigidBunchTwiss, _twiss_rigid_bunch_line)
+            BeamBeamRigidBunchTwiss, _twiss_rigid_bunch_line)
 
         common = dict(method=method, mode=mode,
                       show_progress=show_progress, **kwargs)
@@ -800,13 +802,15 @@ class BeamBeamRigidBunchStudy:
             self.cw_line,
             zeta_bunches=self.bunch_zeta(beam='cw'),
             bunch_names=[f'slot_{slot}' for slot in self.filled_slots_cw],
+            filled_slots=self.filled_slots_cw,
             **common)
         twiss_acw = _twiss_rigid_bunch_line(
             self.acw_line,
             zeta_bunches=self.bunch_zeta(beam='acw'),
             bunch_names=[f'slot_{slot}' for slot in self.filled_slots_acw],
+            filled_slots=self.filled_slots_acw,
             **common)
-        return RigidBunchTwiss(cw=twiss_cw, acw=twiss_acw)
+        return BeamBeamRigidBunchTwiss(cw=twiss_cw, acw=twiss_acw)
 
     def solve(self, max_iterations=5, tol_sigma=1e-4, dynamic_beta=False,
               method='4d', chrom=False, twiss_mode=None, show_progress=True,
@@ -878,7 +882,7 @@ class BeamBeamRigidBunchStudy:
 
         Returns
         -------
-        RigidBunchTwiss
+        BeamBeamRigidBunchSolution
             Two-beam result with ``cw`` (clockwise) and ``acw``
             (anticlockwise) bunch Twiss data, plus convergence metadata. With
             ``require_convergence=False``, this can be a non-converged
@@ -963,24 +967,29 @@ class BeamBeamRigidBunchStudy:
                 show_progress=show_progress)
             self.load_solution(result, dynamic_beta=dynamic_beta)
 
-        result.converged = err < tol_sigma
-        result.num_iterations = it + 1
-        result.max_orbit_change = err
-        if not result.converged and require_convergence:
+        from .rigid_bunch_twiss import BeamBeamRigidBunchSolution
+        solution = BeamBeamRigidBunchSolution(
+            cw=result.cw,
+            acw=result.acw,
+            converged=err < tol_sigma,
+            num_iterations=it + 1,
+            max_orbit_change=err,
+        )
+        if not solution.converged and require_convergence:
             raise RuntimeError(
                 'Rigid-bunch beam-beam solve did not converge after '
-                f'{result.num_iterations} iterations: maximum orbit change '
-                f'is {result.max_orbit_change:.3e} sigma, requested tolerance '
+                f'{solution.num_iterations} iterations: maximum orbit change '
+                f'is {solution.max_orbit_change:.3e} sigma, requested tolerance '
                 f'is {tol_sigma:.3e}. The last iterate remains loaded in the '
                 'beam-beam elements. Pass '
                 '`require_convergence=False` to return it explicitly.')
-        return result
+        return solution
 
 
 def _orbit_vector(mbtw, bb_names):
     """Flat (x then y) per-bunch orbit at all elements, for convergence."""
-    x = mbtw['x', bb_names]
-    y = mbtw['y', bb_names]
+    x = mbtw._values_at_elements('x', bb_names)
+    y = mbtw._values_at_elements('y', bb_names)
     return np.concatenate([np.asarray(x).ravel(), np.asarray(y).ravel()])
 
 

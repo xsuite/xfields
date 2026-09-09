@@ -94,11 +94,12 @@ mk_b1 = study_red.bb_name('bb_ip1_ho', beam='cw')
 
 
 def extract(mbtw):
+    twiss_at_ip1 = mbtw.at_element(mk_b1)
     return dict(
         qx=np.asarray(mbtw.qx_frac), qy=np.asarray(mbtw.qy_frac),
-        x=mbtw['x', mk_b1],
-        betx=mbtw['betx', mk_b1],
-        bety=mbtw['bety', mk_b1],
+        x=twiss_at_ip1.x,
+        betx=twiss_at_ip1.betx,
+        bety=twiss_at_ip1.bety,
     )
 
 

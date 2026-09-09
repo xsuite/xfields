@@ -42,7 +42,10 @@ from .config_tools import install_spacecharge_frozen
 from .config_tools import full_electroncloud_setup
 from .config_tools.beambeam_config_tools.rigid_bunch_mode import BeamBeamRigidBunchStudy
 from .config_tools.beambeam_config_tools.rigid_bunch_twiss import (
-    BunchTwiss, RigidBunchTwiss)
+    BeamBeamRigidBunchSolution,
+    BeamBeamRigidBunchTwiss,
+    MultiBunchTwiss,
+)
 
 from ._version import __version__
 

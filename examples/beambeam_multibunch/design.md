@@ -191,6 +191,8 @@ solution = rigid_bunch_study.solve(...)
 
 twiss.cw.qx
 twiss.acw.qx
+twiss.cw.bunch(slot=123)       # ordinary lattice-indexed TwissTable
+twiss.cw.at_element('ip1')     # bunch-indexed xtrack.Table
 rigid_bunch_study.load_solution(solution)
 ```
 
@@ -199,10 +201,16 @@ loaded in the elements; `rigid_bunch_study.solve(...)` repeatedly calls that
 operation while feeding the two beams back into each other. Bunch positions
 are derived from the study, so
 users cannot accidentally provide a `zeta_bunches` array inconsistent with the
-configured filling. `RigidBunchTwiss` contains the two beam results as `cw` and
-`acw`; each is a `BunchTwiss` collection with one Xtrack `TwissTable` per filled
-bunch. The containers live in Xfields together with
-`BeamBeamRigidBunchStudy` and its solver.
+configured filling. `BeamBeamRigidBunchTwiss` contains the two beam results as
+`cw` and `acw`; each is a `MultiBunchTwiss` collection with one independent
+Xtrack `TwissTable` per filled bunch. Its table-like summary has one row per
+physical slot and scalar Twiss quantities as columns. Bunches can be selected
+by cached name, slot or positional index, while `at_element(...)` resolves and
+caches the common lattice index before extracting values from all bunch
+tables. `solve(...)` returns the more specific
+`BeamBeamRigidBunchSolution`, which adds convergence diagnostics. The
+containers live in Xfields together with `BeamBeamRigidBunchStudy` and its
+solver.
 
 ``solve(...)`` raises ``RuntimeError`` by default if ``max_iterations`` is
 reached before ``tol_sigma``. A deliberate fixed-iteration study can pass
@@ -508,8 +516,8 @@ Cover:
 - `full`, `fast` and `fast_orbit` on the same bunches;
 - closed-orbit and fractional-tune agreement against `full`;
 - beta, alpha, dispersion and phase from `fast` against `full`;
-- `RigidBunchTwiss.cw` / `.acw` access and `BunchTwiss` integer, named-row and
-  attribute access;
+- `BeamBeamRigidBunchTwiss.cw` / `.acw` access, `MultiBunchTwiss` table-style
+  scalar access, cached bunch lookup by physical slot, and `at_element(...)`;
 - bunch positions and labels derived from the study filling;
 - unsupported modes, methods and kwargs;
 - lost particles and closed-orbit failure handling.
@@ -592,9 +600,9 @@ be resolved before the rigid-bunch interface is treated as established.
 
 - [x] Use one beam vocabulary consistently. The machine-independent
   study and result APIs expose ``cw`` / ``acw`` state (for example
-  ``filled_slots_cw`` and ``RigidBunchTwiss.cw``). The result container has no
-  ``b1`` / ``b2`` aliases; machine-specific external formats may retain their
-  native beam labels.
+  ``filled_slots_cw`` and ``BeamBeamRigidBunchTwiss.cw``). The result container
+  has no ``b1`` / ``b2`` aliases; machine-specific external formats may retain
+  their native beam labels.
 - [x] Use ``filling_pattern`` consistently across new public APIs,
   documentation and examples. Existing ``filling_scheme`` inputs remain
   supported as compatibility aliases in Xpart, Xfields, Xwakes and Xtrack;
