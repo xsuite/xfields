@@ -1,12 +1,12 @@
 """Regenerate ``pytrain_collision.json`` (and the flattened xsuite optics
 ``../collision_optics_15cm_flat_2026.madx``): pytrain (TRAIN) reference for
-the LHC collision multi-bunch beam-beam scenario -- 6.8 TeV, fully squeezed
+the LHC collision rigid-bunch beam-beam scenario -- 6.8 TeV, fully squeezed
 R2025aRP 15 cm flat optics with end-of-levelling knobs (head-on at IP1/5,
 levelling offsets at IP2/8), tunes/chroma matched to 62.316/60.322, Q'=10,
 1.1e11 p/bunch, 2.3 um, full 2460-bunch scheme, 6 solver iterations. Same
 scenario as the xsuite example
-``xfields/examples/beambeam_rigid_bunch/002_multibunch_sectormaps_collisions.py``
-and the test ``test_lhc_multibunch_train.py``.
+``xfields/examples/beambeam_rigid_bunch/004_lhc_rigid_bunch_collision.py``
+and the test ``test_lhc_rigid_bunch.py``.
 
 The squeezed optics generate their knobs via MAD-X matching, which xsuite
 cannot execute -- therefore this script also dumps the complete numeric

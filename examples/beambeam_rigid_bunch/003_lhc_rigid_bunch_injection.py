@@ -4,9 +4,9 @@
 # ######################################### #
 
 """
-Multi-bunch beam-beam on the LHC at injection, sped up with second-order maps.
+Rigid-bunch beam-beam on the LHC at injection, sped up with second-order maps.
 
-Same physics as ``000_lhc_multibunch_bb.py`` (long-range beam-beam at injection
+Same physics as ``002_lhc_rigid_bunch.py`` (long-range beam-beam at injection
 -- separation bumps kept on, so no head-on collisions -- with per-bunch
 self-consistent closed solution), but the machine between the beam-beam
 encounters is replaced by second-order Taylor maps:
@@ -22,28 +22,28 @@ import os
 import time
 import matplotlib.pyplot as plt
 
-import lhc_mb_common as mb
+import lhc_rigid_bunch_common as rb
 
 N_ITER = int(os.environ.get('LHC_NITER', '6'))
 ALL_BUNCHES = os.environ.get('LHC_ALL', '1') == '1'  # False -> bounded subset
 WINDOW = int(os.environ.get('LHC_WINDOW', '48'))
 COMPUTE_OPTICS_PARAMS = os.environ.get('COMPUTE_OPTICS_PARAMS', '1') == '1'
 
-env, line_b1, line_b2, par = mb.load_lhc('injection')
-scheme_b1, scheme_b2 = mb.load_scheme()
+env, line_b1, line_b2, par = rb.load_lhc('injection')
+scheme_b1, scheme_b2 = rb.load_scheme()
 
 env.xfields.install_beambeam_interactions(
     clockwise_line='lhcb1', anticlockwise_line='lhcb2', ip_names=par['ips'],
     num_long_range_encounters_per_side=par['nparasitic'],
-    harmonic_number=mb.HARMONIC_NUMBER,
-    bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
+    harmonic_number=rb.HARMONIC_NUMBER,
+    bunch_spacing_buckets=rb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
 rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
     nemitt_x=par['nemitt'], nemitt_y=par['nemitt'],
     filling_pattern_cw=scheme_b1, filling_pattern_acw=scheme_b2)
 if not ALL_BUNCHES:
-    s1, s2 = mb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
+    s1, s2 = rb.windowed_slots(rigid_bunch_study.ip_offsets, scheme_b1, scheme_b2, WINDOW)
     rigid_bunch_study.apply_filling_pattern(
         filled_slots_cw=s1, filled_slots_acw=s2)
 
@@ -79,7 +79,7 @@ print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 print('Self-consistent solve on the reduced (second-order-map) lines:')
 t0 = time.time()
 solution = study_red.solve(max_iterations=N_ITER)
-mb.print_solve_status(solution)
+rb.print_solve_status(solution)
 mbtw_cw, mbtw_acw = solution.cw, solution.acw
 print(f'  solve time ({len(slots_cw)}+{len(slots_acw)} bunches, '
       f'{solution.num_iterations} iters): {time.time() - t0:.1f} s')
@@ -93,26 +93,26 @@ if COMPUTE_OPTICS_PARAMS:
     print(f'  final twiss (both beams): {time.time() - t0:.1f} s')
 
 # Reference the tune shift to the optics without beam-beam.
-dqx_cw = mb.wrap_frac_tune(mbtw_cw.qx - twiss_no_bb_cw.qx)
+dqx_cw = rb.wrap_frac_tune(mbtw_cw.qx - twiss_no_bb_cw.qx)
 print(f"\nCW tune shift: dqx in [{dqx_cw.min():.2e}, {dqx_cw.max():.2e}]")
 
 # Save per-bunch results of both beams as DataFrames
-df_cw = mb.results_dataframe(study_red, mbtw_cw, slots_cw,
+df_cw = rb.results_dataframe(study_red, mbtw_cw, slots_cw,
                              twiss_no_bb_cw.qx, twiss_no_bb_cw.qy, beam='cw')
-df_acw = mb.results_dataframe(study_red, mbtw_acw, slots_acw,
+df_acw = rb.results_dataframe(study_red, mbtw_acw, slots_acw,
                               twiss_no_bb_acw.qx, twiss_no_bb_acw.qy,
                               beam='acw')
 # Keep the established comparison filenames used by the PyTRAIN workflow.
-out_b1 = os.path.join(mb.HERE, 'results_b1.pkl')
-out_b2 = os.path.join(mb.HERE, 'results_b2.pkl')
+out_b1 = os.path.join(rb.HERE, 'results_b1.pkl')
+out_b2 = os.path.join(rb.HERE, 'results_b2.pkl')
 df_cw.to_pickle(out_b1)
 df_acw.to_pickle(out_b2)
 print(f'saved {out_b1}\nsaved {out_b2}')
 
-mb.plot_results(study_red, slots_cw, mbtw_cw,
+rb.plot_results(study_red, slots_cw, mbtw_cw,
                 twiss_no_bb_cw.qx, twiss_no_bb_cw.qy,
                 title_suffix='  [second-order maps]')
 if COMPUTE_OPTICS_PARAMS:
-    mb.plot_global_quantities(
+    rb.plot_global_quantities(
         study_red, slots_cw, mbtw_cw, slots_acw, mbtw_acw)
 plt.show()

@@ -4,7 +4,7 @@
 # ######################################### #
 
 """
-Multi-bunch coherent (2D) beam-beam example.
+Rigid-bunch coherent (2D) beam-beam example.
 
 Two counter-rotating beams are each represented by several bunches, with one
 macroparticle per bunch (the macroparticle holds the bunch centroid, its
@@ -61,7 +61,7 @@ sigma_x = np.sqrt(nemitt_x[0] / (beta0_rel * gamma0) * betx_ip[0])
 n_turns = 2048
 
 # ----------------------------------------------------------------------------
-# Build the two multi-bunch beams (1 macroparticle = 1 bunch)
+# Build the two rigid-bunch beams (1 macroparticle = 1 bunch)
 # ----------------------------------------------------------------------------
 zeta_bunches = np.arange(n_bunches) * bunch_spacing_zeta
 
@@ -150,7 +150,7 @@ axs[0].set_ylabel('beam 1  x / $\\sigma_x$')
 axs[1].set_ylabel('beam 2  x / $\\sigma_x$')
 axs[1].set_xlabel('turn')
 axs[0].legend(ncol=n_bunches, fontsize=8)
-axs[0].set_title('Coherent multi-bunch beam-beam (2D)')
+axs[0].set_title('Coherent rigid-bunch beam-beam (2D)')
 
 # Coherent beam-beam tune spectra of all bunches of beam 1
 fig2, ax2 = plt.subplots(figsize=(8, 4))

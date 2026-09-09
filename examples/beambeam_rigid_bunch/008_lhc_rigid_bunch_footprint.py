@@ -6,18 +6,18 @@
 """
 Tune FOOTPRINTS of different bunch families in the LHC collision scenario
 (6.8 TeV squeezed flat optics, head-on + BBLR), with the per-bunch
-self-consistent multi-bunch beam-beam closed solution.
+self-consistent rigid-bunch beam-beam closed solution.
 
 Workflow (multi-threaded OpenMP kernels by default, ``LHC_OMP=0`` for
 serial):
 
-1. Solve the multi-bunch problem on the sector-map machine (as in
-   ``002``/``004``): up to 4 iterations with the orbit-only ``fast_orbit``
+1. Solve the rigid-bunch problem on the second-order-map machine (as in
+   ``004``/``006``): up to 4 iterations with the orbit-only ``fast_orbit``
    twiss, then up to 4 more with ``dynamic_beta=True`` (per-bunch effective sizes
    recomputed from the live betas each iteration; the element state carries
    over between the two calls, so this continues the same iteration).
 2. Transfer the converged solution back to the FULL THICK lattice of beam 1:
-   the same multi-bunch beam-beam lenses are installed at the (still
+   the same rigid-bunch beam-beam lenses are installed at the (still
    present) encounter markers and loaded with the final per-bunch orbits
    and dynamic sizes of beam 2, plus the (bunch-averaged) dynamic own sizes
    of beam 1.
@@ -25,7 +25,7 @@ serial):
    bunches along the longest train (first and last included), covering the
    PACMAN transition from the train head through the fully-surrounded
    center to the tail. Each footprint tracks particles with ``zeta`` frozen at the
-   bunch's slot label, so the multi-bunch lenses apply that bunch's actual
+   bunch's slot label, so the rigid-bunch lenses apply that bunch's actual
    encounters (head-on + long-range, around its own closed orbit). Before
    tracking, the lenses are switched to ``coherent=False``: the footprint
    particles are INDIVIDUAL protons that see the field of the opposing
@@ -56,21 +56,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 import xtrack as xt
-import lhc_mb_common as mb
+import lhc_rigid_bunch_common as rb
 
 # multi-threaded CPU kernels by default in this demo
 os.environ.setdefault('LHC_OMP', 'auto')
-env, line_b1, line_b2, par = mb.load_lhc('collision')
+env, line_b1, line_b2, par = rb.load_lhc('collision')
 
 # ----------------------------------------------------------------------------
 # Build the machine (as in 002/004): install + geometry on the full lattice
 # ----------------------------------------------------------------------------
-scheme_b1, scheme_b2 = mb.load_scheme()
+scheme_b1, scheme_b2 = rb.load_scheme()
 env.xfields.install_beambeam_interactions(
     clockwise_line='lhcb1', anticlockwise_line='lhcb2', ip_names=par['ips'],
     num_long_range_encounters_per_side=par['nparasitic'],
-    harmonic_number=mb.HARMONIC_NUMBER,
-    bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
+    harmonic_number=rb.HARMONIC_NUMBER,
+    bunch_spacing_buckets=rb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
 rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
@@ -102,11 +102,11 @@ print(f'  populated bunches: CW = {len(slots_cw)}, ACW = {len(slots_acw)}')
 print('Self-consistent solve (up to 4 iterations fast_orbit):')
 t0 = time.time()
 orbit_solution = study_red.solve(max_iterations=4)
-mb.print_solve_status(orbit_solution)
+rb.print_solve_status(orbit_solution)
 print('Self-consistent solve (up to 4 more iterations with dynamic beta):')
 solution = study_red.solve(
     max_iterations=4, dynamic_beta=True)
-mb.print_solve_status(solution)
+rb.print_solve_status(solution)
 mbtw_cw, mbtw_acw = solution.cw, solution.acw
 print(f'  total solve time: {time.time() - t0:.1f} s')
 
@@ -126,7 +126,7 @@ study_mo.load_solution(solution, dynamic_beta=True)
 # longest contiguous filled run of beam 1
 filled = np.asarray(scheme_b1) > 0
 best_len = best_start = cur_len = cur_start = 0
-for s in range(mb.N_SLOTS):
+for s in range(rb.N_SLOTS):
     if filled[s]:
         cur_start = s if cur_len == 0 else cur_start
         cur_len += 1
@@ -145,7 +145,7 @@ family = [(train[k], f'train bunch {k + 1}') for k in pos_in_train]
 idx_fam = np.searchsorted(slots_cw, [sl for sl, _ in family])
 for label, transferred in (('thick', rigid_bunch_study), ('maps+MO', study_mo)):
     check = transferred.twiss(mode='fast_orbit', show_progress=False)
-    dq_check = mb.wrap_frac_tune(
+    dq_check = rb.wrap_frac_tune(
         np.asarray(check.cw.qx)[idx_fam]
         - np.asarray(mbtw_cw.qx)[idx_fam])
     print(f'  transfer check ({label} vs sector maps, family bunches): '
@@ -201,7 +201,7 @@ print('footprint time: '
                   for tag, _ in LINES[1:]))
 
 import pandas as pd
-pd.to_pickle(footprints, os.path.join(mb.HERE, 'footprints_coll.pkl'))
+pd.to_pickle(footprints, os.path.join(rb.HERE, 'footprints_coll.pkl'))
 print('saved footprints_coll.pkl')
 
 # ----------------------------------------------------------------------------

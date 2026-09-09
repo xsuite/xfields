@@ -4,7 +4,7 @@
 # ######################################### #
 
 """
-LHC-specific glue for the multi-bunch beam-beam examples.
+LHC-specific glue for the rigid-bunch beam-beam examples.
 
 The rigid-bunch beam-beam machinery itself is machine-independent and lives in
 Xfields. The standard beam-beam install/configure workflow with
@@ -398,6 +398,6 @@ def plot_global_quantities(rigid_bunch_study, slots_cw, mbtw_cw,
     axs[1, 1].set_xlabel('25 ns slot')
     axs[1, 1].tick_params(labelbottom=True)
     plt.suptitle('Per-bunch optics & global quantities '
-                 '(mode="fast" multibunch twiss)')
+                 '(mode="fast" rigid-bunch Twiss)')
     plt.tight_layout()
     return fig

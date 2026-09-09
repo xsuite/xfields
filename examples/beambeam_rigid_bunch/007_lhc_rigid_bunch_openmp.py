@@ -4,16 +4,16 @@
 # ######################################### #
 
 """
-Multi-threaded (OpenMP) CPU kernels for the multi-bunch beam-beam machinery.
+Multi-threaded (OpenMP) CPU kernels for the rigid-bunch beam-beam machinery.
 
 Builds the collision machine on second-order maps (as
-``002_multibunch_sectormaps_collisions.py``), populates the beam-beam
+``004_lhc_rigid_bunch_collision.py``), populates the beam-beam
 elements with one self-consistent iteration, then times the batched
 rigid-bunch Twiss of both beams -- both the orbit-only ``fast_orbit`` mode (used
 in the solver loop) and the optics-carrying ``fast`` mode -- with the SERIAL
 and the MULTI-THREADED CPU kernels, and reports the speed-up.
 
-All the multibunch examples accept the environment variable ``LHC_OMP``
+All the rigid-bunch examples accept the environment variable ``LHC_OMP``
 (unset/``0`` -> serial kernels; ``auto`` or a thread count -> OpenMP
 kernels); prebuilt kernels exist for both flavours, so no compilation is
 triggered either way. Here ``LHC_OMP`` defaults to ``auto``.
@@ -24,10 +24,10 @@ import time
 import numpy as np
 
 import xobjects as xo
-import lhc_mb_common as mb
+import lhc_rigid_bunch_common as rb
 
 os.environ.setdefault('LHC_OMP', 'auto')
-env, line_b1, line_b2, par = mb.load_lhc('collision')
+env, line_b1, line_b2, par = rb.load_lhc('collision')
 ctx_mt = par['context']
 n_threads = os.cpu_count() if ctx_mt.omp_num_threads == 'auto' \
     else ctx_mt.omp_num_threads
@@ -37,12 +37,12 @@ print(f'multi-threaded context: {ctx_mt.omp_num_threads} '
 # ----------------------------------------------------------------------------
 # Build the machine (as in 002) and populate the beam-beam elements
 # ----------------------------------------------------------------------------
-scheme_b1, scheme_b2 = mb.load_scheme()
+scheme_b1, scheme_b2 = rb.load_scheme()
 env.xfields.install_beambeam_interactions(
     clockwise_line='lhcb1', anticlockwise_line='lhcb2', ip_names=par['ips'],
     num_long_range_encounters_per_side=par['nparasitic'],
-    harmonic_number=mb.HARMONIC_NUMBER,
-    bunch_spacing_buckets=mb.BUNCH_SPACING_BUCKETS,
+    harmonic_number=rb.HARMONIC_NUMBER,
+    bunch_spacing_buckets=rb.BUNCH_SPACING_BUCKETS,
     mode='rigid_bunch')
 rigid_bunch_study = env.xfields.configure_beambeam_interactions(
     num_particles=par['bunch_intensity'],
@@ -57,7 +57,7 @@ print('Populating the beam-beam elements (one solve iteration):')
 population_result = study_red.solve(
     max_iterations=1, tol_sigma=0.0,
     require_convergence=False)
-mb.print_solve_status(population_result)
+rb.print_solve_status(population_result)
 
 # ----------------------------------------------------------------------------
 # Timing: batched rigid-bunch Twiss, serial vs multi-threaded kernels

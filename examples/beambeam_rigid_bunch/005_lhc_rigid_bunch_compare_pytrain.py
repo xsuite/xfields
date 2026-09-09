@@ -6,10 +6,10 @@
 """
 Plot the per-bunch beam-beam results of both beams for BOTH scenarios:
 
-* injection (BBLR only), saved by ``001_multibunch_sectormaps_injection.py``
+* injection (BBLR only), saved by ``003_lhc_rigid_bunch_injection.py``
   as ``results_b{1,2}.pkl``;
 * collision (6.8 TeV squeezed, head-on + BBLR), saved by
-  ``002_multibunch_sectormaps_collisions.py`` as ``results_b{1,2}_coll.pkl``.
+  ``004_lhc_rigid_bunch_collision.py`` as ``results_b{1,2}_coll.pkl``.
 
 One figure per scenario. Top row: per-bunch tune offsets (beam-beam tune
 shift) dqx, dqy for B1 and B2. Bottom row: per-bunch closed-orbit offsets
@@ -18,7 +18,7 @@ crossing/separation bump) dx, dy at IP1.
 
 The pytrain references from
 ``test_data/lhc_2024/pytrain/pytrain_{injection,collision}.json`` (the same
-data the regression test ``test_lhc_multibunch_train.py`` checks against) are
+data the regression test ``test_lhc_rigid_bunch.py`` checks against) are
 overlaid. Scenarios whose xsuite result files are missing are skipped.
 """
 
@@ -35,8 +35,8 @@ PYTRAIN_DIR = os.path.join(HERE, '..', '..', 'test_data', 'lhc_2024',
 
 SCENARIOS = [
     # (title, xsuite suffix, scenario key, tune-panel ylim or None)
-    ('LHC injection multi-bunch beam-beam (BBLR)', '', 'injection', (-4, 4)),
-    ('LHC collision 6.8 TeV multi-bunch beam-beam (head-on + BBLR)',
+    ('LHC injection rigid-bunch beam-beam (BBLR)', '', 'injection', (-4, 4)),
+    ('LHC collision 6.8 TeV rigid-bunch beam-beam (head-on + BBLR)',
      '_coll', 'collision', None),
 ]
 

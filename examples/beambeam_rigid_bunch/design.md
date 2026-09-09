@@ -1,6 +1,6 @@
-# Multibunch beam-beam design rationalization
+# Rigid-bunch beam-beam design rationalization
 
-This note records a proposed cleanup of the multibunch beam-beam work before
+This note records a proposed cleanup of the rigid-bunch beam-beam work before
 the API becomes established. The goal is to retain the new physics and solver
 capabilities while integrating them into the existing Xfields and Xtrack
 abstractions.
@@ -21,7 +21,7 @@ difference: scalar BB2D has fixed-size data, while the rigid-bunch element owns
 arrays indexed by RF slot. Combining those layouts would enlarge every scalar
 BB2D element, introduce a per-particle mode branch and complicate the API.
 
-The multibunch-specific behavior is narrower than these duplicated surfaces:
+The rigid-bunch-specific behavior is narrower than these duplicated surfaces:
 
 - Match a tracked bunch to an opposing bunch using `zeta`, with periodic ring
   wrapping.
@@ -55,7 +55,7 @@ Each wrapper remains responsible for selecting those inputs. Scalar BB2D reads
 its scalar fields. The rigid-bunch wrapper matches the opposing bunch on the
 periodic `zeta` grid, selects its centroid, population and covariance, and, in
 coherent mode, adds the matched own-beam covariance before calling the helper.
-The bunch-matching code is multibunch-specific and does not need to be added to
+The bunch-matching code is rigid-bunch-specific and does not need to be added to
 the scalar element.
 
 For coherent tracking, the effective covariance is the sum of the matched own
@@ -312,11 +312,11 @@ Xtrack update.
 Add the fast characterization tests before changing either implementation:
 
 - scalar BB2D behavior and serialization;
-- current multibunch matching and coherent convolution;
-- one-bunch scalar/multibunch equivalence;
+- current rigid-bunch matching and coherent convolution;
+- one-bunch scalar/rigid-bunch equivalence;
 - sparse fillings, unequal intensities and periodic matching;
 - a small deterministic Xtrack installer/study test;
-- multibunch Twiss mode comparisons; and
+- rigid-bunch Twiss mode comparisons; and
 - the cross-package bunch-pattern contract described above.
 
 These tests are the normal development loop. Pytrain and Xmask remain the
@@ -548,10 +548,10 @@ duplicate installer was removed.
 
 Keep the preparatory tests and implementation changes in separate commits:
 
-1. `Add BB2D and multibunch characterization tests`.
-2. `Add toy multibunch installer and Twiss tests`.
+1. `Add BB2D and rigid-bunch characterization tests`.
+2. `Add toy rigid-bunch installer and Twiss tests`.
 3. `Share the BB2D kick implementation`.
-4. `Infer multibunch element storage from bunch data`.
+4. `Infer rigid-bunch element storage from bunch data`.
 5. `Align rigid-bunch train bunch-pattern API`.
 6. `Share beam-beam encounter and geometry configuration`.
 7. `Add rigid-bunch mode to install/configure workflow`.
@@ -592,7 +592,7 @@ be resolved before the rigid-bunch interface is treated as established.
 - [x] Preserve ``beambeam_scale`` during configuration. Geometry analysis
   temporarily disables the knob and restores the previous value or expression
   with exception-safe handling.
-- [x] Fix ``examples/beambeam_rigid_bunch/000_multibunch_2d.py``: the coherent
+- [x] Fix ``examples/beambeam_rigid_bunch/000_rigid_bunch_2d.py``: the coherent
   calculation now explicitly enables ``coherent=True`` and provides the
   own-beam sizes and bunch grid.
 
@@ -623,7 +623,7 @@ be resolved before the rigid-bunch interface is treated as established.
 
 ### LHC example cleanup
 
-- [x] In ``000_lhc_multibunch_bb.py``, avoid configuring the complete filling
+- [x] In ``002_lhc_rigid_bunch.py``, avoid configuring the complete filling
   and immediately replacing it with a bounded filling. Load the prepared
   example subset and configure it directly.
 - [x] Make it obvious in the example output and introductory text that the default
@@ -658,6 +658,6 @@ be resolved before the rigid-bunch interface is treated as established.
 
 - This rationalization does not change the intended coherent rigid-bunch
   physics.
-- It does not make the existing pipeline strong-strong updater multibunch
+- It does not make the existing pipeline strong-strong updater rigid-bunch
   aware.
 - It does not make rigid-bunch Twiss a generic multibunch Xtrack facility.
