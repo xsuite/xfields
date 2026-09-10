@@ -138,7 +138,7 @@ def configure_beambeam_interactions(
 
         # Disable any previous configuration while analysing the bare lines.
         for element_name in installation.elements[orientation]:
-            line.element_refs[element_name].scale_strength = 0.0
+            env[element_name].scale_strength = 0.0
 
     line_cw = env.lines.get(installation.line_names['clockwise'])
     line_acw = env.lines.get(installation.line_names['anticlockwise'])
@@ -214,7 +214,7 @@ def configure_beambeam_interactions(
             particle_on_co=(
                 twiss_and_madpoints['particle_on_co'][weak_orientation]))
 
-    env.vars['beambeam_scale'] = 1.0
+    env['beambeam_scale'] = 1.0
     for orientation in ('clockwise', 'anticlockwise'):
         line_name = installation.line_names[orientation]
         if line_name is None:
@@ -222,8 +222,8 @@ def configure_beambeam_interactions(
         line = env.lines[line_name]
         for element_name in installation.elements[orientation]:
             variable_name = f'{element_name}_scale_strength'
-            env.vars[variable_name] = env.vars['beambeam_scale']
-            line.element_refs[element_name].scale_strength = env.vars[
+            env[variable_name] = env.ref['beambeam_scale']
+            env[element_name].scale_strength = env.ref[
                 variable_name]
 
     if filling_pattern_cw is not None:
@@ -566,7 +566,7 @@ def _configure_element(
         raise TypeError(
             f'Tagged element `{element_name}` is not a supported '
             '`particles`-mode beam-beam element.')
-    line.element_refs[element_name].scale_strength = 1.0
+    line.env[element_name].scale_strength = 1.0
 
 
 def _store_self_orbit_and_dipolar_kick(line, particle_on_co):
@@ -715,8 +715,8 @@ def apply_filling_pattern(
                 delay + selected_bunches[orientation]) % installation.n_slots
             is_active = filling_patterns[other_orientation][partner_slot] == 1
             variable_name = f'{element_name}_scale_strength'
-            env.vars[variable_name] = (
-                env.vars['beambeam_scale'] if is_active else 0)
+            env[variable_name] = (
+                env.ref['beambeam_scale'] if is_active else 0)
 
 
 def _delay_in_slots(installation, orientation, metadata):

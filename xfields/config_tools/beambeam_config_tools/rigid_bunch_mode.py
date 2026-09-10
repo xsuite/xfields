@@ -139,10 +139,10 @@ def _beta0(line):
 def _bind_beambeam_scale(line, bb_names):
     """Bind all beam-beam elements to the environment-wide scale knob."""
     env = line.env
-    if 'beambeam_scale' not in env.vars:
-        env.vars['beambeam_scale'] = 1.0
+    if 'beambeam_scale' not in env:
+        env['beambeam_scale'] = 1.0
     for name in bb_names:
-        line.element_refs[name].scale_strength = env.vars['beambeam_scale']
+        env[name].scale_strength = env.ref['beambeam_scale']
 
 
 def _representative_other_beam(
