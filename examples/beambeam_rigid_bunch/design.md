@@ -558,18 +558,14 @@ Keep the preparatory tests and implementation changes in separate commits:
 8. `Migrate examples and remove duplicate installer API`.
 9. `Add final regression coverage`.
 
-All nine original work packages are complete. Fast characterization protects the shared
-encounter and geometry output, including exact comparison with the former
-particles-mode survey calculation. Focused Xfields and Xtrack tests pass, as do
-the LHC pytrain injection and collision regressions. The final Xmask beam-beam
-test run also passes after removal of the duplicate installer path. Development
-validation used the serial CPU context; OpenMP validation was intentionally left
-out of scope for this work.
-
-After moving rigid-bunch ownership into Xfields, the 16 focused Xfields
-beam-beam/study/Twiss tests, the Xtrack lazy-façade test and both LHC pytrain
-scenarios pass again. The recorded Xmask pass predates this package-ownership
-move; Xmask has not been rerun after it.
+All nine original work packages are complete. Fast characterization protects
+the shared encounter and geometry output, including exact comparison with the
+former particles-mode survey calculation. Focused Xfields and Xtrack tests
+pass in the serial and OpenMP CPU contexts, as do the LHC pytrain injection and
+collision regressions. A complete 2460+2460-bunch OpenMP study also passes.
+After moving rigid-bunch ownership into Xfields, the affected Xmask HLLHC,
+HLLHC B1-only and LHC-ion acceptance workflows were rerun successfully (22
+tests in total).
 
 ## Pre-merge API and example review TODO
 
@@ -616,10 +612,13 @@ be resolved before the rigid-bunch interface is treated as established.
   established defaults in particles mode. Supplying any particles-only option
   explicitly in rigid-bunch mode raises an error; the mode-dependent contract
   is also documented in the public method.
-- Review the structure of the rigid-bunch solution object and make it
-  homogeneous with the rest of the Xsuite API. In particular, review how beam
-  results, physical slot labels, convergence information and bare/reference
-  quantities are exposed.
+- [x] Make the rigid-bunch solution homogeneous with the rest of the Xsuite
+  API. ``BeamBeamRigidBunchSolution`` extends the two-beam Twiss result with
+  explicit convergence diagnostics. Its ``cw`` / ``acw`` members are
+  ``MultiBunchTwiss`` containers with table-style scalar access and cached
+  lookup by bunch name, physical slot and lattice element. Reference optics
+  are ordinary Twiss results computed explicitly with beam-beam temporarily
+  disabled, so the solution does not retain stale bare/reference metadata.
 
 ### LHC example cleanup
 
@@ -639,20 +638,20 @@ be resolved before the rigid-bunch interface is treated as established.
 - [x] Remove the unused ``line_b1`` / ``line_b2`` return values in the example, or
   simplify ``load_lhc()`` if callers generally use the lines through the
   environment.
-- Keep the full-lattice LHC script as a realistic application example, but use
-  the small deterministic example as the primary API introduction. Add a short
-  README that distinguishes the quick API example, full thick-lattice study,
-  second-order-map workflow, OpenMP example and pytrain comparison.
+- [x] Put the realistic LHC workflows first and distinguish full-lattice,
+  reduced-model, dynamic-beta, OpenMP, footprint and pytrain-comparison scripts
+  through their filenames and introductory module documentation. Keep the
+  compact ``LineSegmentMap`` examples at the end of the numbered sequence.
 
 ### Final validation gates
 
-- Run the focused serial and OpenMP element, configuration, study and
+- [x] Run the focused serial and OpenMP element, configuration, study and
   rigid-bunch-Twiss tests with the supported compiler setup.
-- Run the current LHC injection and collision pytrain regressions.
-- Rerun the Xmask beam-beam acceptance tests after the package-ownership move;
-  the pass recorded above predates that change.
-- Exercise at least one complete OpenMP rigid-bunch study, not only the element
-  kernels.
+- [x] Run the current LHC injection and collision pytrain regressions.
+- [x] Rerun the Xmask beam-beam acceptance tests after the package-ownership
+  move. The HLLHC, HLLHC B1-only and LHC-ion workflows pass (22 tests).
+- [x] Exercise a complete 2460+2460-bunch OpenMP rigid-bunch study, not only
+  the element kernels.
 
 ## Non-goals
 
