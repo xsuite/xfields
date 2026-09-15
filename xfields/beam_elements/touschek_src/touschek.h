@@ -41,6 +41,7 @@
 
 #include "xtrack/headers/track.h"
 #include "xtrack/random/random_src/uniform_accurate.h"
+#include "xfields/headers/constants.h"
 #include "xfields/headers/elegant_rng.h"
 
 #include <math.h>
@@ -119,8 +120,8 @@ void bunch2cm(double *p1, double *p2, double *q, double *beta, double *gamma) {
     pp1 = pp1 + POW2(p1[i]);
     pp2 = pp2 + POW2(p2[i]);
   }
-  e1 = sqrt(ELECTRON_MASS_EV * ELECTRON_MASS_EV + pp1);
-  e2 = sqrt(ELECTRON_MASS_EV * ELECTRON_MASS_EV + pp2);
+  e1 = sqrt(MELECTRON_EV * MELECTRON_EV + pp1);
+  e2 = sqrt(MELECTRON_EV * MELECTRON_EV + pp2);
   ee = e1 + e2;
 
   betap1 = 0.0;
@@ -178,7 +179,7 @@ void cm2bunch(double *p1, double *p2, double *q, double *beta, double *gamma) {
     pq = pq + q[i] * q[i];
   }
 
-  e = sqrt(ELECTRON_MASS_EV * ELECTRON_MASS_EV + pq);
+  e = sqrt(MELECTRON_EV * MELECTRON_EV + pq);
 
   betaq = 0.0;
   bb = 0.0;
@@ -460,7 +461,7 @@ void TouschekScatter(TouschekScatteringData el,
         }
 
         if (p1[5] < delta_neg || p2[5] > delta_pos) {
-          beta0 = qabs / sqrt(qabs * qabs + ELECTRON_MASS_EV * ELECTRON_MASS_EV);
+          beta0 = qabs / sqrt(qabs * qabs + MELECTRON_EV * MELECTRON_EV);
           cross = moeller(beta0, theta);
           temp *= cross * beta0 / gamma / gamma;
 
