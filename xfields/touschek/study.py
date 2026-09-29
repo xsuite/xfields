@@ -23,6 +23,26 @@ C_LIGHT_VACUUM = physical_constants['speed of light in vacuum'][0]
 CLASSICAL_ELECTRON_RADIUS = physical_constants['classical electron radius'][0]
 
 
+def _allocated(particles):
+    """
+    Mask of the slots of the particle buffer that hold a particle.
+
+    TouschekScattering.scatter allocates twice the number of generated
+    particles; the unused slots have state LAST_INVALID_STATE and weight
+    LAST_INVALID_STATE.
+    """
+    return particles.state > xt.particles.LAST_INVALID_STATE
+
+
+def _generated(particles):
+    """
+    Mask of the Touschek-scattered particles, excluding any secondaries
+    added while tracking (e.g. by collimator scattering codes).
+    """
+    return _allocated(particles) & (
+        particles.parent_particle_id == particles.particle_id)
+
+
 @dataclass
 class TouschekResult:
     """
@@ -975,8 +995,10 @@ class TouschekStudy:
                     data["num_particles"].append(0)
                     data["sum_weight"].append(np.nan)
                 else:
-                    data["num_particles"].append(len(particles.x))
-                    data["sum_weight"].append(float(np.sum(particles.weight)))
+                    generated = _generated(particles)
+                    data["num_particles"].append(int(np.sum(generated)))
+                    data["sum_weight"].append(
+                        float(np.sum(particles.weight[generated])))
 
             if include_tracking:
                 if particles is None:

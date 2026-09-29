@@ -615,6 +615,31 @@ class TestTouschekWeightRetention:
                 weight_retention_fraction * kept['rate'], rel=2e-3)
 
 
+class TestTouschekLocalRates:
+    """Per-element diagnostics of TouschekStudy.local_rates."""
+
+    def test_counts_only_generated_particles(self, toy_ring):
+        """
+        The particle buffer returned by scatter() has twice the capacity
+        needed: its unused slots must not enter num_particles and sum_weight.
+        """
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             n_scattering_events=int(1e5))
+        study.initialise_touschek()
+        result = study.run(track=False, keep_particles=True)
+        lr     = result.local_rates
+        for ii, nn in enumerate(study.elements):
+            part  = result.particles_by_element[nn]
+            alive = part.state > 0
+            assert lr['num_particles'][ii] == np.sum(alive)
+            assert lr['sum_weight'][ii] == pytest.approx(
+                np.sum(part.weight[alive]), rel=1e-12)
+            assert lr['sum_weight'][ii] == pytest.approx(
+                study.weight_retention_fraction
+                * lr['integrated_piwinski_rate'][ii], rel=2e-3)
+
+
 class TestTouschekNoScatteringEvents:
     """n_scattering_events = 0 is a valid setting, but cannot generate."""
 
