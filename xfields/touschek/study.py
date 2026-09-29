@@ -43,6 +43,14 @@ def _generated(particles):
         particles.parent_particle_id == particles.particle_id)
 
 
+def _lost(particles):
+    """
+    Mask of the lost particles: any state <= 0, i.e. on an aperture (0) or
+    in other ways (negative states, e.g. absorbed in an xcoll collimator).
+    """
+    return _allocated(particles) & (particles.state <= 0)
+
+
 @dataclass
 class TouschekResult:
     """
@@ -484,9 +492,12 @@ class TouschekStudy:
         rate_tracking = None
         lifetime_tracking = None
         if track:
-            lost_particles = merged_particles.filter(
-                merged_particles.state == 0)
-            rate_tracking = float(np.sum(lost_particles.weight))
+            lost = _lost(merged_particles)
+            lost_particles = merged_particles.filter(lost)
+            # Only the Touschek-scattered particles define the loss rate
+            # (secondaries carry the weight of their parent)
+            rate_tracking = float(np.sum(
+                merged_particles.weight[lost & _generated(merged_particles)]))
             if rate_tracking == 0:
                 lifetime_tracking = np.inf
             else:
@@ -1005,7 +1016,7 @@ class TouschekStudy:
                     data["num_lost_particles"].append(0)
                     data["sum_lost_weight"].append(np.nan)
                 else:
-                    lost_mask = particles.state == 0
+                    lost_mask = _lost(particles) & _generated(particles)
                     data["num_lost_particles"].append(int(np.sum(lost_mask)))
                     data["sum_lost_weight"].append(
                         float(np.sum(particles.weight[lost_mask])))

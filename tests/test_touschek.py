@@ -640,6 +640,44 @@ class TestTouschekLocalRates:
                 * lr['integrated_piwinski_rate'][ii], rel=2e-3)
 
 
+class TestTouschekLossStates:
+    """
+    Every particle with state <= 0 is lost: on an aperture (0) or in other
+    ways, e.g. absorbed in an xcoll collimator (negative states).
+    """
+
+    def test_all_loss_states_enter_the_loss_rate(self, toy_ring, monkeypatch):
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             n_scattering_events=int(2e4))
+        study.initialise_touschek()
+
+        def fake_track(particles, **kwargs):
+            # Stand-in for tracking: a third lost on an aperture, a third
+            # absorbed in a collimator (xcoll LOST_ON_MATERIAL = -330)
+            alive = np.flatnonzero(particles.state > 0)
+            particles.state[alive[0::3]] = 0
+            particles.state[alive[1::3]] = -330
+
+        monkeypatch.setattr(line, 'track', fake_track)
+        result = study.run(track=True, n_turns=1, keep_particles=True)
+
+        lost_weight, n_lost = 0.0, 0
+        for nn in study.elements:
+            part = result.particles_by_element[nn]
+            lost = (part.state <= 0) & (part.state > xt.particles.LAST_INVALID_STATE)
+            assert np.any(part.state[lost] == 0)
+            assert np.any(part.state[lost] == -330)
+            lost_weight += np.sum(part.weight[lost])
+            n_lost += np.sum(lost)
+
+        assert result.rate_tracking == pytest.approx(lost_weight, rel=1e-12)
+        assert len(result.lost_particles.x) == n_lost
+        lr = result.local_rates
+        assert np.sum(lr['num_lost_particles']) == n_lost
+        assert np.sum(lr['sum_lost_weight']) == pytest.approx(lost_weight, rel=1e-12)
+
+
 class TestTouschekNoScatteringEvents:
     """n_scattering_events = 0 is a valid setting, but cannot generate."""
 
