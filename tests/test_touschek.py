@@ -615,6 +615,22 @@ class TestTouschekWeightRetention:
                 weight_retention_fraction * kept['rate'], rel=2e-3)
 
 
+class TestTouschekNoScatteringEvents:
+    """n_scattering_events = 0 is a valid setting, but cannot generate."""
+
+    def test_scatter_with_zero_events_raises(self, toy_ring):
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             n_scattering_events=0)
+        study.initialise_touschek()
+        # Rates only: nothing to generate, no error
+        assert study.run(track=False).rate_scattering > 0
+        # Generation: a clear error (it used to kill the process with a
+        # division by zero in the C kernel)
+        with pytest.raises(ValueError, match='n_scattering_events'):
+            study.run(track=False, generate_particles=True)
+
+
 class TestPiwinskiIntegral:
     """
     Unit tests for the Piwinski integral helper.

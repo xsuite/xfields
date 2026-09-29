@@ -503,6 +503,22 @@ void TouschekScatter(TouschekScatteringData el,
           }
         }
       }
+      if (simuCount == 0) {
+        // Nothing generated (n_simulated == 0): return an empty sample
+        // instead of dividing by zero below (ELEGANT stops the run here).
+        *n_selected_out  = 0;
+        *totalMCRate_out = 0.;
+        free(thetatemp);
+        free(weight);
+        free(xtemp);
+        free(pxtemp);
+        free(ytemp);
+        free(pytemp);
+        free(zetatemp);
+        free(deltatemp);
+        return;
+      }
+
       factor = factor / (double)(total_event);
       totalMCRate = totalWeight * factor;
 
