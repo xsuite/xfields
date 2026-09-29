@@ -155,6 +155,32 @@ def _fresh_lma(toy_ring_data):
         'delta_pos': lma.delta_pos.copy(),
     })
 
+def _toy_ring_variant(toy_ring_data, rename=None, drop=()):
+    """
+    Copy of the toy ring, with the TouschekScattering elements renamed
+    (``rename(name, index) -> new name``, index among the
+    TouschekScattering elements) and/or the elements in ``drop`` removed.
+    The LMA of the toy ring still applies (it is interpolated in s).
+    Returns the new line and its 4d Twiss.
+    """
+    line     = toy_ring_data['line']
+    env      = line.env
+    tab      = line.get_table()
+    ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+    names = []
+    for nn in line.element_names:
+        if nn in drop:
+            continue
+        if rename is not None and nn in ts_names:
+            new_name = rename(nn, ts_names.index(nn))
+            env.elements[new_name] = xf.TouschekScattering()
+            nn = new_name
+        names.append(nn)
+    # Same magnets and apertures (shared, not modified), new line
+    new_line = env.new_line(components=names)
+    new_line.particle_ref = line.particle_ref.copy()
+    return new_line, new_line.twiss(method='4d')
+
 def _build_study(line, lma, twiss=None, *, n_scattering_events=int(1e6), **kwargs):
     """
     Convenience factory for TouschekStudy with sensible test defaults.
@@ -441,6 +467,16 @@ class TestTouschekStudyInitialise:
         with pytest.raises(TypeError, match=r'string'):
             self.study.initialise_touschek(element=42)
 
+    def test_partial_initialise_raises_on_missing_element(self):
+        with pytest.raises(ValueError, match=r'not present'):
+            self.study.initialise_touschek(element='not_in_the_line')
+
+    def test_partial_initialise_raises_on_non_touschek_element(self):
+        tab   = self.line.get_table()
+        other = tab.rows.match(element_type='Drift').name[0]
+        with pytest.raises(TypeError, match=r'not a TouschekScattering'):
+            self.study.initialise_touschek(element=other)
+
     def test_run_without_particles_returns_scalar_result(self):
         result = self.study.run(track=False)
 
@@ -676,6 +712,33 @@ class TestTouschekLossStates:
         lr = result.local_rates
         assert np.sum(lr['num_lost_particles']) == n_lost
         assert np.sum(lr['sum_lost_weight']) == pytest.approx(lost_weight, rel=1e-12)
+
+
+class TestTouschekSections:
+    """Lattice sections represented by the TouschekScattering elements."""
+
+    @pytest.mark.parametrize('rename', [
+        lambda nn, ii: f'ts.{ii + 1}',              # numbered from 1
+        lambda nn, ii: f'ts_{chr(ord("a") + ii)}',  # no digits
+    ], ids=['numbered_from_1', 'no_digits'])
+    def test_single_element_matches_whole_ring(self, toy_ring, rename):
+        """
+        initialise_touschek(element) must integrate the section preceding
+        `element` whatever its name.
+        """
+        line, tw = _toy_ring_variant(toy_ring, rename=rename)
+        study = _build_study(line, _fresh_lma(toy_ring), tw)
+        study.initialise_touschek()
+        whole_ring = {nn: line[nn].integrated_piwinski_rate
+                      for nn in study.elements}
+
+        for nn in study.elements:
+            line[nn].integrated_piwinski_rate = 0.0
+            single = _build_study(line, _fresh_lma(toy_ring), tw)
+            single.initialise_touschek(element=nn)
+            assert line[nn].integrated_piwinski_rate > 0
+            assert line[nn].integrated_piwinski_rate == pytest.approx(
+                whole_ring[nn], rel=1e-12), nn
 
 
 class TestTouschekNoScatteringEvents:

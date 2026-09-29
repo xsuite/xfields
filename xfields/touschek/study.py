@@ -717,8 +717,9 @@ class TouschekStudy:
             s0 = 0.0
             r0 = self._compute_piwinski_scattering_rate(tab.name[0])
         else:
-            import re
-            ii_current = int(re.search(r'\d+', element).group())
+            # Position of `element` among the TouschekScattering elements
+            # (not a number parsed from its name, which need not be it)
+            ii_current = [tab.name[ii] for ii in ii_t].index(element)
             tscatter_before = (
                 tab.name[ii_t[ii_current - 1]]
                 if ii_current != 0 else tab.name[0])
@@ -791,6 +792,18 @@ class TouschekStudy:
         '''
         line = self.line
         tab = line.get_table()
+
+        if element is not None:
+            if not isinstance(element, str):
+                raise TypeError(f"`element` must be a string (got {type(element).__name__}).")
+            if element not in set(tab.name):
+                raise ValueError(
+                    f"`element='{element}'` is not present in the line provided to the TouschekStudy."
+                )
+            if not isinstance(line[element], TouschekScattering):
+                raise TypeError(
+                    f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
+                )
 
         local_momentum_acceptance = self.local_momentum_acceptance
 
@@ -916,16 +929,6 @@ class TouschekStudy:
                     print(f'Initialising TouschekScattering for {nn}')
                     _config(nn)
         else:
-            if not isinstance(element, str):
-                raise TypeError(f"`element` must be a string (got {type(element).__name__}).")
-            if element not in set(tab.name):
-                raise ValueError(
-                    f"`element='{element}'` is not present in the line provided to the TouschekStudy."
-                )
-            if not isinstance(line[element], TouschekScattering):
-                raise TypeError(
-                    f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
-                )
             print(f'Initialising TouschekScattering for {element}')
             _config(element)
 
