@@ -577,6 +577,24 @@ class TouschekStudy:
 
         return val
 
+    @staticmethod
+    def _compute_piwinski_b2(B1, B2_squared):
+        """
+        Piwinski B2 = sqrt(B2_squared).
+
+        Analytically 0 <= B2 <= B1, but B2_squared = B1^2 - (...) can come
+        out slightly negative from rounding when B2 ~ 0 (e.g. round beams):
+        within a relative 1e-7 of B1^2 (the tolerance of ELEGANT) it is
+        taken as 0 instead of giving NaN.
+        """
+        if B2_squared < 0:
+            if B2_squared >= -1e-7 * B1**2:
+                return 0.0
+            raise ValueError(
+                f"Piwinski B2^2 = {B2_squared:.6e} < 0 (B1 = {B1:.6e}): "
+                "check the optics and beam parameters.")
+        return np.sqrt(B2_squared)
+
     def _compute_piwinski_scattering_rate(self, element):
         """
         Compute Piwinski Touschek scattering rate.
@@ -634,7 +652,8 @@ class TouschekStudy:
             * (1 - sigma_h**2 * dyt**2 / sigmab_y**2)
         )
 
-        B2 = np.sqrt(
+        B2 = self._compute_piwinski_b2(
+            B1,
             B1**2
             - betx**2 * bety**2 * sigma_h**2
             / (beta**4 * gamma**4 * sigmab_x**4 * sigmab_y**4

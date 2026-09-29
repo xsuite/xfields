@@ -828,6 +828,19 @@ class TestPiwinskiIntegral:
                 tm, B1=10.0, B2=B2)
         )
 
+    def test_b2_is_the_square_root(self):
+        assert xf.TouschekStudy._compute_piwinski_b2(5.0, 9.0) == pytest.approx(3.0)
+        assert xf.TouschekStudy._compute_piwinski_b2(5.0, 0.0) == 0.0
+
+    def test_b2_rounding_below_zero_gives_zero(self):
+        """B2^2 slightly negative from rounding must give 0, not NaN."""
+        B1 = 5.0
+        assert xf.TouschekStudy._compute_piwinski_b2(B1, -1e-12 * B1**2) == 0.0
+
+    def test_b2_negative_raises(self):
+        with pytest.raises(ValueError, match='B2'):
+            xf.TouschekStudy._compute_piwinski_b2(5.0, -1.0)
+
     def test_integral_finite_for_large_B2_t(self):
         """The asymptotic I0 branch (B2*t > 500) must return a finite positive value."""
         val = xf.TouschekStudy._compute_piwinski_integral(
