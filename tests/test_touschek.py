@@ -545,6 +545,76 @@ class TestTouschekScattering:
         assert self.alive.weight.sum() > 0
 
 
+N_EVENTS_RETENTION = int(2e5)
+
+
+def _generate_by_element(toy_ring, weight_retention_fraction):
+    """
+    Generate (no tracking) at every TouschekScattering element of the toy
+    ring with a fixed seed; return, per element, the coordinates and weights
+    of the returned particles and the integrated Piwinski rate.
+    """
+    line  = toy_ring['line']
+    study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                         n_scattering_events=N_EVENTS_RETENTION,
+                         weight_retention_fraction=weight_retention_fraction)
+    study.initialise_touschek()
+    result = study.run(track=False, generate_particles=True,
+                       keep_particles=True)
+    out = {}
+    for nn in study.elements:
+        part  = result.particles_by_element[nn]
+        alive = part.state > 0
+        coords = np.stack([part.x[alive], part.px[alive], part.y[alive],
+                           part.py[alive], part.zeta[alive],
+                           part.delta[alive]], axis=1)
+        out[nn] = dict(
+            keys=[tuple(cc) for cc in coords],
+            weight=part.weight[alive].copy(),
+            rate=line[nn].integrated_piwinski_rate)
+    return out
+
+
+@pytest.fixture(scope='module')
+def full_sample(toy_ring):
+    """All the scattered particles: pickPart is skipped."""
+    return _generate_by_element(toy_ring, 1.0)
+
+
+class TestTouschekWeightRetention:
+    """
+    With weight_retention_fraction < 1, pickPart keeps the highest-weight
+    particles. Every kept particle must carry its own weight, i.e. the weight
+    it has in the full sample (weight_retention_fraction = 1, where pickPart
+    is skipped), generated with the same seed.
+    """
+
+    @pytest.mark.parametrize('weight_retention_fraction', [0.99, 0.999])
+    def test_kept_particles_carry_their_own_weight(
+            self, toy_ring, full_sample, weight_retention_fraction):
+        kept_sample = _generate_by_element(toy_ring, weight_retention_fraction)
+        for nn, kept in kept_sample.items():
+            full = full_sample[nn]
+            assert len(full['weight']) == N_EVENTS_RETENTION
+            assert 0 < len(kept['weight']) < N_EVENTS_RETENTION
+
+            # Same seed: the kept particles are a subset of the full sample
+            weight_of = dict(zip(full['keys'], full['weight']))
+            missing = [kk for kk in kept['keys'] if kk not in weight_of]
+            assert not missing, f'{nn}: kept particles not in the full sample'
+            expected = np.array([weight_of[kk] for kk in kept['keys']])
+
+            np.testing.assert_allclose(
+                kept['weight'], expected, rtol=1e-12, atol=0,
+                err_msg=f'{nn}: kept particles carry the weight of others')
+
+            # The full sample is normalised to the section rate; the kept
+            # particles carry the retained fraction of it
+            assert full['weight'].sum() == pytest.approx(full['rate'], rel=1e-9)
+            assert kept['weight'].sum() == pytest.approx(
+                weight_retention_fraction * kept['rate'], rel=2e-3)
+
+
 class TestPiwinskiIntegral:
     """
     Unit tests for the Piwinski integral helper.
