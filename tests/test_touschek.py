@@ -740,6 +740,50 @@ class TestTouschekSections:
             assert line[nn].integrated_piwinski_rate == pytest.approx(
                 whole_ring[nn], rel=1e-12), nn
 
+    def test_last_element_must_be_at_the_end_of_the_line(self, toy_ring):
+        """
+        Without a TouschekScattering at the end of the line, the part of the
+        line after the last one would not be accounted for in any section:
+        this is refused, whole ring or single element.
+        """
+        line     = toy_ring['line']
+        tab      = line.get_table()
+        ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+        assert tab['s', ts_names[-1]] == pytest.approx(tab.s[-1])
+
+        line2, tw2 = _toy_ring_variant(toy_ring, drop=(ts_names[-1],))
+        study2 = _build_study(line2, _fresh_lma(toy_ring), tw2)
+        with pytest.raises(ValueError, match=r'must sit at the end of the line'):
+            study2.initialise_touschek()
+        with pytest.raises(ValueError, match=r'must sit at the end of the line'):
+            study2.initialise_touschek(element=ts_names[0])
+
+    def test_first_section_starts_at_s_zero(self, toy_ring):
+        """
+        The section of the first element goes from s = 0 to it (an empty one
+        if it sits at s = 0, as the first TSCATTER of ELEGANT: see
+        test_touschek_elegant_reference.py). Compare with an independent
+        trapezoid of the local rate over the rows of the line up to it.
+        """
+        line     = toy_ring['line']
+        tab      = line.get_table()
+        ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+        first    = ts_names[0]
+        assert 0 < tab['s', first] < tab.s[-1]
+
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'])
+        study.initialise_touschek()
+
+        names = list(tab.name[:list(tab.name).index(first) + 1])
+        s     = np.array([tab['s', nn] for nn in names])
+        assert s[0] == 0.0
+        rates = np.array([study._compute_piwinski_scattering_rate(nn)
+                          for nn in names])
+        expected = np.trapezoid(rates, s) / toy_ring['twiss'].line_length
+        assert expected > 0
+        assert line[first].integrated_piwinski_rate == pytest.approx(
+            expected, rel=1e-12)
+
 
 class TestTouschekNoScatteringEvents:
     """n_scattering_events = 0 is a valid setting, but cannot generate."""

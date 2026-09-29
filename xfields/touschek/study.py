@@ -674,6 +674,32 @@ class TouschekStudy:
 
         return (rateN + rateP) / 2
 
+    def _check_scattering_centres(self, tab):
+        """
+        Check that every part of the line belongs to the section of one
+        TouschekScattering.
+
+        The section of a TouschekScattering goes from the previous one to
+        it, and the section of the first one from s = 0 (an empty section,
+        of zero weight, if it sits at s = 0, as in ELEGANT). So the last
+        TouschekScattering must sit at the end of the line: otherwise the
+        part of the line after it is not integrated, and its Touschek rate
+        is silently missing from the weights and from ``rate_scattering``.
+        (ELEGANT imposes the same for its TSCATTER elements.)
+        """
+        tol = 1e-6  # m
+        last = [nn for nn in tab.name[:-1]
+                if isinstance(self.line[nn], TouschekScattering)][-1]
+        s_last = float(tab["s", last])
+        s_end = float(tab.s[-1])
+        if abs(s_last - s_end) > tol:
+            raise ValueError(
+                f"The last TouschekScattering ('{last}') is at "
+                f"s = {s_last:.6g} m, but the line ends at s = {s_end:.6g} m: "
+                "the last TouschekScattering must sit at the end of the "
+                "line, otherwise the part of the line after it is not "
+                "accounted for in the integrated Touschek rate.")
+
     def _compute_integrated_piwinski_rates(self, element):
         """
         Integrate the Piwinski Touschek scattering rate along the line using
@@ -682,7 +708,11 @@ class TouschekStudy:
         For each TouschekScattering element, the method stores the integrated
         rate per bunch over the preceding section of the line. This per-bunch
         rate is later used to assign the correct weights to Touschek-scattered
-        particles at the corresponding element.
+        particles at the corresponding element. The section of the first
+        TouschekScattering starts at s = 0, and the last TouschekScattering
+        must sit at the end of the line (see
+        :meth:`_check_scattering_centres`), so that every part of the line
+        belongs to exactly one section.
         """
         def _get_s(name):
             try:
@@ -703,14 +733,13 @@ class TouschekStudy:
         line = self.line
         tab = line.get_table()
         line_length = float(self.twiss.line_length)
+        self._check_scattering_centres(tab)
 
         # Indexes of the TouschekScatterings
         ii_t = [
             ii for ii, nn in enumerate(tab.name[:-1])
             if isinstance(line[nn], TouschekScattering)
         ]
-
-        integrated = 0.0
 
         if element is None:
             ii_current = 0
@@ -728,6 +757,7 @@ class TouschekStudy:
 
         s_before = s0
         rate_before = r0
+        integrated = 0.0
 
         if element is None:
             # Configure all the TouschekScattering elements
@@ -776,6 +806,12 @@ class TouschekStudy:
         element via :meth:`TouschekScattering._configure` so that
         :meth:`TouschekScattering.scatter` can weight the Monte Carlo
         macro-particles correctly.
+
+        The section of a :class:`TouschekScattering` goes from the previous
+        one to it, and the section of the first one from ``s = 0``. The last
+        :class:`TouschekScattering` must therefore sit at the end of the
+        line (as in ELEGANT); otherwise a ``ValueError`` is raised, since the
+        part of the line after it would not be accounted for.
 
         Parameters
         ----------
