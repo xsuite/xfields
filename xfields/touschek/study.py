@@ -23,6 +23,34 @@ C_LIGHT_VACUUM = physical_constants['speed of light in vacuum'][0]
 CLASSICAL_ELECTRON_RADIUS = physical_constants['classical electron radius'][0]
 
 
+def _allocated(particles):
+    """
+    Mask of the slots of the particle buffer that hold a particle.
+
+    TouschekScattering.scatter allocates twice the number of generated
+    particles; the unused slots have state LAST_INVALID_STATE and weight
+    LAST_INVALID_STATE.
+    """
+    return particles.state > xt.particles.LAST_INVALID_STATE
+
+
+def _generated(particles):
+    """
+    Mask of the Touschek-scattered particles, excluding any secondaries
+    added while tracking (e.g. by collimator scattering codes).
+    """
+    return _allocated(particles) & (
+        particles.parent_particle_id == particles.particle_id)
+
+
+def _lost(particles):
+    """
+    Mask of the lost particles: any state <= 0, i.e. on an aperture (0) or
+    in other ways (negative states, e.g. absorbed in an xcoll collimator).
+    """
+    return _allocated(particles) & (particles.state <= 0)
+
+
 @dataclass
 class TouschekResult:
     """
@@ -464,9 +492,12 @@ class TouschekStudy:
         rate_tracking = None
         lifetime_tracking = None
         if track:
-            lost_particles = merged_particles.filter(
-                merged_particles.state == 0)
-            rate_tracking = float(np.sum(lost_particles.weight))
+            lost = _lost(merged_particles)
+            lost_particles = merged_particles.filter(lost)
+            # Only the Touschek-scattered particles define the loss rate
+            # (secondaries carry the weight of their parent)
+            rate_tracking = float(np.sum(
+                merged_particles.weight[lost & _generated(merged_particles)]))
             if rate_tracking == 0:
                 lifetime_tracking = np.inf
             else:
@@ -546,6 +577,24 @@ class TouschekStudy:
 
         return val
 
+    @staticmethod
+    def _compute_piwinski_b2(B1, B2_squared):
+        """
+        Piwinski B2 = sqrt(B2_squared).
+
+        Analytically 0 <= B2 <= B1, but B2_squared = B1^2 - (...) can come
+        out slightly negative from rounding when B2 ~ 0 (e.g. round beams):
+        within a relative 1e-7 of B1^2 (the tolerance of ELEGANT) it is
+        taken as 0 instead of giving NaN.
+        """
+        if B2_squared < 0:
+            if B2_squared >= -1e-7 * B1**2:
+                return 0.0
+            raise ValueError(
+                f"Piwinski B2^2 = {B2_squared:.6e} < 0 (B1 = {B1:.6e}): "
+                "check the optics and beam parameters.")
+        return np.sqrt(B2_squared)
+
     def _compute_piwinski_scattering_rate(self, element):
         """
         Compute Piwinski Touschek scattering rate.
@@ -603,7 +652,8 @@ class TouschekStudy:
             * (1 - sigma_h**2 * dyt**2 / sigmab_y**2)
         )
 
-        B2 = np.sqrt(
+        B2 = self._compute_piwinski_b2(
+            B1,
             B1**2
             - betx**2 * bety**2 * sigma_h**2
             / (beta**4 * gamma**4 * sigmab_x**4 * sigmab_y**4
@@ -643,6 +693,32 @@ class TouschekStudy:
 
         return (rateN + rateP) / 2
 
+    def _check_scattering_centres(self, tab):
+        """
+        Check that every part of the line belongs to the section of one
+        TouschekScattering.
+
+        The section of a TouschekScattering goes from the previous one to
+        it, and the section of the first one from s = 0 (an empty section,
+        of zero weight, if it sits at s = 0, as in ELEGANT). So the last
+        TouschekScattering must sit at the end of the line: otherwise the
+        part of the line after it is not integrated, and its Touschek rate
+        is silently missing from the weights and from ``rate_scattering``.
+        (ELEGANT imposes the same for its TSCATTER elements.)
+        """
+        tol = 1e-6  # m
+        last = [nn for nn in tab.name[:-1]
+                if isinstance(self.line[nn], TouschekScattering)][-1]
+        s_last = float(tab["s", last])
+        s_end = float(tab.s[-1])
+        if abs(s_last - s_end) > tol:
+            raise ValueError(
+                f"The last TouschekScattering ('{last}') is at "
+                f"s = {s_last:.6g} m, but the line ends at s = {s_end:.6g} m: "
+                "the last TouschekScattering must sit at the end of the "
+                "line, otherwise the part of the line after it is not "
+                "accounted for in the integrated Touschek rate.")
+
     def _compute_integrated_piwinski_rates(self, element):
         """
         Integrate the Piwinski Touschek scattering rate along the line using
@@ -651,7 +727,11 @@ class TouschekStudy:
         For each TouschekScattering element, the method stores the integrated
         rate per bunch over the preceding section of the line. This per-bunch
         rate is later used to assign the correct weights to Touschek-scattered
-        particles at the corresponding element.
+        particles at the corresponding element. The section of the first
+        TouschekScattering starts at s = 0, and the last TouschekScattering
+        must sit at the end of the line (see
+        :meth:`_check_scattering_centres`), so that every part of the line
+        belongs to exactly one section.
         """
         def _get_s(name):
             try:
@@ -672,6 +752,7 @@ class TouschekStudy:
         line = self.line
         tab = line.get_table()
         line_length = float(self.twiss.line_length)
+        self._check_scattering_centres(tab)
 
         # Indexes of the TouschekScatterings
         ii_t = [
@@ -679,15 +760,14 @@ class TouschekStudy:
             if isinstance(line[nn], TouschekScattering)
         ]
 
-        integrated = 0.0
-
         if element is None:
             ii_current = 0
             s0 = 0.0
             r0 = self._compute_piwinski_scattering_rate(tab.name[0])
         else:
-            import re
-            ii_current = int(re.search(r'\d+', element).group())
+            # Position of `element` among the TouschekScattering elements
+            # (not a number parsed from its name, which need not be it)
+            ii_current = [tab.name[ii] for ii in ii_t].index(element)
             tscatter_before = (
                 tab.name[ii_t[ii_current - 1]]
                 if ii_current != 0 else tab.name[0])
@@ -696,6 +776,7 @@ class TouschekStudy:
 
         s_before = s0
         rate_before = r0
+        integrated = 0.0
 
         if element is None:
             # Configure all the TouschekScattering elements
@@ -745,6 +826,12 @@ class TouschekStudy:
         :meth:`TouschekScattering.scatter` can weight the Monte Carlo
         macro-particles correctly.
 
+        The section of a :class:`TouschekScattering` goes from the previous
+        one to it, and the section of the first one from ``s = 0``. The last
+        :class:`TouschekScattering` must therefore sit at the end of the
+        line (as in ELEGANT); otherwise a ``ValueError`` is raised, since the
+        part of the line after it would not be accounted for.
+
         Parameters
         ----------
         element : str or None, optional
@@ -760,6 +847,18 @@ class TouschekStudy:
         '''
         line = self.line
         tab = line.get_table()
+
+        if element is not None:
+            if not isinstance(element, str):
+                raise TypeError(f"`element` must be a string (got {type(element).__name__}).")
+            if element not in set(tab.name):
+                raise ValueError(
+                    f"`element='{element}'` is not present in the line provided to the TouschekStudy."
+                )
+            if not isinstance(line[element], TouschekScattering):
+                raise TypeError(
+                    f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
+                )
 
         local_momentum_acceptance = self.local_momentum_acceptance
 
@@ -885,16 +984,6 @@ class TouschekStudy:
                     print(f'Initialising TouschekScattering for {nn}')
                     _config(nn)
         else:
-            if not isinstance(element, str):
-                raise TypeError(f"`element` must be a string (got {type(element).__name__}).")
-            if element not in set(tab.name):
-                raise ValueError(
-                    f"`element='{element}'` is not present in the line provided to the TouschekStudy."
-                )
-            if not isinstance(line[element], TouschekScattering):
-                raise TypeError(
-                    f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
-                )
             print(f'Initialising TouschekScattering for {element}')
             _config(element)
 
@@ -975,15 +1064,17 @@ class TouschekStudy:
                     data["num_particles"].append(0)
                     data["sum_weight"].append(np.nan)
                 else:
-                    data["num_particles"].append(len(particles.x))
-                    data["sum_weight"].append(float(np.sum(particles.weight)))
+                    generated = _generated(particles)
+                    data["num_particles"].append(int(np.sum(generated)))
+                    data["sum_weight"].append(
+                        float(np.sum(particles.weight[generated])))
 
             if include_tracking:
                 if particles is None:
                     data["num_lost_particles"].append(0)
                     data["sum_lost_weight"].append(np.nan)
                 else:
-                    lost_mask = particles.state == 0
+                    lost_mask = _lost(particles) & _generated(particles)
                     data["num_lost_particles"].append(int(np.sum(lost_mask)))
                     data["sum_lost_weight"].append(
                         float(np.sum(particles.weight[lost_mask])))

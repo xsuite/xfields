@@ -699,6 +699,11 @@ class TouschekScattering(xt.BeamElement):
             weighted so that their total weight represents the retained
             section scattering rate.
         """
+        if self.n_simulated < 1:
+            raise ValueError(
+                "`n_scattering_events` must be at least 1 to generate "
+                f"particles (got {self.n_simulated}).")
+
         context = self._context
         if self.rng_source == _TOUSCHEK_RNG_ELEGANT:
             if _rng_state is None:

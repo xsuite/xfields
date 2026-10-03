@@ -155,6 +155,32 @@ def _fresh_lma(toy_ring_data):
         'delta_pos': lma.delta_pos.copy(),
     })
 
+def _toy_ring_variant(toy_ring_data, rename=None, drop=()):
+    """
+    Copy of the toy ring, with the TouschekScattering elements renamed
+    (``rename(name, index) -> new name``, index among the
+    TouschekScattering elements) and/or the elements in ``drop`` removed.
+    The LMA of the toy ring still applies (it is interpolated in s).
+    Returns the new line and its 4d Twiss.
+    """
+    line     = toy_ring_data['line']
+    env      = line.env
+    tab      = line.get_table()
+    ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+    names = []
+    for nn in line.element_names:
+        if nn in drop:
+            continue
+        if rename is not None and nn in ts_names:
+            new_name = rename(nn, ts_names.index(nn))
+            env.elements[new_name] = xf.TouschekScattering()
+            nn = new_name
+        names.append(nn)
+    # Same magnets and apertures (shared, not modified), new line
+    new_line = env.new_line(components=names)
+    new_line.particle_ref = line.particle_ref.copy()
+    return new_line, new_line.twiss(method='4d')
+
 def _build_study(line, lma, twiss=None, *, n_scattering_events=int(1e6), **kwargs):
     """
     Convenience factory for TouschekStudy with sensible test defaults.
@@ -441,6 +467,16 @@ class TestTouschekStudyInitialise:
         with pytest.raises(TypeError, match=r'string'):
             self.study.initialise_touschek(element=42)
 
+    def test_partial_initialise_raises_on_missing_element(self):
+        with pytest.raises(ValueError, match=r'not present'):
+            self.study.initialise_touschek(element='not_in_the_line')
+
+    def test_partial_initialise_raises_on_non_touschek_element(self):
+        tab   = self.line.get_table()
+        other = tab.rows.match(element_type='Drift').name[0]
+        with pytest.raises(TypeError, match=r'not a TouschekScattering'):
+            self.study.initialise_touschek(element=other)
+
     def test_run_without_particles_returns_scalar_result(self):
         result = self.study.run(track=False)
 
@@ -545,6 +581,226 @@ class TestTouschekScattering:
         assert self.alive.weight.sum() > 0
 
 
+N_EVENTS_RETENTION = int(2e5)
+
+
+def _generate_by_element(toy_ring, weight_retention_fraction):
+    """
+    Generate (no tracking) at every TouschekScattering element of the toy
+    ring with a fixed seed; return, per element, the coordinates and weights
+    of the returned particles and the integrated Piwinski rate.
+    """
+    line  = toy_ring['line']
+    study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                         n_scattering_events=N_EVENTS_RETENTION,
+                         weight_retention_fraction=weight_retention_fraction)
+    study.initialise_touschek()
+    result = study.run(track=False, generate_particles=True,
+                       keep_particles=True)
+    out = {}
+    for nn in study.elements:
+        part  = result.particles_by_element[nn]
+        alive = part.state > 0
+        coords = np.stack([part.x[alive], part.px[alive], part.y[alive],
+                           part.py[alive], part.zeta[alive],
+                           part.delta[alive]], axis=1)
+        out[nn] = dict(
+            keys=[tuple(cc) for cc in coords],
+            weight=part.weight[alive].copy(),
+            rate=line[nn].integrated_piwinski_rate)
+    return out
+
+
+@pytest.fixture(scope='module')
+def full_sample(toy_ring):
+    """All the scattered particles: pickPart is skipped."""
+    return _generate_by_element(toy_ring, 1.0)
+
+
+class TestTouschekWeightRetention:
+    """
+    With weight_retention_fraction < 1, pickPart keeps the highest-weight
+    particles. Every kept particle must carry its own weight, i.e. the weight
+    it has in the full sample (weight_retention_fraction = 1, where pickPart
+    is skipped), generated with the same seed.
+    """
+
+    @pytest.mark.parametrize('weight_retention_fraction', [0.99, 0.999])
+    def test_kept_particles_carry_their_own_weight(
+            self, toy_ring, full_sample, weight_retention_fraction):
+        kept_sample = _generate_by_element(toy_ring, weight_retention_fraction)
+        for nn, kept in kept_sample.items():
+            full = full_sample[nn]
+            assert len(full['weight']) == N_EVENTS_RETENTION
+            assert 0 < len(kept['weight']) < N_EVENTS_RETENTION
+
+            # Same seed: the kept particles are a subset of the full sample
+            weight_of = dict(zip(full['keys'], full['weight']))
+            missing = [kk for kk in kept['keys'] if kk not in weight_of]
+            assert not missing, f'{nn}: kept particles not in the full sample'
+            expected = np.array([weight_of[kk] for kk in kept['keys']])
+
+            np.testing.assert_allclose(
+                kept['weight'], expected, rtol=1e-12, atol=0,
+                err_msg=f'{nn}: kept particles carry the weight of others')
+
+            # The full sample is normalised to the section rate; the kept
+            # particles carry the retained fraction of it
+            assert full['weight'].sum() == pytest.approx(full['rate'], rel=1e-9)
+            assert kept['weight'].sum() == pytest.approx(
+                weight_retention_fraction * kept['rate'], rel=2e-3)
+
+
+class TestTouschekLocalRates:
+    """Per-element diagnostics of TouschekStudy.local_rates."""
+
+    def test_counts_only_generated_particles(self, toy_ring):
+        """
+        The particle buffer returned by scatter() has twice the capacity
+        needed: its unused slots must not enter num_particles and sum_weight.
+        """
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             n_scattering_events=int(1e5))
+        study.initialise_touschek()
+        result = study.run(track=False, keep_particles=True)
+        lr     = result.local_rates
+        for ii, nn in enumerate(study.elements):
+            part  = result.particles_by_element[nn]
+            alive = part.state > 0
+            assert lr['num_particles'][ii] == np.sum(alive)
+            assert lr['sum_weight'][ii] == pytest.approx(
+                np.sum(part.weight[alive]), rel=1e-12)
+            assert lr['sum_weight'][ii] == pytest.approx(
+                study.weight_retention_fraction
+                * lr['integrated_piwinski_rate'][ii], rel=2e-3)
+
+
+class TestTouschekLossStates:
+    """
+    Every particle with state <= 0 is lost: on an aperture (0) or in other
+    ways, e.g. absorbed in an xcoll collimator (negative states).
+    """
+
+    def test_all_loss_states_enter_the_loss_rate(self, toy_ring, monkeypatch):
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             n_scattering_events=int(2e4))
+        study.initialise_touschek()
+
+        def fake_track(particles, **kwargs):
+            # Stand-in for tracking: a third lost on an aperture, a third
+            # absorbed in a collimator (xcoll LOST_ON_MATERIAL = -330)
+            alive = np.flatnonzero(particles.state > 0)
+            particles.state[alive[0::3]] = 0
+            particles.state[alive[1::3]] = -330
+
+        monkeypatch.setattr(line, 'track', fake_track)
+        result = study.run(track=True, n_turns=1, keep_particles=True)
+
+        lost_weight, n_lost = 0.0, 0
+        for nn in study.elements:
+            part = result.particles_by_element[nn]
+            lost = (part.state <= 0) & (part.state > xt.particles.LAST_INVALID_STATE)
+            assert np.any(part.state[lost] == 0)
+            assert np.any(part.state[lost] == -330)
+            lost_weight += np.sum(part.weight[lost])
+            n_lost += np.sum(lost)
+
+        assert result.rate_tracking == pytest.approx(lost_weight, rel=1e-12)
+        assert len(result.lost_particles.x) == n_lost
+        lr = result.local_rates
+        assert np.sum(lr['num_lost_particles']) == n_lost
+        assert np.sum(lr['sum_lost_weight']) == pytest.approx(lost_weight, rel=1e-12)
+
+
+class TestTouschekSections:
+    """Lattice sections represented by the TouschekScattering elements."""
+
+    @pytest.mark.parametrize('rename', [
+        lambda nn, ii: f'ts.{ii + 1}',              # numbered from 1
+        lambda nn, ii: f'ts_{chr(ord("a") + ii)}',  # no digits
+    ], ids=['numbered_from_1', 'no_digits'])
+    def test_single_element_matches_whole_ring(self, toy_ring, rename):
+        """
+        initialise_touschek(element) must integrate the section preceding
+        `element` whatever its name.
+        """
+        line, tw = _toy_ring_variant(toy_ring, rename=rename)
+        study = _build_study(line, _fresh_lma(toy_ring), tw)
+        study.initialise_touschek()
+        whole_ring = {nn: line[nn].integrated_piwinski_rate
+                      for nn in study.elements}
+
+        for nn in study.elements:
+            line[nn].integrated_piwinski_rate = 0.0
+            single = _build_study(line, _fresh_lma(toy_ring), tw)
+            single.initialise_touschek(element=nn)
+            assert line[nn].integrated_piwinski_rate > 0
+            assert line[nn].integrated_piwinski_rate == pytest.approx(
+                whole_ring[nn], rel=1e-12), nn
+
+    def test_last_element_must_be_at_the_end_of_the_line(self, toy_ring):
+        """
+        Without a TouschekScattering at the end of the line, the part of the
+        line after the last one would not be accounted for in any section:
+        this is refused, whole ring or single element.
+        """
+        line     = toy_ring['line']
+        tab      = line.get_table()
+        ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+        assert tab['s', ts_names[-1]] == pytest.approx(tab.s[-1])
+
+        line2, tw2 = _toy_ring_variant(toy_ring, drop=(ts_names[-1],))
+        study2 = _build_study(line2, _fresh_lma(toy_ring), tw2)
+        with pytest.raises(ValueError, match=r'must sit at the end of the line'):
+            study2.initialise_touschek()
+        with pytest.raises(ValueError, match=r'must sit at the end of the line'):
+            study2.initialise_touschek(element=ts_names[0])
+
+    def test_first_section_starts_at_s_zero(self, toy_ring):
+        """
+        The section of the first element goes from s = 0 to it (an empty one
+        if it sits at s = 0, as the first TSCATTER of ELEGANT: see
+        test_touschek_elegant_reference.py). Compare with an independent
+        trapezoid of the local rate over the rows of the line up to it.
+        """
+        line     = toy_ring['line']
+        tab      = line.get_table()
+        ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+        first    = ts_names[0]
+        assert 0 < tab['s', first] < tab.s[-1]
+
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'])
+        study.initialise_touschek()
+
+        names = list(tab.name[:list(tab.name).index(first) + 1])
+        s     = np.array([tab['s', nn] for nn in names])
+        assert s[0] == 0.0
+        rates = np.array([study._compute_piwinski_scattering_rate(nn)
+                          for nn in names])
+        expected = np.trapezoid(rates, s) / toy_ring['twiss'].line_length
+        assert expected > 0
+        assert line[first].integrated_piwinski_rate == pytest.approx(
+            expected, rel=1e-12)
+
+
+class TestTouschekNoScatteringEvents:
+    """n_scattering_events = 0 is a valid setting, but cannot generate."""
+
+    def test_scatter_with_zero_events_raises(self, toy_ring):
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             n_scattering_events=0)
+        study.initialise_touschek()
+        # Rates only: nothing to generate, no error
+        assert study.run(track=False).rate_scattering > 0
+        # Generation: a clear error (it used to kill the process with a
+        # division by zero in the C kernel)
+        with pytest.raises(ValueError, match='n_scattering_events'):
+            study.run(track=False, generate_particles=True)
+
+
 class TestPiwinskiIntegral:
     """
     Unit tests for the Piwinski integral helper.
@@ -571,6 +827,19 @@ class TestPiwinskiIntegral:
             > xf.TouschekStudy._compute_piwinski_integral(
                 tm, B1=10.0, B2=B2)
         )
+
+    def test_b2_is_the_square_root(self):
+        assert xf.TouschekStudy._compute_piwinski_b2(5.0, 9.0) == pytest.approx(3.0)
+        assert xf.TouschekStudy._compute_piwinski_b2(5.0, 0.0) == 0.0
+
+    def test_b2_rounding_below_zero_gives_zero(self):
+        """B2^2 slightly negative from rounding must give 0, not NaN."""
+        B1 = 5.0
+        assert xf.TouschekStudy._compute_piwinski_b2(B1, -1e-12 * B1**2) == 0.0
+
+    def test_b2_negative_raises(self):
+        with pytest.raises(ValueError, match='B2'):
+            xf.TouschekStudy._compute_piwinski_b2(5.0, -1.0)
 
     def test_integral_finite_for_large_B2_t(self):
         """The asymptotic I0 branch (B2*t > 500) must return a finite positive value."""
