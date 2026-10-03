@@ -246,8 +246,8 @@ class PICCollection:
         assert y_lim < self.y_lims[-1]
         assert y_lim > self.y_lims[0]
 
-        ix = np.argmin(np.abs(x_lim - self.x_lims))
-        iy = np.argmin(np.abs(y_lim - self.y_lims))
+        ix = np.argmax(self.x_lims >= x_lim)
+        iy = np.argmax(self.y_lims >= y_lim)
 
         if (ix, iy) not in self._existing_pics.keys():
             print(f'Creating PIC ({ix}, {iy})')
