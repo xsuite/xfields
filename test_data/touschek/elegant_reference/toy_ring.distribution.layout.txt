@@ -1,0 +1,63 @@
+
+file toy_ring.distribution.sdds is in SDDS protocol version 1
+description: Simulated scattered particle final distribution
+contents: Simulated scattered particle final distribution
+data is little-endian binary
+
+12 columns of data:
+NAME            UNITS           SYMBOL          FORMAT          TYPE    FIELD  DESCRIPTION
+                                                                        LENGTH
+x               m               NULL            NULL            double  0       NULL
+xFrequency      NULL            NULL            NULL            double  0       NULL
+y               m               NULL            NULL            double  0       NULL
+yFrequency      NULL            NULL            NULL            double  0       NULL
+s               m               NULL            NULL            double  0       NULL
+sFrequency      NULL            NULL            NULL            double  0       NULL
+xp              NULL            NULL            NULL            double  0       NULL
+xpFrequency     NULL            NULL            NULL            double  0       NULL
+yp              NULL            NULL            NULL            double  0       NULL
+ypFrequency     NULL            NULL            NULL            double  0       NULL
+dp/p            NULL            NULL            NULL            double  0       NULL
+dp/pFrequency   NULL            NULL            NULL            double  0       NULL
+
+39 parameters:
+NAME                UNITS               SYMBOL              TYPE                DESCRIPTION
+Element_Name        NULL                NULL                string              NULL
+s                   m                   NULL                double              Location from beginning of beamline
+Piwinski_AveR       NULL                NULL                double              Average scattering rate from Piwinski's formula
+Piwinski_Rate       NULL                NULL                double              Local scattering rate from Piwinski's formula
+MC_Rate             NULL                NULL                double              Local scattering rate from Monte Carlo simulation
+Ignored_Rate        NULL                NULL                double              Ignored rate from tracking
+Bins                NULL                NULL                long                NULL
+Variable00Name      m                   NULL                string              NULL
+Variable00Min       NULL                NULL                double              NULL
+Variable00Max       NULL                NULL                double              NULL
+Variable00Interval  NULL                NULL                double              NULL
+Variable00Dimension NULL                NULL                long                NULL
+Variable01Name      m                   NULL                string              NULL
+Variable01Min       NULL                NULL                double              NULL
+Variable01Max       NULL                NULL                double              NULL
+Variable01Interval  NULL                NULL                double              NULL
+Variable01Dimension NULL                NULL                long                NULL
+Variable02Name      m                   NULL                string              NULL
+Variable02Min       NULL                NULL                double              NULL
+Variable02Max       NULL                NULL                double              NULL
+Variable02Interval  NULL                NULL                double              NULL
+Variable02Dimension NULL                NULL                long                NULL
+Variable03Name      NULL                NULL                string              NULL
+Variable03Min       NULL                NULL                double              NULL
+Variable03Max       NULL                NULL                double              NULL
+Variable03Interval  NULL                NULL                double              NULL
+Variable03Dimension NULL                NULL                long                NULL
+Variable04Name      NULL                NULL                string              NULL
+Variable04Min       NULL                NULL                double              NULL
+Variable04Max       NULL                NULL                double              NULL
+Variable04Interval  NULL                NULL                double              NULL
+Variable04Dimension NULL                NULL                long                NULL
+Variable05Name      NULL                NULL                string              NULL
+Variable05Min       NULL                NULL                double              NULL
+Variable05Max       NULL                NULL                double              NULL
+Variable05Interval  NULL                NULL                double              NULL
+Variable05Dimension NULL                NULL                long                NULL
+ND                  NULL                NULL                long                n_Dimension Table
+SVNVersion          NULL                NULL                string              SVN version number

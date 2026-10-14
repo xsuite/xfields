@@ -1,0 +1,96 @@
+{
+  "elegant_version": "2026.3.0",
+  "elegant_source_tag": "elegant-2026.3.0",
+  "generation_command": "./run_reference.sh",
+  "extraction_command": "python extract_scattered_distribution.py --sdds2stream \"$SDDS_BIN_DIR/sdds2stream\"",
+  "input_files": [
+    "toy_ring.ele",
+    "toy_ring.lte",
+    "momentum_aperture.sdds"
+  ],
+  "raw_source": "toy_ring.scatter.sdds",
+  "random_seed": 1997,
+  "n_scattering_events_per_element": 100000,
+  "weight_retention_fraction": 0.99,
+  "bunch_intensity": 4000000000,
+  "beam_energy_ev": 1000000000,
+  "nemitt_x_m": 1e-05,
+  "nemitt_y_m": 1e-07,
+  "sigma_z_m": 0.004,
+  "sigma_delta": 0.001,
+  "momentum_acceptance": [
+    -0.012,
+    0.012
+  ],
+  "momentum_acceptance_scale": 0.85,
+  "weight_column": "TRate",
+  "weight_meaning": "Per-row section scattering rate in 1/s, used as event weight.",
+  "included_elements": [
+    "TS1",
+    "TS2",
+    "TS3",
+    "TS4",
+    "TS5",
+    "TS6",
+    "TS7",
+    "TS8"
+  ],
+  "excluded_elements": {
+    "TS0": "zero physical section weight"
+  },
+  "selected_event_count": 2155,
+  "overflow_weight_fraction": {
+    "x": [
+      0.0,
+      -4.440892098500626e-16,
+      0.0,
+      -2.220446049250313e-16,
+      -2.220446049250313e-16,
+      5.551115123125783e-16,
+      9.992007221626409e-16,
+      0.0
+    ],
+    "xp": [
+      0.0,
+      0.0,
+      -6.661338147750939e-16,
+      -2.220446049250313e-16,
+      3.3306690738754696e-16,
+      2.220446049250313e-16,
+      9.992007221626409e-16,
+      -4.440892098500626e-16
+    ],
+    "y": [
+      -8.881784197001252e-16,
+      1.1102230246251565e-16,
+      -2.220446049250313e-16,
+      3.3306690738754696e-16,
+      2.220446049250313e-16,
+      4.440892098500626e-16,
+      3.3306690738754696e-16,
+      0.0
+    ],
+    "yp": [
+      -2.220446049250313e-16,
+      -4.440892098500626e-16,
+      -6.661338147750939e-16,
+      -6.661338147750939e-16,
+      -4.440892098500626e-16,
+      3.3306690738754696e-16,
+      -2.220446049250313e-16,
+      -2.220446049250313e-16
+    ],
+    "delta": [
+      0.0,
+      -2.220446049250313e-16,
+      -1.1102230246251565e-15,
+      -2.220446049250313e-16,
+      -4.440892098500626e-16,
+      5.551115123125783e-16,
+      3.3306690738754696e-16,
+      -2.220446049250313e-16
+    ]
+  },
+  "scattering_angle_available": false,
+  "notes": "Post-scattering, pre-tracking coordinates (do_track=0). delta=p/pCentral-1. ELEGANT does not output the centre-of-mass scattering angle or a scatter-element column; SDDS page order maps to element names and s positions in reference.csv."
+}

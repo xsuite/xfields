@@ -1,0 +1,29 @@
+
+file toy_ring.scatter.sdds is in SDDS protocol version 5
+description: scattered-beam phase space--input: toy_ring.ele  lattice: toy_ring.lte
+contents: scattered-beam phase space
+data is little-endian binary
+
+9 columns of data:
+NAME            UNITS           SYMBOL          FORMAT          TYPE    FIELD  DESCRIPTION
+                                                                        LENGTH
+x               m               NULL            NULL            double  0       NULL
+xp              NULL            x'              NULL            double  0       NULL
+y               m               NULL            NULL            double  0       NULL
+yp              NULL            y'              NULL            double  0       NULL
+t               s               NULL            NULL            double  0       NULL
+p               m$be$nc         NULL            NULL            double  0       NULL
+particleID      NULL            NULL            NULL            ulong64 0       NULL
+LRate           1/s             NULL            NULL            double  0       represents local scattering rate
+TRate           1/s             NULL            NULL            double  0       represents total scattering rate between 2 TSCATTER elements of a beam
+
+8 parameters:
+NAME                UNITS               SYMBOL              TYPE                DESCRIPTION
+Particles           NULL                NULL                long                Total simulated scatted particles
+pCentral            m$be$nc             NULL                double              Central momentum
+AveRate             1/s                 NULL                double              Average Scattering Rate between 2 TSCATTER elements of a single bunch
+NScatter            1/s                 NULL                double              Total scattered particles per s between 2 TSCATTER elements of a beam
+PLocalRate          1/s                 NULL                double              Piwinski's Local Rate
+SLocalRate          1/s                 NULL                double              Simulated Local Rate
+IgnoredRate         1/s                 NULL                double              Ignored Scattering Rate
+SVNVersion          NULL                NULL                string              SVN version number

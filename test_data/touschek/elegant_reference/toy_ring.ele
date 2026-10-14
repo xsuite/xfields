@@ -1,0 +1,39 @@
+&run_setup
+    lattice = toy_ring.lte,
+    use_beamline = RING,
+    rootname = toy_ring,
+    p_central_mev = 1000.0,
+    random_number_seed = 1997,
+    default_order = 2,
+    concat_order = 0,
+    print_statistics = 1
+&end
+
+&twiss_output
+    filename = "%s.twi",
+    matched = 1,
+    output_at_each_step = 1,
+    radiation_integrals = 0
+&end
+
+&run_control
+    n_steps = 1
+&end
+
+&touschek_scatter
+    charge = 6.408706536e-10,
+    frequency = 14141153.679245283,
+    emit_nx = 1e-5,
+    emit_ny = 1e-7,
+    sigma_dp = 1e-3,
+    sigma_s = 4e-3,
+    Momentum_Aperture = momentum_aperture.sdds,
+    Momentum_Aperture_scale = 0.85,
+    n_simulated = 100000,
+    ignored_portion = 0.01,
+    bunch = "%s.scatter.sdds",
+    distribution = "%s.distribution.sdds",
+    do_track = 0,
+    verbosity = 1,
+    overwrite_files = 1
+&end

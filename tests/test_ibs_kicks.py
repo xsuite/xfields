@@ -36,7 +36,7 @@ def test_line_configuration_providing_element(update_every, name):
     assert ibskick._scale_strength == 0
     # -----------------------------------------------------
     # Configure and check flags are set as they should be
-    line.configure_intrabeam_scattering(
+    line.xfields.ibs_configure(
         element=ibskick,
         what=name,  # kwarg given to .insert_element()
         at=100,  # kwarg given to .insert_element()
@@ -71,7 +71,7 @@ def test_line_configuration_manual_insertion(update_every, name):
     assert ibskick._scale_strength == 0
     # -----------------------------------------------------
     # Configure and check flags are set as they should be
-    line.configure_intrabeam_scattering(update_every=update_every)
+    line.xfields.ibs_configure(update_every=update_every)
     assert ibskick.update_every == update_every
     assert ibskick._name == name
     assert isinstance(ibskick._twiss, xt.TwissTable)
@@ -98,7 +98,7 @@ def test_configuration_raises_if_not_one_element(num_insertions):
     # -----------------------------------------------------
     # Attempting configuration and checking it raises
     with pytest.raises(AssertionError):
-        line.configure_intrabeam_scattering(update_every=10)
+        line.xfields.ibs_configure(update_every=10)
 
 
 def test_configuration_raises_on_below_transition_analytical_kick():
@@ -123,7 +123,7 @@ def test_configuration_raises_on_below_transition_analytical_kick():
     # Insert element in the line and attempt configuration
     line.insert("ibskick", obj=ibskick, at=line.get_table().rows[10].s[0])
     with pytest.raises(AssertionError):
-        line.configure_intrabeam_scattering(update_every=10)
+        line.xfields.ibs_configure(update_every=10)
 
 
 # ----- Test coefficients computation ----- #
@@ -148,7 +148,7 @@ def test_kick_coefficients(test_context, formalism):
     ibskick = IBSAnalyticalKick(formalism=formalism, num_slices=50)
     # -----------------------------------------------------
     # Configure in line and generate particles distribution
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=0, update_every=1)
+    line.xfields.ibs_configure(element=ibskick, name="ibskick", at=0, update_every=1)
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=250_000,
         nemitt_x=1.2e-5,
@@ -188,7 +188,7 @@ def test_kinetic_coefficients(test_context):
     ibskick = IBSKineticKick(num_slices=50)
     # -----------------------------------------------------
     # Configure in line and generate particles distribution
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=0, update_every=1)
+    line.xfields.ibs_configure(element=ibskick, name="ibskick", at=0, update_every=1)
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=250_000,
         nemitt_x=1.2e-5,
@@ -237,7 +237,7 @@ def test_track_analytical_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.phase = np.pi
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=line.get_length(), update_every=100)
+    line.xfields.ibs_configure(element=ibskick, name="ibskick", at=line.get_length(), update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=2000,
@@ -287,7 +287,7 @@ def test_track_kinetic_kick(test_context):
     cavities = [element for element in line.elements if isinstance(element, xt.Cavity)]
     for cavity in cavities:
         cavity.phase = np.pi
-    line.configure_intrabeam_scattering(element=ibskick, name="ibskick", at=line.get_length(), update_every=100)
+    line.xfields.ibs_configure(element=ibskick, name="ibskick", at=line.get_length(), update_every=100)
     tw = line.twiss(method="4d")
     particles = xp.generate_matched_gaussian_bunch(
         num_particles=2000,

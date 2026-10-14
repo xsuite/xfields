@@ -1,0 +1,322 @@
+{
+ "__class__": "Line",
+ "_extra_config": {
+  "_beamstrahlung_model": null,
+  "_bhabha_model": null,
+  "_needs_rng": false,
+  "_radiation_model": null,
+  "_spin_model": null,
+  "_t_last_update_time_dependent_vars": null,
+  "corrector_limits_x": null,
+  "corrector_limits_y": null,
+  "dt_update_time_dependent_vars": 0.0,
+  "enable_time_dependent_vars": false,
+  "end_compose_on_reload": true,
+  "matrix_responsiveness_tol": 1e-15,
+  "matrix_stability_tol": 0.002,
+  "reset_s_at_end_turn": true,
+  "skip_end_turn_actions": false,
+  "steering_correctors_x": null,
+  "steering_correctors_y": null,
+  "steering_monitors_x": null,
+  "steering_monitors_y": null,
+  "twiss_default": {}
+ },
+ "_var_management_data": {
+  "functions": {
+   "_funcs": {}
+  },
+  "var_values": {
+   "__vary_default": {},
+   "t_turn_s": 0.0
+  }
+ },
+ "_var_manager": [],
+ "composer": {
+  "__class__": "Composer",
+  "components": [
+   "mqf.1",
+   "d1.1",
+   "mb1.1",
+   "d2.1",
+   "mqd.1",
+   "d3.1",
+   "mb2.1",
+   "d4.1",
+   "mqf.2",
+   "d1.2",
+   "mb1.2",
+   "d2.2",
+   "mqd.2",
+   "d3.2",
+   "mb2.2",
+   "d4.2"
+  ],
+  "refer": "center",
+  "s_tol": 1e-06
+ },
+ "config": {
+  "XFIELDS_BB3D_NO_BEAMSTR": true,
+  "XFIELDS_BB3D_NO_BHABHA": true,
+  "XTRACK_GLOBAL_XY_LIMIT": 1.0,
+  "XTRACK_MULTIPOLE_NO_SYNRAD": true
+ },
+ "element_names": [
+  "mqf.1",
+  "d1.1",
+  "mb1.1",
+  "d2.1",
+  "mqd.1",
+  "d3.1",
+  "mb2.1",
+  "d4.1",
+  "mqf.2",
+  "d1.2",
+  "mb1.2",
+  "d2.2",
+  "mqd.2",
+  "d3.2",
+  "mb2.2",
+  "d4.2"
+ ],
+ "elements": {
+  "d1.1": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d1.2": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d2.1": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d2.2": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d3.1": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d3.2": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d4.1": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "d4.2": {
+   "__class__": "Drift",
+   "length": 1.0
+  },
+  "mb1.1": {
+   "__class__": "Bend",
+   "angle": 1.5707963267948966,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 3.0,
+   "model": "full",
+   "order": 5
+  },
+  "mb1.2": {
+   "__class__": "Bend",
+   "angle": 1.5707963267948966,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 3.0,
+   "model": "full",
+   "order": 5
+  },
+  "mb2.1": {
+   "__class__": "Bend",
+   "angle": 1.5707963267948966,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 3.0,
+   "model": "full",
+   "order": 5
+  },
+  "mb2.2": {
+   "__class__": "Bend",
+   "angle": 1.5707963267948966,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 3.0,
+   "model": "full",
+   "order": 5
+  },
+  "mqd.1": {
+   "__class__": "Quadrupole",
+   "k1": -0.7,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 0.3,
+   "order": 5
+  },
+  "mqd.2": {
+   "__class__": "Quadrupole",
+   "k1": -0.7,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 0.3,
+   "order": 5
+  },
+  "mqf.1": {
+   "__class__": "Quadrupole",
+   "k1": 0.1,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 0.3,
+   "order": 5
+  },
+  "mqf.2": {
+   "__class__": "Quadrupole",
+   "k1": 0.1,
+   "knl_rel": [
+    0.0
+   ],
+   "ksl_rel": [
+    0.0
+   ],
+   "length": 0.3,
+   "order": 5
+  }
+ },
+ "env_particles": {},
+ "metadata": {},
+ "mode": "normal",
+ "particle_ref": {
+  "_rng_s1": [
+   0
+  ],
+  "_rng_s2": [
+   0
+  ],
+  "_rng_s3": [
+   0
+  ],
+  "_rng_s4": [
+   0
+  ],
+  "anomalous_magnetic_moment": [
+   0.0
+  ],
+  "at_element": [
+   0
+  ],
+  "at_turn": [
+   0
+  ],
+  "ax": [
+   0.0
+  ],
+  "ay": [
+   0.0
+  ],
+  "beta0": [
+   0.9999998694400621
+  ],
+  "charge_ratio": [
+   1.0
+  ],
+  "chi": [
+   1.0
+  ],
+  "delta": [
+   0.0
+  ],
+  "gamma0": [
+   1956.9514390586417
+  ],
+  "mass0": 510998.95,
+  "p0c": [
+   1000000000.0
+  ],
+  "parent_particle_id": [
+   0
+  ],
+  "particle_id": [
+   0
+  ],
+  "pdg_id": [
+   11
+  ],
+  "ptau": [
+   0.0
+  ],
+  "px": [
+   0.0
+  ],
+  "py": [
+   0.0
+  ],
+  "q0": -1.0,
+  "rpp": [
+   1.0
+  ],
+  "rvv": [
+   1.0
+  ],
+  "s": [
+   0.0
+  ],
+  "spin_x": [
+   0.0
+  ],
+  "spin_y": [
+   0.0
+  ],
+  "spin_z": [
+   0.0
+  ],
+  "start_tracking_at_element": -1,
+  "state": [
+   1
+  ],
+  "t_sim": 7.071559741463224e-08,
+  "weight": [
+   1.0
+  ],
+  "x": [
+   0.0
+  ],
+  "y": [
+   0.0
+  ],
+  "zeta": [
+   0.0
+  ]
+ },
+ "xtrack_version": "0.109.1"
+}

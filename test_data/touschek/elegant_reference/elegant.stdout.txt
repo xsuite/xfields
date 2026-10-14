@@ -1,0 +1,207 @@
+Running elegant at Tue Aug  4 12:52:41 2026
+
+This is elegant 2026.3.0, Aug  4 2026, by M. Borland, J. Calvey, M. Carla', N. Carmignani, AJ Dick, Z. Duan, M. Ehrlichman, L. Emery, W. Guo, N. Kuklev, R. Lindberg, V. Sajaev, R. Soliday, Y.-P. Sun, M. Wallbank, C.-X. Wang, Y. Wang, Y. Wu, and A. Xiao.
+=====================================================================================
+Thanks for using elegant.  Please cite the following reference in your publications:
+  M. Borland, "elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,"
+  Advanced Photon Source LS-287, September 2000.
+If you use a modified version, please indicate this in all publications.
+=====================================================================================
+Link date: Aug  4 2026 10:34:35, SVN revision: GIT_1
+statistics:    ET:  00:00:0.000 CP:    0.01 BIO:0 DIO:0 PF:0 MEM:14532
+&run_setup
+    lattice = toy_ring.lte,
+    use_beamline = RING,
+    rootname = toy_ring,
+    output = {NULL},
+    centroid = {NULL},
+    bpm_centroid = {NULL},
+    sigma = {NULL},
+    final = {NULL},
+    acceptance = {NULL},
+    losses = {NULL},
+    losses_include_global_coordinates = 0,
+    losses_s_limit[0] = -1.797693134862316e+308, 1.797693134862316e+308,
+    magnets = {NULL},
+    profile = {NULL},
+    semaphore_file = {NULL},
+    parameters = {NULL},
+    suppress_parameter_defaults = 0,
+    rfc_reference_output = {NULL},
+    combine_bunch_statistics = 0,
+    wrap_around = 1,
+    final_pass = 0,
+    default_order = 2,
+    concat_order = 0,
+    print_statistics = 1,
+    show_element_timing = 0,
+    monitor_memory_usage = 0,
+    random_number_seed = 1997,
+    correction_iterations = 1,
+    echo_lattice = 0,
+    p_central = 0.000000000000000e+00,
+    p_central_mev = 1.000000000000000e+03,
+    always_change_p0 = 0,
+    load_balancing_on = 0,
+    random_sequence_No = 1,
+    expand_for = {NULL},
+    tracking_updates = 1,
+    search_path = {NULL},
+    element_divisions = 0,
+    back_tracking = 0,
+    s_start = 0.000000000000000e+00,
+    spin_tracking = 0,
+&end
+Seeding random number generators
+length of beamline RING per pass: 2.120000000000000e+01 m
+statistics:    ET:  00:00:0.001 CP:    0.04 BIO:0 DIO:0 PF:0 MEM:15640
+&twiss_output
+    filename = %s.twi,
+    matched = 1,
+    output_at_each_step = 1,
+    output_before_tune_correction = 0,
+    final_values_only = 0,
+    statistics = 0,
+    radiation_integrals = 0,
+    beta_x = 1.000000000000000e+00,
+    alpha_x = 0.000000000000000e+00,
+    eta_x = 0.000000000000000e+00,
+    etap_x = 0.000000000000000e+00,
+    beta_y = 1.000000000000000e+00,
+    alpha_y = 0.000000000000000e+00,
+    eta_y = 0.000000000000000e+00,
+    etap_y = 0.000000000000000e+00,
+    reference_file = {NULL},
+    reference_element = {NULL},
+    reference_element_occurrence = 0,
+    reflect_reference_values = 0,
+    concat_order = 3,
+    higher_order_chromaticity = 0,
+    higher_order_chromaticity_points = 5,
+    higher_order_chromaticity_range = 4.000000000000000e-04,
+    quick_higher_order_chromaticity = 0,
+    chromatic_tune_spread_half_range = 0.000000000000000e+00,
+    cavities_are_drifts_if_matched = 1,
+    compute_driving_terms = 0,
+    leading_order_driving_terms_only = 0,
+    s_dependent_driving_terms_file = {NULL},
+    local_dispersion = 1,
+    n_periods = 1,
+&end
+statistics:    ET:  00:00:0.001 CP:    0.04 BIO:0 DIO:0 PF:0 MEM:16192
+&run_control
+    n_steps = 1,
+    bunch_frequency = 0.000000000000000e+00,
+    n_indices = 0,
+    n_passes = 1,
+    n_passes_fiducial = 0,
+    terminate_on_failure = 0,
+    reset_rf_for_each_step = 1,
+    first_is_fiducial = 0,
+    restrict_fiducialization = 0,
+    reset_scattering_seed = 0,
+    wait_for_step_semaphore = {NULL},
+    step_done_semaphore = {NULL},
+    semaphore_check_interval = 1.000000000000000e+00,
+    restart_files = 0,
+&end
+statistics:    ET:  00:00:0.001 CP:    0.04 BIO:0 DIO:0 PF:0 MEM:16240
+Updating floor coordinates
+tracking step 1
+16 matrices recomputed for periodic Twiss parameter computation
+statistics:    ET:  00:00:0.001 CP:    0.04 BIO:0 DIO:0 PF:0 MEM:16592
+periodic Twiss parameters (chromaticity valid for fully second-order calculation only!):
+         beta          alpha           nu           eta          eta'       dnu/d(dp/p)   dbeta/(dp/p)     accept.
+          m                          1/2pi           m                         1/2pi            m          mm-mrad
+--------------------------------------------------------------------------------------------------------------------
+  x:  1.277377e+00  9.973494e-02  1.364295e+00  2.277215e+00  3.418386e-02 -4.666336e-01  1.312738e+00  3.467510e+07
+  y:  4.791039e+00  1.031981e-01  5.095328e-01  0.000000e+00  0.000000e+00  9.924589e-02  1.413449e+00  9.011716e+06
+x acceptance limited to 3.467510e+01 by D32 ending at 1.720000e+01 m
+y acceptance limited to 9.011716e+00 by D22 ending at 1.590000e+01 m
+&touschek_scatter
+    charge = 6.408706536000000e-10,
+    frequency = 1.414115367924528e+07,
+    emit_x = 0.000000000000000e+00,
+    emit_nx = 1.000000000000000e-05,
+    emit_y = 0.000000000000000e+00,
+    emit_ny = 1.000000000000000e-07,
+    sigma_dp = 1.000000000000000e-03,
+    sigma_s = 4.000000000000000e-03,
+    distribution_cutoff[0] = 3.000000000000000e+00, 3.000000000000000e+00, 3.000000000000000e+00,
+    Momentum_Aperture_scale = 8.500000000000000e-01,
+    Momentum_Aperture = momentum_aperture.sdds,
+    XDist = {NULL},
+    YDist = {NULL},
+    ZDist = {NULL},
+    TranDist = {NULL},
+    FullDist = {NULL},
+    bunch = %s.scatter.sdds,
+    loss = {NULL},
+    distribution = %s.distribution.sdds,
+    initial = {NULL},
+    output = {NULL},
+    nbins = 100,
+    sbin_step = 1.000000000000000e+00,
+    n_simulated = 100000,
+    ignored_portion = 1.000000000000000e-02,
+    i_start = -1,
+    i_end = -1,
+    match_position_only = 0,
+    do_track = 0,
+    verbosity = 1,
+    overwrite_files = 1,
+&end
+Output filenames will not have occurence index
+Working on TS0#1 at s=0.000000e+00, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.018 CP:    0.57 BIO:0 DIO:0 PF:0 MEM:17896
+After particle generation:    ET:  00:00:0.129 CP:    2.05 BIO:0 DIO:0 PF:0 MEM:25664
+303 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.130 CP:    2.05 BIO:0 DIO:0 PF:0 MEM:28040
+Working on TS1#1 at s=1.300000e+00, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.138 CP:    2.05 BIO:0 DIO:0 PF:0 MEM:22448
+After particle generation:    ET:  00:00:0.200 CP:    2.12 BIO:0 DIO:0 PF:0 MEM:26580
+139 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.200 CP:    2.12 BIO:0 DIO:0 PF:0 MEM:28156
+Working on TS2#1 at s=5.300000e+00, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.206 CP:    2.12 BIO:0 DIO:0 PF:0 MEM:28168
+After particle generation:    ET:  00:00:0.267 CP:    2.18 BIO:0 DIO:0 PF:0 MEM:28168
+297 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.267 CP:    2.18 BIO:0 DIO:0 PF:0 MEM:28168
+Working on TS3#1 at s=6.600000e+00, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.272 CP:    2.18 BIO:0 DIO:0 PF:0 MEM:28212
+After particle generation:    ET:  00:00:0.318 CP:    2.22 BIO:0 DIO:0 PF:0 MEM:28212
+266 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.318 CP:    2.22 BIO:0 DIO:0 PF:0 MEM:28212
+Working on TS4#1 at s=1.060000e+01, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.324 CP:    2.22 BIO:0 DIO:0 PF:0 MEM:28216
+After particle generation:    ET:  00:00:0.404 CP:    2.30 BIO:0 DIO:0 PF:0 MEM:28216
+375 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.404 CP:    2.30 BIO:0 DIO:0 PF:0 MEM:28216
+Working on TS5#1 at s=1.190000e+01, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.409 CP:    2.30 BIO:0 DIO:0 PF:0 MEM:28240
+After particle generation:    ET:  00:00:0.464 CP:    2.36 BIO:0 DIO:0 PF:0 MEM:28240
+307 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.464 CP:    2.36 BIO:0 DIO:0 PF:0 MEM:28240
+Working on TS6#1 at s=1.590000e+01, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.469 CP:    2.36 BIO:0 DIO:0 PF:0 MEM:28244
+After particle generation:    ET:  00:00:0.530 CP:    2.42 BIO:0 DIO:0 PF:0 MEM:28244
+307 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.530 CP:    2.42 BIO:0 DIO:0 PF:0 MEM:28244
+Working on TS7#1 at s=1.720000e+01, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.535 CP:    2.42 BIO:0 DIO:0 PF:0 MEM:28244
+After particle generation:    ET:  00:00:0.580 CP:    2.47 BIO:0 DIO:0 PF:0 MEM:28244
+320 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.580 CP:    2.47 BIO:0 DIO:0 PF:0 MEM:28300
+Working on TS8#1 at s=2.120000e+01, n_simulated = 100000
+Before particle generation:    ET:  00:00:0.586 CP:    2.47 BIO:0 DIO:0 PF:0 MEM:28308
+After particle generation:    ET:  00:00:0.666 CP:    2.55 BIO:0 DIO:0 PF:0 MEM:28308
+144 of 100000 particles selected for tracking
+After particle selection:    ET:  00:00:0.666 CP:    2.55 BIO:0 DIO:0 PF:0 MEM:28316
+End of input data encountered.
+statistics:    ET:  00:00:0.671 CP:    2.55 BIO:0 DIO:0 PF:0 MEM:28316
+=====================================================================================
+Thanks for using elegant.  Please cite the following reference in your publications:
+  M. Borland, "elegant: A Flexible SDDS-Compliant Code for Accelerator Simulation,"
+  Advanced Photon Source LS-287, September 2000.
+If you use a modified version, please indicate this in all publications.
+=====================================================================================

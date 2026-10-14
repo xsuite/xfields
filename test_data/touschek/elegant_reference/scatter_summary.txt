@@ -1,0 +1,36 @@
+Particles =                    303  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       0.000000e+00
+NScatter (1/s) =      0.000000e+00  PLocalRate (1/s) =    0.000000e+00  SLocalRate (1/s) =    3.929053e+05
+IgnoredRate (1/s) =   3.929053e+03
+
+Particles =                    139  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.562192e+05
+NScatter (1/s) =      4.023986e+04  PLocalRate (1/s) =    6.425167e+05  SLocalRate (1/s) =    8.739949e+05
+IgnoredRate (1/s) =   8.739949e+03
+
+Particles =                    297  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.418536e+05
+NScatter (1/s) =      1.211044e+05  PLocalRate (1/s) =    6.221805e+05  SLocalRate (1/s) =    6.898185e+05
+IgnoredRate (1/s) =   6.898185e+03
+
+Particles =                    266  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.314474e+05
+NScatter (1/s) =      3.872083e+04  PLocalRate (1/s) =    6.462745e+05  SLocalRate (1/s) =    4.684558e+05
+IgnoredRate (1/s) =   4.684558e+03
+
+Particles =                    375  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.467092e+05
+NScatter (1/s) =      1.220206e+05  PLocalRate (1/s) =    6.647833e+05  SLocalRate (1/s) =    2.343582e+05
+IgnoredRate (1/s) =   2.343582e+03
+
+Particles =                    307  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.562192e+05
+NScatter (1/s) =      4.023986e+04  PLocalRate (1/s) =    6.425167e+05  SLocalRate (1/s) =    2.984515e+05
+IgnoredRate (1/s) =   2.984515e+03
+
+Particles =                    307  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.418536e+05
+NScatter (1/s) =      1.211044e+05  PLocalRate (1/s) =    6.221805e+05  SLocalRate (1/s) =    4.443364e+05
+IgnoredRate (1/s) =   4.443364e+03
+
+Particles =                    320  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.314474e+05
+NScatter (1/s) =      3.872083e+04  PLocalRate (1/s) =    6.462745e+05  SLocalRate (1/s) =    3.289219e+05
+IgnoredRate (1/s) =   3.289219e+03
+
+Particles =                    144  pCentral (m$be$nc) =  1.956951e+03  AveRate (1/s) =       6.467092e+05
+NScatter (1/s) =      1.220206e+05  PLocalRate (1/s) =    6.647833e+05  SLocalRate (1/s) =    1.888835e+06
+IgnoredRate (1/s) =   1.888835e+04
+

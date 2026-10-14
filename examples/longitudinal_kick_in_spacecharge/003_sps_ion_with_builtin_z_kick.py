@@ -86,7 +86,7 @@ lprofile = xf.LongitudinalProfileQGaussian(
         q_parameter=1.0)
 
 ##### Install frozen space charge, but directly configuring SC elements with z kick
-xf.install_spacecharge_frozen(line = line,
+line.xfields.spacecharge_install_frozen(
                    particle_ref = line.particle_ref,
                    longitudinal_profile = lprofile,
                    nemitt_x = nemitt_x, nemitt_y = nemitt_y,

@@ -1,0 +1,7 @@
+This package incorporates portions adapted from Argonne National Laboratory’s “Elegant”
+and from the SDDS Toolkit. © 2002 The University of Chicago; © 2002 The Regents of the
+University of California. Distributed under their respective Software License Agreements.
+See: xfields/third_party/elegant/LICENSE and xfields/third_party/SDDS/LICENSE.
+
+This package also incorporates LAPACK’s DLARAN algorithm (modified BSD license).
+See: xfields/third_party/lapack/LICENSE.

@@ -1,0 +1,96 @@
+
+file toy_ring.twi is in SDDS protocol version 1
+description: Twiss parameters--input: toy_ring.ele  lattice: toy_ring.lte
+contents: Twiss parameters
+data is little-endian binary
+
+18 columns of data:
+NAME            UNITS           SYMBOL          FORMAT          TYPE    FIELD  DESCRIPTION
+                                                                        LENGTH
+s               m               NULL            NULL            double  0       Distance
+betax           m               $gb$r$bx$n      NULL            double  0       Horizontal beta-function
+alphax          NULL            $ga$r$bx$n      NULL            double  0       Horizontal alpha-function
+psix            rad             $gy$r$bx$n      NULL            double  0       Horizontal phase advance
+etax            m               $gc$r$bx$n      NULL            double  0       Horizontal dispersion
+etaxp           NULL            $gc$r$bx$n$a'$n NULL            double  0       Slope of horizontal dispersion
+xAperture       m               a$bx,eff$n      NULL            double  0       Effective horizontal aperture
+betay           m               $gb$r$by$n      NULL            double  0       Vertical beta-function
+alphay          NULL            $ga$r$by$n      NULL            double  0       Vertical alpha-function
+psiy            rad             $gy$r$by$n      NULL            double  0       Vertical phase advance
+etay            m               $gc$r$by$n      NULL            double  0       Vertical dispersion
+etayp           NULL            $gc$r$by$n$a'$n NULL            double  0       Slope of vertical dispersion
+yAperture       m               a$by,eff$n      NULL            double  0       Effective vertical aperture
+pCentral0       m$be$nc         p$bcent$n       NULL            double  0       Initial central momentum
+ElementName     NULL            NULL            %10s            string  0       Element name
+ElementOccurence NULL            NULL            %6ld            long    0       Occurence of element
+ElementType     NULL            NULL            %10s            string  0       Element-type name
+ChamberShape    NULL            NULL            NULL            string  0       NULL
+
+66 parameters:
+NAME                UNITS               SYMBOL              TYPE                DESCRIPTION
+Step                NULL                NULL                long                Simulation step
+SVNVersion          NULL                NULL                string              SVN version number
+PassLength          NULL                NULL                double              Length of a single pass
+nux                 1/(2$gp$r)          $gn$r$bx$n          double              Horizontal tune
+dnux/dp             1/(2$gp$r)          $gx$r$bx$n          double              Horizontal chromaticity
+dnux/dp2            1/(2$gp$r)          $gx$r$bx2$n         double              Horizontal 2nd-order chromaticity
+dnux/dp3            1/(2$gp$r)          $gx$r$bx3$n         double              Horizontal 3rd-order chromaticity
+Ax                  m                   A$bx$n              double              Horizontal acceptance
+AxLocation          m                   NULL                double              Location of horizontal acceptance limit
+AxElementName       NULL                NULL                string              Name of element that limits horizontal acceptance
+nuy                 1/(2$gp$r)          $gn$r$by$n          double              Vertical tune
+dnuy/dp             1/(2$gp$r)          $gx$r$by$n          double              Vertical chromaticity
+dnuy/dp2            1/(2$gp$r)          $gx$r$by2$n         double              Vertical 2nd-order chromaticity
+dnuy/dp3            1/(2$gp$r)          $gx$r$by3$n         double              Vertical 3rd-order chromaticity
+Ay                  m                   A$by$n              double              Vertical acceptance
+AyLocation          m                   NULL                double              Location of vertical acceptance limit
+AyElementName       NULL                NULL                string              Name of element that limits vertical acceptance
+deltaHalfRange      NULL                $gDd$r/2            double              Half range of momentum offset for chromatic tune spread evaluation
+nuxChromUpper       NULL                $gx$r$bu$n          double              Upper limit of x tune due to chromaticity and deltaRange
+nuxChromLower       NULL                $gx$r$bu$n          double              Lower limit of x tune due to chromaticity and deltaRange
+nuyChromUpper       NULL                $gy$r$bu$n          double              Upper limit of y tune due to chromaticity and deltaRange
+nuyChromLower       NULL                $gy$r$bu$n          double              Lower limit of y tune due to chromaticity and deltaRange
+Stage               NULL                NULL                string              Stage of computation
+pCentral            m$be$nc             NULL                double              Central momentum
+dbetax/dp           m                   NULL                double              Derivative of betax with momentum offset
+dbetay/dp           m                   NULL                double              Derivative of betay with momentum offset
+dalphax/dp          NULL                NULL                double              Derivative of alphax with momentum offset
+dalphay/dp          NULL                NULL                double              Derivative of alphay with momentum offset
+etax2               m                   $gc$r$bx2$n         double              Second-order dispersion (for matched or periodic case only)
+etay2               m                   $gc$r$by2$n         double              Second-order dispersion (for matched or periodic case only)
+etax3               m                   $gc$r$bx3$n         double              Third-order dispersion (for matched or periodic case only)
+etay3               m                   $gc$r$by3$n         double              Third-order dispersion (for matched or periodic case only)
+etaxp2              m                   $gc$r$bx2$n$a'$n    double              Second-order dispersion (for matched or periodic case only)
+etayp2              m                   $gc$r$by2$n$a'$n    double              Second-order dispersion (for matched or periodic case only)
+etaxp3              m                   $gc$r$bx3$n$a'$n    double              Third-order dispersion (for matched or periodic case only)
+etayp3              m                   $gc$r$by3$n$a'$n    double              Third-order dispersion (for matched or periodic case only)
+betaxMin            m                   NULL                double              Minimum betax
+betaxAve            m                   NULL                double              Average betax
+betaxMax            m                   NULL                double              Maximum betax
+betayMin            m                   NULL                double              Minimum betay
+betayAve            m                   NULL                double              Average betay
+betayMax            m                   NULL                double              Maximum betay
+etaxMax             m                   NULL                double              Maximum absolute value of etax
+etayMax             m                   NULL                double              Maximum absolute value of etay
+waistsx             NULL                NULL                long                Number of changes in the sign of alphax
+waistsy             NULL                NULL                long                Number of changes in the sign of alphay
+dnux/dAx            1/m                 NULL                double              Horizontal tune shift with horizontal amplitude
+dnux/dAy            1/m                 NULL                double              Horizontal tune shift with vertical amplitude
+dnuy/dAx            1/m                 NULL                double              Vertical tune shift with horizontal amplitude
+dnuy/dAy            1/m                 NULL                double              Vertical tune shift with vertical amplitude
+dnux/dAx2           1/m$a2$n            NULL                double              Horizontal tune shift with horizontal amplitude
+dnux/dAy2           1/m$a2$n            NULL                double              Horizontal tune shift with vertical amplitude
+dnux/dAxAy          1/m$a2$n            NULL                double              Horizontal tune shift with horizontal and vertical amplitude
+dnuy/dAx2           1/m$a2$n            NULL                double              Vertical tune shift with horizontal amplitude
+dnuy/dAy2           1/m$a2$n            NULL                double              Vertical tune shift with vertical amplitude
+dnuy/dAxAy          1/m$a2$n            NULL                double              Vertical tune shift with horizontal and vertical amplitude
+nuxTswaLower        NULL                NULL                double              Minimum horizontal tune from tune-shift-with-amplitude calculations
+nuxTswaUpper        NULL                NULL                double              Maximum horizontal tune from tune-shift-with-amplitude calculations
+nuyTswaLower        NULL                NULL                double              Minimum vertical tune from tune-shift-with-amplitude calculations
+nuyTswaUpper        NULL                NULL                double              Maximum vertical tune from tune-shift-with-amplitude calculations
+couplingIntegral    NULL                NULL                double              Coupling integral for difference resonance
+couplingDelta       NULL                NULL                double              Distance from difference resonance
+emittanceRatio      NULL                NULL                double              Emittance ratio from coupling integral
+alphac3             NULL                $ga$r$bc3$n         double              3rd-order momentum compaction factor
+alphac2             NULL                $ga$r$bc2$n         double              2nd-order momentum compaction factor
+alphac              NULL                $ga$r$bc$n          double              Momentum compaction factor

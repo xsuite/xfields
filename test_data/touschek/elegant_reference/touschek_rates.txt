@@ -1,0 +1,27 @@
+Element_Name =              TS0  s (m) =            0.000000e+00  Piwinski_AveR =    0.000000e+00  Piwinski_Rate =    0.000000e+00
+MC_Rate =          3.929053e+05  Ignored_Rate =     3.929053e+03
+
+Element_Name =              TS1  s (m) =            1.300000e+00  Piwinski_AveR =    6.562192e+05  Piwinski_Rate =    6.425167e+05
+MC_Rate =          8.739949e+05  Ignored_Rate =     8.739949e+03
+
+Element_Name =              TS2  s (m) =            5.300000e+00  Piwinski_AveR =    6.418536e+05  Piwinski_Rate =    6.221805e+05
+MC_Rate =          6.898185e+05  Ignored_Rate =     6.898185e+03
+
+Element_Name =              TS3  s (m) =            6.600000e+00  Piwinski_AveR =    6.314474e+05  Piwinski_Rate =    6.462745e+05
+MC_Rate =          4.684558e+05  Ignored_Rate =     4.684558e+03
+
+Element_Name =              TS4  s (m) =            1.060000e+01  Piwinski_AveR =    6.467092e+05  Piwinski_Rate =    6.647833e+05
+MC_Rate =          2.343582e+05  Ignored_Rate =     2.343582e+03
+
+Element_Name =              TS5  s (m) =            1.190000e+01  Piwinski_AveR =    6.562192e+05  Piwinski_Rate =    6.425167e+05
+MC_Rate =          2.984515e+05  Ignored_Rate =     2.984515e+03
+
+Element_Name =              TS6  s (m) =            1.590000e+01  Piwinski_AveR =    6.418536e+05  Piwinski_Rate =    6.221805e+05
+MC_Rate =          4.443364e+05  Ignored_Rate =     4.443364e+03
+
+Element_Name =              TS7  s (m) =            1.720000e+01  Piwinski_AveR =    6.314474e+05  Piwinski_Rate =    6.462745e+05
+MC_Rate =          3.289219e+05  Ignored_Rate =     3.289219e+03
+
+Element_Name =              TS8  s (m) =            2.120000e+01  Piwinski_AveR =    6.467092e+05  Piwinski_Rate =    6.647833e+05
+MC_Rate =          1.888835e+06  Ignored_Rate =     1.888835e+04
+
