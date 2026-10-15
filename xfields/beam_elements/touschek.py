@@ -330,6 +330,7 @@ class TouschekMarker(xt.BeamElement):
         'piwinski_rate': xo.Float64,
         'integrated_piwinski_rate': xo.Float64,
         'rng_source': xo.Int64,
+        'seed': xo.Int64,
     }
 
     # allow_track = False
@@ -376,6 +377,7 @@ class TouschekMarker(xt.BeamElement):
                 weight_retention_fraction=None,
                 integrated_piwinski_rate=0.0,
                 rng=None,
+                seed=0,
                 **kwargs):
         """
         Create a Touschek scattering element.
@@ -428,6 +430,9 @@ class TouschekMarker(xt.BeamElement):
             reproduces the Elegant/SDDS generator sequence; ``'xtrack'`` uses
             the xtrack accurate uniform generator. If ``None`` (default), the
             stored ``rng_source`` is kept (``'elegant'`` for a new element).
+        seed : int, optional
+            Seed from which the random-number streams of this element are
+            derived.
         **kwargs
             Keyword arguments forwarded to :class:`xtrack.BeamElement`.
 
@@ -489,6 +494,7 @@ class TouschekMarker(xt.BeamElement):
         self.integrated_piwinski_rate = integrated_piwinski_rate
         if rng is not None:
             self.rng = rng
+        self.seed = seed
         self.piwinski_rate = piwinski_rate
 
     @property
@@ -537,7 +543,7 @@ class TouschekMarker(xt.BeamElement):
             "n_scattering_events", "nx", "ny", "nz",
             "theta_min", "theta_max",
             "weight_retention_fraction", "piwinski_rate",
-            "integrated_piwinski_rate", "rng",
+            "integrated_piwinski_rate", "rng", "seed",
         }
 
         unknown = set(kwargs) - config_allowed
