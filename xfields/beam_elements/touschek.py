@@ -701,6 +701,17 @@ class TouschekMarker(xt.BeamElement):
                       rng_state=rng_state)
 
         n = n_selected_out[0]
+        if n == 0:
+            # pickPart keeps the heaviest particles until their weight
+            # reaches the retained fraction: if a single event exceeds it,
+            # the event is dropped with all the others
+            raise ValueError(
+                "No particle kept: a single scattering event carries more "
+                f"than {self.weight_retention_fraction:.4g} of the generated "
+                "weight, and the weight retention drops it with all the "
+                "others. Increase `n_scattering_events`, or keep all the "
+                "particles with `weight_retention_fraction=1`.")
+
         # Create particle object for tracking
         part = xt.Particles(_capacity=2*n,
                             p0c=self.p0c,

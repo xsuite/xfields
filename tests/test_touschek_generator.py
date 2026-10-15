@@ -704,3 +704,17 @@ def test_run_tracks_the_particles(ring):
 def test_run_checks_its_arguments(ring):
     with pytest.raises(ValueError, match='n_turns'):
         ring[0].xfields.touschek.run(n_turns=0)
+
+
+def test_generate_explains_an_empty_sample(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1], n_scattering_events=2000)
+    tsc = line.xfields.touschek
+    # With this seed, one event dominates the small sample of this marker
+    with pytest.raises(ValueError, match="'tscatter.2'.*single scattering"):
+        tsc.generate(at='tscatter.2')
+
+    _configure(line, twiss=ring[1], n_scattering_events=2000,
+               weight_retention_fraction=1.0)
+    part = tsc.generate(at='tscatter.2')
+    assert np.sum(part.state > 0) == 2000

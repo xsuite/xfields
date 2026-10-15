@@ -801,14 +801,17 @@ class TouschekGenerator:
                     marker,
                     _stream_seed(marker.seed if seed is None else seed,
                                  nn, replica))
-            particles[nn] = marker._generate(
-                particle_ref=particle_ref,
-                at_element=element_index[nn],
-                s=tab['s', nn],
-                rng_state=rng_state,
-                rng_particle=rng_particle,
-                weight_scale=1.0 / n_replicas,
-            )
+            try:
+                particles[nn] = marker._generate(
+                    particle_ref=particle_ref,
+                    at_element=element_index[nn],
+                    s=tab['s', nn],
+                    rng_state=rng_state,
+                    rng_particle=rng_particle,
+                    weight_scale=1.0 / n_replicas,
+                )
+            except ValueError as error:
+                raise ValueError(f"TouschekMarker '{nn}': {error}") from error
 
         if isinstance(at, str):
             return particles[at]
