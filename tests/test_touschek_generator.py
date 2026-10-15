@@ -3,6 +3,7 @@
 # Copyright (c) CERN, 2026.                   #
 # ########################################### #
 from pathlib import Path
+import warnings
 
 import numpy as np
 import pytest
@@ -473,3 +474,169 @@ def test_generate_checks_its_arguments(ring):
     line.set_particle_ref('electron', p0c=2e9)
     with pytest.raises(ValueError, match='configure the markers again'):
         tsc.generate(at=nn)
+
+
+def _fake_track(part, seed):
+    """
+    Stand-in for tracking: half of the particles are lost, on an aperture
+    (state 0) or in a collimator (xcoll LOST_ON_MATERIAL = -330), and the
+    first lost one produces a lost secondary, which carries its weight.
+    """
+    rng = np.random.default_rng(seed)
+    alive = np.flatnonzero(part.state > 0)
+    lost = alive[rng.random(len(alive)) < 0.5]
+    part.state[lost] = rng.choice([0, -330], size=len(lost))
+    part.at_turn[alive] = 10
+
+    free = np.flatnonzero(part.state == xt.particles.LAST_INVALID_STATE)[0]
+    part.state[free] = 0
+    part.particle_id[free] = np.max(part.particle_id) + 1
+    part.parent_particle_id[free] = part.particle_id[lost[0]]
+    part.weight[free] = part.weight[lost[0]]
+
+
+def _lost_weight(part):
+    primary = part.parent_particle_id == part.particle_id
+    lost = (part.state <= 0) & (part.state > xt.particles.LAST_INVALID_STATE)
+    return np.sum(part.weight[lost & primary])
+
+
+def test_analyse_without_particles(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    result = tsc.analyse()
+
+    names = tsc.marker_names
+    rates = [line[nn].integrated_piwinski_rate for nn in names]
+    assert result.element_names == names
+    assert result.rate_scattering == pytest.approx(np.sum(rates), rel=1e-12)
+    assert result.lifetime_scattering == pytest.approx(
+        BEAM['bunch_intensity'] / np.sum(rates), rel=1e-12)
+    assert result.tracked is False
+    assert result.rate_generated is None
+    assert result.rate_tracking is None
+    assert result.lifetime_tracking is None
+    assert set(result.local_rates._col_names) == {
+        'name', 's', 'delta_neg', 'delta_pos', 'piwinski_rate',
+        'integrated_piwinski_rate'}
+    np.testing.assert_array_equal(
+        result.local_rates.integrated_piwinski_rate, rates)
+    np.testing.assert_array_equal(
+        result.local_momentum_acceptance.delta_neg,
+        [line[nn].delta_neg for nn in names])
+
+
+def test_analyse_merged_particles_and_samples_by_marker(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    samples = tsc.generate()
+
+    # Not tracked yet: only the generated weight
+    untracked = tsc.analyse(xt.Particles.merge(list(samples.values())))
+    assert untracked.tracked is False
+    assert untracked.rate_tracking is None
+    assert untracked.rate_generated == pytest.approx(
+        0.99 * untracked.rate_scattering, rel=2e-3)
+
+    for ii, part in enumerate(samples.values()):
+        _fake_track(part, seed=ii)
+    expected = sum(_lost_weight(pp) for pp in samples.values())
+
+    by_marker = tsc.analyse(samples)
+    shuffled = list(samples.values())[::-1]
+    merged = tsc.analyse(xt.Particles.merge(shuffled))
+    singles = [tsc.analyse(pp, at=nn) for nn, pp in samples.items()]
+
+    for result in (by_marker, merged):
+        assert result.tracked is True
+        assert result.rate_tracking == pytest.approx(expected, rel=1e-12)
+        assert result.lifetime_tracking == pytest.approx(
+            BEAM['bunch_intensity'] / expected, rel=1e-12)
+        assert result.rate_generated == pytest.approx(
+            untracked.rate_generated, rel=1e-12)
+        assert result.rate_tracking_error is None
+    assert sum(rr.rate_tracking for rr in singles) == pytest.approx(
+        expected, rel=1e-12)
+
+    # Per-marker counts: from the samples of each marker only
+    assert 'sum_lost_weight' not in merged.local_rates._col_names
+    for single, nn in zip(singles, samples):
+        for col in ('num_particles', 'sum_weight', 'num_lost_particles',
+                    'sum_lost_weight'):
+            assert single.local_rates[col, nn] == by_marker.local_rates[col, nn]
+        assert by_marker.local_rates['sum_lost_weight', nn] == pytest.approx(
+            _lost_weight(samples[nn]), rel=1e-12)
+
+
+def test_analyse_replicas(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    n_replicas = 3
+    replicas = {nn: [] for nn in tsc.marker_names}
+    for rr in range(n_replicas):
+        for nn, part in tsc.generate(replica=rr, n_replicas=n_replicas).items():
+            _fake_track(part, seed=rr)
+            replicas[nn].append(part)
+
+    result = tsc.analyse(replicas)
+    merged = tsc.analyse(xt.Particles.merge(
+        [pp for vv in replicas.values() for pp in vv]))
+
+    assert result.rate_tracking == pytest.approx(merged.rate_tracking, rel=1e-12)
+    assert result.rate_generated == pytest.approx(
+        0.99 * result.rate_scattering, rel=2e-3)
+    np.testing.assert_array_equal(result.local_rates.n_replicas, n_replicas)
+
+    # Standard error of the mean of the estimates of the replicas
+    variance = 0
+    for nn, parts in replicas.items():
+        estimates = [n_replicas * _lost_weight(pp) for pp in parts]
+        error = np.std(estimates, ddof=1) / np.sqrt(n_replicas)
+        assert result.local_rates['sum_lost_weight_error', nn] == (
+            pytest.approx(error, rel=1e-9))
+        variance += error**2
+    assert result.rate_tracking_error == pytest.approx(
+        np.sqrt(variance), rel=1e-9)
+    assert result.lifetime_tracking_error == pytest.approx(
+        result.lifetime_tracking * result.rate_tracking_error
+        / result.rate_tracking, rel=1e-12)
+
+
+def test_analyse_warns_about_missing_samples(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    samples = tsc.generate()
+    names = list(samples)
+    some = [samples[nn] for nn in names[2:]]
+
+    with pytest.warns(UserWarning, match='missing or repeated'):
+        tsc.analyse(xt.Particles.merge(some))
+    with pytest.warns(UserWarning, match='missing or repeated'):
+        tsc.analyse({nn: [samples[nn]] * 2 for nn in names})
+
+    # Analyses of a part of the markers are not checked
+    with warnings.catch_warnings():
+        warnings.simplefilter('error')
+        tsc.analyse(xt.Particles.merge(some), at=names[2:])
+        tsc.analyse({nn: samples[nn] for nn in names[2:]})
+
+
+def test_analyse_checks_its_arguments(ring):
+    line = _ring_with_markers()
+    tsc = line.xfields.touschek
+    nn = tsc.marker_names[1]
+    with pytest.raises(ValueError, match='not configured'):
+        tsc.analyse()
+
+    _configure(line, twiss=ring[1])
+    part = tsc.generate(at=nn)
+    with pytest.raises(ValueError, match='keys select the markers'):
+        tsc.analyse({nn: part}, at=nn)
+    with pytest.raises(TypeError, match='xtrack.Particles'):
+        tsc.analyse({nn: [part, 'other']})
+    with pytest.raises(ValueError, match='No particles'):
+        tsc.analyse({nn: []})

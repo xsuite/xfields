@@ -3,5 +3,6 @@
 # Copyright (c) CERN, 2026.                   #
 # ########################################### #
 
+from .analysis import TouschekResult
 from .generator import TouschekGenerator
-from .study import TouschekResult, TouschekStudy
+from .study import TouschekStudy

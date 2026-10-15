@@ -3,8 +3,6 @@
 # Copyright (c) CERN, 2021.                   #
 # ########################################### #
 
-from dataclasses import dataclass
-
 import xtrack as xt
 
 import numpy as np
@@ -14,120 +12,9 @@ from ..beam_elements.touschek import (
     _resolve_n_scattering_events, _resolve_bunch_intensity,
     _resolve_rng_source, _rng_source_name, _make_xtrack_rng_seed,
     _TOUSCHEK_RNG_ELEGANT, _TOUSCHEK_RNG_XTRACK)
+from .analysis import TouschekResult, _generated, _lost
 from .generator import _configure_markers
 from .piwinski import local_piwinski_rate, piwinski_b2, piwinski_integral
-
-
-def _allocated(particles):
-    """
-    Mask of the slots of the particle buffer that hold a particle.
-
-    TouschekMarker.scatter allocates twice the number of generated
-    particles; the unused slots have state LAST_INVALID_STATE and weight
-    LAST_INVALID_STATE.
-    """
-    return particles.state > xt.particles.LAST_INVALID_STATE
-
-
-def _generated(particles):
-    """
-    Mask of the Touschek-scattered particles, excluding any secondaries
-    added while tracking (e.g. by collimator scattering codes).
-    """
-    return _allocated(particles) & (
-        particles.parent_particle_id == particles.particle_id)
-
-
-def _lost(particles):
-    """
-    Mask of the lost particles: any state <= 0, i.e. on an aperture (0) or
-    in other ways (negative states, e.g. absorbed in an xcoll collimator).
-    """
-    return _allocated(particles) & (particles.state <= 0)
-
-
-@dataclass
-class TouschekResult:
-    """
-    Result returned by :meth:`TouschekStudy.run`.
-
-    The result separates quantities inferred from the scattering model from
-    quantities obtained after tracking the generated particles. The particle
-    samples are optional and are stored only when :meth:`TouschekStudy.run` is
-    called with ``keep_particles=True``.
-
-    Parameters
-    ----------
-    element_names : list
-        Names of the Touschek scattering elements included in the result.
-    local_momentum_acceptance : xtrack.Table
-        Local momentum acceptance table used by the study.
-    local_rates : xtrack.Table
-        Per-element diagnostics table. It always contains ``name``, ``s``,
-        ``delta_neg``, ``delta_pos``, ``piwinski_rate``, and
-        ``integrated_piwinski_rate``. When particles are generated it also
-        contains ``total_mc_rate``, ``ignored_rate``, ``num_particles``, and
-        ``sum_weight``. When tracking is enabled it additionally contains
-        ``num_lost_particles`` and ``sum_lost_weight``.
-    rate_scattering : float
-        Total Touschek scattering rate represented by the result [1/s].
-    lifetime_scattering : float
-        Touschek lifetime inferred from ``rate_scattering`` [s].
-    rate_tracking : float or None
-        Weighted loss rate after tracking generated particles [1/s]. ``None``
-        when tracking is disabled.
-    lifetime_tracking : float or None
-        Touschek lifetime inferred from ``rate_tracking`` [s]. ``None`` when
-        tracking is disabled.
-    particles_by_element : dict or None
-        Mapping ``{element_name: xtrack.Particles}`` with the generated
-        particles for each scattering element. ``None`` unless
-        ``keep_particles=True``.
-    particles : xtrack.Particles or None
-        Merged generated particle sample. ``None`` unless
-        ``keep_particles=True``.
-    lost_particles : xtrack.Particles or None
-        Subset of ``particles`` lost during tracking. ``None`` unless both
-        ``track=True`` and ``keep_particles=True``.
-    tracked : bool
-        Whether the generated particles were tracked to determine losses.
-
-    Attributes
-    ----------
-    element_names : list
-        Names of the Touschek scattering elements included in the result.
-    local_momentum_acceptance : xtrack.Table
-        Local momentum acceptance table used by the study.
-    local_rates : xtrack.Table
-        Per-element diagnostics table.
-    rate_scattering : float
-        Total Touschek scattering rate represented by the result [1/s].
-    lifetime_scattering : float
-        Touschek lifetime inferred from ``rate_scattering`` [s].
-    rate_tracking : float or None
-        Weighted loss rate after tracking generated particles [1/s].
-    lifetime_tracking : float or None
-        Touschek lifetime inferred from ``rate_tracking`` [s].
-    particles_by_element : dict or None
-        Generated particles keyed by scattering element name.
-    particles : xtrack.Particles or None
-        Merged generated particle sample.
-    lost_particles : xtrack.Particles or None
-        Lost-particle subset when tracking is enabled.
-    tracked : bool
-        Whether tracking was enabled in :meth:`TouschekStudy.run`.
-    """
-    element_names: list
-    local_momentum_acceptance: xt.Table
-    local_rates: xt.Table
-    rate_scattering: float
-    lifetime_scattering: float
-    rate_tracking: float | None
-    lifetime_tracking: float | None
-    tracked: bool
-    particles_by_element: dict | None = None
-    particles: xt.Particles | None = None
-    lost_particles: xt.Particles | None = None
 
 
 class TouschekStudy:
