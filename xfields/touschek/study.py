@@ -14,9 +14,8 @@ from ..beam_elements.touschek import (
     _resolve_n_scattering_events, _resolve_bunch_intensity,
     _resolve_rng_source, _rng_source_name, _make_xtrack_rng_seed,
     _TOUSCHEK_RNG_ELEGANT, _TOUSCHEK_RNG_XTRACK)
-from .piwinski import (
-    integrated_piwinski_rates, local_piwinski_rate, piwinski_b2,
-    piwinski_integral)
+from .generator import _configure_markers
+from .piwinski import local_piwinski_rate, piwinski_b2, piwinski_integral
 
 
 def _allocated(particles):
@@ -557,66 +556,6 @@ class TouschekStudy:
             bunch_intensity=self.bunch_intensity,
         )
 
-    def _check_scattering_centres(self, tab):
-        """
-        Check that every part of the line belongs to the section of one
-        TouschekMarker.
-
-        The section of a TouschekMarker goes from the previous one to
-        it, and the section of the first one from s = 0 (an empty section,
-        of zero weight, if it sits at s = 0, as in ELEGANT). So the last
-        TouschekMarker must sit at the end of the line: otherwise the
-        part of the line after it is not integrated, and its Touschek rate
-        is silently missing from the weights and from ``rate_scattering``.
-        (ELEGANT imposes the same for its TSCATTER elements.)
-        """
-        tol = 1e-6  # m
-        last = [nn for nn in tab.name[:-1]
-                if isinstance(self.line[nn], TouschekMarker)][-1]
-        s_last = float(tab["s", last])
-        s_end = float(tab.s[-1])
-        if abs(s_last - s_end) > tol:
-            raise ValueError(
-                f"The last TouschekMarker ('{last}') is at "
-                f"s = {s_last:.6g} m, but the line ends at s = {s_end:.6g} m: "
-                "the last TouschekMarker must sit at the end of the "
-                "line, otherwise the part of the line after it is not "
-                "accounted for in the integrated Touschek rate.")
-
-    def _compute_integrated_piwinski_rates(self, element):
-        """
-        Integrate the Piwinski Touschek scattering rate along the line using
-        the trapezoidal rule, between successive TouschekMarker elements.
-
-        For each TouschekMarker element, the method stores the integrated
-        rate per bunch over the preceding section of the line. This per-bunch
-        rate is later used to assign the correct weights to Touschek-scattered
-        particles at the corresponding element. The section of the first
-        TouschekMarker starts at s = 0, and the last TouschekMarker
-        must sit at the end of the line (see
-        :meth:`_check_scattering_centres`), so that every part of the line
-        belongs to exactly one section.
-        """
-        line = self.line
-        tab = line.get_table()
-        self._check_scattering_centres(tab)
-
-        markers = [
-            nn for nn in tab.name[:-1]
-            if isinstance(line[nn], TouschekMarker)
-        ]
-        rates = integrated_piwinski_rates(
-            names=tab.name,
-            s=tab.s,
-            markers=markers,
-            local_rate=self._compute_piwinski_scattering_rate,
-            line_length=float(self.twiss.line_length),
-            at=element,
-        )
-        for nn, integrated_piwinski_rate in rates.items():
-            line[nn]._configure(
-                integrated_piwinski_rate=integrated_piwinski_rate)
-
     def initialise_touschek(self, element=None):
         '''
         Compute and configure all Piwinski rates in the lattice.
@@ -672,126 +611,23 @@ class TouschekStudy:
             twiss_method = self.kwargs.get("method", "6d")
             self.twiss = self.line.twiss(method=twiss_method)
 
-        import time
-        t0 = time.time()
-        self._compute_integrated_piwinski_rates(element)
-        print(f"Computed integrated piwinski rates in {time.time() - t0:.2f} s.")
-
-        # Helper to config all fields to a single TouschekMarker
-        def _config(nn):
-            try:
-                s = tab.rows[nn].s[0]
-            except Exception:
-                s = self.line.get_s_position(nn)
-
-            twiss = self.twiss
-            alfx = twiss["alfx", nn]; betx = twiss["betx", nn]
-            alfy = twiss["alfy", nn]; bety = twiss["bety", nn]
-            dx   = twiss["dx",   nn]; dpx = twiss["dpx",  nn]
-            dy   = twiss["dy",   nn]; dpy = twiss["dpy",  nn]
-            delta_neg = np.interp(
-                s, local_momentum_acceptance.s,
-                local_momentum_acceptance.delta_neg)
-            delta_pos = np.interp(
-                s, local_momentum_acceptance.s,
-                local_momentum_acceptance.delta_pos)
-
-            x_co = twiss["x", nn]; px_co = twiss["px", nn]
-            y_co = twiss["y", nn]; py_co = twiss["py", nn]
-            zeta_co = twiss["zeta", nn]; delta_co = twiss["delta", nn]
-
-            # Adjust the effective longitudinal sampling cutoff (nz_eff) to prevent
-            # generation of initial particles that are already outside
-            # the local momentum aperture (LMA) before Touschek scattering.
-            #
-            # Background:
-            # In the Touschek Monte Carlo routine, initial particle coordinates
-            # are drawn from a truncated Gaussian distribution with cutoffs
-            # {nx, ny, nz} in the transverse and longitudinal planes. The longitudinal
-            # cutoff nz sets the maximum |δ| ≈ nz*σδ. If nz*σδ exceeds the local
-            # momentum acceptance at this location, some particles
-            # are sampled outside the LMA (|δ| > LMA) even before any scattering event occurs.
-            #
-            # These particles create a pathological situation:
-            #   • For very small scattering angles (θ* --> 0 in the CM frame),
-            #     such particles are flagged as "candidates for loss" and passed to tracking,
-            #     even though their state is essentially unchanged by scattering.
-            #   • Because the Møller differential cross-section diverges at
-            #     θ* --> 0, the corresponding particle weights become extremely large.
-            #   • The pickPart routine then tends to select a handful of these
-            #     high-weight pathological particles, distorting both the local
-            #     scattering rate (RMC/RP diverges) and the overall Touschek
-            #     lifetime estimate.
-            #
-            # Mitigation:
-            # To eliminate these spurious contributions, we dynamically reduce
-            # the longitudinal cutoff at each TouschekMarker element:
-            #
-            #     nz_eff = min(nz, 0.85 * min(|delta_neg|, delta_pos) / σδ)
-            #
-            # where delta_neg and delta_pos are the negative/positive momentum
-            # aperture limits (scaled by local_momentum_acceptance_scale). This
-            # ensures that the sampled longitudinal range ±nz_eff*σδ always lies
-            # strictly inside the local momentum aperture, with a small safety
-            # factor (0.85). As a result, only pathological large-weight events
-            # are avoided, and the Monte Carlo rate remains consistent with the
-            # Piwinski formula.
-            #
-            # NOTE: nz_eff is determined independently at each scattering element,
-            # so tighter cutoffs are applied only where the local momentum aperture
-            # is restrictive, while wider cutoffs are retained elsewhere.
-            min_delta_acceptance = min(abs(delta_neg), delta_pos)
-            nz_eff = min(
-                self.nz, 0.85 * min_delta_acceptance / self.sigma_delta)
-
-            if nz_eff < self.nz:
-                print(f"""
-            ***********************************************************************************************
-            [TouschekStudy] Warning: longitudinal cutoff reduced at element '{nn}' (s={s:.2f} m).
-
-            Using nz_eff={nz_eff:.2f} instead of nz={self.nz:.2f}.
-            This ensures that particles are sampled strictly within the local momentum aperture.
-            ***********************************************************************************************
-            """)
-
-            piwinski_rate = self._compute_piwinski_scattering_rate(nn)
-
-            elem = line[nn] # TouschekMarker
-            element_index = line.element_names.index(nn)
-
-            elem._configure(
-                s=s,
-                particle_ref=self.particle_ref,
-                element_index=element_index,
-                bunch_intensity=self.bunch_intensity,
-                gemitt_x=self.gemitt_x,
-                gemitt_y=self.gemitt_y,
-                alfx=alfx, betx=betx,
-                alfy=alfy, bety=bety,
-                dx=dx, dpx=dpx,
-                dy=dy, dpy=dpy,
-                x_co=x_co, px_co=px_co,
-                y_co=y_co, py_co=py_co,
-                zeta_co=zeta_co, delta_co=delta_co,
-                delta_neg=delta_neg, delta_pos=delta_pos,
-                sigma_z=self.sigma_z,
-                sigma_delta=self.sigma_delta,
-                n_scattering_events=self.n_scattering_events,
-                nx=self.nx, ny=self.ny, nz=nz_eff,
-                theta_min=self._theta_min, theta_max=self._theta_max,
-                weight_retention_fraction=self.weight_retention_fraction,
-                piwinski_rate=piwinski_rate,
-                rng=self.rng,
-            )
-
-        if element is None:
-            for nn in tab.name[:-1]: # Avoid the last tab.name which is _end_point
-                if isinstance(line[nn], TouschekMarker):
-                    print(f'Initialising TouschekMarker for {nn}')
-                    _config(nn)
-        else:
-            print(f'Initialising TouschekMarker for {element}')
-            _config(element)
+        _configure_markers(
+            line,
+            twiss=self.twiss,
+            lma_s=local_momentum_acceptance.s,
+            lma_delta_neg=local_momentum_acceptance.delta_neg,
+            lma_delta_pos=local_momentum_acceptance.delta_pos,
+            bunch_intensity=self.bunch_intensity,
+            gemitt_x=self.gemitt_x,
+            gemitt_y=self.gemitt_y,
+            sigma_z=self.sigma_z,
+            sigma_delta=self.sigma_delta,
+            n_scattering_events=self.n_scattering_events,
+            nx=self.nx, ny=self.ny, nz=self.nz,
+            weight_retention_fraction=self.weight_retention_fraction,
+            rng=self.rng,
+            at=element,
+        )
 
     def local_rates(self, *, particles_by_element=None, include_tracking=False):
         """

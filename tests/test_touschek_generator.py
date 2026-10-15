@@ -20,6 +20,59 @@ def _ring():
     return xt.load(FOUR_CELL_RING)
 
 
+LMA_SCALE = 0.85
+BEAM = dict(nemitt_x=1e-5, nemitt_y=1e-7, sigma_z=4e-3, sigma_delta=1e-3,
+            bunch_intensity=4e9)
+
+
+def _ring_with_markers():
+    """The ring with a marker at the centre of each magnet, ring closed."""
+    line = _ring()
+    tab = line.get_table()
+    magnets = tab.rows[(tab.element_type == 'Bend')
+                       | (tab.element_type == 'Quadrupole')].name
+    line.xfields.touschek.install_markers(at=list(magnets))
+    return line
+
+
+def _lma(line):
+    """A fixed momentum acceptance at the markers, different at each one."""
+    names = line.xfields.touschek.marker_names
+    tab = line.get_table()
+    delta = 0.010 + 0.0005 * np.arange(len(names))
+    return xt.Table({
+        'name': np.array(names),
+        's': np.array([tab['s', nn] for nn in names]),
+        'delta_neg': -delta,
+        'delta_pos': delta,
+    })
+
+
+@pytest.fixture(scope='module')
+def ring():
+    """
+    The ring with markers and its 4d twiss. Building a tracker compiles its
+    kernels, for each new line: the other tests configure fresh rings with
+    the same layout using this twiss, and track in this line.
+    """
+    line = _ring_with_markers()
+    return line, line.twiss(method='4d')
+
+
+def _configure(line, **kwargs):
+    config = dict(
+        local_momentum_acceptance=_lma(line),
+        local_momentum_acceptance_scale=LMA_SCALE,
+        n_scattering_events=20_000,
+        weight_retention_fraction=0.99,
+        seed=1997,
+        method='4d',
+        verbose=False,
+        **BEAM)
+    config.update(kwargs)
+    line.xfields.touschek.configure(**config)
+
+
 def _place_markers(line, positions):
     """Install markers by hand, as in the examples: env.place + insert."""
     env = line.env
@@ -149,3 +202,115 @@ def test_install_markers_checks_its_arguments():
     with pytest.raises(ValueError, match='at least one'):
         tsc.install_markers(at=[])
     assert tsc.marker_names == []
+
+
+def test_configure_stores_the_configuration_on_the_markers(ring):
+    _, tw = ring
+    line = _ring_with_markers()
+    lma = _lma(line)
+    _configure(line, twiss=tw, local_momentum_acceptance=lma, rng='xtrack')
+
+    ref = line.particle_ref
+    gemitt_x = BEAM['nemitt_x'] / (ref.beta0[0] * ref.gamma0[0])
+    for ii, nn in enumerate(line.xfields.touschek.marker_names):
+        marker = line[nn]
+        assert marker.p0c == ref.p0c[0]
+        for name, col in [('betx', 'betx'), ('alfy', 'alfy'), ('dx', 'dx'),
+                          ('dpx', 'dpx'), ('x_co', 'x'), ('delta_co', 'delta')]:
+            assert getattr(marker, name) == pytest.approx(
+                tw[col, nn], rel=1e-12, abs=1e-15)
+        assert marker.delta_neg == pytest.approx(LMA_SCALE * lma.delta_neg[ii])
+        assert marker.delta_pos == pytest.approx(LMA_SCALE * lma.delta_pos[ii])
+        assert marker.gemitt_x == pytest.approx(gemitt_x)
+        assert marker.bunch_intensity == BEAM['bunch_intensity']
+        assert marker.sigma_z == BEAM['sigma_z']
+        assert marker.n_scattering_events == 20_000
+        assert marker.weight_retention_fraction == 0.99
+        assert marker.rng == 'xtrack'
+        assert marker.seed == 1997
+        assert marker.nz <= 3
+        assert marker.piwinski_rate > 0
+        assert marker.integrated_piwinski_rate > 0
+
+
+def test_configure_does_not_modify_the_momentum_acceptance(ring):
+    line = _ring_with_markers()
+    lma = _lma(line)
+    delta_neg, delta_pos = lma.delta_neg.copy(), lma.delta_pos.copy()
+    _configure(line, twiss=ring[1], local_momentum_acceptance=lma)
+    np.testing.assert_array_equal(lma.delta_neg, delta_neg)
+    np.testing.assert_array_equal(lma.delta_pos, delta_pos)
+
+
+def test_configure_stores_a_drawn_seed(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1], seed=None)
+    seeds = {line[nn].seed for nn in line.xfields.touschek.marker_names}
+    assert len(seeds) == 1
+    assert seeds.pop() > 0
+
+    with pytest.raises(ValueError, match='non-negative'):
+        _configure(line, seed=-1)
+    with pytest.raises(TypeError, match='integer'):
+        _configure(line, seed=1.5)
+
+
+def test_configure_a_subset_of_the_markers(ring):
+    line, tw = _ring_with_markers(), ring[1]
+    _configure(line, twiss=tw)
+    names = line.xfields.touschek.marker_names
+    rates = {nn: line[nn].integrated_piwinski_rate for nn in names}
+
+    # One section integrated on its own gives the same rate
+    for nn in names:
+        line[nn].integrated_piwinski_rate = 0
+        _configure(line, twiss=tw, at=nn)
+        assert line[nn].integrated_piwinski_rate == pytest.approx(
+            rates[nn], rel=1e-12)
+
+    # Only the selected markers are configured: the rate goes as N^2
+    _configure(line, twiss=tw, at=names[2:4],
+               bunch_intensity=2 * BEAM['bunch_intensity'])
+    for nn in names:
+        factor = 4 if nn in names[2:4] else 1
+        assert line[nn].integrated_piwinski_rate == pytest.approx(
+            factor * rates[nn], rel=1e-12)
+
+
+def test_configure_computes_the_twiss(ring):
+    line, tw = ring
+    _configure(line)
+    computed = {nn: line[nn].to_dict()
+                for nn in line.xfields.touschek.marker_names}
+    _configure(line, twiss=tw)
+    for nn, dct in computed.items():
+        assert line[nn].to_dict() == dct
+
+
+def test_configure_requires_the_last_marker_at_the_end_of_the_line():
+    line = _ring()
+    line.xfields.touschek.install_markers(at=[1.0, 5.0], close_ring=False)
+    with pytest.raises(ValueError, match='must sit at the end of the line'):
+        _configure(line, local_momentum_acceptance=xt.Table({
+            'name': np.array(['a']), 's': np.array([0.0]),
+            'delta_neg': np.array([-0.01]), 'delta_pos': np.array([0.01])}))
+
+
+def test_configure_checks_its_arguments(ring):
+    line = ring[0]
+    with pytest.raises(ValueError, match='`sigma_z` is required'):
+        _configure(line, sigma_z=None)
+    with pytest.raises(ValueError, match='not both'):
+        _configure(line, gemitt_x=1e-9, gemitt_y=1e-11)
+    with pytest.raises(TypeError, match=r'xt\.Table'):
+        _configure(line, local_momentum_acceptance={'s': [0.0]})
+    with pytest.raises(ValueError, match="'mb1.1' is not present"):
+        _configure(line, at='mb1.1')
+    with pytest.raises(TypeError, match='not a TouschekMarker'):
+        _configure(line, at='mqf.1_entry')
+    with pytest.raises(ValueError, match='rng'):
+        _configure(line, rng='other')
+
+    no_markers = _ring()
+    with pytest.raises(ValueError, match='install_markers'):
+        _configure(no_markers, local_momentum_acceptance=_lma(line))
