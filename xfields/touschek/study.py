@@ -137,10 +137,10 @@ class TouschekStudy:
                  nemitt_x=None, nemitt_y=None,
                  sigma_z=None, sigma_delta=None,
                  bunch_intensity=None,
-                 n_scattering_events=None, n_simulated=None,
+                 n_scattering_events=None,
                  gemitt_x=None, gemitt_y=None,
                  local_momentum_acceptance_scale=0.85,
-                 weight_retention_fraction=None, ignored_portion=None,
+                 weight_retention_fraction=None,
                  seed=None, rng='elegant', nx=3, ny=3, nz=3, **kwargs):
         """
         Build a Touschek study and validate the supplied line, optics, beam
@@ -189,8 +189,6 @@ class TouschekStudy:
         n_scattering_events : int
             Number of Monte Carlo scattering events generated at each
             scattering element.
-        n_simulated : int, optional
-            Deprecated alias for ``n_scattering_events``.
         gemitt_x, gemitt_y : float, optional
             Geometric horizontal and vertical emittances. Mutually exclusive
             with ``nemitt_x`` and ``nemitt_y``.
@@ -199,8 +197,6 @@ class TouschekStudy:
         weight_retention_fraction : float, optional
             Fraction of the generated scattering weight retained in the
             generated particle sample.
-        ignored_portion : float, optional
-            Deprecated alias for ``1 - weight_retention_fraction``.
         seed : int or None, optional
             Seed for the random-number generator. If provided, a reproducible
             Touschek Monte Carlo sequence is used. If ``None`` (default), a
@@ -243,7 +239,7 @@ class TouschekStudy:
             raise ValueError("`sigma_delta` is required.")
         if bunch_intensity is None:
             raise ValueError("`bunch_intensity` is required.")
-        if n_scattering_events is None and n_simulated is None:
+        if n_scattering_events is None:
             raise ValueError("`n_scattering_events` is required.")
 
         # Local momentum acceptnace validation
@@ -320,11 +316,9 @@ class TouschekStudy:
             default=None)
         self.n_scattering_events = _resolve_n_scattering_events(
             n_scattering_events=n_scattering_events,
-            n_simulated=n_simulated,
             default=None)
         self.weight_retention_fraction = _resolve_weight_retention_fraction(
             weight_retention_fraction=weight_retention_fraction,
-            ignored_portion=ignored_portion,
             default=0.99)
         self.seed = seed
         self.rng_source = _resolve_rng_source(rng)

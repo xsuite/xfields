@@ -335,13 +335,13 @@ void TouschekScatter(TouschekMarkerData el,
     const double delta_pos = TouschekMarkerData_get_delta_pos(el);
     const double sigma_z   = TouschekMarkerData_get_sigma_z(el);
     const double sigma_delta = TouschekMarkerData_get_sigma_delta(el);
-    const double n_simulated = TouschekMarkerData_get_n_simulated(el);
+    const double n_simulated = TouschekMarkerData_get_n_scattering_events(el);
     const double nx = TouschekMarkerData_get_nx(el);
     const double ny = TouschekMarkerData_get_ny(el);
     const double nz = TouschekMarkerData_get_nz(el);
     const double theta_min = TouschekMarkerData_get_theta_min(el);
     const double theta_max = TouschekMarkerData_get_theta_max(el);
-    const double ignoredPortion = TouschekMarkerData_get_ignored_portion(el);
+    const double ignoredPortion = 1.0 - TouschekMarkerData_get_weight_retention_fraction(el);
     const double integrated_piwinski_rate = TouschekMarkerData_get_integrated_piwinski_rate(el);
     const int64_t rng_source = TouschekMarkerData_get_rng_source(el);
 
@@ -504,7 +504,7 @@ void TouschekScatter(TouschekMarkerData el,
         }
       }
       if (simuCount == 0) {
-        // Nothing generated (n_simulated == 0): return an empty sample
+        // Nothing generated (n_scattering_events == 0): return an empty sample
         // instead of dividing by zero below (ELEGANT stops the run here).
         *n_selected_out  = 0;
         *totalMCRate_out = 0.;
@@ -570,7 +570,7 @@ void TouschekScatter(TouschekMarkerData el,
       // printf("Total number of random numbers used: %ld\n", total_event * 11);
       // fflush(stdout);
       if (total_event * 11 > (long)2e9) {
-        printf("The total number of random numbers used exceeded 2e9. Use smaller n_simulated or smaller delta.");
+        printf("The total number of random numbers used exceeded 2e9. Use smaller n_scattering_events or smaller delta.");
         fflush(stdout);
       }
 

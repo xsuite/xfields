@@ -287,18 +287,6 @@ class TestTouschekStudyInit:
         with pytest.raises(ValueError):
             xf.TouschekStudy(line, **kw)
 
-    def test_accepts_deprecated_n_simulated_alias(self, toy_ring):
-        line = toy_ring['line']
-        with pytest.warns(FutureWarning, match='n_simulated'):
-            study = xf.TouschekStudy(
-                line,
-                local_momentum_acceptance=_fresh_lma(toy_ring),
-                sigma_z=SIGMA_Z, sigma_delta=SIGMA_DELTA,
-                bunch_intensity=BUNCH_INTENSITY, n_simulated=10,
-                nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y,
-            )
-        assert study.n_scattering_events == 10
-
     def test_raises_on_invalid_rng(self, toy_ring):
         line = toy_ring['line']
         with pytest.raises(ValueError, match='rng'):
