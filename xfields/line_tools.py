@@ -23,6 +23,22 @@ class XfieldsLineAPI:
     def line(self):
         return self._line
 
+    @property
+    def touschek(self):
+        """
+        Touschek scattering simulation of the line.
+
+        Returns
+        -------
+        touschek : xfields.TouschekGenerator
+            Generator bound to the line, to install and configure the
+            Touschek markers, generate the scattered particles and analyse
+            them.
+        """
+        from .touschek.generator import TouschekGenerator
+
+        return TouschekGenerator(self.line)
+
     def spacecharge_install_frozen(self, **kwargs):
         """
         Install frozen space-charge elements in the line.
