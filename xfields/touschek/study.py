@@ -8,19 +8,13 @@ from dataclasses import dataclass
 import xtrack as xt
 
 import numpy as np
-from scipy.integrate import quad
-from scipy.special import i0
-from scipy.constants import physical_constants
 
 from ..beam_elements.touschek import (
     TouschekRNGState, TouschekScattering, _resolve_weight_retention_fraction,
     _resolve_n_scattering_events, _resolve_bunch_intensity,
     _resolve_rng_source, _rng_source_name, _make_xtrack_rng_seed,
     _TOUSCHEK_RNG_ELEGANT, _TOUSCHEK_RNG_XTRACK)
-
-ELECTRON_MASS_EV = xt.ELECTRON_MASS_EV
-C_LIGHT_VACUUM = physical_constants['speed of light in vacuum'][0]
-CLASSICAL_ELECTRON_RADIUS = physical_constants['classical electron radius'][0]
+from .piwinski import local_piwinski_rate, piwinski_b2, piwinski_integral
 
 
 def _allocated(particles):
@@ -534,164 +528,38 @@ class TouschekStudy:
             tracked=track,
         )
 
-    @staticmethod
-    def _compute_piwinski_integral(tm, B1, B2):
-        """
-        Compute Piwinski integral for Touschek scattering rate calculation.
-
-        The integration variable is k, with t = tan(k)^2. The direct Piwinski
-        formula is written as an integral over t from tm to infinity; this
-        substitution gives dt = 2*tan(k)*(1 + tan(k)^2) dk and leaves the
-        integrand below with an overall factor 2 applied in the rate formula.
-        """
-        from math import atan, sqrt, exp, log, pi
-
-        km = atan(sqrt(tm))
-
-        def int_piwinski(k):
-            t = np.tan(k) ** 2
-            fact = (
-                (2*t + 1)**2 * (t/tm / (1+t) - 1) / t
-                + t
-                - sqrt(t*tm * (1 + t))
-                - (2 + 1 / (2*t)) * log(t/tm / (1+t))
-            )
-            if B2 * t < 500:
-                intp = fact * exp(-B1*t) * i0(B2*t) * sqrt(1+t)
-            else:
-                intp = (
-                    fact
-                    * exp(B2*t - B1*t)
-                    / sqrt(2*pi * B2*t)
-                    * sqrt(1+t)
-                )
-            return intp
-
-        val, _ = quad(
-            int_piwinski,
-            km,
-            pi / 2,
-            epsabs=1e-16,
-            epsrel=1e-12,
-        )
-
-        return val
-
-    @staticmethod
-    def _compute_piwinski_b2(B1, B2_squared):
-        """
-        Piwinski B2 = sqrt(B2_squared).
-
-        Analytically 0 <= B2 <= B1, but B2_squared = B1^2 - (...) can come
-        out slightly negative from rounding when B2 ~ 0 (e.g. round beams):
-        within a relative 1e-7 of B1^2 (the tolerance of ELEGANT) it is
-        taken as 0 instead of giving NaN.
-        """
-        if B2_squared < 0:
-            if B2_squared >= -1e-7 * B1**2:
-                return 0.0
-            raise ValueError(
-                f"Piwinski B2^2 = {B2_squared:.6e} < 0 (B1 = {B1:.6e}): "
-                "check the optics and beam parameters.")
-        return np.sqrt(B2_squared)
+    _compute_piwinski_integral = staticmethod(piwinski_integral)
+    _compute_piwinski_b2 = staticmethod(piwinski_b2)
 
     def _compute_piwinski_scattering_rate(self, element):
         """
         Compute Piwinski Touschek scattering rate.
         """
-        p0c = self.particle_ref.p0c[0]
-        bunch_intensity = self.bunch_intensity
         local_momentum_acceptance = self.local_momentum_acceptance
-        gemitt_x = self.gemitt_x
-        gemitt_y = self.gemitt_y
         twiss = self.twiss
-        alfx = twiss['alfx', element]
-        betx = twiss['betx', element]
-        alfy = twiss['alfy', element]
-        bety = twiss['bety', element]
-        sigma_z = self.sigma_z
-        sigma_delta = self.sigma_delta
-        delta = twiss['delta', element]
-        dx = twiss['dx', element]
-        dpx = twiss['dpx', element]
-        dxt = alfx * dx + betx * dpx # dxt: dx tilde
-        dy = twiss['dy', element]
-        dpy = twiss['dpy', element]
-        dyt = alfy * dy + bety * dpy # dyt: dy tilde
 
         try:
             s = twiss.rows[element].s[0]
         except Exception:
             s = self.line.get_s_position(element)
 
-        delta_neg = np.interp(
-            s, local_momentum_acceptance.s, local_momentum_acceptance.delta_neg)
-        delta_pos = np.interp(
-            s, local_momentum_acceptance.s, local_momentum_acceptance.delta_pos)
-
-        sigmab_x = np.sqrt(gemitt_x * betx) # Horizontal betatron beam size
-        sigma_x = np.sqrt(gemitt_x * betx + dx**2 * sigma_delta**2)
-
-        sigmab_y = np.sqrt(gemitt_y * bety) # Vertical betatron beam size
-        sigma_y = np.sqrt(gemitt_y * bety + dy**2 * sigma_delta**2)
-
-        sigma_h = (
-            sigma_delta**-2
-            + (dx**2 + dxt**2)/sigmab_x**2
-            + (dy**2 + dyt**2)/sigmab_y**2
-        )**(-0.5)
-
-        p = p0c * (1 + delta)
-        gamma = np.sqrt(1 + p**2 / ELECTRON_MASS_EV**2)
-        beta = np.sqrt(1 - gamma**-2)
-
-        B1 = (
-            betx**2 / (2 * beta**2 * gamma**2 * sigmab_x**2)
-            * (1 - sigma_h**2 * dxt**2 / sigmab_x**2)
-            + bety**2 / (2 * beta**2 * gamma**2 * sigmab_y**2)
-            * (1 - sigma_h**2 * dyt**2 / sigmab_y**2)
+        return local_piwinski_rate(
+            p0c=self.particle_ref.p0c[0],
+            delta=twiss['delta', element],
+            alfx=twiss['alfx', element], betx=twiss['betx', element],
+            alfy=twiss['alfy', element], bety=twiss['bety', element],
+            dx=twiss['dx', element], dpx=twiss['dpx', element],
+            dy=twiss['dy', element], dpy=twiss['dpy', element],
+            delta_neg=np.interp(
+                s, local_momentum_acceptance.s,
+                local_momentum_acceptance.delta_neg),
+            delta_pos=np.interp(
+                s, local_momentum_acceptance.s,
+                local_momentum_acceptance.delta_pos),
+            gemitt_x=self.gemitt_x, gemitt_y=self.gemitt_y,
+            sigma_z=self.sigma_z, sigma_delta=self.sigma_delta,
+            bunch_intensity=self.bunch_intensity,
         )
-
-        B2 = self._compute_piwinski_b2(
-            B1,
-            B1**2
-            - betx**2 * bety**2 * sigma_h**2
-            / (beta**4 * gamma**4 * sigmab_x**4 * sigmab_y**4
-               * sigma_delta**2)
-            * (sigma_x**2 * sigma_y**2 - sigma_delta**4 * dx**2 * dy**2)
-        )
-
-        tau_neg = beta**2 * (delta_neg**2)
-        tau_pos = beta**2 * (delta_pos**2)
-
-        piwinski_integral_neg = self._compute_piwinski_integral(
-            tau_neg, B1, B2)
-        piwinski_integral_pos = self._compute_piwinski_integral(
-            tau_pos, B1, B2)
-
-        # Factor 2 comes from the t = tan(k)^2 substitution used in
-        # _compute_piwinski_integral; the manual formula is written directly in t.
-        rateN = (
-            CLASSICAL_ELECTRON_RADIUS**2 * C_LIGHT_VACUUM
-            * bunch_intensity**2
-            / (8*np.pi * gamma**2 * sigma_z
-               * np.sqrt(sigma_x**2 * sigma_y**2
-                         - sigma_delta**4 * dx**2 * dy**2))
-            * 2 * np.sqrt(np.pi * (B1**2 - B2**2))
-            * piwinski_integral_neg
-        )
-
-        rateP = (
-            CLASSICAL_ELECTRON_RADIUS**2 * C_LIGHT_VACUUM
-            * bunch_intensity**2
-            / (8*np.pi * gamma**2 * sigma_z
-               * np.sqrt(sigma_x**2 * sigma_y**2
-                         - sigma_delta**4 * dx**2 * dy**2))
-            * 2 * np.sqrt(np.pi * (B1**2 - B2**2))
-            * piwinski_integral_pos
-        )
-
-        return (rateN + rateP) / 2
 
     def _check_scattering_centres(self, tab):
         """
