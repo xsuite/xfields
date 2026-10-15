@@ -130,15 +130,20 @@ class TouschekResult:
         once tracked, ``num_lost_particles`` and ``sum_lost_weight``.
     rate_scattering : float
         Total Touschek scattering rate of the sections of the markers, i.e.
-        the sum of their integrated Piwinski rates [1/s].
+        the sum of their integrated Piwinski rates [1/s]. It is the rate of
+        the scattering events beyond the momentum acceptance, which are not
+        all lost.
     lifetime_scattering : float
-        Touschek lifetime inferred from ``rate_scattering`` [s].
+        Lifetime that the beam would have if all the particles scattered
+        beyond the momentum acceptance were lost, inferred from
+        ``rate_scattering`` [s]. It is a lower limit on the Touschek lifetime,
+        which is ``lifetime_tracking``.
     rate_tracking : float or None
-        Weighted rate of the scattered particles lost in tracking [1/s].
-        ``None`` if the particles were not tracked.
+        Touschek loss rate: weighted rate of the scattered particles lost in
+        tracking [1/s]. ``None`` if the particles were not tracked.
     lifetime_tracking : float or None
-        Touschek lifetime inferred from ``rate_tracking`` [s]. ``None`` if
-        the particles were not tracked.
+        Touschek lifetime, inferred from the loss rate ``rate_tracking`` [s].
+        ``None`` if the particles were not tracked.
     tracked : bool
         Whether the particles were tracked.
     particles_by_element : dict or None
