@@ -442,24 +442,27 @@ def test_generation_from_a_reloaded_line(ring, tmp_path, rng):
 
 
 @pytest.mark.parametrize('rng', ['elegant', 'xtrack'])
-def test_continuous_stream_reproduces_touschek_study(ring, rng):
-    config = dict(local_momentum_acceptance_scale=LMA_SCALE,
-                  n_scattering_events=20_000, weight_retention_fraction=0.99,
-                  seed=1997, rng=rng, method='4d', **BEAM)
-    study_line = _ring_with_markers()
-    study = xf.TouschekStudy(study_line, twiss=ring[1],
-                             local_momentum_acceptance=_lma(study_line),
-                             **config)
-    study.initialise_touschek()
-    expected = study.run(track=False, keep_particles=True).particles_by_element
-
+def test_continuous_stream_runs_through_the_markers(ring, rng):
+    """
+    With rng_stream='continuous', one stream seeded with the configured seed
+    runs through the markers in line order, as in ELEGANT (whose sequence the
+    ELEGANT reference test checks): the particles of a marker depend on the
+    markers generated before it.
+    """
     line = _ring_with_markers()
-    line.xfields.touschek.configure(twiss=ring[1], verbose=False,
-                                    local_momentum_acceptance=_lma(line),
-                                    **config)
-    generated = line.xfields.touschek.generate(rng_stream='continuous')
-    for nn, part in generated.items():
-        _assert_same_particles(part, expected[nn])
+    _configure(line, twiss=ring[1], rng=rng)
+    tsc = line.xfields.touschek
+    first, second = tsc.marker_names[1:3]
+
+    both = tsc.generate(at=[second, first], rng_stream='continuous')
+    _assert_same_particles(
+        both[first], tsc.generate(at=first, rng_stream='continuous'))
+    alone = tsc.generate(at=second, rng_stream='continuous')
+    assert not np.array_equal(both[second].x[:10], alone.x[:10])
+
+    # Not the streams of the markers
+    assert not np.array_equal(both[first].x[:10],
+                              tsc.generate(at=first).x[:10])
 
 
 def test_generate_checks_its_arguments(ring):

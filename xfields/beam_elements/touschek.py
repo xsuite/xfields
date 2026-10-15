@@ -156,30 +156,27 @@ def _resolve_bunch_intensity(*, bunch_intensity, default):
 
 class TouschekMarker(xt.BeamElement):
     """
-    Beam element that performs a Monte Carlo Touschek scattering simulation
-    at a single location in a lattice.
+    Touschek scattering marker: one scattering centre of a line.
 
-    Each element represents one scattering center along the lattice.  When
-    :meth:`scatter` is called it draws macro-particle pairs from the local
-    6D phase-space (Gaussian) distribution, applies the Møller cross-section,
-    boosts scattered pairs back to the lab frame, and returns the subset of
-    macro-particles whose momentum deviation exceeds the local momentum
-    acceptance (LMA).
+    The marker is passive and transparent for tracking: its ``track`` does
+    nothing. It represents the section of the line from the previous marker
+    (from the start of the line for the first one) to itself, and it stores
+    the configuration of the Touschek Monte Carlo for that section: the local
+    optics and closed orbit, the local momentum acceptance (LMA), the beam
+    parameters, the Monte Carlo settings and the scattering rate of the
+    section.
 
-    The element is *passive* during normal tracking (``track`` is a no-op);
-    all physics happens inside :meth:`scatter`.
-
-    The Monte Carlo kernel is implemented in C99 and follows the ELEGANT
-    algorithm of Xiao & Borland (PRSTAB 13, 074201, 2010).
+    Markers are installed with ``line.xfields.touschek.install_markers(...)``
+    or by hand, configured with ``line.xfields.touschek.configure(...)``, and
+    the scattered particles are generated with
+    ``line.xfields.touschek.generate(...)``: see
+    :class:`xfields.TouschekGenerator`. The whole configuration is stored in
+    the fields of the marker, and is therefore saved with the line.
 
     Parameters
     ----------
-    s : float, optional
-        Longitudinal position of the element in the lattice [m].  Default 0.
-    particle_ref : xtrack.Particles, optional
-        Reference particle carrying.
-    element_index : int, optional
-        Index of this element in the line.
+    p0c : float, optional
+        Reference momentum [eV].
     bunch_intensity : float, optional
         Number of physical particles in one bunch.
     alfx, betx : float, optional
@@ -194,7 +191,7 @@ class TouschekMarker(xt.BeamElement):
         Horizontal closed-orbit position and normalised momentum at the
         element.
     y_co, py_co : float, optional
-        Vertical closed-orbit position and normalised momentum at the 
+        Vertical closed-orbit position and normalised momentum at the
         element.
     zeta_co, delta_co : float, optional
         Longitudinal closed-orbit coordinate and relative momentum
@@ -216,47 +213,51 @@ class TouschekMarker(xt.BeamElement):
         loop. Larger values reduce statistical noise but increase CPU time.
     nx, ny, nz : float, optional
         Truncation of the Gaussian distribution in the transverse and
-        longitudinal planes. ``nz`` may be reduced automatically by
-        :class:`TouschekStudy` to prevent particles being drawn outside the
-        LMA before scattering.
+        longitudinal planes. ``nz`` is reduced where needed by the
+        configuration, so that no particle is drawn outside the LMA before
+        scattering.
     theta_min, theta_max : float, optional
         Lower and upper limits of the centre-of-mass scattering angle
         ``theta`` [rad]. In practice set to ``0.00005 * pi`` and
         ``0.99995 * pi`` to avoid the forward/backward divergence of the
         Møller cross-section.
-    piwinski_rate : float, optional
-        Local Piwinski scattering rate [Hz] evaluated at this element.
-        Stored for diagnostics; not used in the Monte Carlo kernel.
     weight_retention_fraction : float, optional
-        Fraction of the generated scattering weight to retain in the returned
+        Fraction of the generated scattering weight to retain in the
         particle sample. The highest-weight particles are retained until their
         cumulative weight reaches approximately this fraction of the total
         generated weight. The default value of ``1.0`` keeps all generated
         particles. Values smaller than one reduce tracking cost by discarding
         the lowest-weight tail, at the price of a controlled downward
         truncation of the represented rate.
+    piwinski_rate : float, optional
+        Local Piwinski scattering rate [1/s] at this element. Stored for
+        diagnostics; not used in the Monte Carlo kernel.
     integrated_piwinski_rate : float, optional
         Piwinski rate integrated (trapezoidal rule) over the lattice section
         preceding this element and divided by the line length to give the
-        section contribution to the ring-averaged per-bunch rate [1/s].
-        Set by :meth:`TouschekStudy.initialise_touschek`; used to weight
-        the scattered macro-particles.
+        section contribution to the ring-averaged per-bunch rate [1/s]. Used
+        to weight the scattered macro-particles.
+    rng : {'elegant', 'xtrack'} or None, optional
+        Random-number generator. ``'elegant'`` reproduces the Elegant/SDDS
+        generator sequence; ``'xtrack'`` uses the xtrack accurate uniform
+        generator. If ``None`` (default), the stored ``rng_source`` is kept
+        (``'elegant'`` for a new element).
+    seed : int, optional
+        Seed from which the random-number streams of this element are
+        derived.
+
     Attributes
     ----------
-    piwinski_rate : float
-        Local Piwinski scattering rate [Hz] at this element.
     total_mc_rate : float
-        Total Monte Carlo scattering rate [Hz] returned by the last call to
-        :meth:`scatter`.
+        Total Monte Carlo scattering rate [1/s] of the last generation at
+        this element.
     ignored_rate : float
-        Scattering rate [Hz] associated with the low-weight particles
-        discarded by ``pickPart`` in the last call to :meth:`scatter`,
-        i.e. approximately ``(1 - weight_retention_fraction)`` times
-        ``total_mc_rate``.
+        Scattering rate [1/s] associated with the low-weight particles
+        discarded by ``pickPart`` in the last generation, i.e. approximately
+        ``(1 - weight_retention_fraction)`` times ``total_mc_rate``.
     theta_log : dict
         Mapping ``{particle_id: theta}`` of centre-of-mass scattering
-        angles [rad] for the particles returned by the last call to
-        :meth:`scatter`.
+        angles [rad] for the particles of the last generation.
 
     Notes
     -----
@@ -280,13 +281,13 @@ class TouschekMarker(xt.BeamElement):
        ``delta`` falls outside the LMA:
        ``delta < delta_neg`` or ``delta > delta_pos``.
     7. ``pickPart`` retains only the highest-weight particles whose
-        cumulative weight reaches approximately
-        ``weight_retention_fraction`` of the total simulated weight.
-        The remaining low-weight events are discarded.
+       cumulative weight reaches approximately
+       ``weight_retention_fraction`` of the total simulated weight.
+       The remaining low-weight events are discarded.
 
-    Macro-particle weights are normalised so that
-    the sum of ``weight`` equals the per-turn loss rate in the corresponding
-    lattice section (in particles/turn).
+    Macro-particle weights are normalised so that the sum of ``weight``
+    equals the scattering rate of the corresponding lattice section [1/s per
+    bunch], times the retained fraction.
 
     References
     ----------
@@ -359,9 +360,7 @@ class TouschekMarker(xt.BeamElement):
         ),
     }
 
-    def __init__(self, s=0.0,
-                particle_ref=None,
-                element_index=0,
+    def __init__(self, p0c=0.0,
                 bunch_intensity=None,
                 alfx=0.0, betx=0.0, alfy=0.0, bety=0.0,
                 dx=0.0, dpx=0.0, dy=0.0, dpy=0.0,
@@ -380,20 +379,16 @@ class TouschekMarker(xt.BeamElement):
                 seed=0,
                 **kwargs):
         """
-        Create a Touschek scattering element.
+        Create a Touschek marker.
 
-        Most local optics and beam parameters are normally supplied later by
-        :class:`xfields.TouschekStudy`; direct construction is mainly used to
-        place scattering markers in a line before configuring a study.
+        The local optics, beam parameters and Monte Carlo settings are
+        normally set by ``line.xfields.touschek.configure(...)``; the
+        markers are created without them, to be installed in a line.
 
         Parameters
         ----------
-        s : float, optional
-            Longitudinal position of the element in the lattice.
-        particle_ref : xtrack.Particles, optional
-            Reference particle.
-        element_index : int, optional
-            Index of this element in the line.
+        p0c : float, optional
+            Reference momentum [eV].
         bunch_intensity : float, optional
             Number of real particles in the bunch.
         alfx, betx, alfy, bety : float, optional
@@ -426,8 +421,7 @@ class TouschekMarker(xt.BeamElement):
             Piwinski rate integrated over the lattice section represented by
             this element.
         rng : {'elegant', 'xtrack'} or None, optional
-            Random-number generator used by :meth:`scatter`. ``'elegant'``
-            reproduces the Elegant/SDDS generator sequence; ``'xtrack'`` uses
+            Random-number generator. ``'elegant'`` reproduces the Elegant/SDDS generator sequence; ``'xtrack'`` uses
             the xtrack accurate uniform generator. If ``None`` (default), the
             stored ``rng_source`` is kept (``'elegant'`` for a new element).
         seed : int, optional
@@ -451,12 +445,7 @@ class TouschekMarker(xt.BeamElement):
         
         super().__init__(**kwargs)
 
-        if particle_ref is None:
-            particle_ref = xt.Particles(_context=self._buffer.context)
-
-        self.s = s
-        self.particle_ref = particle_ref
-        self.element_index = element_index
+        self.p0c = p0c
         self.bunch_intensity = _resolve_bunch_intensity(
             bunch_intensity=bunch_intensity,
             default=0.0)
@@ -500,7 +489,7 @@ class TouschekMarker(xt.BeamElement):
     @property
     def rng(self):
         """
-        Random-number generator used by :meth:`scatter`.
+        Random-number generator used to generate the scattered particles.
 
         Parameters
         ----------
@@ -516,7 +505,7 @@ class TouschekMarker(xt.BeamElement):
     @rng.setter
     def rng(self, value):
         """
-        Set the random-number generator used by :meth:`scatter`.
+        Set the random-number generator used to generate the particles.
 
         Parameters
         ----------
@@ -531,8 +520,7 @@ class TouschekMarker(xt.BeamElement):
 
     def _configure(self, **kwargs):
         config_allowed = {
-            "s", "particle_ref", "element_index",
-            "bunch_intensity",
+            "p0c", "bunch_intensity",
             "gemitt_x", "gemitt_y",
             "alfx", "betx", "alfy", "bety",
             "dx", "dpx", "dy", "dpy",
@@ -576,45 +564,6 @@ class TouschekMarker(xt.BeamElement):
 
         for kk, vv in kwargs.items():
             setattr(self, kk, vv)
-            if kk == "particle_ref":
-                self.p0c = self.particle_ref.p0c[0]
-
-    def scatter(self, _rng_state=None, _rng_particle=None):
-        """
-        Generate weighted Touschek-scattered macro-particles.
-
-        Parameters
-        ----------
-        _rng_state : TouschekRNGState or None, optional
-            Explicit Elegant-compatible RNG state. Used only when
-            ``rng='elegant'``. If ``None``, a temporary state is created from a
-            seed drawn with :mod:`numpy.random`.
-        _rng_particle : xtrack.Particles or None, optional
-            Carrier particle holding the xtrack RNG state. Used only when
-            ``rng='xtrack'``. If ``None``, a temporary carrier is created and
-            seeded from :mod:`numpy.random`.
-
-        Returns
-        -------
-        particles : xtrack.Particles
-            Particles selected by the local momentum-acceptance criterion and
-            weighted so that their total weight represents the retained
-            section scattering rate.
-        """
-        if self.rng_source == _TOUSCHEK_RNG_ELEGANT and _rng_state is None:
-            _rng_state = TouschekRNGState(_context=self._context)
-        if self.rng_source == _TOUSCHEK_RNG_XTRACK and _rng_particle is None:
-            _rng_particle = xt.Particles(_context=self._context)
-            _rng_particle._init_random_number_generator(
-                seeds=_make_xtrack_rng_seed(None))
-
-        return self._generate(
-            particle_ref=self.particle_ref,
-            at_element=self.element_index,
-            s=getattr(self, 's', 0.0),
-            rng_state=_rng_state,
-            rng_particle=_rng_particle,
-        )
 
     def _generate(self, *, particle_ref, at_element, s, rng_state=None,
                   rng_particle=None, weight_scale=1.0):
@@ -750,8 +699,9 @@ class TouschekMarker(xt.BeamElement):
         """
         Track particles through the element without applying a kick.
 
-        Touschek scattering is generated explicitly by :meth:`scatter`; during
-        normal lattice tracking this element behaves as a passive marker.
+        The Touschek-scattered particles are generated explicitly, by
+        ``line.xfields.touschek.generate(...)``: during tracking this element
+        is a passive marker.
 
         Parameters
         ----------

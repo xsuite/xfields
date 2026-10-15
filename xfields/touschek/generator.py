@@ -250,7 +250,7 @@ def _effective_nz(nz, delta_neg, delta_pos, sigma_delta):
 def _configure_markers(line, *, twiss, lma_s, lma_delta_neg, lma_delta_pos,
                        bunch_intensity, gemitt_x, gemitt_y, sigma_z,
                        sigma_delta, n_scattering_events, nx, ny, nz,
-                       weight_retention_fraction, rng, seed=None, at=None,
+                       weight_retention_fraction, rng, seed, at=None,
                        verbose=True):
     """
     Compute the Touschek rates and store the configuration on the markers.
@@ -273,9 +273,8 @@ def _configure_markers(line, *, twiss, lma_s, lma_delta_neg, lma_delta_pos,
         Fraction of the scattering weight retained in the samples.
     rng : {'elegant', 'xtrack'}
         Random-number generator.
-    seed : int or None, optional
-        Seed stored on the markers. If ``None``, the stored seeds are not
-        changed.
+    seed : int
+        Seed of the random-number streams of the markers.
     at : str, sequence of str, or None, optional
         Markers to configure. ``None`` configures all of them. The sections
         are always defined by all the markers of the line.
@@ -291,10 +290,8 @@ def _configure_markers(line, *, twiss, lma_s, lma_delta_neg, lma_delta_pos,
     generator._check_sections_cover_line()
     selected = markers if at is None else generator._markers(at)
 
-    particle_ref = line.particle_ref
-    p0c = particle_ref.p0c[0]
+    p0c = line.particle_ref.p0c[0]
     tab = line.get_table()
-    element_index = {nn: ii for ii, nn in enumerate(line.element_names)}
 
     def local_rate(name):
         s = twiss['s', name]
@@ -340,11 +337,8 @@ def _configure_markers(line, *, twiss, lma_s, lma_delta_neg, lma_delta_pos,
                       f'(instead of {nz:.2f}) to sample inside the local '
                       'momentum acceptance')
 
-        marker = line.element_dict[nn]
-        marker._configure(
-            s=s,
-            particle_ref=particle_ref,
-            element_index=element_index[nn],
+        line.element_dict[nn]._configure(
+            p0c=p0c,
             bunch_intensity=bunch_intensity,
             gemitt_x=gemitt_x,
             gemitt_y=gemitt_y,
@@ -365,9 +359,8 @@ def _configure_markers(line, *, twiss, lma_s, lma_delta_neg, lma_delta_pos,
             piwinski_rate=local_rate(nn),
             integrated_piwinski_rate=integrated[nn],
             rng=rng,
+            seed=seed,
         )
-        if seed is not None:
-            marker.seed = seed
 
 
 def _is_sequence(value):

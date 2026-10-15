@@ -31,12 +31,10 @@
  *  - There are no process-global static RNG streams in this header. The RNG
  *    state is stored in the TouschekRNGState xobject and passed explicitly to
  *    the seeding and scattering kernels.
- *  - The TouschekStudy object owns one RNG state and passes it through the
- *    selected TouschekMarker elements, so the stream continues from one
- *    element to the next.
- *  - Direct TouschekMarker.scatter() calls can receive an explicit state;
- *    if none is supplied, Python creates a temporary TouschekRNGState seeded
- *    from numpy.random.
+ *  - By default, the Touschek generator seeds one state for each marker and
+ *    replica, from the configured seed. With rng_stream='continuous', one
+ *    state is passed through the selected markers in line order, so that
+ *    the stream continues from one marker to the next, as in Elegant.
  *  - MPI seed diversification from Elegant is intentionally omitted here.
  *  - Special behavior for seed 987654321 (seed-permutation inhibition) is
  *    preserved.

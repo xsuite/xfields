@@ -5,4 +5,3 @@
 
 from .analysis import TouschekResult
 from .generator import TouschekGenerator
-from .study import TouschekStudy
