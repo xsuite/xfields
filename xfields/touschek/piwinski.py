@@ -201,3 +201,88 @@ def local_piwinski_rate(*, p0c, delta, alfx, betx, alfy, bety,
     )
 
     return (rateN + rateP) / 2
+
+
+def integrated_piwinski_rates(*, names, s, markers, local_rate, line_length,
+                              at=None):
+    """
+    Integrate the local Piwinski rate over the sections of the markers.
+
+    The rate is integrated with the trapezoidal rule over the rows of the
+    line table. The section of a marker goes from the previous marker to
+    it, and the section of the first marker from s = 0 (an empty section,
+    of zero rate, if it sits at s = 0, as in ELEGANT).
+
+    Parameters
+    ----------
+    names : sequence of str
+        Names of the rows of the line table, including the final
+        ``_end_point`` row.
+    s : sequence of float
+        Longitudinal positions of the rows [m].
+    markers : sequence of str
+        Names of all the scattering markers of the line, in line order. They
+        define the sections.
+    local_rate : callable
+        ``local_rate(name)`` returns the local Piwinski rate [1/s] at the
+        row ``name``.
+    line_length : float
+        Length of the line [m].
+    at : str or None, optional
+        If given, only the section of this marker is integrated.
+
+    Returns
+    -------
+    rates : dict
+        Mapping ``{marker: rate}`` with the rate integrated over the section
+        of the marker and divided by the line length, i.e. the contribution
+        of the section to the ring-averaged rate per bunch [1/s].
+    """
+    names = list(names)
+    s_of = dict(zip(names, s))
+    index_of = {nn: ii for ii, nn in enumerate(names)}
+    markers = list(markers)
+    ii_markers = sorted(index_of[nn] for nn in markers)
+
+    def _step(name, s_before, rate_before, integrated):
+        s_name = s_of[name]
+        ds = s_name - s_before
+        if ds > 0.0:
+            rate = local_rate(name)
+            integrated += 0.5 * (rate_before + rate) * ds
+            return s_name, rate, integrated
+        else:
+            return s_before, rate_before, integrated
+
+    rates = {}
+    if at is None:
+        # All the sections, in one pass along the line
+        i_marker = 0
+        s_before = 0.0
+        rate_before = local_rate(names[0])
+        integrated = 0.0
+        for ii, nn in enumerate(names):
+            s_before, rate_before, integrated = _step(
+                nn, s_before, rate_before, integrated)
+            if ii == ii_markers[i_marker]:
+                rates[nn] = integrated / line_length
+                integrated = 0.0
+                i_marker += 1
+                if i_marker == len(ii_markers):
+                    break
+    else:
+        # Only the section of `at`, from the previous marker (or from the
+        # start of the line for the first one)
+        i_marker = markers.index(at)
+        before = markers[i_marker - 1] if i_marker != 0 else names[0]
+        s_before = s_of[before]
+        rate_before = local_rate(before)
+        integrated = 0.0
+        for nn in names[index_of[before]:index_of[at] + 1]:
+            s_before, rate_before, integrated = _step(
+                nn, s_before, rate_before, integrated)
+            if nn == at:
+                rates[at] = integrated / line_length
+                break
+
+    return rates

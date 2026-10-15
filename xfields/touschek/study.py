@@ -14,7 +14,9 @@ from ..beam_elements.touschek import (
     _resolve_n_scattering_events, _resolve_bunch_intensity,
     _resolve_rng_source, _rng_source_name, _make_xtrack_rng_seed,
     _TOUSCHEK_RNG_ELEGANT, _TOUSCHEK_RNG_XTRACK)
-from .piwinski import local_piwinski_rate, piwinski_b2, piwinski_integral
+from .piwinski import (
+    integrated_piwinski_rates, local_piwinski_rate, piwinski_b2,
+    piwinski_integral)
 
 
 def _allocated(particles):
@@ -601,83 +603,25 @@ class TouschekStudy:
         :meth:`_check_scattering_centres`), so that every part of the line
         belongs to exactly one section.
         """
-        def _get_s(name):
-            try:
-                return tab.rows[name].s[0]
-            except (KeyError, AttributeError, IndexError, TypeError):
-                return self.line.get_s_position(name)
-            
-        def _step(name, s_before, rate_before, integrated):
-            s = _get_s(name)
-            ds = s - s_before
-            if ds > 0.0:
-                rate = self._compute_piwinski_scattering_rate(name)
-                integrated += 0.5 * (rate_before + rate) * ds
-                return s, rate, integrated
-            else:
-                return s_before, rate_before, integrated
-
         line = self.line
         tab = line.get_table()
-        line_length = float(self.twiss.line_length)
         self._check_scattering_centres(tab)
 
-        # Indexes of the TouschekScatterings
-        ii_t = [
-            ii for ii, nn in enumerate(tab.name[:-1])
+        markers = [
+            nn for nn in tab.name[:-1]
             if isinstance(line[nn], TouschekScattering)
         ]
-
-        if element is None:
-            ii_current = 0
-            s0 = 0.0
-            r0 = self._compute_piwinski_scattering_rate(tab.name[0])
-        else:
-            # Position of `element` among the TouschekScattering elements
-            # (not a number parsed from its name, which need not be it)
-            ii_current = [tab.name[ii] for ii in ii_t].index(element)
-            tscatter_before = (
-                tab.name[ii_t[ii_current - 1]]
-                if ii_current != 0 else tab.name[0])
-            s0 = _get_s(tscatter_before)
-            r0 = self._compute_piwinski_scattering_rate(tscatter_before)
-
-        s_before = s0
-        rate_before = r0
-        integrated = 0.0
-
-        if element is None:
-            # Configure all the TouschekScattering elements
-            for ii, nn in enumerate(tab.name):
-                s_before, rate_before, integrated = _step(
-                    nn, s_before, rate_before, integrated)
-
-                if ii == ii_t[ii_current]:
-                    # Divide by the circumference to get the section contribution
-                    # to the ring-averaged per-bunch rate.
-                    integrated_piwinski_rate = integrated / line_length
-                    elem = line[nn] # TouschekScattering
-                    elem._configure(
-                        integrated_piwinski_rate=integrated_piwinski_rate)
-                    integrated = 0.0
-                    ii_current += 1
-                    if ii_current == len(ii_t):
-                        break
-        else:
-            # Configure only the TouschekScattering element named `element`
-            subtab = tab.rows[tscatter_before:element]
-            for nn in subtab.name:
-                s_before, rate_before, integrated = _step(
-                    nn, s_before, rate_before, integrated)
-
-                if nn == element:
-                    # Divide by the circumference to get the section contribution
-                    # to the ring-averaged per-bunch rate.
-                    integrated_piwinski_rate = integrated / line_length
-                    elem = line[nn] # TouschekScattering
-                    elem._configure(
-                        integrated_piwinski_rate=integrated_piwinski_rate)
-                    break
+        rates = integrated_piwinski_rates(
+            names=tab.name,
+            s=tab.s,
+            markers=markers,
+            local_rate=self._compute_piwinski_scattering_rate,
+            line_length=float(self.twiss.line_length),
+            at=element,
+        )
+        for nn, integrated_piwinski_rate in rates.items():
+            line[nn]._configure(
+                integrated_piwinski_rate=integrated_piwinski_rate)
 
     def initialise_touschek(self, element=None):
         '''
