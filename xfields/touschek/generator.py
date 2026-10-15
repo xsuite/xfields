@@ -1127,7 +1127,14 @@ class TouschekGenerator:
                     "them with `line.xfields.touschek.install_markers(...)`.")
             return names
 
-        selected = [at] if isinstance(at, str) else list(at)
+        if isinstance(at, str):
+            selected = [at]
+        elif hasattr(at, '__iter__'):
+            selected = list(at)
+        else:
+            raise TypeError(
+                "Touschek markers are selected by name "
+                f"(got {type(at).__name__}).")
         if len(selected) == 0:
             raise ValueError("No Touschek marker selected.")
         position = {nn: ii for ii, nn in enumerate(names)}

@@ -316,6 +316,9 @@ def test_configure_checks_its_arguments(ring):
         _configure(line, at='mqf.1_entry')
     with pytest.raises(ValueError, match='rng'):
         _configure(line, rng='other')
+    for at in (42, [42]):
+        with pytest.raises(TypeError, match='selected by name'):
+            _configure(line, at=at)
 
     no_markers = _ring()
     with pytest.raises(ValueError, match='install_markers'):
