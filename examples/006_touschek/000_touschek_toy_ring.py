@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 
 import xobjects as xo
 import xtrack as xt
-import xfields as xf
 
 ######################################################
 # Beam parameters
@@ -27,24 +26,17 @@ line = xt.load('../../test_data/four_cell_ring/line.json')
 env = line.env
 
 ######################################################
-# Insert Touschek scattering centers
+# Install Touschek scattering markers
 ######################################################
+# Each marker represents the section of the line from the previous marker to
+# itself. They are installed in the middle of each magnet, to follow the
+# variations of the optical functions. A marker is also added at the end of
+# the line, so that the sections cover the whole ring.
 tab = line.get_table()
 tab_bends_quads = tab.rows[
     (tab.element_type == 'Bend') | (tab.element_type == 'Quadrupole')
 ]
-
-placements = []
-for ii, nn in enumerate(tab_bends_quads.name):
-    tscatter_name = f'TScatter.{ii}'
-    env.elements[tscatter_name] = xf.TouschekMarker()
-    placements.append(env.place(tscatter_name, at=0.0, from_=nn))
-
-tscatter_name = f'TScatter.{ii+1}'
-env.elements[tscatter_name] = xf.TouschekMarker()
-placements.append(env.place(tscatter_name, at=tab.s[-1]))
-
-line.insert(placements)
+line.xfields.touschek.install_markers(at=list(tab_bends_quads.name))
 
 ######################################################
 # Install apertures
@@ -70,11 +62,10 @@ line.insert(placements)
 ######################################################
 # Evaluate local momentum acceptance profile
 ######################################################
-tab = line.get_table()
-touschek_elements = tab.rows.match(element_type='TouschekMarker').name
+touschek_markers = line.xfields.touschek.marker_names
 
 lma = line.get_local_momentum_acceptance(
-    elements=touschek_elements,
+    elements=touschek_markers,
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
     y_offset=1e-9,
@@ -94,7 +85,7 @@ plt.grid()
 plt.show()
 
 ######################################################
-# Touschek simulation with the line.xfields facade
+# Configure the Touschek markers
 ######################################################
 local_momentum_acceptance_scale = 0.85
 n_scattering_events = int(5e6)
@@ -103,7 +94,13 @@ nturns = 1000
 line.discard_tracker()
 line.build_tracker(_context=xo.ContextCpu(omp_num_threads='auto'))
 
-touschek = line.xfields.touschek_configure(
+# Computes the Piwinski scattering rate integrated over the section of each
+# marker, and stores it on the marker together with the local optics, the
+# local momentum acceptance, the beam parameters and the Monte Carlo
+# settings. The configured line can be saved here (e.g. with line.to_json):
+# once loaded again, it generates the same particles (see
+# 003_touschek_jobs.py).
+line.xfields.touschek.configure(
     local_momentum_acceptance=lma,
     local_momentum_acceptance_scale=local_momentum_acceptance_scale,
     nemitt_x=nemitt_x,
@@ -119,14 +116,48 @@ touschek = line.xfields.touschek_configure(
     method='4d',
 )
 
-print(touschek.local_rates())
+print(line.xfields.touschek.analyse().local_rates)
 
-result = touschek.run(
-    track=True,
-    n_turns=nturns,
-    keep_particles=True,
-    with_progress=1,
+######################################################
+# Generate and track the Touschek-scattered particles
+######################################################
+# For each marker:
+#   1. Generate the particles scattered in its section, beyond the local
+#      momentum acceptance
+#   2. Track them around the ring for `nturns` turns, starting and ending at
+#      the marker
+particles_list = []
+for name in touschek_markers:
+    particles = line.xfields.touschek.generate(at=name)
+    print(f'\nTracking particles scattered at {name}')
+    line.track(particles, ele_start=name, ele_stop=name, num_turns=nturns,
+               with_progress=1)
+    particles_list.append(particles)
+
+# The weights are rates [1/s]: merged, the samples of all the markers
+# represent the Touschek scattering of the whole ring
+particles = xt.Particles.merge(particles_list)
+
+######################################################
+# Optional: refine loss locations
+######################################################
+loss_loc_refinement = xt.LossLocationRefinement(
+    line,
+    n_theta=360, # Angular resolution of the polygonal aperture approximation
+    r_max=0.5,   # Maximum transverse aperture [m]
+    dr=50e-6,    # Transverse loss refinement accuracy [m]
+    ds=0.1,      # Longitudinal loss refinement accuracy [m]
 )
+
+loss_loc_refinement.refine_loss_location(particles)
+
+######################################################
+# Touschek loss rate and lifetime
+######################################################
+result = line.xfields.touschek.analyse(particles)
+
+# All of the above in one call:
+# result = line.xfields.touschek.run(n_turns=nturns)
 
 print(f'Touschek scattering rate: {result.rate_scattering*1e-3:.3f} kHz')
 print(f'Touschek tracking rate:   {result.rate_tracking*1e-3:.3f} kHz')
@@ -134,22 +165,10 @@ print(f'Scattering lifetime:      {result.lifetime_scattering/60:.2f} min')
 print(f'Tracking lifetime:        {result.lifetime_tracking/60:.2f} min')
 
 ######################################################
-# Optional: refine loss locations
-######################################################
-loss_loc_refinement = xt.LossLocationRefinement(
-    line,
-    n_theta=360,
-    r_max=0.5,
-    dr=50e-6,
-    ds=0.1,
-)
-
-loss_loc_refinement.refine_loss_location(result.particles)
-lost_particles = result.particles.filter(result.particles.state == 0)
-
-######################################################
 # Plot: Toy ring Touschek loss map
 ######################################################
+lost_particles = particles.filter(particles.state == 0) # lost on an aperture
+
 circumference = line.get_length()
 binwidth = 0.1
 
