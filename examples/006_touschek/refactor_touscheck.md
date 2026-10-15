@@ -34,8 +34,11 @@ tsc.configure(local_momentum_acceptance=lma, nemitt_x=..., nemitt_y=...,
               n_scattering_events=..., seed=..., method='4d')
 # The line can be saved here, with its configuration
 
+tab = line.get_table()
+touschek_elements = tab.rows.match(element_type='TouschekMarker').name
+
 particles_list = []
-for name in tsc.marker_names:
+for name in touschek_elements:
     part = tsc.generate(at=name)
     line.track(part, ele_start=name, ele_stop=name, num_turns=n_turns)
     particles_list.append(part)
