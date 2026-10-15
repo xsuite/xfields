@@ -422,6 +422,26 @@ class TouschekGenerator:
     ----------
     line : xtrack.Line
         Line containing, or receiving, the Touschek markers.
+
+    Examples
+    --------
+    .. code-block:: python
+
+        tsc = line.xfields.touschek
+        tsc.install_markers(at=['mq1', 'mb1@start', 12.3])
+        tsc.configure(local_momentum_acceptance=lma, nemitt_x=1e-5,
+                      nemitt_y=1e-7, sigma_z=4e-3, sigma_delta=1e-3,
+                      bunch_intensity=4e9, n_scattering_events=100_000,
+                      seed=1997)
+
+        particles_list = []
+        for name in tsc.marker_names:
+            part = tsc.generate(at=name)
+            line.track(part, ele_start=name, ele_stop=name, num_turns=1000)
+            particles_list.append(part)
+
+        result = tsc.analyse(xt.Particles.merge(particles_list))
+        print(result.lifetime_tracking)
     """
 
     def __init__(self, line):

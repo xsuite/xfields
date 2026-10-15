@@ -1,214 +1,136 @@
-# Touschek Refactor Summary
+# Touschek API: markers and generator
 
-Reference commit:
+This note summarizes the restructuring of the Touschek API into passive
+markers and a generator bound to the line. The same design is used for the
+beam-gas scattering of xcoll (`BeamGasMarker`, `line.xcoll.beamgas`). It
+replaces the `xf.TouschekStudy` workflow, introduced after the original
+Touschek merge (`3f1496b3`, PR #207), which is removed without a deprecation
+period.
 
-```text
-3f1496b36a37069222b4082207bac84ff8a9e883
-Merge pull request #207 from gbrogginess/touschek
-```
+## Design
 
-This note summarizes the changes made after the original Touschek merge, with
-the intent of making the feature easier to use, easier to document, and more
-consistent with Xsuite naming conventions.
+- `xf.TouschekMarker` (formerly `xf.TouschekScattering`) is a passive marker,
+  transparent for tracking. Each marker represents the section of the line
+  from the previous marker (from `s = 0` for the first one) to itself, and
+  stores, in its fields, the whole configuration of the Monte Carlo of its
+  section: local optics and closed orbit, local momentum acceptance, beam
+  parameters, Monte Carlo settings, random-number seed, and the scattering
+  rate of the section.
+- `xf.TouschekGenerator`, available as `line.xfields.touschek`, finds the
+  markers of the line, configures them, generates the scattered particles and
+  analyses them. It holds no state other than the line.
 
-## Main API Changes
-
-The original high-level workflow has been reshaped around a single public study
-object:
-
-```python
-touschek = line.xfields.touschek_configure(...)
-result = touschek.run(track=True, n_turns=...)
-```
-
-`line.xfields.touschek_configure(...)` now returns a `xf.TouschekStudy`.
-The study object owns the configuration and exposes:
-
-- `local_rates()`
-- `generate_particles()`
-- `run(...)`
-
-The previous public `TouschekManager` / `TouschekCalculator` split was removed.
-The implementation now uses `xf.TouschekStudy` as the public object.
-
-## Naming Changes
-
-Several parameters were renamed to make the API more explicit:
-
-```text
-ignored_portion          -> weight_retention_fraction
-n_simulated              -> n_scattering_events
-bunch_population         -> bunch_intensity
-deltan / deltap          -> delta_neg / delta_pos
-deltaN / deltaP          -> delta_neg / delta_pos
-```
-
-Compatibility aliases are still kept for:
-
-- `ignored_portion`
-- `n_simulated`
-
-No backward-compatibility alias was kept for:
-
-- `bunch_population`
-- `deltan` / `deltap`
-- `deltaN` / `deltaP`
-
-Those names belonged to the new Touschek functionality and were removed before
-the API reached users.
-
-## Local Momentum Acceptance
-
-`xtrack.Line.get_local_momentum_acceptance()` now returns clearer table columns:
-
-```text
-name
-s
-delta_neg
-delta_pos
-```
-
-instead of:
-
-```text
-deltan
-deltap
-```
-
-The Touschek study now requires an LMA table with `delta_neg` and `delta_pos`.
-The same names are used in the `TouschekScattering` xobject fields and in the C
-kernel accessors.
-
-## Touschek Facade
-
-A line-level xfields facade was added, following the style of other line
-facades:
-
-```python
-line.xfields.touschek_configure(...)
-```
-
-The facade workflow is to configure once and then call methods on the returned
-`TouschekStudy`.
-
-## Examples
-
-The original example was kept:
-
-```text
-examples/006_touschek/000_touschek_toy_ring.py
-```
-
-A new facade-based example was added:
-
-```text
-examples/006_touschek/001_touschek_toy_ring_facade.py
-```
-
-The examples now use the clearer API names:
-
-```python
-bunch_intensity=...
-n_scattering_events=...
-weight_retention_fraction=...
-```
-
-and plot/use LMA columns as:
-
-```python
-lma.delta_neg
-lma.delta_pos
-```
-
-## Rate And Weight Handling
-
-The study still uses the Piwinski rate to normalize the weighted Monte Carlo
+Since the configuration is stored in the markers, the configured line can be
+saved to JSON and loaded again, e.g. in separate jobs, and generates the same
 particles.
 
-`weight_retention_fraction` is now phrased from the user perspective:
+## Standard workflow
 
 ```python
-weight_retention_fraction=0.99
+tsc = line.xfields.touschek
+tsc.install_markers(at=[...])        # or by hand: env.place + line.insert
+tsc.configure(local_momentum_acceptance=lma, nemitt_x=..., nemitt_y=...,
+              sigma_z=..., sigma_delta=..., bunch_intensity=...,
+              n_scattering_events=..., seed=..., method='4d')
+# The line can be saved here, with its configuration
+
+particles_list = []
+for name in tsc.marker_names:
+    part = tsc.generate(at=name)
+    line.track(part, ele_start=name, ele_stop=name, num_turns=n_turns)
+    particles_list.append(part)
+particles = xt.Particles.merge(particles_list)
+
+# Optional: xt.LossLocationRefinement(...).refine_loss_location(particles)
+result = tsc.analyse(particles)
 ```
 
-means that the returned particle set represents approximately 99 percent of the
-generated scattering weight. The discarded low-weight tail is not renormalized
-onto the retained particles.
+`tsc.run(n_turns)` does the same steps in one call. The examples are
+`000_touschek_toy_ring.py` (the workflow above),
+`002_compare_elegant_reference.py` (the ELEGANT benchmark) and
+`003_touschek_jobs.py` (independent jobs, merged afterwards).
 
-Set:
+## Installation of the markers
 
-```python
-weight_retention_fraction=1.0
-```
+`install_markers(at, from_=..., anchor=..., from_anchor=..., names=...)`
+creates the markers and places them with `env.place` and `line.insert`: `at`
+can be an `s` position, an expression of the environment variables, an xdeps
+reference, an element name (its centre), or `'name@start'`/`'name@end'`.
+Scalars apply to all the markers, lists give one value per marker. The
+default names are `tscatter.<i>`.
 
-to keep all generated particles.
+The last marker must sit at the end of the line, otherwise the part of the
+line after it belongs to no section (as for the TSCATTER elements of ELEGANT):
+`install_markers` adds such a marker if needed (`close_ring=True`), and
+`configure` refuses a line without it.
 
-## Physics And Implementation Fixes
+## Independent jobs and merging
 
-The Touschek study now uses:
+- Each marker has its own random-number stream, derived with
+  `numpy.random.SeedSequence` from the configured seed, the name of the marker
+  and the replica index. The particles of a marker do not depend on the other
+  markers generated, nor on the order: one job generating all the markers and
+  one job per marker give the same particles.
+- `generate(at=name, replica=r, n_replicas=R)` generates an independent sample
+  of a marker and divides its weights by `R`. The weights are rates [1/s per
+  bunch], so merged with `xt.Particles.merge`, the samples of all the markers
+  and replicas give the loss rate of the ring.
+- `generate(rng_stream='continuous')` runs one stream, seeded with the seed,
+  through the markers in line order, as in ELEGANT, whose sequence it
+  reproduces. The ELEGANT benchmark relies on it.
 
-```python
-twiss.line_length
-```
+## Analysis
 
-instead of reconstructing the line length as:
+`analyse(particles)` accepts:
 
-```python
-C_LIGHT_VACUUM * twiss.t_rev0
-```
+- nothing: the scattering rates configured on the markers;
+- an `xt.Particles` object, i.e. the sample of a marker (`at=name`) or the
+  particles of several markers merged, possibly from different jobs: the
+  scattering, generated and loss rates, and the lifetimes;
+- a mapping `{name: particles or [replicas]}`: in addition, the per-marker
+  counts and rates, and the Monte Carlo error of the loss rate from the spread
+  between the replicas.
 
-The Piwinski-integral helper is now a static method of `TouschekStudy`, and the
-local-rate construction is owned directly by `TouschekStudy.local_rates()`.
+The particles do not record the marker at which they were generated: there is
+no free per-particle field in `xt.Particles`, `xt.Particles.merge` renumbers
+`particle_id`, and xcoll's Geant4 and FLUKA couplings require small particle
+ids. So the per-marker results need the samples given separately.
 
-The longitudinal sampling cutoff logic and comments were clarified. In
-particular, the effective `nz` can be reduced element by element so that
-initial particles are not generated outside the local momentum aperture before
+When all the markers are analysed, the total weight of the scattered particles
+is compared with the retained fraction of the scattering rate, to detect
+missing or repeated samples.
+
+## Changes from the TouschekStudy API
+
+- `TouschekScattering` -> `TouschekMarker`; the fields `n_simulated` and
+  `ignored_portion` -> `n_scattering_events` and `weight_retention_fraction`.
+  The closed orbit, the local Piwinski rate and the seed are now fields, so
+  they are saved with the line, as is the random-number generator (which was
+  reset to `'elegant'` on loading). Lines saved with `TouschekScattering`
+  elements must be created again.
+- `line.xfields.touschek_configure(...)` / `xf.TouschekStudy(...)` and
+  `initialise_touschek(element)` -> `line.xfields.touschek.configure(...)`,
+  with `at=` to (re)configure a part of the markers. The local momentum
+  acceptance table is no longer scaled in place, and a seed is drawn and
+  stored if none is given.
+- `TouschekStudy.run`, `generate_particles` and `local_rates` ->
+  `line.xfields.touschek.run`, `generate` and `analyse`.
+- `TouschekMarker.scatter()` is removed: `generate` sets the position, the
+  line index and the species of the particles from the line.
+- The deprecated aliases `n_simulated` and `ignored_portion` are removed.
+
+## Rate and weight handling
+
+The study uses the Piwinski rate to normalize the weighted Monte Carlo
+particles. `weight_retention_fraction=0.99` means that the returned particle
+set represents approximately 99 percent of the generated scattering weight;
+the discarded low-weight tail is not renormalized onto the retained particles.
+`weight_retention_fraction=1.0` keeps all generated particles.
+
+The section integration uses `twiss.line_length`, and the longitudinal
+sampling cutoff `nz` is reduced, marker by marker, so that the initial
+particles are never generated outside the local momentum acceptance before
 the Touschek kick.
 
-## Tests
-
-The Touschek tests were updated for the new API and naming. The end-to-end
-tracking test now uses the standard Xsuite test-context parametrization:
-
-```python
-@for_all_test_contexts(excluding=("ContextCupy", "ContextPyopencl"))
-```
-
-The local OpenMP build was not available on this machine, so the validated local
-run used the serial CPU context.
-
-Validated locally:
-
-```text
-xtrack/tests/test_local_momentum_acceptance.py: 12 passed
-xfields/tests/test_touschek.py: 41 passed
-```
-
-## Related Commits
-
-Relevant `xfields` commits after the reference merge:
-
-```text
-c0516a3 Simplify Touschek study API
-8409cfc Parametrize Touschek tracking test contexts
-b9e4f8f Make Touschek study own rate helpers
-b06cd77 Rename Touschek weight retention setting
-a315a38 Rename Touschek scattering event count
-8bda6dc Use bunch intensity in Touschek API
-80ea9c2 Use explicit Touschek momentum acceptance names
-eacbc28 Simplify Touschek docstring notation
-```
-
-Related `xtrack` commits:
-
-```text
-74c2b4e14 Add xfields line facade
-4f4cf1175 Rename local momentum acceptance columns
-```
-
-Related `xsuite` documentation commits:
-
-```text
-9c6f0cf Clarify Touschek physics manual
-f32d8f5 Rename Touschek retention parameter in manual
-```
+`xtrack.Line.get_local_momentum_acceptance()` returns the columns `name`, `s`,
+`delta_neg` and `delta_pos`, used by `configure`.
