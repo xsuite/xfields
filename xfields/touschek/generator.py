@@ -432,6 +432,9 @@ class TouschekGenerator:
     """
 
     def __init__(self, line):
+        if not isinstance(line, xt.Line):
+            raise TypeError(
+                f"`line` must be an xtrack.Line (got {type(line).__name__}).")
         self._line = line
 
     @property

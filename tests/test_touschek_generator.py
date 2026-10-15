@@ -92,6 +92,11 @@ def test_facade_returns_a_generator_bound_to_the_line():
     assert tsc.line is line
 
 
+def test_generator_needs_a_line():
+    with pytest.raises(TypeError, match='xtrack.Line'):
+        xf.TouschekGenerator(None)
+
+
 def test_marker_names_are_in_line_order():
     line = _ring()
     assert line.xfields.touschek.marker_names == []
