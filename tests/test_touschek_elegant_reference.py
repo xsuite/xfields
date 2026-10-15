@@ -44,13 +44,13 @@ def _build_reference_study(reference_rows):
 
     placements = []
     for index, row in enumerate(reference_rows):
-        env.elements[f'TS{index}'] = xf.TouschekScattering()
+        env.elements[f'TS{index}'] = xf.TouschekMarker()
         placements.append(env.place(f'TS{index}', at=float(row['s_m'])))
     line.insert(placements)
 
     twiss = line.twiss(method='4d')
     table = line.get_table()
-    names = table.rows.match(element_type='TouschekScattering').name
+    names = table.rows.match(element_type='TouschekMarker').name
     xfields_s = np.array([table['s', name] for name in names])
     elegant_s = np.array([float(row['s_m']) for row in reference_rows])
     np.testing.assert_allclose(xfields_s, elegant_s, atol=1e-12)

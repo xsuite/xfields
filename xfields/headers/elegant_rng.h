@@ -32,9 +32,9 @@
  *    state is stored in the TouschekRNGState xobject and passed explicitly to
  *    the seeding and scattering kernels.
  *  - The TouschekStudy object owns one RNG state and passes it through the
- *    selected TouschekScattering elements, so the stream continues from one
+ *    selected TouschekMarker elements, so the stream continues from one
  *    element to the next.
- *  - Direct TouschekScattering.scatter() calls can receive an explicit state;
+ *  - Direct TouschekMarker.scatter() calls can receive an explicit state;
  *    if none is supplied, Python creates a temporary TouschekRNGState seeded
  *    from numpy.random.
  *  - MPI seed diversification from Elegant is intentionally omitted here.

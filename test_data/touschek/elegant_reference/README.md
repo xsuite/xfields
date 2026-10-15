@@ -154,7 +154,7 @@ The pytest comparison uses:
   standard deviations;
 - weighted standard deviations: relative tolerance `0.02`.
 
-The xfields comparison places the `TouschekScattering` markers at the exact
+The xfields comparison places the `TouschekMarker` elements at the exact
 `s_m` positions stored in `reference.csv`. With matching marker locations, the
 measured differences for this frozen case are a few ppm locally and for the
 total rate. ELEGANT records a zero local Piwinski rate at the first zero-length

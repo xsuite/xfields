@@ -37,11 +37,11 @@ tab_bends_quads = tab.rows[
 placements = []
 for ii, nn in enumerate(tab_bends_quads.name):
     tscatter_name = f'TScatter.{ii}'
-    env.elements[tscatter_name] = xf.TouschekScattering()
+    env.elements[tscatter_name] = xf.TouschekMarker()
     placements.append(env.place(tscatter_name, at=0.0, from_=nn))
 
 tscatter_name = f'TScatter.{ii+1}'
-env.elements[tscatter_name] = xf.TouschekScattering()
+env.elements[tscatter_name] = xf.TouschekMarker()
 placements.append(env.place(tscatter_name, at=tab.s[-1]))
 
 line.insert(placements)
@@ -71,7 +71,7 @@ line.insert(placements)
 # Evaluate local momentum acceptance profile
 ######################################################
 tab = line.get_table()
-touschek_elements = tab.rows.match(element_type='TouschekScattering').name
+touschek_elements = tab.rows.match(element_type='TouschekMarker').name
 
 lma = line.get_local_momentum_acceptance(
     elements=touschek_elements,

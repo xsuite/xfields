@@ -10,7 +10,7 @@ import xtrack as xt
 import numpy as np
 
 from ..beam_elements.touschek import (
-    TouschekRNGState, TouschekScattering, _resolve_weight_retention_fraction,
+    TouschekRNGState, TouschekMarker, _resolve_weight_retention_fraction,
     _resolve_n_scattering_events, _resolve_bunch_intensity,
     _resolve_rng_source, _rng_source_name, _make_xtrack_rng_seed,
     _TOUSCHEK_RNG_ELEGANT, _TOUSCHEK_RNG_XTRACK)
@@ -23,7 +23,7 @@ def _allocated(particles):
     """
     Mask of the slots of the particle buffer that hold a particle.
 
-    TouschekScattering.scatter allocates twice the number of generated
+    TouschekMarker.scatter allocates twice the number of generated
     particles; the unused slots have state LAST_INVALID_STATE and weight
     LAST_INVALID_STATE.
     """
@@ -147,7 +147,7 @@ class TouschekStudy:
         parameters, and local momentum acceptance table.
 
         The configured study computes the local Piwinski scattering rate at
-        each :class:`TouschekScattering` element, integrates those rates over
+        each :class:`TouschekMarker` element, integrates those rates over
         the lattice sections represented by the elements, and configures the
         elements with the local optics and beam parameters needed to generate
         weighted Monte Carlo particles.
@@ -166,11 +166,11 @@ class TouschekStudy:
         Parameters
         ----------
         line : xtrack.Line
-            Line containing the :class:`TouschekScattering` elements to
+            Line containing the :class:`TouschekMarker` elements to
             configure.
         elements : str, sequence of str, or None, optional
             Touschek scattering elements included in the study. If ``None``,
-            all :class:`TouschekScattering` elements in the line are used.
+            all :class:`TouschekMarker` elements in the line are used.
         twiss : xtrack.TwissTable or None, optional
             Twiss table used for optics-dependent rates. If ``None``, it is
             computed when :meth:`initialise_touschek` is called.
@@ -272,20 +272,20 @@ class TouschekStudy:
         self.particle_ref = line.particle_ref
         self.twiss = twiss
 
-        # Check that the line contains TouschekScatterings
+        # Check that the line contains TouschekMarkers
         tab = line.get_table()
         try:
-            has = "TouschekScattering" in set(np.unique(tab.element_type))
+            has = "TouschekMarker" in set(np.unique(tab.element_type))
         except Exception:
-            has = "TouschekScattering" in set(getattr(tab, "element_type", []))
+            has = "TouschekMarker" in set(getattr(tab, "element_type", []))
         if not has:
-            raise ValueError("The line does not contain any TouschekScattering. "
+            raise ValueError("The line does not contain any TouschekMarker. "
                              "Please add them before initializing the TouschekStudy.")
 
         if elements is None:
             elements = [
                 nn for nn in tab.name[:-1]
-                if isinstance(line[nn], TouschekScattering)
+                if isinstance(line[nn], TouschekMarker)
             ]
         elif isinstance(elements, str):
             elements = [elements]
@@ -294,15 +294,15 @@ class TouschekStudy:
 
         if len(elements) == 0:
             raise ValueError(
-                "No TouschekScattering elements selected for this study."
+                "No TouschekMarker elements selected for this study."
             )
 
         for nn in elements:
             if nn not in line.element_names:
                 raise ValueError(f"Element '{nn}' is not present in the line.")
-            if not isinstance(line[nn], TouschekScattering):
+            if not isinstance(line[nn], TouschekMarker):
                 raise TypeError(
-                    f"Element '{nn}' is not a TouschekScattering "
+                    f"Element '{nn}' is not a TouschekMarker "
                     f"(got {type(line[nn]).__name__})."
                 )
 
@@ -566,39 +566,39 @@ class TouschekStudy:
     def _check_scattering_centres(self, tab):
         """
         Check that every part of the line belongs to the section of one
-        TouschekScattering.
+        TouschekMarker.
 
-        The section of a TouschekScattering goes from the previous one to
+        The section of a TouschekMarker goes from the previous one to
         it, and the section of the first one from s = 0 (an empty section,
         of zero weight, if it sits at s = 0, as in ELEGANT). So the last
-        TouschekScattering must sit at the end of the line: otherwise the
+        TouschekMarker must sit at the end of the line: otherwise the
         part of the line after it is not integrated, and its Touschek rate
         is silently missing from the weights and from ``rate_scattering``.
         (ELEGANT imposes the same for its TSCATTER elements.)
         """
         tol = 1e-6  # m
         last = [nn for nn in tab.name[:-1]
-                if isinstance(self.line[nn], TouschekScattering)][-1]
+                if isinstance(self.line[nn], TouschekMarker)][-1]
         s_last = float(tab["s", last])
         s_end = float(tab.s[-1])
         if abs(s_last - s_end) > tol:
             raise ValueError(
-                f"The last TouschekScattering ('{last}') is at "
+                f"The last TouschekMarker ('{last}') is at "
                 f"s = {s_last:.6g} m, but the line ends at s = {s_end:.6g} m: "
-                "the last TouschekScattering must sit at the end of the "
+                "the last TouschekMarker must sit at the end of the "
                 "line, otherwise the part of the line after it is not "
                 "accounted for in the integrated Touschek rate.")
 
     def _compute_integrated_piwinski_rates(self, element):
         """
         Integrate the Piwinski Touschek scattering rate along the line using
-        the trapezoidal rule, between successive TouschekScattering elements.
+        the trapezoidal rule, between successive TouschekMarker elements.
 
-        For each TouschekScattering element, the method stores the integrated
+        For each TouschekMarker element, the method stores the integrated
         rate per bunch over the preceding section of the line. This per-bunch
         rate is later used to assign the correct weights to Touschek-scattered
         particles at the corresponding element. The section of the first
-        TouschekScattering starts at s = 0, and the last TouschekScattering
+        TouschekMarker starts at s = 0, and the last TouschekMarker
         must sit at the end of the line (see
         :meth:`_check_scattering_centres`), so that every part of the line
         belongs to exactly one section.
@@ -609,7 +609,7 @@ class TouschekStudy:
 
         markers = [
             nn for nn in tab.name[:-1]
-            if isinstance(line[nn], TouschekScattering)
+            if isinstance(line[nn], TouschekMarker)
         ]
         rates = integrated_piwinski_rates(
             names=tab.name,
@@ -627,27 +627,27 @@ class TouschekStudy:
         '''
         Compute and configure all Piwinski rates in the lattice.
 
-        For each :class:`TouschekScattering` element this method:
+        For each :class:`TouschekMarker` element this method:
 
         1. Evaluates the local Piwinski scattering rate using the Twiss
         parameters, beam emittances, and the local momentum acceptance.
         2. Integrates the rate over the preceding lattice section using the
         trapezoidal rule to obtain the per-bunch, per-turn loss probability.
         3. Stores the integrated rate and all local optics parameters on the
-        element via :meth:`TouschekScattering._configure` so that
-        :meth:`TouschekScattering.scatter` can weight the Monte Carlo
+        element via :meth:`TouschekMarker._configure` so that
+        :meth:`TouschekMarker.scatter` can weight the Monte Carlo
         macro-particles correctly.
 
-        The section of a :class:`TouschekScattering` goes from the previous
+        The section of a :class:`TouschekMarker` goes from the previous
         one to it, and the section of the first one from ``s = 0``. The last
-        :class:`TouschekScattering` must therefore sit at the end of the
+        :class:`TouschekMarker` must therefore sit at the end of the
         line (as in ELEGANT); otherwise a ``ValueError`` is raised, since the
         part of the line after it would not be accounted for.
 
         Parameters
         ----------
         element : str or None, optional
-            If ``None`` (default), all :class:`TouschekScattering` elements in
+            If ``None`` (default), all :class:`TouschekMarker` elements in
             the line are initialised in one pass.  If a string, only the named
             element is (re-)initialised; the Piwinski rate is integrated only
             over the lattice section between that element and the preceding
@@ -667,9 +667,9 @@ class TouschekStudy:
                 raise ValueError(
                     f"`element='{element}'` is not present in the line provided to the TouschekStudy."
                 )
-            if not isinstance(line[element], TouschekScattering):
+            if not isinstance(line[element], TouschekMarker):
                 raise TypeError(
-                    f"`line['{element}']` is not a TouschekScattering (got {type(line[element]).__name__})."
+                    f"`line['{element}']` is not a TouschekMarker (got {type(line[element]).__name__})."
                 )
 
         local_momentum_acceptance = self.local_momentum_acceptance
@@ -683,7 +683,7 @@ class TouschekStudy:
         self._compute_integrated_piwinski_rates(element)
         print(f"Computed integrated piwinski rates in {time.time() - t0:.2f} s.")
 
-        # Helper to config all fields to a single TouschekScattering
+        # Helper to config all fields to a single TouschekMarker
         def _config(nn):
             try:
                 s = tab.rows[nn].s[0]
@@ -731,7 +731,7 @@ class TouschekStudy:
             #
             # Mitigation:
             # To eliminate these spurious contributions, we dynamically reduce
-            # the longitudinal cutoff at each TouschekScattering element:
+            # the longitudinal cutoff at each TouschekMarker element:
             #
             #     nz_eff = min(nz, 0.85 * min(|delta_neg|, delta_pos) / σδ)
             #
@@ -762,7 +762,7 @@ class TouschekStudy:
 
             piwinski_rate = self._compute_piwinski_scattering_rate(nn)
 
-            elem = line[nn] # TouschekScattering
+            elem = line[nn] # TouschekMarker
             element_index = line.element_names.index(nn)
 
             elem._configure(
@@ -792,11 +792,11 @@ class TouschekStudy:
 
         if element is None:
             for nn in tab.name[:-1]: # Avoid the last tab.name which is _end_point
-                if isinstance(line[nn], TouschekScattering):
-                    print(f'Initialising TouschekScattering for {nn}')
+                if isinstance(line[nn], TouschekMarker):
+                    print(f'Initialising TouschekMarker for {nn}')
                     _config(nn)
         else:
-            print(f'Initialising TouschekScattering for {element}')
+            print(f'Initialising TouschekMarker for {element}')
             _config(element)
 
     def local_rates(self, *, particles_by_element=None, include_tracking=False):

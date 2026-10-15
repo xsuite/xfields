@@ -3,7 +3,7 @@
 # Copyright (c) CERN, 2026.                   #
 # ########################################### #
 
-from .beam_elements.touschek import TouschekScattering
+from .beam_elements.touschek import TouschekMarker
 from .touschek.study import TouschekStudy
 
 
@@ -119,7 +119,7 @@ class XfieldsLineAPI:
             tab = line.get_table()
             elements = [
                 nn for nn in tab.name[:-1]
-                if isinstance(line[nn], TouschekScattering)
+                if isinstance(line[nn], TouschekMarker)
             ]
         elif isinstance(elements, str):
             elements = [elements]
@@ -128,16 +128,16 @@ class XfieldsLineAPI:
 
         if len(elements) == 0:
             raise ValueError(
-                "No TouschekScattering elements found. Add them to the line "
+                "No TouschekMarker elements found. Add them to the line "
                 "before using the Touschek facade."
             )
 
         for nn in elements:
             if nn not in line.element_names:
                 raise ValueError(f"Element '{nn}' is not present in the line.")
-            if not isinstance(line[nn], TouschekScattering):
+            if not isinstance(line[nn], TouschekMarker):
                 raise TypeError(
-                    f"Element '{nn}' is not a TouschekScattering "
+                    f"Element '{nn}' is not a TouschekMarker "
                     f"(got {type(line[nn]).__name__})."
                 )
 

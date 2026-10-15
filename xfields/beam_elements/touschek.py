@@ -180,7 +180,7 @@ def _resolve_bunch_intensity(*, bunch_intensity, default):
     return float(bunch_intensity)
 
 
-class TouschekScattering(xt.BeamElement):
+class TouschekMarker(xt.BeamElement):
     """
     Beam element that performs a Monte Carlo Touschek scattering simulation
     at a single location in a lattice.
@@ -459,9 +459,9 @@ class TouschekScattering(xt.BeamElement):
         None
         """
         
-        # This gives AttributeError: 'TouschekScattering' object has no attribute '_xobject'
+        # This gives AttributeError: 'TouschekMarker' object has no attribute '_xobject'
         # if not isinstance(self._context, xo.ContextCpu) or self._context.openmp_enabled:
-        #     raise ValueError('TouschekScattering only enabled on CPU.')
+        #     raise ValueError('TouschekMarker only enabled on CPU.')
 
         if '_xobject' in kwargs.keys():
             self.xoinitialize(**kwargs)

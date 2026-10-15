@@ -51,7 +51,7 @@
 #include <string.h>
 
 /*gpufun*/
-void TouschekScattering_track_local_particle(TouschekScatteringData el, LocalParticle* part0) {
+void TouschekMarker_track_local_particle(TouschekMarkerData el, LocalParticle* part0) {
   (void)el; (void)part0;
   return;
 }
@@ -305,7 +305,7 @@ static long touschek_xtrack_randomize_order(
 }
 
 /* Adapted from Elegant touschekScatter.c: TouschekDistribution (logic unchanged) */
-void TouschekScatter(TouschekScatteringData el,
+void TouschekScatter(TouschekMarkerData el,
                      LocalParticle* part0,
                      double* x_out,
                      double* px_out,
@@ -319,31 +319,31 @@ void TouschekScatter(TouschekScatteringData el,
                      int64_t* n_selected_out,
                      TouschekRNGStateData rng_state){
 
-    const double p0c   = TouschekScatteringData_get_p0c(el);
-    const double bunch_intensity = TouschekScatteringData_get_bunch_intensity(el);
-    const double gemitt_x = TouschekScatteringData_get_gemitt_x(el);
-    const double gemitt_y = TouschekScatteringData_get_gemitt_y(el);
-    const double alfx  = TouschekScatteringData_get_alfx(el);
-    const double betx  = TouschekScatteringData_get_betx(el);
-    const double alfy  = TouschekScatteringData_get_alfy(el);
-    const double bety  = TouschekScatteringData_get_bety(el);
-    const double dx    = TouschekScatteringData_get_dx(el);
-    const double dpx   = TouschekScatteringData_get_dpx(el);
-    const double dy    = TouschekScatteringData_get_dy(el);
-    const double dpy   = TouschekScatteringData_get_dpy(el);
-    const double delta_neg = TouschekScatteringData_get_delta_neg(el);
-    const double delta_pos = TouschekScatteringData_get_delta_pos(el);
-    const double sigma_z   = TouschekScatteringData_get_sigma_z(el);
-    const double sigma_delta = TouschekScatteringData_get_sigma_delta(el);
-    const double n_simulated = TouschekScatteringData_get_n_simulated(el);
-    const double nx = TouschekScatteringData_get_nx(el);
-    const double ny = TouschekScatteringData_get_ny(el);
-    const double nz = TouschekScatteringData_get_nz(el);
-    const double theta_min = TouschekScatteringData_get_theta_min(el);
-    const double theta_max = TouschekScatteringData_get_theta_max(el);
-    const double ignoredPortion = TouschekScatteringData_get_ignored_portion(el);
-    const double integrated_piwinski_rate = TouschekScatteringData_get_integrated_piwinski_rate(el);
-    const int64_t rng_source = TouschekScatteringData_get_rng_source(el);
+    const double p0c   = TouschekMarkerData_get_p0c(el);
+    const double bunch_intensity = TouschekMarkerData_get_bunch_intensity(el);
+    const double gemitt_x = TouschekMarkerData_get_gemitt_x(el);
+    const double gemitt_y = TouschekMarkerData_get_gemitt_y(el);
+    const double alfx  = TouschekMarkerData_get_alfx(el);
+    const double betx  = TouschekMarkerData_get_betx(el);
+    const double alfy  = TouschekMarkerData_get_alfy(el);
+    const double bety  = TouschekMarkerData_get_bety(el);
+    const double dx    = TouschekMarkerData_get_dx(el);
+    const double dpx   = TouschekMarkerData_get_dpx(el);
+    const double dy    = TouschekMarkerData_get_dy(el);
+    const double dpy   = TouschekMarkerData_get_dpy(el);
+    const double delta_neg = TouschekMarkerData_get_delta_neg(el);
+    const double delta_pos = TouschekMarkerData_get_delta_pos(el);
+    const double sigma_z   = TouschekMarkerData_get_sigma_z(el);
+    const double sigma_delta = TouschekMarkerData_get_sigma_delta(el);
+    const double n_simulated = TouschekMarkerData_get_n_simulated(el);
+    const double nx = TouschekMarkerData_get_nx(el);
+    const double ny = TouschekMarkerData_get_ny(el);
+    const double nz = TouschekMarkerData_get_nz(el);
+    const double theta_min = TouschekMarkerData_get_theta_min(el);
+    const double theta_max = TouschekMarkerData_get_theta_max(el);
+    const double ignoredPortion = TouschekMarkerData_get_ignored_portion(el);
+    const double integrated_piwinski_rate = TouschekMarkerData_get_integrated_piwinski_rate(el);
+    const int64_t rng_source = TouschekMarkerData_get_rng_source(el);
 
     long i, j, total_event, simuCount, iTotal;
     double ran1[11];

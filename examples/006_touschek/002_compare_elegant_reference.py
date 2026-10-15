@@ -79,13 +79,13 @@ line.configure_bend_model(core='full', edge=None)
 
 placements = []
 for index, row in enumerate(elegant_rows):
-    env.elements[f'TS{index}'] = xf.TouschekScattering()
+    env.elements[f'TS{index}'] = xf.TouschekMarker()
     placements.append(env.place(f'TS{index}', at=float(row['s_m'])))
 line.insert(placements)
 
 twiss = line.twiss(method='4d')
 table = line.get_table()
-touschek_names = table.rows.match(element_type='TouschekScattering').name
+touschek_names = table.rows.match(element_type='TouschekMarker').name
 xfields_s = np.array([table['s', name] for name in touschek_names])
 np.testing.assert_allclose(xfields_s, elegant_s, atol=1e-12)
 

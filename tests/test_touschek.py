@@ -28,7 +28,7 @@ BUNCH_INTENSITY = 4e9
 @pytest.fixture(scope='module')
 def toy_ring():
     """
-    Build a FODO-like toy ring with TouschekScattering elements and apertures,
+    Build a FODO-like toy ring with TouschekMarker elements and apertures,
     run Twiss and the local momentum acceptance exactly once for the whole
     test session.
 
@@ -67,7 +67,7 @@ def toy_ring():
     line.set_particle_ref('electron', p0c=1e9)
     line.configure_bend_model(core='full', edge=None)
 
-    # Insert one TouschekScattering at the entrance of every magnet,
+    # Insert one TouschekMarker at the entrance of every magnet,
     # plus one at the very end of the line — all in a single batch insert.
     tab = line.get_table()
     tab_bends_quads = tab.rows[
@@ -76,12 +76,12 @@ def toy_ring():
     placements = []
     for ii, nn in enumerate(tab_bends_quads.name):
         tscatter_name = f'TScatter.{ii}'
-        env.elements[tscatter_name] = xf.TouschekScattering()
+        env.elements[tscatter_name] = xf.TouschekMarker()
         placements.append(env.place(tscatter_name, at=0.0, from_=nn))
 
-    # Last TouschekScattering at the end of the line
+    # Last TouschekMarker at the end of the line
     tscatter_name = f'TScatter.{ii+1}'
-    env.elements[tscatter_name] = xf.TouschekScattering()
+    env.elements[tscatter_name] = xf.TouschekMarker()
     placements.append(env.place(tscatter_name, at=tab.s[-1]))
 
     line.insert(placements)
@@ -108,7 +108,7 @@ def toy_ring():
 
     # LMA
     tab = line.get_table()
-    elements = tab.rows.match(element_type='TouschekScattering').name
+    elements = tab.rows.match(element_type='TouschekMarker').name
     lma = line.get_local_momentum_acceptance(
         elements=elements,
         twiss=tw,
@@ -157,23 +157,23 @@ def _fresh_lma(toy_ring_data):
 
 def _toy_ring_variant(toy_ring_data, rename=None, drop=()):
     """
-    Copy of the toy ring, with the TouschekScattering elements renamed
+    Copy of the toy ring, with the TouschekMarker elements renamed
     (``rename(name, index) -> new name``, index among the
-    TouschekScattering elements) and/or the elements in ``drop`` removed.
+    TouschekMarker elements) and/or the elements in ``drop`` removed.
     The LMA of the toy ring still applies (it is interpolated in s).
     Returns the new line and its 4d Twiss.
     """
     line     = toy_ring_data['line']
     env      = line.env
     tab      = line.get_table()
-    ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+    ts_names = list(tab.rows.match(element_type='TouschekMarker').name)
     names = []
     for nn in line.element_names:
         if nn in drop:
             continue
         if rename is not None and nn in ts_names:
             new_name = rename(nn, ts_names.index(nn))
-            env.elements[new_name] = xf.TouschekScattering()
+            env.elements[new_name] = xf.TouschekMarker()
             nn = new_name
         names.append(nn)
     # Same magnets and apertures (shared, not modified), new line
@@ -259,7 +259,7 @@ class TestTouschekStudyInit:
 
     def test_raises_on_missing_particle_ref(self, toy_ring):
         line = xt.Line(
-            elements=[xf.TouschekScattering()],
+            elements=[xf.TouschekMarker()],
             element_names=['ts'],
         )
         with pytest.raises(ValueError, match=r'particle_ref'):
@@ -376,11 +376,11 @@ class TestTouschekStudyInit:
             )
 
     def test_raises_when_no_touschek_elements(self, toy_ring):
-        """A line with no TouschekScattering must raise ValueError."""
+        """A line with no TouschekMarker must raise ValueError."""
         env2 = xt.Environment()
         bare = env2.new_line(components=[env2.new('d1', xt.Drift, length=1.0)])
         bare.set_particle_ref('electron', p0c=1e9)
-        with pytest.raises(ValueError, match=r'TouschekScattering'):
+        with pytest.raises(ValueError, match=r'TouschekMarker'):
             xf.TouschekStudy(
                 bare,
                 local_momentum_acceptance=toy_ring['lma'],
@@ -399,7 +399,7 @@ class TestTouschekStudyInitialise:
         self.line   = toy_ring['line']
         self.tw     = toy_ring['twiss']
         tab         = self.line.get_table()
-        self.tnames = tab.rows.match(element_type='TouschekScattering').name
+        self.tnames = tab.rows.match(element_type='TouschekMarker').name
         lma         = _fresh_lma(toy_ring)
         self.study  = _build_study(self.line, lma, self.tw)
         self.study.initialise_touschek()
@@ -407,7 +407,7 @@ class TestTouschekStudyInitialise:
     def test_all_elements_are_configured(self):
         assert len(self.tnames) > 0
         for nn in self.tnames:
-            assert isinstance(self.line[nn], xf.TouschekScattering)
+            assert isinstance(self.line[nn], xf.TouschekMarker)
 
     def test_p0c_positive_and_finite(self):
         for nn in self.tnames:
@@ -474,7 +474,7 @@ class TestTouschekStudyInitialise:
     def test_partial_initialise_raises_on_non_touschek_element(self):
         tab   = self.line.get_table()
         other = tab.rows.match(element_type='Drift').name[0]
-        with pytest.raises(TypeError, match=r'not a TouschekScattering'):
+        with pytest.raises(TypeError, match=r'not a TouschekMarker'):
             self.study.initialise_touschek(element=other)
 
     def test_run_without_particles_returns_scalar_result(self):
@@ -511,8 +511,8 @@ class TestTouschekStudyInitialise:
             assert line[nn].rng == 'xtrack'
 
 
-class TestTouschekScattering:
-    """Tests for the TouschekScattering.scatter() method."""
+class TestTouschekMarker:
+    """Tests for the TouschekMarker.scatter() method."""
 
     @pytest.fixture(autouse=True)
     def _setup(self, toy_ring):
@@ -522,9 +522,9 @@ class TestTouschekScattering:
         study     = _build_study(self.line, lma, tw)
         study.initialise_touschek()
 
-        # Scatter from the first TouschekScattering element only (fast)
+        # Scatter from the first TouschekMarker element only (fast)
         tab        = self.line.get_table()
-        tnames     = tab.rows.match(element_type='TouschekScattering').name
+        tnames     = tab.rows.match(element_type='TouschekMarker').name
         self.nn    = tnames[0]
         self.el    = self.line[self.nn]
         self.parts = self.el.scatter()
@@ -586,7 +586,7 @@ N_EVENTS_RETENTION = int(2e5)
 
 def _generate_by_element(toy_ring, weight_retention_fraction):
     """
-    Generate (no tracking) at every TouschekScattering element of the toy
+    Generate (no tracking) at every TouschekMarker element of the toy
     ring with a fixed seed; return, per element, the coordinates and weights
     of the returned particles and the integrated Piwinski rate.
     """
@@ -715,7 +715,7 @@ class TestTouschekLossStates:
 
 
 class TestTouschekSections:
-    """Lattice sections represented by the TouschekScattering elements."""
+    """Lattice sections represented by the TouschekMarker elements."""
 
     @pytest.mark.parametrize('rename', [
         lambda nn, ii: f'ts.{ii + 1}',              # numbered from 1
@@ -742,13 +742,13 @@ class TestTouschekSections:
 
     def test_last_element_must_be_at_the_end_of_the_line(self, toy_ring):
         """
-        Without a TouschekScattering at the end of the line, the part of the
+        Without a TouschekMarker at the end of the line, the part of the
         line after the last one would not be accounted for in any section:
         this is refused, whole ring or single element.
         """
         line     = toy_ring['line']
         tab      = line.get_table()
-        ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+        ts_names = list(tab.rows.match(element_type='TouschekMarker').name)
         assert tab['s', ts_names[-1]] == pytest.approx(tab.s[-1])
 
         line2, tw2 = _toy_ring_variant(toy_ring, drop=(ts_names[-1],))
@@ -767,7 +767,7 @@ class TestTouschekSections:
         """
         line     = toy_ring['line']
         tab      = line.get_table()
-        ts_names = list(tab.rows.match(element_type='TouschekScattering').name)
+        ts_names = list(tab.rows.match(element_type='TouschekMarker').name)
         first    = ts_names[0]
         assert 0 < tab['s', first] < tab.s[-1]
 
