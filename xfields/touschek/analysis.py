@@ -147,8 +147,8 @@ class TouschekResult:
     particles : xtrack.Particles or None
         Merged particles, when kept.
     lost_particles : xtrack.Particles or None
-        Subset of ``particles`` lost in tracking, when kept. It is a copy taken
-        right after tracking.
+        Subset of ``particles`` lost in tracking, when kept and if any is lost.
+        It is a copy taken right after tracking.
     rate_generated : float or None
         Total weight of the scattered particles [1/s]: the scattering rate
         beyond the momentum acceptance represented by the particles, i.e.

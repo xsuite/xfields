@@ -640,3 +640,67 @@ def test_analyse_checks_its_arguments(ring):
         tsc.analyse({nn: [part, 'other']})
     with pytest.raises(ValueError, match='No particles'):
         tsc.analyse({nn: []})
+
+
+def test_run_tracks_each_sample_from_its_marker(ring, monkeypatch):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    names = tsc.marker_names
+
+    calls = []
+
+    def fake_track(particles, **kwargs):
+        calls.append(kwargs)
+        _fake_track(particles, seed=len(calls))
+
+    monkeypatch.setattr(line, 'track', fake_track)
+    result = tsc.run(n_turns=7, at=names[1:4], n_replicas=2,
+                     keep_particles=True)
+
+    assert [cc['ele_start'] for cc in calls] == 2 * names[1:4]
+    assert all(cc['ele_stop'] == cc['ele_start'] and cc['num_turns'] == 7
+               for cc in calls)
+
+    # The explicit steps give the same result
+    samples = {nn: [] for nn in names[1:4]}
+    for rr in range(2):
+        for nn in names[1:4]:
+            part = tsc.generate(at=nn, replica=rr, n_replicas=2)
+            _fake_track(part, seed=3 * rr + names[1:4].index(nn) + 1)
+            samples[nn].append(part)
+    explicit = tsc.analyse(samples)
+    assert result.element_names == explicit.element_names
+    assert result.rate_tracking == pytest.approx(explicit.rate_tracking,
+                                                 rel=1e-12)
+    assert result.rate_tracking_error == pytest.approx(
+        explicit.rate_tracking_error, rel=1e-12)
+
+    assert list(result.particles_by_element) == names[1:4]
+    assert np.sum(result.lost_particles.weight[
+        result.lost_particles.parent_particle_id
+        == result.lost_particles.particle_id]) == pytest.approx(
+            result.rate_tracking, rel=1e-12)
+    assert np.all(result.lost_particles.state <= 0)
+
+
+def test_run_tracks_the_particles(ring):
+    line, tw = ring
+    _configure(line, twiss=tw)
+    result = line.xfields.touschek.run(n_turns=3, keep_particles=True)
+
+    assert result.tracked is True
+    # No apertures in this ring: nothing is lost
+    assert result.rate_tracking == 0
+    assert result.lifetime_tracking == np.inf
+    assert result.lost_particles is None
+    particles = result.particles
+    assert np.all(particles.at_turn[particles.state > 0] == 3)
+    for nn, part in result.particles_by_element.items():
+        alive = part.state > 0
+        assert np.all(part.at_element[alive] == line.element_names.index(nn))
+
+
+def test_run_checks_its_arguments(ring):
+    with pytest.raises(ValueError, match='n_turns'):
+        ring[0].xfields.touschek.run(n_turns=0)

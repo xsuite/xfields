@@ -17,7 +17,7 @@ from ..beam_elements.touschek import (
     _resolve_weight_retention_fraction, _rng_source_name,
     _TOUSCHEK_RNG_ELEGANT)
 from .analysis import (
-    TouschekResult, _replica_variance, _sample_sums, _tracked)
+    TouschekResult, _lost, _replica_variance, _sample_sums, _tracked)
 from .piwinski import integrated_piwinski_rates, local_piwinski_rate
 
 # Tolerance on the position of the last marker, at the end of the line [m]
@@ -990,6 +990,70 @@ class TouschekGenerator:
             rate_tracking_error=rate_tracking_error,
             lifetime_tracking_error=lifetime_tracking_error,
         )
+
+    def run(self, n_turns, *, at=None, n_replicas=1, keep_particles=False,
+            with_progress=False, rng_stream='per_marker'):
+        """
+        Generate, track and analyse the Touschek particles of the markers.
+
+        Convenience helper doing in one call the steps of a Touschek
+        simulation: the particles of each marker (and replica) are generated
+        with :meth:`generate`, tracked from the marker back to it with
+        ``line.track(part, ele_start=name, ele_stop=name, num_turns=n_turns)``
+        and analysed with :meth:`analyse`. Doing these steps explicitly gives
+        the same result, and allows splitting them over separate jobs or
+        refining the loss locations before the analysis.
+
+        Parameters
+        ----------
+        n_turns : int
+            Number of turns to track.
+        at : str, sequence of str, or None, optional
+            Markers at which particles are generated. If ``None`` (default),
+            all the markers of the line.
+        n_replicas : int, optional
+            Number of replicas of each marker. With more than one, the result
+            includes the Monte Carlo error of the loss rate.
+        keep_particles : bool, optional
+            If ``True``, the result keeps the particles of each marker (its
+            replicas merged), all of them merged, and the lost ones (if any).
+        with_progress : bool, optional
+            Forwarded to ``line.track``.
+        rng_stream : {'per_marker', 'continuous'}, optional
+            Random-number streams, see :meth:`generate`.
+
+        Returns
+        -------
+        result : TouschekResult
+            Result of :meth:`analyse` for the particles of each marker.
+        """
+        if (isinstance(n_turns, (bool, np.bool_))
+                or not isinstance(n_turns, (int, np.integer)) or n_turns < 1):
+            raise ValueError("`n_turns` must be a positive integer.")
+
+        line = self.line
+        names = self._markers(at)
+        samples = {nn: [] for nn in names}
+        for replica in range(n_replicas):
+            generated = self.generate(
+                at=names, replica=replica, n_replicas=n_replicas,
+                rng_stream=rng_stream)
+            for nn, part in generated.items():
+                line.track(part, ele_start=nn, ele_stop=nn,
+                           num_turns=n_turns, with_progress=with_progress)
+                samples[nn].append(part)
+
+        result = self.analyse(samples)
+        if keep_particles:
+            result.particles_by_element = {
+                nn: vv[0] if len(vv) == 1 else xt.Particles.merge(vv)
+                for nn, vv in samples.items()}
+            result.particles = xt.Particles.merge(
+                list(result.particles_by_element.values()))
+            lost = _lost(result.particles)
+            if np.any(lost):
+                result.lost_particles = result.particles.filter(lost)
+        return result
 
     def _check_sections_cover_line(self):
         """
