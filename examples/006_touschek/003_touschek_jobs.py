@@ -57,8 +57,8 @@ line.insert(placements)
 # A fixed +/-0.6% local momentum acceptance, for brevity (see
 # 000_touschek_toy_ring.py for its computation by tracking). It is smaller
 # than the actual one: only a part of the scattered particles is lost.
-markers = line.xfields.touschek.marker_names
 tab = line.get_table()
+markers = tab.rows.match(element_type='TouschekMarker').name
 lma = xt.Table({
     'name': np.array(markers),
     's': np.array([tab['s', nn] for nn in markers]),
@@ -120,12 +120,11 @@ for job_id in range(n_jobs):
 particles = xt.Particles.merge([pp for vv in samples.values() for pp in vv])
 result = line.xfields.touschek.analyse(particles)
 print(f'Touschek scattering rate: {result.rate_scattering*1e-3:.3f} kHz')
-print(f'Touschek tracking rate:   {result.rate_tracking*1e-3:.3f} kHz')
+print(f'Touschek loss rate:       {result.rate_tracking*1e-3:.3f} kHz')
 
 # Marker by marker: the contribution of each section, and the Monte Carlo
 # error from the spread between the replicas
 result = line.xfields.touschek.analyse(samples)
 print(result.local_rates)
-print(f'Scattering lifetime: {result.lifetime_scattering/60:.2f} min')
-print(f'Tracking lifetime:   {result.lifetime_tracking/60:.2f} '
+print(f'Touschek lifetime: {result.lifetime_tracking/60:.2f} '
       f'+- {result.lifetime_tracking_error/60:.2f} min')

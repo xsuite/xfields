@@ -62,10 +62,11 @@ line.insert(placements)
 ######################################################
 # Evaluate local momentum acceptance profile
 ######################################################
-touschek_markers = line.xfields.touschek.marker_names
+tab = line.get_table()
+touschek_elements = tab.rows.match(element_type='TouschekMarker').name
 
 lma = line.get_local_momentum_acceptance(
-    elements=touschek_markers,
+    elements=touschek_elements,
     nemitt_x=nemitt_x,
     nemitt_y=nemitt_y,
     y_offset=1e-9,
@@ -127,7 +128,7 @@ print(line.xfields.touschek.analyse().local_rates)
 #   2. Track them around the ring for `nturns` turns, starting and ending at
 #      the marker
 particles_list = []
-for name in touschek_markers:
+for name in touschek_elements:
     particles = line.xfields.touschek.generate(at=name)
     print(f'\nTracking particles scattered at {name}')
     line.track(particles, ele_start=name, ele_stop=name, num_turns=nturns,
@@ -160,9 +161,8 @@ result = line.xfields.touschek.analyse(particles)
 # result = line.xfields.touschek.run(n_turns=nturns)
 
 print(f'Touschek scattering rate: {result.rate_scattering*1e-3:.3f} kHz')
-print(f'Touschek tracking rate:   {result.rate_tracking*1e-3:.3f} kHz')
-print(f'Scattering lifetime:      {result.lifetime_scattering/60:.2f} min')
-print(f'Tracking lifetime:        {result.lifetime_tracking/60:.2f} min')
+print(f'Touschek loss rate:       {result.rate_tracking*1e-3:.3f} kHz')
+print(f'Touschek lifetime:        {result.lifetime_tracking/60:.2f} min')
 
 ######################################################
 # Plot: Toy ring Touschek loss map
