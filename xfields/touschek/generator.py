@@ -115,6 +115,35 @@ def _resolve_seed(seed):
     return int(seed)
 
 
+def _stream_seed(seed, name, replica):
+    """
+    Seed of the random-number stream of a marker and replica.
+
+    The seed is derived from the configured ``seed`` with
+    :class:`numpy.random.SeedSequence`, keyed by the name of the marker and
+    by the replica index. The stream of a marker therefore does not depend on
+    which other markers or replicas are generated, nor on the order of the
+    generation: independent jobs reproduce the particles of a single one.
+
+    Parameters
+    ----------
+    seed : int
+        Seed configured on the marker.
+    name : str
+        Name of the marker.
+    replica : int
+        Index of the replica.
+
+    Returns
+    -------
+    stream_seed : int
+        Seed of the stream, in ``[0, 2**31)``.
+    """
+    sequence = np.random.SeedSequence(
+        entropy=int(seed), spawn_key=(int(replica), *name.encode()))
+    return int(sequence.generate_state(1, dtype=np.uint32)[0] & 0x7FFFFFFF)
+
+
 def _effective_nz(nz, delta_neg, delta_pos, sigma_delta):
     """
     Longitudinal sampling cutoff, reduced to stay inside the local momentum

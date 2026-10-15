@@ -314,3 +314,16 @@ def test_configure_checks_its_arguments(ring):
     no_markers = _ring()
     with pytest.raises(ValueError, match='install_markers'):
         _configure(no_markers, local_momentum_acceptance=_lma(line))
+
+
+def test_stream_seeds_are_keyed_by_marker_and_replica():
+    from xfields.touschek.generator import _stream_seed
+
+    names = [f'tscatter.{ii}' for ii in range(500)]
+    seeds = {(nn, rr): _stream_seed(1997, nn, rr)
+             for nn in names for rr in range(4)}
+    assert len(set(seeds.values())) == len(seeds)
+    assert all(0 <= ss < 2**31 for ss in seeds.values())
+    # Reproducible, and changed by the configured seed
+    assert _stream_seed(1997, 'tscatter.3', 1) == seeds['tscatter.3', 1]
+    assert _stream_seed(1998, 'tscatter.3', 1) != seeds['tscatter.3', 1]
