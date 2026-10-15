@@ -2,6 +2,7 @@
 # This file is part of the Xfields Package.   #
 # Copyright (c) CERN, 2026.                   #
 # ########################################### #
+import json
 from pathlib import Path
 import warnings
 
@@ -500,10 +501,11 @@ def _fake_track(part, seed):
     part.at_turn[alive] = 10
 
     free = np.flatnonzero(part.state == xt.particles.LAST_INVALID_STATE)[0]
-    part.state[free] = 0
+    with part._bypass_linked_vars():
+        for _, nn in xt.Particles.per_particle_vars:
+            getattr(part, nn)[free] = getattr(part, nn)[lost[0]]
     part.particle_id[free] = np.max(part.particle_id) + 1
     part.parent_particle_id[free] = part.particle_id[lost[0]]
-    part.weight[free] = part.weight[lost[0]]
 
 
 def _lost_weight(part):
@@ -729,3 +731,75 @@ def test_generate_explains_an_empty_sample(ring):
                weight_retention_fraction=1.0)
     part = tsc.generate(at='tscatter.2')
     assert np.sum(part.state > 0) == 2000
+
+
+def _assert_same_tracked_particles(part, other):
+    """The same particles, in any order (matched by particle_id)."""
+    def allocated_by_id(pp):
+        index = np.flatnonzero(pp.state > xt.particles.LAST_INVALID_STATE)
+        return index[np.argsort(pp.particle_id[index])]
+
+    index, index_other = allocated_by_id(part), allocated_by_id(other)
+    assert len(index) == len(index_other) > 0
+    for nn in COORDINATES + ('state', 'at_turn', 'parent_particle_id'):
+        np.testing.assert_array_equal(
+            getattr(part, nn)[index], getattr(other, nn)[index_other],
+            err_msg=f'{nn} differs')
+
+
+def test_jobs_from_a_saved_line_merge_like_a_single_job(ring, tmp_path):
+    """
+    Independent jobs, each loading the saved line, generating one marker and
+    replica, tracking and saving the particles, give the particles and the
+    result of a single job.
+    """
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    line.to_json(tmp_path / 'line.json')
+    tsc = line.xfields.touschek
+    names = tsc.marker_names
+    n_replicas = 2
+
+    single_job = {nn: [] for nn in names}
+    for rr in range(n_replicas):
+        for nn, part in tsc.generate(replica=rr, n_replicas=n_replicas).items():
+            _fake_track(part, seed=rr)
+            single_job[nn].append(part)
+
+    # The jobs, in reverse order, exchanging only files
+    jobs = [(nn, rr) for rr in range(n_replicas) for nn in names][::-1]
+    for job_id, (nn, rr) in enumerate(jobs):
+        job_line = xt.load(tmp_path / 'line.json')
+        part = job_line.xfields.touschek.generate(
+            at=nn, replica=rr, n_replicas=n_replicas)
+        _fake_track(part, seed=rr)
+        part.to_json(tmp_path / f'job.{job_id}.json')
+
+    jobs_output = {nn: [None] * n_replicas for nn in names}
+    for job_id, (nn, rr) in enumerate(jobs):
+        with open(tmp_path / f'job.{job_id}.json') as fid:
+            jobs_output[nn][rr] = xt.Particles.from_dict(json.load(fid))
+
+    for nn in names:
+        for rr in range(n_replicas):
+            _assert_same_tracked_particles(
+                jobs_output[nn][rr], single_job[nn][rr])
+
+    # Same particles, summed in another order (the loaded ones are
+    # reorganized): equal to rounding
+    expected = tsc.analyse(single_job)
+    result = tsc.analyse(jobs_output)
+    assert result.rate_tracking == pytest.approx(
+        expected.rate_tracking, rel=1e-12)
+    assert result.rate_tracking_error == pytest.approx(
+        expected.rate_tracking_error, rel=1e-9)
+    for col in ('n_replicas', 'num_particles', 'num_lost_particles'):
+        np.testing.assert_array_equal(
+            result.local_rates[col], expected.local_rates[col])
+    for col in ('sum_weight', 'sum_lost_weight'):
+        np.testing.assert_allclose(
+            result.local_rates[col], expected.local_rates[col], rtol=1e-12)
+    merged = tsc.analyse(xt.Particles.merge(
+        [pp for vv in jobs_output.values() for pp in vv]))
+    assert merged.rate_tracking == pytest.approx(
+        expected.rate_tracking, rel=1e-12)
