@@ -10,9 +10,11 @@ import numpy as np
 import xtrack as xt
 
 from ..beam_elements.touschek import (
-    TouschekMarker, _make_random_seed, _resolve_bunch_intensity,
+    TouschekMarker, TouschekRNGState, _make_random_seed,
+    _make_xtrack_rng_seed, _resolve_bunch_intensity,
     _resolve_n_scattering_events, _resolve_rng_source,
-    _resolve_weight_retention_fraction, _rng_source_name)
+    _resolve_weight_retention_fraction, _rng_source_name,
+    _TOUSCHEK_RNG_ELEGANT)
 from .piwinski import integrated_piwinski_rates, local_piwinski_rate
 
 # Tolerance on the position of the last marker, at the end of the line [m]
@@ -142,6 +144,61 @@ def _stream_seed(seed, name, replica):
     sequence = np.random.SeedSequence(
         entropy=int(seed), spawn_key=(int(replica), *name.encode()))
     return int(sequence.generate_state(1, dtype=np.uint32)[0] & 0x7FFFFFFF)
+
+
+def _new_rng(marker, seed):
+    """
+    Random-number generator of a stream seeded with `seed`.
+
+    Parameters
+    ----------
+    marker : TouschekMarker
+        Marker whose generator (``'elegant'`` or ``'xtrack'``) and context
+        are used.
+    seed : int
+        Seed of the stream.
+
+    Returns
+    -------
+    rng_state : TouschekRNGState or None
+        Elegant-compatible state, with ``rng='elegant'``.
+    rng_particle : xtrack.Particles or None
+        Carrier of the xtrack generator state, with ``rng='xtrack'``.
+    """
+    context = marker._context
+    if marker.rng_source == _TOUSCHEK_RNG_ELEGANT:
+        return TouschekRNGState(seed=seed, _context=context), None
+    rng_particle = xt.Particles(_context=context)
+    rng_particle._init_random_number_generator(
+        seeds=_make_xtrack_rng_seed(seed))
+    return None, rng_particle
+
+
+def _on_context(rng_state, rng_particle, context):
+    """
+    The random-number generator on `context`, copied there if needed.
+    """
+    if rng_state is not None and rng_state._context is not context:
+        rng_state = rng_state.copy(_context=context)
+    if rng_particle is not None and rng_particle._context is not context:
+        rng_particle = rng_particle.copy(_context=context)
+    return rng_state, rng_particle
+
+
+def _check_configured(name, marker, particle_ref):
+    """
+    Check that a marker is configured for the reference particle of the line.
+    """
+    if not marker.p0c > 0:
+        raise ValueError(
+            f"TouschekMarker '{name}' is not configured: call "
+            "`line.xfields.touschek.configure(...)` first.")
+    p0c = particle_ref.p0c[0]
+    if abs(marker.p0c - p0c) > 1e-10 * p0c:
+        raise ValueError(
+            f"TouschekMarker '{name}' is configured for p0c = "
+            f"{marker.p0c:.10g} eV, but the reference particle of the line "
+            f"has p0c = {p0c:.10g} eV: configure the markers again.")
 
 
 def _effective_nz(nz, delta_neg, delta_pos, sigma_delta):
@@ -634,6 +691,122 @@ class TouschekGenerator:
             at=at,
             verbose=verbose,
         )
+
+    def generate(self, at=None, *, replica=0, n_replicas=1, seed=None,
+                 rng_stream='per_marker'):
+        """
+        Generate Touschek-scattered particles at the markers.
+
+        At each marker, scattering events are drawn from the local 6D
+        Gaussian beam with the Moller cross section, following the Monte
+        Carlo of Xiao and Borland as in ELEGANT. The particles scattered
+        beyond the local momentum acceptance are kept, the highest-weight ones
+        up to the retained fraction of the weight, and shifted onto the
+        closed orbit. The weights of the particles of a marker sum to the
+        retained part of the scattering rate of its section [1/s per bunch],
+        divided by ``n_replicas``.
+
+        The particles of a marker are tracked from the marker itself, e.g.
+        ``line.track(part, ele_start=name, ele_stop=name, num_turns=...)``,
+        and the samples of different markers or replicas, generated in the
+        same or in different jobs, can then be merged with
+        :meth:`xtrack.Particles.merge` and given to :meth:`analyse`.
+
+        Parameters
+        ----------
+        at : str, sequence of str, or None, optional
+            Markers at which particles are generated. If ``None`` (default),
+            all the markers of the line.
+        replica : int, optional
+            Index of the replica: replicas of a marker are independent
+            samples of the same section, e.g. generated in different jobs.
+            Default ``0``.
+        n_replicas : int, optional
+            Number of replicas of each marker that are merged. The weights are
+            divided by it, so that the merged replicas represent the scattering
+            rate once. Default ``1``.
+        seed : int or None, optional
+            Seed of the random-number streams. If ``None`` (default), the seed
+            stored on each marker by :meth:`configure`.
+        rng_stream : {'per_marker', 'continuous'}, optional
+            With ``'per_marker'`` (default), each marker and replica has its
+            own random-number stream, derived from the seed, the name of the
+            marker and the replica: the particles of a marker do not depend on
+            the other markers that are generated, nor on the order. With
+            ``'continuous'``, one stream seeded with the seed runs through the
+            selected markers in line order, as in ELEGANT, whose sequence it
+            reproduces; only ``n_replicas=1`` is supported then.
+
+        Returns
+        -------
+        particles : xtrack.Particles or dict
+            If ``at`` is a string, the particles generated at that marker.
+            Otherwise, a mapping ``{name: xtrack.Particles}`` in line order.
+        """
+        line = self.line
+        names = self._markers(at)
+
+        if (isinstance(n_replicas, (bool, np.bool_))
+                or not isinstance(n_replicas, (int, np.integer))
+                or n_replicas < 1):
+            raise ValueError("`n_replicas` must be a positive integer.")
+        if (isinstance(replica, (bool, np.bool_))
+                or not isinstance(replica, (int, np.integer))
+                or not 0 <= replica < n_replicas):
+            raise ValueError(
+                f"`replica` must be an integer in [0, n_replicas) "
+                f"(got {replica} with n_replicas={n_replicas}).")
+        if rng_stream not in ('per_marker', 'continuous'):
+            raise ValueError(
+                "`rng_stream` must be either 'per_marker' or 'continuous'.")
+        if seed is not None:
+            seed = _resolve_seed(seed)
+
+        particle_ref = line.particle_ref
+        markers = {nn: line.element_dict[nn] for nn in names}
+        for nn, marker in markers.items():
+            _check_configured(nn, marker, particle_ref)
+
+        tab = line.get_table()
+        element_index = {nn: ii for ii, nn in enumerate(line.element_names)}
+
+        if rng_stream == 'continuous':
+            if n_replicas != 1:
+                raise ValueError(
+                    "The continuous random-number stream supports only "
+                    "`n_replicas=1`.")
+            seeds = {int(mm.seed) for mm in markers.values()}
+            rng_sources = {int(mm.rng_source) for mm in markers.values()}
+            if len(rng_sources) > 1 or (seed is None and len(seeds) > 1):
+                raise ValueError(
+                    "The continuous random-number stream needs the same "
+                    "`rng` and seed on all the selected markers.")
+            rng_state, rng_particle = _new_rng(
+                markers[names[0]], seeds.pop() if seed is None else seed)
+
+        particles = {}
+        for nn in names:
+            marker = markers[nn]
+            if rng_stream == 'continuous':
+                rng_state, rng_particle = _on_context(
+                    rng_state, rng_particle, marker._context)
+            else:
+                rng_state, rng_particle = _new_rng(
+                    marker,
+                    _stream_seed(marker.seed if seed is None else seed,
+                                 nn, replica))
+            particles[nn] = marker._generate(
+                particle_ref=particle_ref,
+                at_element=element_index[nn],
+                s=tab['s', nn],
+                rng_state=rng_state,
+                rng_particle=rng_particle,
+                weight_scale=1.0 / n_replicas,
+            )
+
+        if isinstance(at, str):
+            return particles[at]
+        return particles
 
     def _check_sections_cover_line(self):
         """

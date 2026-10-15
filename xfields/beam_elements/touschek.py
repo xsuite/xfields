@@ -601,6 +601,54 @@ class TouschekMarker(xt.BeamElement):
             weighted so that their total weight represents the retained
             section scattering rate.
         """
+        if self.rng_source == _TOUSCHEK_RNG_ELEGANT and _rng_state is None:
+            _rng_state = TouschekRNGState(_context=self._context)
+        if self.rng_source == _TOUSCHEK_RNG_XTRACK and _rng_particle is None:
+            _rng_particle = xt.Particles(_context=self._context)
+            _rng_particle._init_random_number_generator(
+                seeds=_make_xtrack_rng_seed(None))
+
+        return self._generate(
+            particle_ref=self.particle_ref,
+            at_element=self.element_index,
+            s=getattr(self, 's', 0.0),
+            rng_state=_rng_state,
+            rng_particle=_rng_particle,
+        )
+
+    def _generate(self, *, particle_ref, at_element, s, rng_state=None,
+                  rng_particle=None, weight_scale=1.0):
+        """
+        Run the Touschek Monte Carlo and build the scattered particles.
+
+        The particles are those scattered beyond the local momentum
+        acceptance, retained by ``pickPart`` and shifted onto the closed
+        orbit. Their weights sum to the retained part of the integrated
+        Piwinski rate of the section of the element, times ``weight_scale``.
+
+        Parameters
+        ----------
+        particle_ref : xtrack.Particles
+            Reference particle, defining the species of the particles.
+        at_element : int
+            Index of the element in the line.
+        s : float
+            Position of the element in the line [m].
+        rng_state : TouschekRNGState or None, optional
+            Elegant-compatible RNG state, advanced by the generation. Required
+            with ``rng='elegant'``.
+        rng_particle : xtrack.Particles or None, optional
+            Carrier particle of the xtrack RNG state, advanced by the
+            generation. Required with ``rng='xtrack'``.
+        weight_scale : float, optional
+            Factor applied to the weights of the particles.
+
+        Returns
+        -------
+        particles : xtrack.Particles
+            Scattered particles, with a capacity of twice their number to
+            leave room for secondaries.
+        """
         if self.n_scattering_events < 1:
             raise ValueError(
                 "`n_scattering_events` must be at least 1 to generate "
@@ -608,27 +656,25 @@ class TouschekMarker(xt.BeamElement):
 
         context = self._context
         if self.rng_source == _TOUSCHEK_RNG_ELEGANT:
-            if _rng_state is None:
-                _rng_state = TouschekRNGState(_context=context)
-            elif _rng_state._context is not context:
-                _rng_state = _rng_state.copy(_context=context)
+            if rng_state is None:
+                raise ValueError("`rng_state` is required with rng='elegant'.")
+            elif rng_state._context is not context:
+                rng_state = rng_state.copy(_context=context)
             particles = xt.Particles(_context=context)
         elif self.rng_source == _TOUSCHEK_RNG_XTRACK:
-            if _rng_state is None:
-                _rng_state = TouschekRNGState._unseeded(_context=context)
-            elif _rng_state._context is not context:
-                _rng_state = _rng_state.copy(_context=context)
-            if _rng_particle is None:
-                particles = xt.Particles(_context=context)
+            if rng_particle is None:
+                raise ValueError(
+                    "`rng_particle` is required with rng='xtrack'.")
+            if rng_state is None:
+                rng_state = TouschekRNGState._unseeded(_context=context)
+            elif rng_state._context is not context:
+                rng_state = rng_state.copy(_context=context)
+            particles = rng_particle
+            if particles._context is not context:
+                particles = particles.copy(_context=context)
+            if not particles._has_valid_rng_state():
                 particles._init_random_number_generator(
                     seeds=_make_xtrack_rng_seed(None))
-            else:
-                particles = _rng_particle
-                if particles._context is not context:
-                    particles = particles.copy(_context=context)
-                if not particles._has_valid_rng_state():
-                    particles._init_random_number_generator(
-                        seeds=_make_xtrack_rng_seed(None))
         else:
             raise ValueError(
                 f"Unsupported Touschek RNG source: {self.rng_source}")
@@ -652,22 +698,21 @@ class TouschekMarker(xt.BeamElement):
                       weight_out=weight_out,
                       totalMCRate_out=totalMCRate_out,
                       n_selected_out=n_selected_out,
-                      rng_state=_rng_state)
-        
+                      rng_state=rng_state)
+
         n = n_selected_out[0]
         # Create particle object for tracking
-        # TODO: add at_element, start_tracking_at_element, ...
-        part = xt.Particles(_capacity=2*n, 
+        part = xt.Particles(_capacity=2*n,
                             p0c=self.p0c,
-                            mass0=self.particle_ref.mass0,
-                            q0=self.particle_ref.q0, 
-                            pdg_id=self.particle_ref.pdg_id,
+                            mass0=particle_ref.mass0,
+                            q0=particle_ref.q0,
+                            pdg_id=particle_ref.pdg_id,
                             x=x_out[:n], px=px_out[:n],
                             y=y_out[:n], py=py_out[:n],
                             zeta=zeta_out[:n], delta=delta_out[:n],
-                            weight=weight_out[:n],
-                            s=getattr(self, 's', 0.0))
-        
+                            weight=weight_out[:n] * weight_scale,
+                            s=s)
+
         # Shift Touschek scattered particles around the closed orbit
         part.x[:n] += self.x_co
         part.px[:n] += self.px_co
@@ -678,9 +723,9 @@ class TouschekMarker(xt.BeamElement):
         delta_temp = part.delta.copy()
         delta_temp[:n] += self.delta_co
         part.update_delta(delta_temp)
-        
-        part.at_element = self.element_index
-        
+
+        part.at_element = at_element
+
         part_ids = part.filter(part.state == 1).particle_id
         self.theta_log = dict(zip(part_ids.astype(int), theta_out[:n].astype(float)))
 

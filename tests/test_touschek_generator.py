@@ -327,3 +327,149 @@ def test_stream_seeds_are_keyed_by_marker_and_replica():
     # Reproducible, and changed by the configured seed
     assert _stream_seed(1997, 'tscatter.3', 1) == seeds['tscatter.3', 1]
     assert _stream_seed(1998, 'tscatter.3', 1) != seeds['tscatter.3', 1]
+
+
+COORDINATES = ('x', 'px', 'y', 'py', 'zeta', 'delta', 'weight', 's',
+               'at_element', 'particle_id')
+
+
+def _assert_same_particles(part, other):
+    alive, alive_other = part.state > 0, other.state > 0
+    assert np.sum(alive) == np.sum(alive_other) > 0
+    for nn in COORDINATES:
+        np.testing.assert_array_equal(
+            getattr(part, nn)[alive], getattr(other, nn)[alive_other],
+            err_msg=f'{nn} differs')
+
+
+def test_generate_at_one_or_several_markers(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    names = tsc.marker_names
+
+    assert isinstance(tsc.generate(at=names[1]), xt.Particles)
+    assert list(tsc.generate(at=[names[3], names[1]])) == [names[1], names[3]]
+    assert list(tsc.generate()) == names
+
+
+def test_generated_particles(ring):
+    line = _ring_with_markers()
+    lma = _lma(line)
+    _configure(line, twiss=ring[1], local_momentum_acceptance=lma)
+    tsc = line.xfields.touschek
+    ref = line.particle_ref
+
+    tab = line.get_table()
+    for ii, nn in enumerate(tsc.marker_names):
+        part = tsc.generate(at=nn)
+        alive = part.state > 0
+        assert np.all(part.s[alive] == tab['s', nn])
+        assert np.all(part.at_element[alive]
+                      == line.element_names.index(nn))
+        assert part.q0 == ref.q0 and part.mass0 == ref.mass0
+        assert np.all(part.pdg_id[alive] == ref.pdg_id[0])
+        delta = part.delta[alive]
+        assert np.all((delta < LMA_SCALE * lma.delta_neg[ii])
+                      | (delta > LMA_SCALE * lma.delta_pos[ii]))
+        # The weights carry the retained rate of the section
+        assert np.sum(part.weight[alive]) == pytest.approx(
+            0.99 * line[nn].integrated_piwinski_rate, rel=2e-3)
+
+
+def test_generation_does_not_depend_on_the_other_markers(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    names = tsc.marker_names
+
+    single_job = tsc.generate()
+    for nn in reversed(names):
+        _assert_same_particles(tsc.generate(at=nn), single_job[nn])
+    for nn, part in tsc.generate(at=names[::-2]).items():
+        _assert_same_particles(part, single_job[nn])
+
+
+def test_replicas(ring):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1])
+    tsc = line.xfields.touschek
+    nn = tsc.marker_names[2]
+
+    one = tsc.generate(at=nn)
+    first = tsc.generate(at=nn, replica=0, n_replicas=3)
+    replicas = [first] + [tsc.generate(at=nn, replica=rr, n_replicas=3)
+                          for rr in (1, 2)]
+
+    # The same stream, weights divided by the number of replicas
+    alive = one.state > 0
+    np.testing.assert_array_equal(first.x[first.state > 0], one.x[alive])
+    np.testing.assert_array_equal(
+        first.weight[first.state > 0], one.weight[alive] * (1 / 3))
+    # Independent samples, which together carry the rate once
+    assert not np.array_equal(replicas[1].x[:10], replicas[2].x[:10])
+    total = sum(np.sum(pp.weight[pp.state > 0]) for pp in replicas)
+    assert total == pytest.approx(
+        0.99 * line[nn].integrated_piwinski_rate, rel=2e-3)
+
+
+@pytest.mark.parametrize('rng', ['elegant', 'xtrack'])
+def test_generation_from_a_reloaded_line(ring, tmp_path, rng):
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1], rng=rng)
+    names = line.xfields.touschek.marker_names
+    expected = line.xfields.touschek.generate(at=names[1:4])
+
+    line.to_json(tmp_path / 'line.json')
+    line.env['ring'] = line
+    line.env.to_json(tmp_path / 'env.json')
+    for loaded in (xt.load(tmp_path / 'line.json'),
+                   xt.load(tmp_path / 'env.json').lines['ring']):
+        for nn in names:
+            assert loaded[nn].to_dict() == line[nn].to_dict()
+        reloaded = loaded.xfields.touschek.generate(at=names[1:4])
+        for nn, part in expected.items():
+            _assert_same_particles(reloaded[nn], part)
+
+
+@pytest.mark.parametrize('rng', ['elegant', 'xtrack'])
+def test_continuous_stream_reproduces_touschek_study(ring, rng):
+    config = dict(local_momentum_acceptance_scale=LMA_SCALE,
+                  n_scattering_events=20_000, weight_retention_fraction=0.99,
+                  seed=1997, rng=rng, method='4d', **BEAM)
+    study_line = _ring_with_markers()
+    study = xf.TouschekStudy(study_line, twiss=ring[1],
+                             local_momentum_acceptance=_lma(study_line),
+                             **config)
+    study.initialise_touschek()
+    expected = study.run(track=False, keep_particles=True).particles_by_element
+
+    line = _ring_with_markers()
+    line.xfields.touschek.configure(twiss=ring[1], verbose=False,
+                                    local_momentum_acceptance=_lma(line),
+                                    **config)
+    generated = line.xfields.touschek.generate(rng_stream='continuous')
+    for nn, part in generated.items():
+        _assert_same_particles(part, expected[nn])
+
+
+def test_generate_checks_its_arguments(ring):
+    line = _ring_with_markers()
+    tsc = line.xfields.touschek
+    nn = tsc.marker_names[1]
+    with pytest.raises(ValueError, match='not configured'):
+        tsc.generate(at=nn)
+
+    _configure(line, twiss=ring[1])
+    with pytest.raises(ValueError, match='replica'):
+        tsc.generate(at=nn, replica=2, n_replicas=2)
+    with pytest.raises(ValueError, match='n_replicas'):
+        tsc.generate(at=nn, n_replicas=0)
+    with pytest.raises(ValueError, match='rng_stream'):
+        tsc.generate(at=nn, rng_stream='other')
+    with pytest.raises(ValueError, match='n_replicas=1'):
+        tsc.generate(rng_stream='continuous', replica=1, n_replicas=2)
+
+    line.set_particle_ref('electron', p0c=2e9)
+    with pytest.raises(ValueError, match='configure the markers again'):
+        tsc.generate(at=nn)
