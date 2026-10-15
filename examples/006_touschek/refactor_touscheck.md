@@ -35,10 +35,10 @@ tsc.configure(local_momentum_acceptance=lma, nemitt_x=..., nemitt_y=...,
 # The line can be saved here, with its configuration
 
 tab = line.get_table()
-touschek_elements = tab.rows.match(element_type='TouschekMarker').name
+touschek_markers = tab.rows.match(element_type='TouschekMarker').name
 
 particles_list = []
-for name in touschek_elements:
+for name in touschek_markers:
     part = tsc.generate(at=name)
     line.track(part, ele_start=name, ele_stop=name, num_turns=n_turns)
     particles_list.append(part)

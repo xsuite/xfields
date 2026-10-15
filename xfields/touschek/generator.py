@@ -435,10 +435,10 @@ class TouschekGenerator:
                       seed=1997)
 
         tab = line.get_table()
-        touschek_elements = tab.rows.match(element_type='TouschekMarker').name
+        touschek_markers = tab.rows.match(element_type='TouschekMarker').name
 
         particles_list = []
-        for name in touschek_elements:
+        for name in touschek_markers:
             part = tsc.generate(at=name)
             line.track(part, ele_start=name, ele_stop=name, num_turns=1000)
             particles_list.append(part)
