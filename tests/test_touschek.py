@@ -773,6 +773,47 @@ class TestTouschekSections:
             expected, rel=1e-12)
 
 
+class TestTouschekMarkerSerialization:
+    """A configured TouschekMarker keeps its whole configuration in JSON."""
+
+    CONFIGURATION = (
+        'p0c', 'bunch_intensity', 'gemitt_x', 'gemitt_y',
+        'alfx', 'betx', 'alfy', 'bety', 'dx', 'dpx', 'dy', 'dpy',
+        'x_co', 'px_co', 'y_co', 'py_co', 'zeta_co', 'delta_co',
+        'delta_neg', 'delta_pos', 'sigma_z', 'sigma_delta',
+        'n_scattering_events', 'nx', 'ny', 'nz', 'theta_min', 'theta_max',
+        'weight_retention_fraction', 'piwinski_rate',
+        'integrated_piwinski_rate', 'rng_source', 'seed',
+    )
+
+    @pytest.mark.parametrize('rng', ['elegant', 'xtrack'])
+    def test_configured_markers_survive_json(self, toy_ring, tmp_path, rng):
+        line  = toy_ring['line']
+        study = _build_study(line, _fresh_lma(toy_ring), toy_ring['twiss'],
+                             rng=rng)
+        study.initialise_touschek()
+        tnames = line.get_table().rows.match(element_type='TouschekMarker').name
+        for ii, nn in enumerate(tnames):
+            # The toy ring has no closed-orbit distortion: use distinct
+            # non-zero values, else the comparison below would be vacuous
+            for jj, cc in enumerate(('x_co', 'px_co', 'y_co', 'py_co',
+                                     'zeta_co', 'delta_co')):
+                setattr(line[nn], cc, 1e-6 * (ii + 1) * (jj + 1))
+            line[nn].seed = 1997 + ii
+
+        line.to_json(tmp_path / 'line.json')
+        loaded = xt.load(tmp_path / 'line.json')
+
+        for nn in tnames:
+            marker = loaded[nn]
+            assert isinstance(marker, xf.TouschekMarker)
+            assert line[nn].betx > 0 and line[nn].piwinski_rate > 0
+            for field in self.CONFIGURATION:
+                assert getattr(marker, field) == getattr(line[nn], field), (
+                    f'{nn}: {field} changed in the JSON round trip')
+            assert marker.rng == rng
+
+
 class TestTouschekNoScatteringEvents:
     """n_scattering_events = 0 is a valid setting, but cannot generate."""
 
