@@ -79,13 +79,13 @@ line.configure_bend_model(core='full', edge=None)
 
 placements = []
 for index, row in enumerate(elegant_rows):
-    env.elements[f'TS{index}'] = xf.TouschekScattering()
+    env.elements[f'TS{index}'] = xf.TouschekMarker()
     placements.append(env.place(f'TS{index}', at=float(row['s_m'])))
 line.insert(placements)
 
 twiss = line.twiss(method='4d')
 table = line.get_table()
-touschek_names = table.rows.match(element_type='TouschekScattering').name
+touschek_names = table.rows.match(element_type='TouschekMarker').name
 xfields_s = np.array([table['s', name] for name in touschek_names])
 np.testing.assert_allclose(xfields_s, elegant_s, atol=1e-12)
 
@@ -98,7 +98,7 @@ lma = xt.Table({
     'delta_pos': np.full(len(touschek_names), 0.012),
 })
 
-touschek = line.xfields.touschek_configure(
+line.xfields.touschek.configure(
     twiss=twiss,
     local_momentum_acceptance=lma,
     local_momentum_acceptance_scale=0.85,
@@ -116,13 +116,14 @@ touschek = line.xfields.touschek_configure(
     method='4d',
 )
 
+# The local rates are stored on the markers; the analysis without particles
+# gives the total rate and the corresponding lifetime
 xfields_local_rates = np.array([
     line[name].piwinski_rate for name in touschek_names
 ])
-xfields_total_rate = sum(
-    line[name].integrated_piwinski_rate for name in touschek_names
-)
-xfields_lifetime = BUNCH_INTENSITY / xfields_total_rate
+rates = line.xfields.touschek.analyse()
+xfields_total_rate = rates.rate_scattering
+xfields_lifetime = rates.lifetime_scattering
 
 
 ######################################################
@@ -210,11 +211,12 @@ with np.load(
         REFERENCE_DIR / 'scattered_distribution_reference.npz') as data:
     scatter_reference = {name: data[name].copy() for name in data.files}
 
-# TS0 has zero section weight. Generate one fixed-seed sample at TS1--TS8.
-scatter_result = touschek.run(track=False, keep_particles=True)
-particles = [
-    scatter_result.particles_by_element[name] for name in touschek_names[1:]
-]
+# One random-number stream through all the markers, as in ELEGANT, whose
+# sequence is reproduced. TS0 is generated too, since it consumes the first
+# random numbers of the stream, but it has zero section weight: the samples
+# of TS1--TS8 are compared.
+generated = line.xfields.touschek.generate(rng_stream='continuous')
+particles = [generated[name] for name in touschek_names[1:]]
 
 
 def xfields_summary(quantity):

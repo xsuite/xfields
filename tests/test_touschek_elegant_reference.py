@@ -19,7 +19,7 @@ REFERENCE_DIR = (
 )
 
 
-def _build_reference_study(reference_rows):
+def _build_reference_line(reference_rows):
     env = xt.Environment()
     line = env.new_line(components=[
         env.new('qf1', xt.Quadrupole, length=0.3, k1=0.1),
@@ -44,13 +44,13 @@ def _build_reference_study(reference_rows):
 
     placements = []
     for index, row in enumerate(reference_rows):
-        env.elements[f'TS{index}'] = xf.TouschekScattering()
+        env.elements[f'TS{index}'] = xf.TouschekMarker()
         placements.append(env.place(f'TS{index}', at=float(row['s_m'])))
     line.insert(placements)
 
     twiss = line.twiss(method='4d')
     table = line.get_table()
-    names = table.rows.match(element_type='TouschekScattering').name
+    names = table.rows.match(element_type='TouschekMarker').name
     xfields_s = np.array([table['s', name] for name in names])
     elegant_s = np.array([float(row['s_m']) for row in reference_rows])
     np.testing.assert_allclose(xfields_s, elegant_s, atol=1e-12)
@@ -61,7 +61,7 @@ def _build_reference_study(reference_rows):
         'delta_neg': np.full(len(names), -0.012),
         'delta_pos': np.full(len(names), 0.012),
     })
-    touschek = line.xfields.touschek_configure(
+    line.xfields.touschek.configure(
         twiss=twiss,
         local_momentum_acceptance=lma,
         local_momentum_acceptance_scale=0.85,
@@ -77,8 +77,9 @@ def _build_reference_study(reference_rows):
         weight_retention_fraction=0.99,
         seed=1997,
         method='4d',
+        verbose=False,
     )
-    return line, names, touschek
+    return line, names
 
 
 @pytest.fixture(scope='module')
@@ -87,12 +88,12 @@ def elegant_comparison():
         reference_rows = list(csv.DictReader(stream))
     with (REFERENCE_DIR / 'reference_summary.json').open() as stream:
         reference_summary = json.load(stream)
-    line, names, touschek = _build_reference_study(reference_rows)
-    return line, names, touschek, reference_rows, reference_summary
+    line, names = _build_reference_line(reference_rows)
+    return line, names, reference_rows, reference_summary
 
 
 def test_local_piwinski_rates_against_elegant(elegant_comparison):
-    line, names, _, reference_rows, _ = elegant_comparison
+    line, names, reference_rows, _ = elegant_comparison
     xfields_rates = np.array([line[name].piwinski_rate for name in names])
     elegant_rates = np.array([
         float(row['piwinski_local_rate_hz']) for row in reference_rows
@@ -105,9 +106,14 @@ def test_local_piwinski_rates_against_elegant(elegant_comparison):
 
 
 def test_total_rate_and_lifetime_against_elegant(elegant_comparison):
-    line, names, _, _, reference_summary = elegant_comparison
-    total_rate = sum(line[name].integrated_piwinski_rate for name in names)
-    lifetime = 4e9 / total_rate
+    line, names, _, reference_summary = elegant_comparison
+    result = line.xfields.touschek.analyse()
+    total_rate = result.rate_scattering
+    lifetime = result.lifetime_scattering
+
+    assert total_rate == pytest.approx(
+        sum(line[name].integrated_piwinski_rate for name in names), rel=1e-12)
+    assert lifetime == pytest.approx(4e9 / total_rate, rel=1e-12)
 
     assert total_rate == pytest.approx(
         reference_summary['total_piwinski_rate_hz'], rel=1e-5)
@@ -117,10 +123,12 @@ def test_total_rate_and_lifetime_against_elegant(elegant_comparison):
 
 @pytest.fixture(scope='module')
 def scattered_distribution(elegant_comparison):
-    _, names, touschek, _, _ = elegant_comparison
-    # TS0 represents a zero-length section and has zero particle weight.
-    result = touschek.run(track=False, keep_particles=True)
-    particles = [result.particles_by_element[name] for name in names[1:]]
+    line, names, _, _ = elegant_comparison
+    # One random-number stream through all the markers, as ELEGANT: TS0 is
+    # generated too, since it consumes the first random numbers of the
+    # stream, but it represents a zero-length section and has zero weight.
+    generated = line.xfields.touschek.generate(rng_stream='continuous')
+    particles = [generated[name] for name in names[1:]]
     with np.load(
             REFERENCE_DIR / 'scattered_distribution_reference.npz') as data:
         reference = {name: data[name].copy() for name in data.files}

@@ -13,7 +13,7 @@ DEFAULT_XFIELDS_ELEMENTS = [
     xf.SpaceCharge3D,
     xf.ElectronCloud,
     xf.ElectronLensInterpolated,
-    xf.TouschekScattering
+    xf.TouschekMarker
 ]
 
 NON_TRACKING_ELEMENTS = [

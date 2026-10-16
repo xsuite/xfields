@@ -16,7 +16,7 @@ from .slicers import UniformBinSlicer
 
 from .solvers.fftsolvers import FFTSolver3D
 
-from .touschek.study import TouschekResult, TouschekStudy
+from .touschek import TouschekGenerator, TouschekResult
 from .line_tools import XfieldsLineAPI
 
 from .beam_elements.spacecharge import SpaceCharge3D, SpaceChargeBiGaussian
@@ -28,7 +28,7 @@ from .beam_elements.beambeam3dpic import BeamBeamPIC3D
 from .beam_elements.temp_slicer import TempSlicer
 from .beam_elements.electroncloud import ElectronCloud
 from .beam_elements.electronlens_interpolated import ElectronLensInterpolated
-from .beam_elements.touschek import TouschekRNGState, TouschekScattering
+from .beam_elements.touschek import TouschekRNGState, TouschekMarker
 from .beam_elements.transverse_damper import TransverseDamper
 from .beam_elements.collective_monitor import CollectiveMonitor
 from .beam_elements.waketracker import WakeTracker

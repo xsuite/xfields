@@ -154,7 +154,7 @@ The pytest comparison uses:
   standard deviations;
 - weighted standard deviations: relative tolerance `0.02`.
 
-The xfields comparison places the `TouschekScattering` markers at the exact
+The xfields comparison places the `TouschekMarker` elements at the exact
 `s_m` positions stored in `reference.csv`. With matching marker locations, the
 measured differences for this frozen case are a few ppm locally and for the
 total rate. ELEGANT records a zero local Piwinski rate at the first zero-length
@@ -165,3 +165,12 @@ moments are frozen instead of raw particle equality. The tolerances reflect the
 few-thousand-particle, strongly weighted Monte Carlo sample; they are broadest
 for transverse summaries and tighter for the momentum-deviation shape and total
 weight.
+
+The xfields particles are generated with
+`line.xfields.touschek.generate(rng_stream='continuous')`: one random-number
+stream, seeded once with the seed of the reference (1997), runs through all the
+markers in line order, TS0 included, as in ELEGANT, whose sequence it
+reproduces. The distribution tolerances rely on it: the same comparison with
+another seed, or with the independent per-marker streams that `generate` uses
+by default, gives L1 distances between 0.14 and 0.31 and fails every
+distribution check.
