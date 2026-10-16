@@ -503,6 +503,22 @@ void TouschekScatter(TouschekScatteringData el,
           }
         }
       }
+      if (simuCount == 0) {
+        // Nothing generated (n_simulated == 0): return an empty sample
+        // instead of dividing by zero below (ELEGANT stops the run here).
+        *n_selected_out  = 0;
+        *totalMCRate_out = 0.;
+        free(thetatemp);
+        free(weight);
+        free(xtemp);
+        free(pxtemp);
+        free(ytemp);
+        free(pytemp);
+        free(zetatemp);
+        free(deltatemp);
+        return;
+      }
+
       factor = factor / (double)(total_event);
       totalMCRate = totalWeight * factor;
 
@@ -534,6 +550,10 @@ void TouschekScatter(TouschekScatteringData el,
           pickPart(weight, index, 0, simuCount,
                   &iTotal, &wTotal, weight_limit, weight_ave);
 
+          // pickPart reorders weight[] and index[] together, in place: after
+          // it, position k holds particle index[k] with weight weight[k].
+          // The coordinate arrays are still in the original order, so they
+          // are read through index[k]; the weight is read at k (as in ELEGANT).
           for (long k = 0; k < iTotal; ++k) {
               long src = index[k];
               x_out[k]      = xtemp[src];
@@ -543,7 +563,7 @@ void TouschekScatter(TouschekScatteringData el,
               zeta_out[k]   = zetatemp[src];
               delta_out[k]  = deltatemp[src];
               theta_out[k]  = thetatemp[src];
-              weight_out[k] = weight[src];
+              weight_out[k] = weight[k];
           }
       }
 
