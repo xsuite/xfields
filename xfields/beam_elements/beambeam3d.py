@@ -315,7 +315,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
              slices_other_beam_sqrtSigma_{135}{135}_beamstrahlung (float array): Array storing the per-slice standard deviations of x (=1), y (=3) and zeta (=5) of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. Used for beamstrahlung only. 
              flag_bhabha (int): Flag to simulate small angle radiative Bhabha scattering. 1: ON (quantum), 0: OFF
              compt_x_min (float): Low energy cut on virtual photon spectrum, used for Bhabha, in units of [gamma^-2] where gamma is the rel. Lorentz factor.
-             compt_scale (float): Scaling factor to scale up photon generation, used for Bhabha.
+             compt_scale (float): Scaling factor to scale up photon generation, used for Bhabha. It multiplies the emission probability of every macroparticle: keep the mean number of emitted photons per macroparticle well below 1 (check it in the bhabhatable), otherwise several photons pile up on the same macroparticle and harden the energy loss spectrum.
              flag_beamsize_effect (int): Flag to simulate beamsize effect, used for Bhabha. 1: ON, 0: OFF. Results in ~factor 2 reduction in cross section.
              flag_luminosity (int): Flag to record soft-Gaussian luminosity per bunch crossing in a buffer. Luminosity will be in units of [m^-2].
              slices_other_beam_{x,px,y,py,zeta,pzeta}_center_star (float array): Array storing the per-slice centroid variables of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. 

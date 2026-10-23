@@ -582,3 +582,126 @@ def test_beambeam3d_bhabha_ss(test_context):
     assert np.allclose(xsuite_ss_b1_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
     assert np.allclose(xsuite_ss_b2_hist[-5:], guinea_hist, rtol=2e-1, atol=0)
 
+
+
+@for_all_test_contexts(excluding="ContextPyopencl")
+def test_beambeam3d_bhabha_angles(test_context):
+    """
+    The photon emission changes the direction of the primary only by its
+    scattering angle theta_e, and the photon goes along the primary within
+    its angle theta_g: px = P_x/P0 scales with the energy of the primary.
+    Strong beam of low intensity: the beam-beam kick is negligible and
+    compt_scale gives the emissions. Weight 1: every recorded emission
+    acts on its primary.
+    """
+
+    print(repr(test_context))
+
+    bunch_intensity  = 1e6  # [1]
+    p0c              = 45.6e9  # [eV]
+    mass0            = .511e6  # [eV]
+    sigma_x          = 50e-6  # [m]
+    sigma_y          = 50e-6  # [m]
+    sigma_z          = 2e-3  # [m]
+    n_macroparticles = int(1e4)
+    n_slices         = 20
+
+    # same direction for all the primaries, off-momentum
+    px0     = 2e-3
+    py0     = -1e-3
+    delta0  = -0.1
+    xp0     = px0/(1 + delta0)  # [rad]
+    yp0     = py0/(1 + delta0)  # [rad]
+
+    rng = np.random.default_rng(12345)
+    particles = xp.Particles(
+                _context = test_context,
+                q0       = -1,
+                p0c      = p0c,
+                mass0    = mass0,
+                x        = sigma_x*rng.standard_normal(n_macroparticles),
+                y        = sigma_y*rng.standard_normal(n_macroparticles),
+                zeta     = sigma_z*rng.standard_normal(n_macroparticles),
+                px       = px0,
+                py       = py0,
+                delta    = delta0,
+                weight   = 1,
+                )
+
+    slicer = xf.TempSlicer(_context=test_context, n_slices=n_slices, sigma_z=sigma_z, mode="unicharge")
+
+    el_beambeam = xf.BeamBeamBiGaussian3D(
+            _context=test_context,
+            config_for_update = None,
+            other_beam_q0=1,
+            phi=0,
+            alpha=0,
+            min_sigma_diff     = 1e-28,
+            slices_other_beam_num_particles = slicer.bin_weights * bunch_intensity,
+            slices_other_beam_zeta_center = slicer.bin_centers,
+            slices_other_beam_Sigma_11    = n_slices*[sigma_x**2],
+            slices_other_beam_Sigma_22    = n_slices*[0],
+            slices_other_beam_Sigma_33    = n_slices*[sigma_y**2],
+            slices_other_beam_Sigma_44    = n_slices*[0],
+            slices_other_beam_Sigma_12    = n_slices*[0],
+            slices_other_beam_Sigma_34    = n_slices*[0],
+            compt_x_min=cx,
+            compt_scale=2e14,
+            flag_beamsize_effect=1,
+    )
+
+    line = xt.Line(elements = [el_beambeam])
+    line.build_tracker(_context=test_context)
+    line.configure_radiation(model_bhabha='quantum')
+
+    record = line.start_internal_logging_for_elements_of_type(
+        xf.BeamBeamBiGaussian3D,
+        capacity={
+            "beamstrahlungtable": int(0),
+            "bhabhatable": int(1e5),
+            "lumitable": int(0)})
+    line.track(particles, num_turns=1)
+    line.stop_internal_logging_for_elements_of_type(xf.BeamBeamBiGaussian3D)
+
+    record.move(_context=xo.context_default)
+    particles.move(_context=xo.context_default)
+
+    table = record.bhabhatable
+    n_rec = table._index.num_recorded
+    pid = table.particle_id[:n_rec]
+    n_emissions = np.bincount(pid, minlength=n_macroparticles)
+    theta_e_sum = np.bincount(pid, weights=table.primary_scattering_angle[:n_rec],
+                              minlength=n_macroparticles)
+
+    assert np.all(particles.state > 0)
+    ids = particles.particle_id
+    one_plus_delta = 1 + particles.delta
+    k = 1 - one_plus_delta/(1 + delta0)  # [1] energy fraction lost
+    dxp = particles.px/one_plus_delta - xp0
+    dyp = particles.py/one_plus_delta - yp0
+
+    ###################################################
+    # test 1: direction of the primaries is preserved #
+    ###################################################
+
+    emitted = n_emissions[ids] > 0
+    print(f"{n_rec} emissions, {emitted.sum()} primaries, "
+          f"{np.sum((k > 0.3) & (k < 0.9))} with 0.3 < k < 0.9")
+    assert np.sum((k > 0.3) & (k < 0.9)) > 100
+
+    # residual beam-beam kick ~1e-9
+    atol = 1e-8
+    assert np.all(np.abs(dxp[~emitted]) < atol)
+    assert np.all(np.abs(dyp[~emitted]) < atol)
+    assert np.all(np.abs(dxp[emitted]) <= theta_e_sum[ids][emitted] + atol)
+    assert np.all(np.abs(dyp[emitted]) <= theta_e_sum[ids][emitted] + atol)
+
+    ############################################
+    # test 2: photons go along their primaries #
+    ############################################
+
+    single = n_emissions[pid] == 1  # direction of the primary before the emission known
+    e_photon = table.photon_energy[:n_rec][single]*1e-9  # [GeV]
+    theta_g = table.photon_scattering_angle[:n_rec][single]
+    assert np.all(np.abs(table.photon_px[:n_rec][single]/e_photon - xp0) <= theta_g + atol)
+    assert np.all(np.abs(table.photon_py[:n_rec][single]/e_photon - yp0) <= theta_g + atol)
