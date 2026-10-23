@@ -318,9 +318,14 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
         if ((e_e_prime < compt_emax) && (e_e_prime > pair_ecut)) {
 
           // compute scattered primary momenta
-          // adjust magnitude due to energy change (vx is in units of [1], corresponds to px in beambeam3d.h)
-          px_e_prime = *vx * e_e_prime;  // [GeV/c]
-          py_e_prime = *vy * e_e_prime;  // [GeV/c]
+          // vx = P_x/P0 (px in beambeam3d.h): the direction of the primary before scattering is vx/(1+delta)
+          const double one_plus_delta = 1.0 + LocalParticle_get_delta(part);
+          const double xp_e = *vx / one_plus_delta;  // [rad]
+          const double yp_e = *vy / one_plus_delta;  // [rad]
+
+          // keep the direction, adjust magnitude due to energy change
+          px_e_prime = xp_e * e_e_prime;  // [GeV/c]
+          py_e_prime = yp_e * e_e_prime;  // [GeV/c]
 
           // adjust direction
           pt_e_prime = theta_e * e_e_prime;  // [GeV/c] transverse azimuthal momentum
@@ -375,8 +380,9 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
                   LocalParticle_set_state(part, XT_LOST_ALL_E_IN_SYNRAD); // used to flag this kind of loss
                   return;
                 }else{  // macropart doesnt die
-                  *vx    = px_e_prime / e_e_prime;
-                  *vy    = py_e_prime / e_e_prime;
+                  // back to P_x/P0
+                  *vx    = px_e_prime / (LocalParticle_get_p0c(part)*1e-9);
+                  *vy    = py_e_prime / (LocalParticle_get_p0c(part)*1e-9);
                   e_primary += e_loss_primary;
                   LocalParticle_add_to_energy(part, e_loss_primary*1e9, 0);  // this changes pzeta
                 }
