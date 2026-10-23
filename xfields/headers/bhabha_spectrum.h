@@ -338,8 +338,8 @@ void compt_do(LocalParticle *part, BeamBeamBiGaussian3DRecordData bhabha_record,
           //pzeta_e_prime = (e_e_prime - e_ref) / (beta_ref * beta_ref * e_ref);
 
           // compute scattered photon momenta from momentum conservation
-          px_photon_prime = (*vx + vx_photon) * e_primary - px_e_prime;
-          py_photon_prime = (*vy + vy_photon) * e_primary - py_e_prime;
+          px_photon_prime = (xp_e + vx_photon) * e_primary - px_e_prime;
+          py_photon_prime = (yp_e + vy_photon) * e_primary - py_e_prime;
 
           // account for the event weight
           r1 = RandomUniform_generate(part);
