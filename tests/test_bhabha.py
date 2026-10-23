@@ -588,8 +588,8 @@ def test_beambeam3d_bhabha_ss(test_context):
 def test_beambeam3d_bhabha_angles(test_context):
     """
     The photon emission changes the direction of the primary only by its
-    scattering angle theta_e: px = P_x/P0 scales with the energy of the
-    primary.
+    scattering angle theta_e, and the photon goes along the primary within
+    its angle theta_g: px = P_x/P0 scales with the energy of the primary.
     Strong beam of low intensity: the beam-beam kick is negligible and
     compt_scale gives the emissions. Weight 1: every recorded emission
     acts on its primary.
@@ -695,3 +695,13 @@ def test_beambeam3d_bhabha_angles(test_context):
     assert np.all(np.abs(dyp[~emitted]) < atol)
     assert np.all(np.abs(dxp[emitted]) <= theta_e_sum[ids][emitted] + atol)
     assert np.all(np.abs(dyp[emitted]) <= theta_e_sum[ids][emitted] + atol)
+
+    ############################################
+    # test 2: photons go along their primaries #
+    ############################################
+
+    single = n_emissions[pid] == 1  # direction of the primary before the emission known
+    e_photon = table.photon_energy[:n_rec][single]*1e-9  # [GeV]
+    theta_g = table.photon_scattering_angle[:n_rec][single]
+    assert np.all(np.abs(table.photon_px[:n_rec][single]/e_photon - xp0) <= theta_g + atol)
+    assert np.all(np.abs(table.photon_py[:n_rec][single]/e_photon - yp0) <= theta_g + atol)
