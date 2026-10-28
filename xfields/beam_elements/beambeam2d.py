@@ -13,7 +13,8 @@ class BeamBeamBiGaussian2D(xt.BeamElement):
 
     _xofields = {
 
-        'scale_strength': xo.Float64,
+        # Match the constructor default so serialization preserves disabled lenses.
+        'scale_strength': xo.Field(xo.Float64, default=1.),
 
         'ref_shift_x': xo.Float64,
         'ref_shift_y': xo.Float64,
