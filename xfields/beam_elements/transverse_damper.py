@@ -40,8 +40,11 @@ class TransverseDamper(xt.BeamElement):
                  circumference=None, bunch_spacing_zeta=None, filling_scheme=None,
                  bunch_selection=None, **kwargs):
 
-        self.gains = {'px':gain_x,
-                      'py':gain_y}
+        self.gains = {}
+        if np.real(gain_x) != 0 or np.imag(gain_x) != 0:
+            self.gains['px'] = gain_x
+        if np.real(gain_y) != 0 or np.imag(gain_y) != 0:
+            self.gains['py'] = gain_y
         
         source_moments = []
         if np.real(gain_x) != 0:
