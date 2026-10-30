@@ -18,7 +18,7 @@ def test_transverse_damper(test_context):
     # Machine settings
     n_turns = 1000
 
-    n_macroparticles = 10000
+    n_macroparticles = 1000
     intensity = 8e9
 
     alpha = 53.86**-2
@@ -31,12 +31,22 @@ def test_transverse_damper(test_context):
     h_rf = 35640
     bunch_spacing_buckets = 10
     num_bunches = 2
-    n_slices = 500
+    n_slices = 11
 
     epsn_x = 2e-6
     epsn_y = 2e-6
     taub = 0.9e-9
     sigma_z = taub*beta*c/4
+    
+    q_x = 0.27
+    q_y = 0.32
+    beta_x = 70
+    beta_y = 40
+    
+    tune_shift_x = 2E-3
+    tune_shift_y = -1E-3
+    gain_x = 0.01 + 4.0j*np.pi*tune_shift_x/beta_x
+    gain_y = 0.005 + 4.0j*np.pi*tune_shift_y/beta_y
 
     circumference = 26658.883
 
@@ -54,17 +64,14 @@ def test_transverse_damper(test_context):
 
     one_turn_map = xt.LineSegmentMap(
         length=circumference,
-        betx=70, bety=80,
-        qx=62.31, qy=60.32,
+        betx=beta_x, bety=beta_y,
+        qx=q_x, qy=q_y,
         longitudinal_mode=longitudinal_mode,
         voltage_rf=v_rf, frequency_rf=f_rf, phase_rf=np.pi,
         momentum_compaction_factor=momentum_compaction,
         _context=test_context
     )
-
-    gain_x = 0.01
-    gain_y = 0.01
-
+    
     transverse_damper = xf.TransverseDamper(
         gain_x=gain_x, gain_y=gain_y,
         filling_scheme=filling_scheme,
@@ -116,15 +123,29 @@ def test_transverse_damper(test_context):
     i_fit_start = 200
     i_fit_end = 600
 
+    zero_padded_length = 2**18
+    fftfreq = np.fft.fftshift(np.fft.fftfreq(zero_padded_length))
+    mask = fftfreq > 0
+    fftfreq = fftfreq[mask]
     for i_bunch in range(num_bunches):
         ampls_x = np.abs(hilbert(mean_x[:, i_bunch]))
         fit_x = linregress(turns[i_fit_start: i_fit_end],
                            np.log(ampls_x[i_fit_start: i_fit_end]))
-
-        assert np.isclose(-fit_x.slope*2, gain_x, atol=1e-4, rtol=0)
+        assert np.isclose(-fit_x.slope*2, np.real(gain_x), atol=1e-4, rtol=0)
 
         ampls_y = np.abs(hilbert(mean_y[:, i_bunch]))
         fit_y = linregress(turns[i_fit_start: i_fit_end],
                            np.log(ampls_y[i_fit_start: i_fit_end]))
-
-        assert np.isclose(-fit_y.slope*2, gain_y, atol=1e-4, rtol=0)
+        assert np.isclose(-fit_y.slope*2, np.real(gain_y), atol=1e-4, rtol=0)
+        
+        zero_padded_data = np.hstack([mean_x[:, i_bunch],np.zeros(zero_padded_length-np.shape(mean_x)[0])])
+        fftabs = np.log10(np.fft.fftshift(np.abs(np.fft.fft(zero_padded_data))))
+        fftabs = fftabs[mask]
+        coh_freq_x = fftfreq[np.argmax(fftabs)]
+        assert np.isclose(coh_freq_x-q_x, tune_shift_x, atol=1e-4, rtol=0)
+        
+        zero_padded_data = np.hstack([mean_y[:, i_bunch],np.zeros(zero_padded_length-np.shape(mean_y)[0])])
+        fftabs = np.log10(np.fft.fftshift(np.abs(np.fft.fft(zero_padded_data))))
+        fftabs = fftabs[mask]
+        coh_freq_y = fftfreq[np.argmax(fftabs)]
+        assert np.isclose(coh_freq_y-q_y, tune_shift_y, atol=1e-4, rtol=0)        
