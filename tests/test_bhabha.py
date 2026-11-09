@@ -9,7 +9,7 @@ import xtrack as xt
 import xfields as xf
 import xpart as xp
 
-from xobjects.test_helpers import for_all_test_contexts
+from xobjects.test_helpers import for_all_test_contexts, fix_random_seed
 
 bins = np.logspace(np.log10(1e-4), np.log10(2e2), 20)
 guinea_hist = np.array([2693, 3137, 2912, 2482, 2156])  # from GP legacy ttbar2 100 slices
@@ -585,6 +585,7 @@ def test_beambeam3d_bhabha_ss(test_context):
 
 
 @for_all_test_contexts(excluding="ContextPyopencl")
+@fix_random_seed(51786423)
 def test_beambeam3d_bhabha_angles(test_context):
     """
     The photon emission changes the direction of the primary only by its
@@ -613,15 +614,14 @@ def test_beambeam3d_bhabha_angles(test_context):
     xp0     = px0/(1 + delta0)  # [rad]
     yp0     = py0/(1 + delta0)  # [rad]
 
-    rng = np.random.default_rng(12345)
     particles = xp.Particles(
                 _context = test_context,
                 q0       = -1,
                 p0c      = p0c,
                 mass0    = mass0,
-                x        = sigma_x*rng.standard_normal(n_macroparticles),
-                y        = sigma_y*rng.standard_normal(n_macroparticles),
-                zeta     = sigma_z*rng.standard_normal(n_macroparticles),
+                x        = sigma_x*np.random.standard_normal(n_macroparticles),
+                y        = sigma_y*np.random.standard_normal(n_macroparticles),
+                zeta     = sigma_z*np.random.standard_normal(n_macroparticles),
                 px       = px0,
                 py       = py0,
                 delta    = delta0,
