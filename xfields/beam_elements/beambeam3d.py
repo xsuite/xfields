@@ -113,7 +113,8 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
     _xofields = {
 
-        'scale_strength': xo.Float64,
+        # Match the constructor default so serialization preserves disabled lenses.
+        'scale_strength': xo.Field(xo.Float64, default=1.),
 
         '_sin_phi': xo.Float64,
         '_cos_phi': xo.Float64,
@@ -315,7 +316,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
              slices_other_beam_sqrtSigma_{135}{135}_beamstrahlung (float array): Array storing the per-slice standard deviations of x (=1), y (=3) and zeta (=5) of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. Used for beamstrahlung only. 
              flag_bhabha (int): Flag to simulate small angle radiative Bhabha scattering. 1: ON (quantum), 0: OFF
              compt_x_min (float): Low energy cut on virtual photon spectrum, used for Bhabha, in units of [gamma^-2] where gamma is the rel. Lorentz factor.
-             compt_scale (float): Scaling factor to scale up photon generation, used for Bhabha.
+             compt_scale (float): Scaling factor to scale up photon generation, used for Bhabha. It multiplies the emission probability of every macroparticle: keep the mean number of emitted photons per macroparticle well below 1 (check it in the bhabhatable), otherwise several photons pile up on the same macroparticle and harden the energy loss spectrum.
              flag_beamsize_effect (int): Flag to simulate beamsize effect, used for Bhabha. 1: ON, 0: OFF. Results in ~factor 2 reduction in cross section.
              flag_luminosity (int): Flag to record soft-Gaussian luminosity per bunch crossing in a buffer. Luminosity will be in units of [m^-2].
              slices_other_beam_{x,px,y,py,zeta,pzeta}_center_star (float array): Array storing the per-slice centroid variables of the opposing bunch, in the unboosted accelerator frame. Length of the array is the number of longitudinal slices. 
@@ -413,8 +414,10 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
                     _sin_alpha=_sin_alpha, _cos_alpha=_cos_alpha)
 
         self.num_slices_other_beam = n_slices
-        self.slices_other_beam_num_particles = self._arr2ctx(np.array(
-                                    slices_other_beam_num_particles))
+        if isinstance(slices_other_beam_num_particles, (list, tuple)):
+            slices_other_beam_num_particles = np.array(slices_other_beam_num_particles)
+        self.slices_other_beam_num_particles = self._arr2ctx(
+                                    slices_other_beam_num_particles)
 
         # Trigger properties to set corresponding starred quantities
         self._init_Sigmas(
@@ -521,6 +524,22 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_sqrtSigma_55_beamstrahlung,
             ):
 
+        # Preserve tuple inputs while leaving device arrays on their context.
+        if isinstance(slices_other_beam_zeta_bin_width_beamstrahlung, tuple):
+            slices_other_beam_zeta_bin_width_beamstrahlung = np.array(slices_other_beam_zeta_bin_width_beamstrahlung)
+        if isinstance(slices_other_beam_zeta_bin_width_star_beamstrahlung, tuple):
+            slices_other_beam_zeta_bin_width_star_beamstrahlung = np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung)
+        if isinstance(slices_other_beam_sqrtSigma_11_beamstrahlung, tuple):
+            slices_other_beam_sqrtSigma_11_beamstrahlung = np.array(slices_other_beam_sqrtSigma_11_beamstrahlung)
+        if isinstance(slices_other_beam_sqrtSigma_33_beamstrahlung, tuple):
+            slices_other_beam_sqrtSigma_33_beamstrahlung = np.array(slices_other_beam_sqrtSigma_33_beamstrahlung)
+        if isinstance(slices_other_beam_sqrtSigma_55_beamstrahlung, tuple):
+            slices_other_beam_sqrtSigma_55_beamstrahlung = np.array(slices_other_beam_sqrtSigma_55_beamstrahlung)
+
+        if slices_other_beam_zeta_bin_width_beamstrahlung is not None:
+            slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
+                slices_other_beam_zeta_bin_width_beamstrahlung)
+
         if self.config_for_update is not None:
             if slices_other_beam_zeta_bin_width_star_beamstrahlung is None:
                     if slices_other_beam_zeta_bin_width_beamstrahlung is not None:
@@ -540,16 +559,18 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             slices_other_beam_zeta_bin_width_star_beamstrahlung = (
                 slices_other_beam_zeta_bin_width_beamstrahlung / np.cos(self.phi))
             self.slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_beamstrahlung))
+                slices_other_beam_zeta_bin_width_beamstrahlung)
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung))
+                slices_other_beam_zeta_bin_width_star_beamstrahlung)
         elif slices_other_beam_zeta_bin_width_star_beamstrahlung is not None:
             assert not np.isscalar(slices_other_beam_zeta_bin_width_star_beamstrahlung), (
                 'slices_other_beam_zeta_bin_width_star_beamstrahlung must be an array')
             assert (len(slices_other_beam_zeta_bin_width_star_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
+            slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
+                slices_other_beam_zeta_bin_width_star_beamstrahlung)
             slices_other_beam_zeta_bin_width_beamstrahlung = (
-                np.array(slices_other_beam_zeta_bin_width_star_beamstrahlung) * np.cos(self.phi))
+                slices_other_beam_zeta_bin_width_star_beamstrahlung * np.cos(self.phi))
             self.slices_other_beam_zeta_bin_width_beamstrahlung = self._arr2ctx(
                 slices_other_beam_zeta_bin_width_beamstrahlung)
             self.slices_other_beam_zeta_bin_width_star_beamstrahlung = self._arr2ctx(
@@ -564,7 +585,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_sqrtSigma_11_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             self.slices_other_beam_sqrtSigma_11_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_sqrtSigma_11_beamstrahlung))
+                slices_other_beam_sqrtSigma_11_beamstrahlung)
         else:
             self.slices_other_beam_sqrtSigma_11_beamstrahlung[:] = 0
 
@@ -574,7 +595,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_sqrtSigma_33_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             self.slices_other_beam_sqrtSigma_33_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_sqrtSigma_33_beamstrahlung))
+                slices_other_beam_sqrtSigma_33_beamstrahlung)
         else:
             self.slices_other_beam_sqrtSigma_33_beamstrahlung[:] = 0
 
@@ -584,7 +605,7 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
             assert (len(slices_other_beam_sqrtSigma_55_beamstrahlung)
                 == len(self.slices_other_beam_num_particles))
             self.slices_other_beam_sqrtSigma_55_beamstrahlung = self._arr2ctx(
-                np.array(slices_other_beam_sqrtSigma_55_beamstrahlung))
+                slices_other_beam_sqrtSigma_55_beamstrahlung)
         else:
             self.slices_other_beam_sqrtSigma_55_beamstrahlung[:] = 0
 
@@ -1206,6 +1227,21 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         if slices_other_beam_zeta_center is not None:
 
+            # The initialization boost is NumPy-based. Transfer only these
+            # inputs to CPU; already-boosted slice arrays stay on their context.
+            def to_numpy(value):
+                if isinstance(value, self._context.nplike_array_type):
+                    return self._context.nparray_from_context_array(value)
+                return value
+
+            slices_other_beam_num_particles = to_numpy(slices_other_beam_num_particles)
+            slices_other_beam_x_center = to_numpy(slices_other_beam_x_center)
+            slices_other_beam_px_center = to_numpy(slices_other_beam_px_center)
+            slices_other_beam_y_center = to_numpy(slices_other_beam_y_center)
+            slices_other_beam_py_center = to_numpy(slices_other_beam_py_center)
+            slices_other_beam_zeta_center = to_numpy(slices_other_beam_zeta_center)
+            slices_other_beam_pzeta_center = to_numpy(slices_other_beam_pzeta_center)
+
             # Check correct according to z, head at the first position in the arrays. Only sort non-empty slices.
             assert np.all(slices_other_beam_zeta_center[slices_other_beam_num_particles!=0][:-1]
                             >= slices_other_beam_zeta_center[slices_other_beam_num_particles!=0][1:]), (
@@ -1234,32 +1270,32 @@ class BeamBeamBiGaussian3D(xt.BeamElement):
 
         # User-provided value has priority
         if slices_other_beam_x_center_star is not None:
-            self.slices_other_beam_x_center_star = slices_other_beam_x_center_star
+            self.slices_other_beam_x_center_star = self._arr2ctx(slices_other_beam_x_center_star)
         else:
             self.slices_other_beam_x_center_star = self._arr2ctx(x_slices_star)
 
         if slices_other_beam_px_center_star is not None:
-            self.slices_other_beam_px_center_star = slices_other_beam_px_center_star
+            self.slices_other_beam_px_center_star = self._arr2ctx(slices_other_beam_px_center_star)
         else:
             self.slices_other_beam_px_center_star = self._arr2ctx(px_slices_star)
 
         if slices_other_beam_y_center_star is not None:
-            self.slices_other_beam_y_center_star = slices_other_beam_y_center_star
+            self.slices_other_beam_y_center_star = self._arr2ctx(slices_other_beam_y_center_star)
         else:
             self.slices_other_beam_y_center_star = self._arr2ctx(y_slices_star)
 
         if slices_other_beam_py_center_star is not None:
-            self.slices_other_beam_py_center_star = slices_other_beam_py_center_star
+            self.slices_other_beam_py_center_star = self._arr2ctx(slices_other_beam_py_center_star)
         else:
             self.slices_other_beam_py_center_star = self._arr2ctx(py_slices_star)
 
         if slices_other_beam_zeta_center_star is not None:
-            self.slices_other_beam_zeta_center_star = slices_other_beam_zeta_center_star
+            self.slices_other_beam_zeta_center_star = self._arr2ctx(slices_other_beam_zeta_center_star)
         else:
             self.slices_other_beam_zeta_center_star = self._arr2ctx(zeta_slices_star)
 
         if slices_other_beam_pzeta_center_star is not None:
-            self.slices_other_beam_pzeta_center_star = slices_other_beam_pzeta_center_star
+            self.slices_other_beam_pzeta_center_star = self._arr2ctx(slices_other_beam_pzeta_center_star)
         else:
             self.slices_other_beam_pzeta_center_star = self._arr2ctx(pzeta_slices_star)
 

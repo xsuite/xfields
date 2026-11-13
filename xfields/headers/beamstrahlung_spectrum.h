@@ -106,7 +106,7 @@ double beamstrahlung_avg(LocalParticle *part, BeamBeamBiGaussian3DRecordData bea
     const double gamma          = initial_energy / m0; // [1] 
 
     // constants
-    const double r  = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MELECTRON_KG * pow(C_LIGHT, 2.0));      // [m] electron radius
+    const double r  = pow(QELEM, 2.0)/(4.0* PI * EPSILON_0 * MASS_ELECTRON * pow(C_LIGHT, 2.0));      // [m] electron radius
     const double c1 = 2.59 * ( 5.0/ 6.0) * (    r*r) / REDUCED_COMPTON_WAVELENGTH_ELECTRON;          // [m]
     const double c2 =  1.2 * (25.0/36.0) * (r*r*r*r) / REDUCED_COMPTON_WAVELENGTH_ELECTRON * 137.0;  // [m^3]
 

@@ -218,7 +218,7 @@ def test_kinetic_coefficients(test_context):
 
 @for_all_test_contexts(excluding=["ContextPyopencl"])
 @fix_random_seed(139827895)
-def test_track_analytical_kick(test_context):
+def test_track_analytical_kick(test_context, monkeypatch):
     """
     Track a particle distribution in CLIC DR with exagerated
     beam parameters to stimulate growth, and ensure the final
@@ -255,10 +255,18 @@ def test_track_analytical_kick(test_context):
     assert_allclose(_sigma_delta(particles), 1.78e-3, rtol=5e-2)
     assert_allclose(_bunch_length(particles), 1.58e-3, rtol=5e-2)
     # -----------------------------------------------------
-    # Track for 1000 turns, and make final checks on emittances. Random
+    # Track for 2000 turns, and make final checks on emittances. Random
     # numbers are involved so we can't expect big accuracy. Without the
     # IBS though emittances would stay constant, so these are enough.
-    line.track(particles, num_turns=2000, with_progress=10)
+    # fix_random_seed seeds NumPy's legacy RNG for bunch generation, but
+    # the kick creates default_rng() instances, which ignore that seed.
+    # Reuse one seeded generator so successive turns get distinct,
+    # reproducible kicks on both NumPy and CuPy contexts.
+    random = test_context.nplike_lib.random
+    rng = random.default_rng(139827895)
+    with monkeypatch.context() as patch:
+        patch.setattr(random, "default_rng", lambda: rng)
+        line.track(particles, num_turns=2000, with_progress=10)
     assert _gemitt_x(particles, tw.betx[0], tw.dx[0]) >= 1.7e-10  # most of the effect in x
     assert _gemitt_y(particles, tw.bety[0], tw.dy[0]) >= 7.3e-13  # smaller growth in y
     # These two grow just a tad and oscillate a bit, check is loose
