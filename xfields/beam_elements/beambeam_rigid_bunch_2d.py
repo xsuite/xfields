@@ -79,6 +79,8 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
     2D (transverse) rigid-bunch beam-beam element in the soft-Gaussian
     approximation.
 
+    Only CPU contexts (serial and OpenMP) are supported for now.
+
     The opposing beam is described as a set of bunches, each one represented
     by a single macroparticle holding the bunch centroid (``x``, ``y``), its
     longitudinal position (``zeta``), its population (number of real charges)
@@ -142,6 +144,18 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
     _extra_c_sources = [
         '#include "xfields/beam_elements/beambeam_src/beambeam_rigid_bunch_2d.h"',
     ]
+
+    def _on_context_change(self, old_context, new_context):
+        # Xobjects calls this hook from xoinitialize (old_context=None), so it
+        # also checks _context passed to __init__ or during deserialization.
+        # It is also called by move/copy when the context changes, after the
+        # backing xobject has been placed in the new context; raising here
+        # does not roll back a move.
+        if not isinstance(new_context, xo.ContextCpu):
+            raise NotImplementedError(
+                'BeamBeamBiGaussianRigidBunch2D only supports CPU contexts '
+                '(serial and OpenMP) for now.')
+        super()._on_context_change(old_context, new_context)
 
     def __init__(self,
                     scale_strength=1.,
