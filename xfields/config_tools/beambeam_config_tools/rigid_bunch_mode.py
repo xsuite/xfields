@@ -6,6 +6,8 @@
 """
 Generic (machine-independent) rigid-bunch beam-beam mode.
 
+Only CPU contexts (serial and OpenMP) are supported for now.
+
 Install coherent (rigid-bunch) 2D beam-beam elements
 (:class:`xfields.BeamBeamBiGaussianRigidBunch2D`) for the head-on and
 long-range (LR) encounters at an arbitrary set of interaction points (IPs) of

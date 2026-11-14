@@ -17,7 +17,7 @@ dependencies = [
     "numpy>=1.0",
     "scipy",
     "pandas",
-    "xobjects>=0.0.4",
+    "xobjects>=0.7.3",
     "xtrack>=0.0.1",
 ]
 requires-python = ">=3.10"
