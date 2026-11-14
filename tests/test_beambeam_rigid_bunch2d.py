@@ -42,7 +42,7 @@ def _kick(test_context, bb, slot, x=1e-4, y=5e-5):
     return float(p.px[0]), float(p.py[0])
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=('ContextCupy', 'ContextPyopencl'))
 def test_multibunch_matches_bb2d(test_context):
     # A single head-on encounter must reproduce BeamBeamBiGaussian2D exactly
     opp = xp.Particles(_context=test_context, p0c=P0C, q0=1,
@@ -71,7 +71,7 @@ def test_multibunch_matches_bb2d(test_context):
     assert np.allclose(p.py, p_ref.py, rtol=1e-13, atol=1e-30)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=('ContextCupy', 'ContextPyopencl'))
 def test_multibunch_coherent(test_context):
     # coherent=True must convolve the own and opposing sizes:
     # equivalent to BeamBeamBiGaussian2D with Sigma = sigma_own^2 + sigma_other^2
@@ -121,7 +121,7 @@ def test_multibunch_coherent(test_context):
         pass
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=('ContextCupy', 'ContextPyopencl'))
 def test_multibunch_coherent_per_bunch_own_size(test_context):
     # coherent=True with PER-BUNCH covariance: own_beam_Sigma_* is indexed by
     # THIS beam (own_beam_zeta), other_beam_Sigma_* by the opposing beam; the
@@ -176,7 +176,7 @@ def test_multibunch_coherent_per_bunch_own_size(test_context):
         assert np.allclose(p.py, p_ref.py, rtol=1e-13, atol=1e-30)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=('ContextCupy', 'ContextPyopencl'))
 def test_multibunch_zeta_period(test_context):
     # Opposing bunches at slots 200..204 with distinct offsets so the matched
     # partner can be identified through the kick it produces.
@@ -245,7 +245,7 @@ def test_multibunch_zeta_period(test_context):
         bb_shuffled.other_beam_Sigma_33, sig_arr[::-1]**2, rtol=1e-15)
 
 
-@for_all_test_contexts
+@for_all_test_contexts(excluding=('ContextCupy', 'ContextPyopencl'))
 def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
     # Check that a multibunch element selects the centroid, population and
     # elliptical sizes of each matched opposing bunch and gives the same kick
@@ -349,6 +349,23 @@ def test_multibunch_heterogeneous_bunches_match_bb2d(test_context):
         weight=populations[:2])
     with pytest.raises(ValueError, match='reconfigure the element'):
         bb.update_from_other_beam(opposing_with_different_filling)
+
+
+@for_all_test_contexts(excluding='ContextCpu')
+def test_rigid_bunch_rejects_gpu_context(test_context):
+    opposing = xp.Particles(p0c=P0C, zeta=[0.], weight=INTENSITY)
+    bb = _make_element(xo.ContextCpu(), opposing, 0, N_SLOTS * DZ)
+    message = 'only supports CPU contexts'
+
+    with pytest.raises(NotImplementedError, match=message):
+        _make_element(test_context, opposing, 0, N_SLOTS * DZ)
+    with pytest.raises(NotImplementedError, match=message):
+        xf.BeamBeamBiGaussianRigidBunch2D.from_dict(
+            bb.to_dict(), _context=test_context)
+    with pytest.raises(NotImplementedError, match=message):
+        bb.copy(_context=test_context)
+    with pytest.raises(NotImplementedError, match=message):
+        bb.move(_context=test_context)
 
 
 def test_rigid_bunch_covariance_api_and_coupling_warning():
