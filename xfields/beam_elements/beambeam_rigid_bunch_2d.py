@@ -146,6 +146,11 @@ class BeamBeamBiGaussianRigidBunch2D(xt.BeamElement):
     ]
 
     def _on_context_change(self, old_context, new_context):
+        # Xobjects calls this hook from xoinitialize (old_context=None), so it
+        # also checks _context passed to __init__ or during deserialization.
+        # It is also called by move/copy when the context changes, after the
+        # backing xobject has been placed in the new context; raising here
+        # does not roll back a move.
         if not isinstance(new_context, xo.ContextCpu):
             raise NotImplementedError(
                 'BeamBeamBiGaussianRigidBunch2D only supports CPU contexts '
