@@ -319,7 +319,8 @@ class BeamBeamRigidBunchStudy:
     def __init__(self, clockwise_line, anticlockwise_line, ips,
                  num_long_range_encounters_per_side,
                  harmonic_number, bunch_spacing_buckets,
-                 nemitt_x=None, nemitt_y=None, num_particles=None):
+                 nemitt_x=None, nemitt_y=None, gemitt_x=None, gemitt_y=None,
+                 num_particles=None):
         self.cw_line = clockwise_line
         self.acw_line = anticlockwise_line
         self.ips = ips                          # dict {ip: offset} or list
@@ -332,6 +333,12 @@ class BeamBeamRigidBunchStudy:
         self.n_slots = int(harmonic_number) // int(bunch_spacing_buckets)
         self.bunch_spacing_zeta = clockwise_line.get_length() / self.n_slots
         self.b_h_dist = self.bunch_spacing_zeta / 2.0
+        for plane, nemitt, gemitt in (('x', nemitt_x, gemitt_x),
+                                     ('y', nemitt_y, gemitt_y)):
+            if nemitt is not None and gemitt is not None:
+                raise ValueError(f'Cannot provide both nemitt_{plane} and gemitt_{plane}.')
+        self.gemitt_x = gemitt_x
+        self.gemitt_y = gemitt_y
         self.nemitt_x = nemitt_x
         self.nemitt_y = nemitt_y
         self._num_particles = (
@@ -581,6 +588,7 @@ class BeamBeamRigidBunchStudy:
             line_cw=self.cw_line, line_acw=self.acw_line,
             element_names_by_ip=names_by_ip,
             nemitt_x=self.nemitt_x, nemitt_y=self.nemitt_y,
+            gemitt_x=self.gemitt_x, gemitt_y=self.gemitt_y,
             survey_separation=True)
         tw_cw = twiss_and_madpoints['twiss']['cw']
         tw_acw = twiss_and_madpoints['twiss']['acw']
@@ -710,7 +718,8 @@ class BeamBeamRigidBunchStudy:
             red_cw, red_acw, self.ips,
             self.num_long_range_encounters_per_side, self.harmonic_number,
             self.bunch_spacing_buckets, self.nemitt_x, self.nemitt_y,
-            self._num_particles)
+            gemitt_x=self.gemitt_x, gemitt_y=self.gemitt_y,
+            num_particles=self._num_particles)
         new._encounter_config = self._encounter_config
         new.ip_offsets = self.ip_offsets
         new._filling_cw = self._filling_cw
@@ -733,12 +742,14 @@ class BeamBeamRigidBunchStudy:
     # ------------------------------------------------------------------
     # Solve / solution feed-in
     # ------------------------------------------------------------------
-    def _compute_covariances(self, mbtw, bb_names, gamma0):
+    def _compute_covariances(self, mbtw, bb_names, beta_gamma):
         """Diagonal covariance from live per-bunch beta functions."""
         Sigma_11 = (mbtw._values_at_elements('betx', bb_names)
-                    * self.nemitt_x / gamma0)
+                    * (self.nemitt_x / beta_gamma if self.gemitt_x is None
+                       else self.gemitt_x))
         Sigma_33 = (mbtw._values_at_elements('bety', bb_names)
-                    * self.nemitt_y / gamma0)
+                    * (self.nemitt_y / beta_gamma if self.gemitt_y is None
+                       else self.gemitt_y))
         Sigma_13 = np.zeros_like(Sigma_11)
         return Sigma_11, Sigma_13, Sigma_33
 
@@ -855,10 +866,11 @@ class BeamBeamRigidBunchStudy:
         covariances_cw = covariances_acw = None
         if dynamic_beta:
             covariances_cw = self._compute_covariances(
-                mbtw_clockwise, self.bb_names_cw, _gamma0(self.cw_line))
+                mbtw_clockwise, self.bb_names_cw,
+                _beta0(self.cw_line) * _gamma0(self.cw_line))
             covariances_acw = self._compute_covariances(
                 mbtw_anticlockwise, self.bb_names_acw,
-                _gamma0(self.acw_line))
+                _beta0(self.acw_line) * _gamma0(self.acw_line))
         self._update_opposing(
             self.bb_cw, mbtw_anticlockwise,
             self.filled_slots_acw, self.filled_slots_cw,
@@ -1298,7 +1310,8 @@ def install_rigid_bunch_beambeam(
 
 
 def configure_rigid_bunch_beambeam(
-        env, num_particles, nemitt_x, nemitt_y,
+        env, num_particles, nemitt_x=None, nemitt_y=None,
+        gemitt_x=None, gemitt_y=None,
         filling_pattern_cw=None, filling_pattern_acw=None,
         filled_slots_cw=None, filled_slots_acw=None):
     """Populate installed rigid-bunch elements and return their study.
@@ -1325,6 +1338,7 @@ def configure_rigid_bunch_beambeam(
         config['num_long_range_encounters_per_side'],
         config['harmonic_number'], config['bunch_spacing_buckets'],
         nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+        gemitt_x=gemitt_x, gemitt_y=gemitt_y,
         num_particles=num_particles)
     elements_by_encounter = {
         beam: {

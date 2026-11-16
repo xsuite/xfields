@@ -99,7 +99,7 @@ def _toy_filling():
             intensity_cw, intensity_acw)
 
 
-def _install_toy_rigid_bunch_beambeam():
+def _install_toy_rigid_bunch_beambeam(emittance_form='normalized'):
     env = _make_toy_environment()
     (filling_pattern_cw, filling_pattern_acw,
      intensity_cw, intensity_acw) = _toy_filling()
@@ -139,10 +139,16 @@ def _install_toy_rigid_bunch_beambeam():
         installation.elements['cw'])
     assert list(installation.elements['acw']) == sorted(
         installation.elements['acw'])
+    bg = env.cw.particle_ref.beta0[0] * env.cw.particle_ref.gamma0[0]
+    emittances = dict(nemitt_x=NEMITT_X, nemitt_y=NEMITT_Y)
+    if emittance_form != 'normalized':
+        emittances = dict(gemitt_x=NEMITT_X/bg, gemitt_y=NEMITT_Y/bg)
+        if emittance_form == 'mixed':
+            emittances.pop('gemitt_y')
+            emittances['nemitt_y'] = NEMITT_Y
     study = env.xfields.configure_beambeam_interactions(
         num_particles={'cw': intensity_cw, 'acw': intensity_acw},
-        nemitt_x=NEMITT_X,
-        nemitt_y=NEMITT_Y,
+        **emittances,
         filled_slots_cw=np.flatnonzero(filling_pattern_cw),
         filled_slots_acw=np.flatnonzero(filling_pattern_acw))
     assert not hasattr(env, '_beam_beam_rigid_bunch_study')
@@ -150,11 +156,12 @@ def _install_toy_rigid_bunch_beambeam():
             intensity_cw, intensity_acw)
 
 
-def test_rigid_bunch_beambeam_toy_installation_and_configuration():
+@pytest.mark.parametrize('emittance_form', ['normalized', 'geometric', 'mixed'])
+def test_rigid_bunch_beambeam_toy_installation_and_configuration(emittance_form):
     # Characterize the consolidated install/configure path through a normalized
     # set of encounter, element and solution properties.
     (env, study, filling_pattern_cw, filling_pattern_acw,
-     intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam()
+     intensity_cw, intensity_acw) = _install_toy_rigid_bunch_beambeam(emittance_form)
     assert isinstance(study, BeamBeamRigidBunchStudy)
 
     expected_encounters = [
@@ -421,9 +428,9 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration():
         name_cw = reduced.bb_name(base, beam='cw')
         name_acw = reduced.bb_name(base, beam='acw')
         Sigma_11_cw = (mbtw_cw_dyn.at_element(name_cw).betx
-                       * NEMITT_X / gamma0_cw)
+                       * NEMITT_X / (beta0_cw * gamma0_cw))
         Sigma_11_acw = (mbtw_acw_dyn.at_element(name_acw).betx
-                        * NEMITT_X / gamma0_acw)
+                        * NEMITT_X / (beta0_acw * gamma0_acw))
         xo.assert_allclose(
             np.asarray(reduced.bb_cw[base].own_beam_Sigma_11)[indices_cw],
             Sigma_11_cw, rtol=1e-14)

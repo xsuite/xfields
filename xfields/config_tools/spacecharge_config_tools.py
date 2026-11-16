@@ -17,7 +17,8 @@ import xobjects as xo
 def install_spacecharge_frozen(line=None, _buffer=None,
                                particle_ref=None,
                                longitudinal_profile=None,
-                               nemitt_x=None, nemitt_y=None, sigma_z=None,
+                               nemitt_x=None, nemitt_y=None,
+                               gemitt_x=None, gemitt_y=None, sigma_z=None,
                                num_spacecharge_interactions=None,
                                tol_spacecharge_position=None,
                                s_spacecharge=None,
@@ -40,6 +41,9 @@ def install_spacecharge_frozen(line=None, _buffer=None,
         Normalized emittance in the horizontal plane (in m rad).
     nemitt_y : float
         Normalized emittance in the vertical plane (in m rad).
+    gemitt_x, gemitt_y : float, optional
+        Geometric transverse emittances (in m rad). Provide one of the
+        geometric or normalized forms in each plane.
     sigma_z : float
         RMS bunch length in meters.
     num_spacecharge_interactions : int
@@ -59,6 +63,22 @@ def install_spacecharge_frozen(line=None, _buffer=None,
         List of spacecharge elements.
     '''
 
+    for plane, nemitt, gemitt in (('x', nemitt_x, gemitt_x),
+                                 ('y', nemitt_y, gemitt_y)):
+        if nemitt is not None and gemitt is not None:
+            raise ValueError(f'Cannot provide both nemitt_{plane} and gemitt_{plane}.')
+        if nemitt is None and gemitt is None:
+            raise ValueError(f'nemitt_{plane} or gemitt_{plane} must be provided.')
+    if particle_ref is None:
+        particle_ref = line.particle_ref
+    if particle_ref is None:
+        raise ValueError('A reference particle is required.')
+    beta_gamma = particle_ref.beta0[0] * particle_ref.gamma0[0]
+    if gemitt_x is not None:
+        nemitt_x = gemitt_x * beta_gamma
+    if gemitt_y is not None:
+        nemitt_y = gemitt_y * beta_gamma
+
     if _buffer is None:
         if not line._has_valid_tracker():
             line.build_tracker(compile=False) # Put everything in the same buffer
@@ -68,10 +88,6 @@ def install_spacecharge_frozen(line=None, _buffer=None,
 
     if tol_spacecharge_position is not None:
         raise NotImplementedError('tol_spacecharge_position not implemented')
-
-    if particle_ref is None:
-        particle_ref = line.particle_ref
-        assert particle_ref is not None
 
     line_no_sc = line.copy(_context=xo.ContextCpu())
     line_no_sc.build_tracker()
