@@ -317,8 +317,8 @@ class BeamBeamRigidBunchStudy:
     def __init__(self, clockwise_line, anticlockwise_line, ips,
                  num_long_range_encounters_per_side,
                  harmonic_number, bunch_spacing_buckets,
-                 nemitt_x=None, nemitt_y=None, num_particles=None, *,
-                 gemitt_x=None, gemitt_y=None):
+                 nemitt_x=None, nemitt_y=None, gemitt_x=None, gemitt_y=None,
+                 num_particles=None):
         self.cw_line = clockwise_line
         self.acw_line = anticlockwise_line
         self.ips = ips                          # dict {ip: offset} or list
@@ -716,7 +716,8 @@ class BeamBeamRigidBunchStudy:
             red_cw, red_acw, self.ips,
             self.num_long_range_encounters_per_side, self.harmonic_number,
             self.bunch_spacing_buckets, self.nemitt_x, self.nemitt_y,
-            self._num_particles, gemitt_x=self.gemitt_x, gemitt_y=self.gemitt_y)
+            gemitt_x=self.gemitt_x, gemitt_y=self.gemitt_y,
+            num_particles=self._num_particles)
         new._encounter_config = self._encounter_config
         new.ip_offsets = self.ip_offsets
         new._filling_cw = self._filling_cw
