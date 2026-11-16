@@ -92,10 +92,11 @@ def _beambeam_element_name(label, ip_name, beam_name, identifier):
 
 
 def compute_twiss_and_madpoints_at_bb(
-        line_cw, line_acw, element_names_by_ip, nemitt_x=None, nemitt_y=None,
+        line_cw, line_acw, element_names_by_ip,
+        nemitt_x=None, nemitt_y=None, gemitt_x=None, gemitt_y=None,
         survey_separation=True, acw_is_reversed=False,
         crab_s_by_element=None, antisymmetry_elements=None,
-        separation_bumps=None, *, gemitt_x=None, gemitt_y=None):
+        separation_bumps=None):
     """Compute reduced Twiss tables and MadPoints at beam--beam elements.
 
     ``element_names_by_ip`` is indexed first by ``'cw'`` / ``'acw'`` and

@@ -1308,8 +1308,9 @@ def install_rigid_bunch_beambeam(
 
 def configure_rigid_bunch_beambeam(
         env, num_particles, nemitt_x=None, nemitt_y=None,
+        gemitt_x=None, gemitt_y=None,
         filling_pattern_cw=None, filling_pattern_acw=None,
-        filled_slots_cw=None, filled_slots_acw=None, *, gemitt_x=None, gemitt_y=None):
+        filled_slots_cw=None, filled_slots_acw=None):
     """Populate installed rigid-bunch elements and return their study.
 
     The elements retain all transverse covariance components from optics
