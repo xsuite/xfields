@@ -137,7 +137,8 @@ def test_survey_region_rejects_wrapping_line_boundary():
         )
 
 
-def test_particles_install_and_configure_characterization():
+@pytest.mark.parametrize('emittance_form', ['normalized', 'geometric', 'mixed'])
+def test_particles_install_and_configure_characterization(emittance_form):
     # Exercise the particle-based workflow end to end
     # on a small two-ring model. This locks down its installed metadata and the
     # fields ultimately loaded into representative 2D and 3D elements before
@@ -211,6 +212,13 @@ def test_particles_install_and_configure_characterization():
     # Save the bare optics used by configuration for independent covariance
     # and closed-orbit checks. The ACW table is reversed by the particles
     # configuration code before partner data are transferred.
+    bg = env.cw.particle_ref.beta0[0] * env.cw.particle_ref.gamma0[0]
+    emittances = dict(nemitt_x=2e-6, nemitt_y=2.5e-6)
+    if emittance_form != 'normalized':
+        emittances = dict(gemitt_x=2e-6/bg, gemitt_y=2.5e-6/bg)
+        if emittance_form == 'mixed':
+            emittances.pop('gemitt_y')
+            emittances['nemitt_y'] = 2.5e-6
     tw_cw = env.cw.twiss()
     tw_acw = env.acw.twiss().reverse()
     cov_cw = tw_cw.get_beam_covariance(nemitt_x=2e-6, nemitt_y=2.5e-6)
@@ -225,7 +233,7 @@ def test_particles_install_and_configure_characterization():
     twiss_and_madpoints = compute_twiss_and_madpoints_at_bb(
         line_cw=env.cw, line_acw=env.acw,
         element_names_by_ip=names_by_ip,
-        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        **emittances,
         survey_separation=True,
         acw_is_reversed=True)
     for orientation in ('cw', 'acw'):
@@ -291,7 +299,7 @@ def test_particles_install_and_configure_characterization():
 
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
-        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        **emittances,
         crab_strong_beam=False)
 
     lr_cw = env.cw['bb_lr.r1b1_01']
@@ -403,7 +411,7 @@ def test_particles_install_and_configure_characterization():
     # reanalyses the bare lines, and then restores fully configured elements.
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
-        nemitt_x=2e-6, nemitt_y=2.5e-6,
+        **emittances,
         crab_strong_beam=False)
     xo.assert_allclose(
         env.cw['bb_lr.r1b1_01'].other_beam_shift_x,
@@ -415,7 +423,7 @@ def test_particles_install_and_configure_characterization():
     # cavities, so all measured offsets are zero.
     env.xfields.configure_beambeam_interactions(
         num_particles=1e11,
-        nemitt_x=2e-6, nemitt_y=2.5e-6)
+        **emittances)
     xo.assert_allclose(
         env.cw['bb_lr.r1b1_01'].other_beam_shift_x,
         legacy_separation_cw['bb_lr.r1b1_01'][0],

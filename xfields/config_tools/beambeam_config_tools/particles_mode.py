@@ -93,11 +93,11 @@ def install_beambeam_interactions(
 
 
 def configure_beambeam_interactions(
-        env, num_particles, nemitt_x, nemitt_y, crab_strong_beam=True,
+        env, num_particles, nemitt_x=None, nemitt_y=None, crab_strong_beam=True,
         use_antisymmetry=False, separation_bumps=None,
         filling_pattern_cw=None, filling_pattern_acw=None,
         i_bunch_cw=None, i_bunch_acw=None,
-        filled_slots_cw=None, filled_slots_acw=None):
+        filled_slots_cw=None, filled_slots_acw=None, *, gemitt_x=None, gemitt_y=None):
     """Reanalyse the live lines and configure their tagged BB elements."""
     has_filling_cw = (
         filling_pattern_cw is not None or filled_slots_cw is not None)
@@ -175,6 +175,7 @@ def configure_beambeam_interactions(
         line_cw=line_cw, line_acw=line_acw,
         element_names_by_ip=names_by_ip,
         nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+        gemitt_x=gemitt_x, gemitt_y=gemitt_y,
         survey_separation=True,
         acw_is_reversed=True,
         crab_s_by_element=crab_s_by_element,

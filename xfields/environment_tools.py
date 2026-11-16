@@ -121,7 +121,8 @@ class XfieldsEnvironmentAPI:
             crab_strong_beam=None, use_antisymmetry=None,
             separation_bumps=None, filling_pattern_cw=None,
             filling_pattern_acw=None, i_bunch_cw=None, i_bunch_acw=None,
-            filled_slots_cw=None, filled_slots_acw=None):
+            filled_slots_cw=None, filled_slots_acw=None, *,
+            gemitt_x=None, gemitt_y=None):
         """Configure particles or rigid-bunch beam-beam interactions.
 
         Particles mode uses ``num_particles`` and the two emittances.
@@ -138,6 +139,9 @@ class XfieldsEnvironmentAPI:
             of scalar or slot-indexed populations.
         nemitt_x, nemitt_y : float
             Normalized transverse emittances.
+        gemitt_x, gemitt_y : float, optional
+            Geometric transverse emittances. Provide at most one of
+            ``nemitt_*`` and ``gemitt_*`` in each plane.
         crab_strong_beam : bool, optional
             Particles-mode option. Defaults to ``True`` in particles mode and
             must not be supplied in rigid-bunch mode.
@@ -168,6 +172,10 @@ class XfieldsEnvironmentAPI:
             If required arguments, filling inputs, or mode-specific options
             are invalid.
         """
+        for plane, nemitt, gemitt in (('x', nemitt_x, gemitt_x),
+                                     ('y', nemitt_y, gemitt_y)):
+            if nemitt is not None and gemitt is not None:
+                raise ValueError(f'Cannot provide both nemitt_{plane} and gemitt_{plane}.')
         config = self.env.extra_config.get('xfields_beambeam', {})
         mode = config.get('mode', 'particles')
         has_filling_cw = (
@@ -184,9 +192,10 @@ class XfieldsEnvironmentAPI:
                 crab_strong_beam = True
             if use_antisymmetry is None:
                 use_antisymmetry = False
-            if num_particles is None or nemitt_x is None or nemitt_y is None:
+            if (num_particles is None or (nemitt_x is None and gemitt_x is None)
+                    or (nemitt_y is None and gemitt_y is None)):
                 raise ValueError(
-                    '`num_particles`, `nemitt_x` and `nemitt_y` are required '
+                    '`num_particles` and an emittance (nemitt_* or gemitt_*) in each plane are required '
                     'for `particles`-mode beam-beam configuration.')
             has_i_bunch_cw = i_bunch_cw is not None
             has_i_bunch_acw = i_bunch_acw is not None
@@ -205,6 +214,7 @@ class XfieldsEnvironmentAPI:
                 num_particles=num_particles,
                 nemitt_x=nemitt_x,
                 nemitt_y=nemitt_y,
+                gemitt_x=gemitt_x, gemitt_y=gemitt_y,
                 crab_strong_beam=crab_strong_beam,
                 use_antisymmetry=use_antisymmetry,
                 separation_bumps=separation_bumps,
@@ -234,8 +244,8 @@ class XfieldsEnvironmentAPI:
 
         required = {
             'num_particles': num_particles,
-            'nemitt_x': nemitt_x,
-            'nemitt_y': nemitt_y,
+            'nemitt_x or gemitt_x': nemitt_x if gemitt_x is None else gemitt_x,
+            'nemitt_y or gemitt_y': nemitt_y if gemitt_y is None else gemitt_y,
         }
         missing = [name for name, value in required.items() if value is None]
         if missing:
@@ -252,6 +262,7 @@ class XfieldsEnvironmentAPI:
             num_particles=num_particles,
             nemitt_x=nemitt_x,
             nemitt_y=nemitt_y,
+            gemitt_x=gemitt_x, gemitt_y=gemitt_y,
             filling_pattern_cw=filling_pattern_cw,
             filling_pattern_acw=filling_pattern_acw,
             filled_slots_cw=filled_slots_cw,

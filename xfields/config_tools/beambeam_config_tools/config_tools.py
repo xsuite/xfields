@@ -92,10 +92,10 @@ def _beambeam_element_name(label, ip_name, beam_name, identifier):
 
 
 def compute_twiss_and_madpoints_at_bb(
-        line_cw, line_acw, element_names_by_ip, nemitt_x, nemitt_y,
+        line_cw, line_acw, element_names_by_ip, nemitt_x=None, nemitt_y=None,
         survey_separation=True, acw_is_reversed=False,
         crab_s_by_element=None, antisymmetry_elements=None,
-        separation_bumps=None):
+        separation_bumps=None, *, gemitt_x=None, gemitt_y=None):
     """Compute reduced Twiss tables and MadPoints at beam--beam elements.
 
     ``element_names_by_ip`` is indexed first by ``'cw'`` / ``'acw'`` and
@@ -125,7 +125,8 @@ def compute_twiss_and_madpoints_at_bb(
         twiss['acw'] = twiss['acw'].reverse()
     covariance = {
         orientation: table.get_beam_covariance(
-            nemitt_x=nemitt_x, nemitt_y=nemitt_y)
+            nemitt_x=nemitt_x, nemitt_y=nemitt_y,
+            gemitt_x=gemitt_x, gemitt_y=gemitt_y)
         for orientation, table in twiss.items()
     }
     points = {'cw': {}, 'acw': {}}
