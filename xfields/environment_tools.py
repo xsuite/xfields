@@ -118,11 +118,11 @@ class XfieldsEnvironmentAPI:
 
     def configure_beambeam_interactions(
             self, num_particles=None, nemitt_x=None, nemitt_y=None,
+            gemitt_x=None, gemitt_y=None,
             crab_strong_beam=None, use_antisymmetry=None,
             separation_bumps=None, filling_pattern_cw=None,
             filling_pattern_acw=None, i_bunch_cw=None, i_bunch_acw=None,
-            filled_slots_cw=None, filled_slots_acw=None, *,
-            gemitt_x=None, gemitt_y=None):
+            filled_slots_cw=None, filled_slots_acw=None):
         """Configure particles or rigid-bunch beam-beam interactions.
 
         Particles mode uses ``num_particles`` and the two emittances.
