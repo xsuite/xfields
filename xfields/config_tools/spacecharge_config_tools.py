@@ -17,14 +17,14 @@ import xobjects as xo
 def install_spacecharge_frozen(line=None, _buffer=None,
                                particle_ref=None,
                                longitudinal_profile=None,
-                               nemitt_x=None, nemitt_y=None, sigma_z=None,
+                               nemitt_x=None, nemitt_y=None,
+                               gemitt_x=None, gemitt_y=None, sigma_z=None,
                                num_spacecharge_interactions=None,
                                tol_spacecharge_position=None,
                                s_spacecharge=None,
                                delta_rms=None,
                                z_kick_num_integ_per_sigma=0,
-                               prefix='spacecharge_', *,
-                               gemitt_x=None, gemitt_y=None):
+                               prefix='spacecharge_'):
 
     '''
     Install spacecharge elements (frozen modeling) in a xtrack.Line object.
