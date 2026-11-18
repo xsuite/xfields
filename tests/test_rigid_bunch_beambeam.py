@@ -325,7 +325,8 @@ def test_rigid_bunch_beambeam_toy_installation_and_configuration(emittance_form)
         assert env.acw[name].scale_strength == 0.37
     env.cw['beambeam_scale'] = 1.0
 
-    reduced = study.get_study_with_second_order_maps()
+    reduced = study.get_study_with_second_order_maps(
+        steps_r_matrix={'dzeta': 2e-5}, steps_t_matrix={'dzeta': 2e-3})
     assert not hasattr(study, 'meta')
     assert not hasattr(reduced, 'meta')
     assert not hasattr(study, 'geom')

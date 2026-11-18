@@ -679,7 +679,8 @@ class BeamBeamRigidBunchStudy:
     # Sector-map reduction
     # ------------------------------------------------------------------
     def get_study_with_second_order_maps(
-            self, keep_extra_cw=None, keep_extra_acw=None, context=None):
+            self, keep_extra_cw=None, keep_extra_acw=None, context=None,
+            steps_r_matrix=None, steps_t_matrix=None):
         """Return a NEW :class:`BeamBeamRigidBunchStudy` on second-order-map copies of
         the two lines: the arcs between the encounters are replaced by
         second-order maps (the beam-beam elements, kept as split points, stay
@@ -696,6 +697,10 @@ class BeamBeamRigidBunchStudy:
         context : xobjects.Context, optional
             Context for both reduced trackers. The clockwise line's context is
             used by default.
+        steps_r_matrix, steps_t_matrix : dict, optional
+            Finite-difference steps for the first- and second-order maps.
+            Passed to Xtrack's ``Line.get_line_with_second_order_maps``;
+            omitted keys use Xtrack's first- and second-order defaults.
 
         Returns
         -------
@@ -707,9 +712,12 @@ class BeamBeamRigidBunchStudy:
         method = self.cw_line.twiss_default.get('method', '4d')
         split_cw = self.bb_names_cw + list(keep_extra_cw or [])
         split_acw = self.bb_names_acw + list(keep_extra_acw or [])
-        red_cw = self.cw_line.get_line_with_second_order_maps(split_at=split_cw)
+        red_cw = self.cw_line.get_line_with_second_order_maps(
+            split_at=split_cw, steps_r_matrix=steps_r_matrix,
+            steps_t_matrix=steps_t_matrix)
         red_acw = self.acw_line.get_line_with_second_order_maps(
-            split_at=split_acw)
+            split_at=split_acw, steps_r_matrix=steps_r_matrix,
+            steps_t_matrix=steps_t_matrix)
         for rl in (red_cw, red_acw):
             rl.twiss_default['method'] = method
             rl.build_tracker(_context=context)
