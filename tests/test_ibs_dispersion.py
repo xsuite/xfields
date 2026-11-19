@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 import xtrack as xt
 from numpy.testing import assert_allclose, assert_array_equal
-from xobjects.test_helpers import for_all_test_contexts
+from xobjects.test_helpers import fix_random_seed, for_all_test_contexts
 
 from xfields.ibs import IBSAnalyticalKick, IBSKineticKick
 from xfields.ibs._kicks import (
@@ -75,6 +75,7 @@ def _particles(context, dispersion):
         (1.2, 0.0, -0.4, 0.0),
     ],
 )
+@fix_random_seed(42)
 def test_kicks_in_betatron_coordinates(
     test_context, kind, diffusion, friction, dispersion, monkeypatch
 ):
@@ -90,6 +91,8 @@ def test_kicks_in_betatron_coordinates(
     random = test_context.nplike_lib.random
     seeded_rng = random.default_rng
     for particles, optics in ((reference, zero), (displaced, dispersion)):
+        # Seed the shared NumPy stream as well, for use with the RNG fix.
+        np.random.seed(42)
         rng = seeded_rng(42)
         with monkeypatch.context() as patch:
             patch.setattr(random, "default_rng", lambda: rng)
@@ -111,6 +114,7 @@ def test_kicks_in_betatron_coordinates(
     assert_array_equal(delta[~alive], to_numpy(before.delta)[~alive])
 
 
+@fix_random_seed(42)
 def test_longitudinal_diffusion_does_not_add_horizontal_action(monkeypatch):
     """Reproduce the spurious H_x * <Delta delta**2> / 2 contribution."""
     beta, alpha, dx, dpx = 12.0, 0.7, 1.2, 0.3
