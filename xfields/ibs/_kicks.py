@@ -201,19 +201,6 @@ class IBSKick:
         """Raises an error as the line should be saved without the IBS kick element."""
         raise NotImplementedError("IBS kick elements should not be saved as part of the line")
 
-    def _apply_longitudinal_kick(self, particles, delta_delta):
-        # The ring-averaged transverse coefficients already include dispersive
-        # heating. Preserve the betatron coordinates during the longitudinal
-        # update to avoid adding the kick location's contribution a second time.
-        active = particles.state > 0
-        for coordinate, dispersion in (
-            ("x", "dx"), ("px", "dpx"), ("y", "dy"), ("py", "dpy")
-        ):
-            getattr(particles, coordinate)[active] += (
-                self._twiss[dispersion, self._name] * delta_delta
-            )
-        particles.delta[active] += delta_delta
-
 
 # ----- Simple Kick Implementation ----- #
 
@@ -454,9 +441,16 @@ class IBSAnalyticalKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Apply the kicks to the particles, applying the momenta deltas
         LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
-        particles.px[particles.state > 0] += delta_px
-        particles.py[particles.state > 0] += delta_py
-        self._apply_longitudinal_kick(particles, delta_delta)
+        active = particles.state > 0
+        particles.px[active] += delta_px
+        particles.py[active] += delta_py
+        # The transverse coefficients already include dispersive heating.
+        # Preserve betatron coordinates and actions during the delta update.
+        particles.x[active] += self._twiss["dx", self._name] * delta_delta
+        particles.px[active] += self._twiss["dpx", self._name] * delta_delta
+        particles.y[active] += self._twiss["dy", self._name] * delta_delta
+        particles.py[active] += self._twiss["dpy", self._name] * delta_delta
+        particles.delta[active] += delta_delta
 
 
 # ----- Kinetic Kick Implementation ----- #
@@ -749,7 +743,14 @@ class IBSKineticKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Applying the momenta kicks to the particles
         LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
-        particles.px[particles.state > 0] += delta_px_friction + delta_px_diffusion
-        particles.py[particles.state > 0] += delta_py_friction + delta_py_diffusion
-        self._apply_longitudinal_kick(
-            particles, delta_delta_friction + delta_delta_diffusion)
+        active = particles.state > 0
+        particles.px[active] += delta_px_friction + delta_px_diffusion
+        particles.py[active] += delta_py_friction + delta_py_diffusion
+        delta_delta = delta_delta_friction + delta_delta_diffusion
+        # The transverse coefficients already include dispersive heating.
+        # Preserve betatron coordinates and actions during the delta update.
+        particles.x[active] += self._twiss["dx", self._name] * delta_delta
+        particles.px[active] += self._twiss["dpx", self._name] * delta_delta
+        particles.y[active] += self._twiss["dy", self._name] * delta_delta
+        particles.py[active] += self._twiss["dpy", self._name] * delta_delta
+        particles.delta[active] += delta_delta
