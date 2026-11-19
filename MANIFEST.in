@@ -11,3 +11,8 @@ include NOTICE
 
 recursive-include xfields *.h
 recursive-include xfields *.clh
+
+# Keep examples and test datasets out of source distributions.
+prune examples
+prune test_data
+
