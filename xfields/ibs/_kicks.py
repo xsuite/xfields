@@ -201,6 +201,19 @@ class IBSKick:
         """Raises an error as the line should be saved without the IBS kick element."""
         raise NotImplementedError("IBS kick elements should not be saved as part of the line")
 
+    def _apply_longitudinal_kick(self, particles, delta_delta):
+        # The ring-averaged transverse coefficients already include dispersive
+        # heating. Preserve the betatron coordinates during the longitudinal
+        # update to avoid adding the kick location's contribution a second time.
+        active = particles.state > 0
+        for coordinate, dispersion in (
+            ("x", "dx"), ("px", "dpx"), ("y", "dy"), ("py", "dpy")
+        ):
+            getattr(particles, coordinate)[active] += (
+                self._twiss[dispersion, self._name] * delta_delta
+            )
+        particles.delta[active] += delta_delta
+
 
 # ----- Simple Kick Implementation ----- #
 
@@ -214,6 +227,10 @@ class IBSAnalyticalKick(IBSKick):
 
     The element starts off by default (will not affect particles) and has to be
     configured through the `line.configure_intrabeam_scattering` method.
+
+    The ring-averaged transverse coefficients include dispersive heating.
+    Longitudinal kicks therefore shift the transverse coordinates along the
+    local dispersion to preserve betatron coordinates during that update.
 
     Warnings
     --------
@@ -439,7 +456,7 @@ class IBSAnalyticalKick(IBSKick):
         LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
         particles.px[particles.state > 0] += delta_px
         particles.py[particles.state > 0] += delta_py
-        particles.delta[particles.state > 0] += delta_delta
+        self._apply_longitudinal_kick(particles, delta_delta)
 
 
 # ----- Kinetic Kick Implementation ----- #
@@ -454,6 +471,10 @@ class IBSKineticKick(IBSKick):
 
     The element starts off by default (will not affect particles) and has to be
     configured through the `line.configure_intrabeam_scattering` method.
+
+    The ring-averaged transverse coefficients include dispersive heating.
+    Longitudinal kicks therefore shift the transverse coordinates along the
+    local dispersion to preserve betatron coordinates during that update.
 
     Attributes
     ----------
@@ -703,8 +724,13 @@ class IBSKineticKick(IBSKick):
         # the friction term is with respect to the center -> if the beam is off-center we need to
         # compensate for this, so we use deviation of particle p[xy] from distribution mean of p[xy]
         LOGGER.debug("Determining friction kicks")
-        dev_px: ArrayLike = particles.px[particles.state > 0] - _mean_px(particles, self._twiss["dpx", self._name])      # on context
-        dev_py: ArrayLike = particles.py[particles.state > 0] - _mean_py(particles, self._twiss["dpy", self._name])      # on context
+        # Friction acts on each particle's betatron momentum. Subtracting only
+        # the mean would leave its individual dispersive momentum in the kick.
+        delta = particles.delta[particles.state > 0]
+        dev_px: ArrayLike = (particles.px[particles.state > 0] - self._twiss["dpx", self._name] * delta
+                            - _mean_px(particles, self._twiss["dpx", self._name]))
+        dev_py: ArrayLike = (particles.py[particles.state > 0] - self._twiss["dpy", self._name] * delta
+                            - _mean_py(particles, self._twiss["dpy", self._name]))
         dev_delta: ArrayLike = particles.delta[particles.state > 0] - nplike.mean(particles.delta[particles.state > 0])  # on context
         Fx, Fy, Fz = self.friction_coefficients.as_tuple()  # floats
         delta_px_friction: ArrayLike = -Fx * dev_px * dt * rho_z        # on context
@@ -725,4 +751,5 @@ class IBSKineticKick(IBSKick):
         LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
         particles.px[particles.state > 0] += delta_px_friction + delta_px_diffusion
         particles.py[particles.state > 0] += delta_py_friction + delta_py_diffusion
-        particles.delta[particles.state > 0] += delta_delta_friction + delta_delta_diffusion
+        self._apply_longitudinal_kick(
+            particles, delta_delta_friction + delta_delta_diffusion)
