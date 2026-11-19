@@ -26,8 +26,6 @@ from xfields.ibs._formulary import (
     _sigma_delta,
     _sigma_px,
     _sigma_py,
-    _sigma_x,
-    _sigma_y,
     phi,
 )
 
@@ -559,7 +557,7 @@ class IBSKineticKick(IBSKick):
         self, particles: xt.Particles
     ) -> tuple[DiffusionCoefficients, FrictionCoefficients]:
         r"""
-        Computes the ``IBS`` friction coefficients (named :math:`D_x, D_y`
+        Computes the ``IBS`` diffusion coefficients (named :math:`D_x, D_y`
         and :math:`D_z` in this code base) and friction coefficients (named
         :math:`F_x, F_y` and :math:`F_z`) from the kinetic theory introduced
         in :cite:`NuclInstr:Zenkevich:Kinetic_IBS`. These are computed from
@@ -577,6 +575,11 @@ class IBSKineticKick(IBSKick):
                 - Computes the intermediate :math:`K_x, K_y` and :math:`K_z` terms from Eq (42-44)
                 - Computes the diffusion coefficients :math:`D_{x,y,z}` from Eq (45-47)
                 - Computes the friction coefficients :math:`F_{x,y,z}` from Eq (48-50)
+
+            The transverse beam sizes in the ring integrands are reconstructed
+            at each lattice location from the inferred emittances, momentum
+            spread and Twiss functions. The sizes at the kick element alone
+            do not represent the density along the ring.
 
         Parameters
         ----------
@@ -602,8 +605,6 @@ class IBSKineticKick(IBSKick):
         total_beam_intensity: float = _beam_intensity(particles)
         bunch_length: float = _bunch_length(particles)
         sigma_delta: float = _sigma_delta(particles)
-        sigma_x: float = _sigma_x(particles)
-        sigma_y: float = _sigma_y(particles)
         # fmt: on
         # ----------------------------------------------------------------------------------------------
         # Allocating some properties to simple variables for readability
@@ -663,7 +664,11 @@ class IBSKineticKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Computing integrands for the diffusion and friction terms from Eq (45-50)
         # TODO: missing bet[xy] terms in paper are typos, remove this comment when new version is out
-        int_denominator: float = circumference * sigma_x * sigma_y  # common denominator to all integrands
+        # Weight scattering by the beam density at each integration location,
+        # not by the transverse sizes at the lumped kick element.
+        sigx: ArrayLike = np.sqrt(betx * gemitt_x + (dx * sigma_delta)**2)
+        sigy: ArrayLike = np.sqrt(bety * gemitt_y + (self._twiss.dy * sigma_delta)**2)
+        int_denominator: ArrayLike = circumference * sigx * sigy
         Dx_integrand: ArrayLike = betx * (Dxx + (dx**2 / betx**2 + phix**2) * Dzz + Dxz) / int_denominator
         Dy_integrand: ArrayLike = bety * Dyy / int_denominator
         Dz_integrand: ArrayLike = Dzz / int_denominator

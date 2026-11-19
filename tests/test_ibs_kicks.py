@@ -8,8 +8,8 @@ from numpy.testing import assert_allclose
 from xobjects.test_helpers import fix_random_seed, for_all_test_contexts
 
 from xfields.ibs import IBSAnalyticalKick, IBSKineticKick
-from xfields.ibs._formulary import _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
-from xfields.ibs._kicks import DiffusionCoefficients, FrictionCoefficients, IBSKickCoefficients
+from xfields.ibs._formulary import _beam_intensity, _bunch_length, _gemitt_x, _gemitt_y, _sigma_delta
+from xfields.ibs._kicks import IBSKickCoefficients
 
 # ----- Test API behaviour ----- #
 
@@ -173,11 +173,8 @@ def test_kick_coefficients(test_context, formalism):
 @fix_random_seed(43425349)
 def test_kinetic_coefficients(test_context):
     """
-    We get a line and generate a large particle distribution
-    to check that the kinetic coefficients computed after
-    configuration are correct values (reference values were
-    computed independently with xibs, and checked against
-    values from old Michalis scripts.)
+    On a real SPS lattice, diffusion minus friction must recover the
+    independently computed Nagaitsev emittance-rate coefficients.
     """
     # -----------------------------------------------------
     # Load the line with a .particle_ref and create element
@@ -199,18 +196,19 @@ def test_kinetic_coefficients(test_context):
         _context=test_context,
     )
     # -----------------------------------------------------
-    # Compute the kinetic coefficients and check they are correct
-    # We compare to expected values for the parameters above
-    # with a little tolerance due to distribution generation
+    # Use the measured beam moments in both calculations. Old fixed reference
+    # values inherited the use of kick-local sizes throughout the ring integral.
     diffs, fricts = ibskick.compute_kinetic_coefficients(particles)
-    diff_refs = DiffusionCoefficients(Dx=1.45736905e-05, Dy=2.33723969e-06, Dz=1.21668536e-05)
-    frict_refs = FrictionCoefficients(Fx=7.34149897e-06, Fy=2.95337318e-06, Fz=5.15410959e-06)
-    assert_allclose(diffs.Dx, diff_refs.Dx, rtol=1.5e-2)
-    assert_allclose(diffs.Dy, diff_refs.Dy, rtol=1.5e-2)
-    assert_allclose(diffs.Dz, diff_refs.Dz, rtol=1.5e-2)
-    assert_allclose(fricts.Fx, frict_refs.Fx, rtol=1.5e-2)
-    assert_allclose(fricts.Fy, frict_refs.Fy, rtol=1.5e-2)
-    assert_allclose(fricts.Fz, frict_refs.Fz, rtol=1.5e-2)
+    tw, name = ibskick._twiss, ibskick._name
+    rates = tw.get_ibs_growth_rates(
+        formalism="Nagaitsev",
+        gemitt_x=_gemitt_x(particles, tw["betx", name], tw["dx", name]),
+        gemitt_y=_gemitt_y(particles, tw["bety", name], tw["dy", name]),
+        sigma_delta=_sigma_delta(particles), bunch_length=_bunch_length(particles),
+        total_beam_intensity=_beam_intensity(particles),
+    ).to_emittance_growth_rates()
+    assert_allclose(np.array(diffs.as_tuple()) - np.array(fricts.as_tuple()),
+                    rates.as_tuple(), rtol=1e-10, atol=1e-18)
 
 
 # ----- Tests with tracking ----- #
