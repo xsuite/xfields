@@ -15,4 +15,3 @@ recursive-include xfields *.clh
 # Keep examples and test datasets out of source distributions.
 prune examples
 prune test_data
-
