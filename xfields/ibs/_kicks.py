@@ -239,6 +239,14 @@ class IBSAnalyticalKick(IBSKick):
     kick_coefficients : IBSKickCoefficients
         The computed kick coefficients. This self-updates when they
         are computed with the `.compute_kick_coefficients` method.
+
+    Notes
+    -----
+    Random kicks use NumPy's shared random state on all supported contexts.
+    Use ``numpy.random.seed`` for repeatable runs, or save and restore
+    ``numpy.random.get_state()`` / ``numpy.random.set_state()`` together with
+    the matching particles and kick coefficients to continue a run. Other
+    NumPy random draws also advance this shared state.
     """
 
     def __init__(self, formalism: str, num_slices: int) -> None:
@@ -417,9 +425,8 @@ class IBSAnalyticalKick(IBSKick):
             LOGGER.debug("Recomputing simple kick coefficients before applying kicks")
             self.compute_kick_coefficients(particles)
         # ----------------------------------------------------------------------------------------------
-        # Get the nplike_lib from the particles' context, to compute on the context device
+        # Check that the particles use a supported context
         _assert_accepted_context(particles._context)
-        nplike = particles._context.nplike_lib
         # ----------------------------------------------------------------------------------------------
         # Compute the line density - this is the rho_t(t) term in Eq (8) of reference
         rho_t: ArrayLike = line_density(particles, self.num_slices)  # on context | does not include _factor
@@ -429,11 +436,13 @@ class IBSAnalyticalKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Determining kicks - this corresponds to the full result of Eq (8) of reference (\Delta p_u)
         LOGGER.debug("Determining kicks to apply")
-        rng = nplike.random.default_rng()
         Kx, Ky, Kz = self.kick_coefficients.as_tuple()  # floats
-        delta_px: ArrayLike = rng.standard_normal(_size) * Kx * np.sqrt(rho_t)  # on context
-        delta_py: ArrayLike = rng.standard_normal(_size) * Ky * np.sqrt(rho_t)  # on context
-        delta_delta: ArrayLike = rng.standard_normal(_size) * Kz * np.sqrt(rho_t)  # on context
+        # Draw on the host so numpy.random.seed controls both CPU and GPU kicks.
+        random_x, random_y, random_z = particles._context.nparray_to_context_array(
+            np.random.standard_normal((3, _size)))
+        delta_px: ArrayLike = random_x * Kx * np.sqrt(rho_t)  # on context
+        delta_py: ArrayLike = random_y * Ky * np.sqrt(rho_t)  # on context
+        delta_delta: ArrayLike = random_z * Kz * np.sqrt(rho_t)  # on context
         # ----------------------------------------------------------------------------------------------
         # Apply the kicks to the particles, applying the momenta deltas
         LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
@@ -472,6 +481,14 @@ class IBSKineticKick(IBSKick):
         The computed friction coefficients, from the kinetic theory.
         This attribute self-updates when they are computed with the
         `.compute_kinetic_coefficients` method.
+
+    Notes
+    -----
+    Random kicks use NumPy's shared random state on all supported contexts.
+    Use ``numpy.random.seed`` for repeatable runs, or save and restore
+    ``numpy.random.get_state()`` / ``numpy.random.set_state()`` together with
+    the matching particles and kick coefficients to continue a run. Other
+    NumPy random draws also advance this shared state.
     """
 
     def __init__(self, num_slices: int) -> None:
@@ -714,12 +731,14 @@ class IBSKineticKick(IBSKick):
         # Determining the Diffusion kicks (momenta change from diffusion forces)
         LOGGER.debug("Determining diffusion kicks")
         Dx, Dy, Dz = self.diffusion_coefficients.as_tuple()  # floats
-        rng = nplike.random.default_rng()
         _size = particles.px[particles.state > 0].shape[0]  # same for py and delta, it's the alive particles
+        # Draw on the host so numpy.random.seed controls both CPU and GPU kicks.
+        random_x, random_y, random_z = particles._context.nparray_to_context_array(
+            np.random.standard_normal((3, _size)))
         # TODO: the factor 2 here is missing in the paper atm and it's a typo from Michalis (remove comment when new paper is out)
-        delta_px_diffusion: ArrayLike = sigma_px_normalized * nplike.sqrt(2 * dt * Dx * rho_z) * rng.standard_normal(_size)  # on context
-        delta_py_diffusion: ArrayLike = sigma_py_normalized * nplike.sqrt(2 * dt * Dy * rho_z) * rng.standard_normal(_size)  # on context
-        delta_delta_diffusion: ArrayLike = sigma_delta * nplike.sqrt(2 * dt * Dz * rho_z) * rng.standard_normal(_size)       # on context
+        delta_px_diffusion: ArrayLike = sigma_px_normalized * nplike.sqrt(2 * dt * Dx * rho_z) * random_x  # on context
+        delta_py_diffusion: ArrayLike = sigma_py_normalized * nplike.sqrt(2 * dt * Dy * rho_z) * random_y  # on context
+        delta_delta_diffusion: ArrayLike = sigma_delta * nplike.sqrt(2 * dt * Dz * rho_z) * random_z       # on context
         # ----------------------------------------------------------------------------------------------
         # Applying the momenta kicks to the particles
         LOGGER.debug("Applying momenta kicks to the particles (on px, py and delta properties)")
