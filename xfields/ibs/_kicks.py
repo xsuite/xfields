@@ -197,6 +197,11 @@ class IBSKick:
 
     iscollective = True  # based on alive particles, need them all here
 
+    def _get_rng(self, particles):
+        if self.rng is None:
+            self.rng = particles._context.nplike_lib.random.default_rng()
+        return self.rng
+
     def to_dict(self) -> None:
         """Raises an error as the line should be saved without the IBS kick element."""
         raise NotImplementedError("IBS kick elements should not be saved as part of the line")
@@ -241,7 +246,7 @@ class IBSAnalyticalKick(IBSKick):
         are computed with the `.compute_kick_coefficients` method.
     """
 
-    def __init__(self, formalism: str, num_slices: int) -> None:
+    def __init__(self, formalism: str, num_slices: int, rng=None) -> None:
         """
         Initialize the Simple IBS kick element. It is off
         by default and will have to be configured (see the
@@ -256,9 +261,16 @@ class IBSAnalyticalKick(IBSKick):
         num_slices : int
             The number of slices used for the computation of
             the bunch's longitudinal line density.
+        rng : numpy.random.Generator or context equivalent, optional
+            Persistent random generator used for the kicks. It must match the
+            particles' context. If omitted, a generator is created on the first
+            active track call and reused. Pass a seeded generator for repeatable
+            tracking; on NumPy, save and restore ``rng.bit_generator.state``
+            together with the particles and kick coefficients to resume a run.
         """
         assert formalism.lower() in ("nagaitsev", "bjorken-mtingwa", "b&m")
         self.num_slices = num_slices
+        self.rng = rng
         self.formalism = formalism
         self.kick_coefficients: IBSKickCoefficients = None
         # The following are needed but start unset. They are set
@@ -429,7 +441,7 @@ class IBSAnalyticalKick(IBSKick):
         # ----------------------------------------------------------------------------------------------
         # Determining kicks - this corresponds to the full result of Eq (8) of reference (\Delta p_u)
         LOGGER.debug("Determining kicks to apply")
-        rng = nplike.random.default_rng()
+        rng = self._get_rng(particles)
         Kx, Ky, Kz = self.kick_coefficients.as_tuple()  # floats
         delta_px: ArrayLike = rng.standard_normal(_size) * Kx * np.sqrt(rho_t)  # on context
         delta_py: ArrayLike = rng.standard_normal(_size) * Ky * np.sqrt(rho_t)  # on context
@@ -474,7 +486,7 @@ class IBSKineticKick(IBSKick):
         `.compute_kinetic_coefficients` method.
     """
 
-    def __init__(self, num_slices: int) -> None:
+    def __init__(self, num_slices: int, rng=None) -> None:
         """
         Initialize the Simple IBS kick element. It is off
         by default and will have to be configured (see the
@@ -485,8 +497,15 @@ class IBSKineticKick(IBSKick):
         num_slices : int
             The number of slices used for the computation of
             the bunch's longitudinal line density.
+        rng : numpy.random.Generator or context equivalent, optional
+            Persistent random generator used for the kicks. It must match the
+            particles' context. If omitted, a generator is created on the first
+            active track call and reused. Pass a seeded generator for repeatable
+            tracking; on NumPy, save and restore ``rng.bit_generator.state``
+            together with the particles and kick coefficients to resume a run.
         """
         self.num_slices = num_slices
+        self.rng = rng
         self.diffusion_coefficients: DiffusionCoefficients = None
         self.friction_coefficients: FrictionCoefficients = None
         # The following are needed but start unset. They are set
@@ -714,7 +733,7 @@ class IBSKineticKick(IBSKick):
         # Determining the Diffusion kicks (momenta change from diffusion forces)
         LOGGER.debug("Determining diffusion kicks")
         Dx, Dy, Dz = self.diffusion_coefficients.as_tuple()  # floats
-        rng = nplike.random.default_rng()
+        rng = self._get_rng(particles)
         _size = particles.px[particles.state > 0].shape[0]  # same for py and delta, it's the alive particles
         # TODO: the factor 2 here is missing in the paper atm and it's a typo from Michalis (remove comment when new paper is out)
         delta_px_diffusion: ArrayLike = sigma_px_normalized * nplike.sqrt(2 * dt * Dx * rho_z) * rng.standard_normal(_size)  # on context
