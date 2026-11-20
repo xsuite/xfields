@@ -183,6 +183,11 @@ class TouschekMarker(xt.BeamElement):
         Horizontal Twiss parameters at the element.
     alfy, bety : float, optional
         Vertical Twiss parameters at the element.
+    W_matrix : array_like, optional
+        Eigenvector matrix ``W`` of the one-turn map at the element, as given
+        by the twiss (``twiss['W_matrix', name]``), 6x6 or its 4x4 transverse
+        block. Only the transverse block is stored. It describes the betatron
+        motion also where the planes are coupled.
     dx, dpx : float, optional
         Horizontal dispersion and its derivative at the element.
     dy, dpy : float, optional
@@ -303,6 +308,7 @@ class TouschekMarker(xt.BeamElement):
         'bunch_intensity': xo.Float64,
         'gemitt_x': xo.Float64,
         'gemitt_y': xo.Float64,
+        '_W_matrix': xo.Float64[16],
         'alfx': xo.Float64,
         'betx': xo.Float64,
         'alfy': xo.Float64,
@@ -363,6 +369,7 @@ class TouschekMarker(xt.BeamElement):
     def __init__(self, p0c=0.0,
                 bunch_intensity=None,
                 alfx=0.0, betx=0.0, alfy=0.0, bety=0.0,
+                W_matrix=None,
                 dx=0.0, dpx=0.0, dy=0.0, dpy=0.0,
                 x_co=0.0, px_co=0.0, y_co=0.0, py_co=0.0,
                 zeta_co=0.0, delta_co=0.0,
@@ -393,6 +400,9 @@ class TouschekMarker(xt.BeamElement):
             Number of real particles in the bunch.
         alfx, betx, alfy, bety : float, optional
             Twiss parameters at the element.
+        W_matrix : array_like, optional
+            Eigenvector matrix of the one-turn map at the element (6x6 or its
+            4x4 transverse block).
         dx, dpx, dy, dpy : float, optional
             Dispersion functions at the element.
         x_co, px_co, y_co, py_co, zeta_co, delta_co : float, optional
@@ -453,6 +463,8 @@ class TouschekMarker(xt.BeamElement):
         self.betx = betx
         self.alfy = alfy
         self.bety = bety
+        if W_matrix is not None:
+            self.W_matrix = W_matrix
         self.dx = dx
         self.dpx = dpx
         self.dy = dy
@@ -485,6 +497,31 @@ class TouschekMarker(xt.BeamElement):
             self.rng = rng
         self.seed = seed
         self.piwinski_rate = piwinski_rate
+
+    @property
+    def W_matrix(self):
+        """
+        Transverse block of the eigenvector matrix W at the element.
+
+        Returns
+        -------
+        W_matrix : numpy.ndarray
+            4x4 matrix mapping the normalised betatron coordinates of the two
+            transverse modes to ``(x, px, y, py)``. All zeros if not set.
+        """
+        return np.array(self._W_matrix).reshape(4, 4)
+
+    @W_matrix.setter
+    def W_matrix(self, value):
+        value = np.asarray(value, dtype=float)
+        if value.shape == (6, 6):
+            value = value[:4, :4]
+        if value.shape != (4, 4):
+            raise ValueError("`W_matrix` must be a 6x6 or 4x4 matrix "
+                             f"(got shape {value.shape}).")
+        if not np.all(np.isfinite(value)):
+            raise ValueError("`W_matrix` must be finite.")
+        self._W_matrix = value.ravel()
 
     @property
     def rng(self):
@@ -522,7 +559,7 @@ class TouschekMarker(xt.BeamElement):
         config_allowed = {
             "p0c", "bunch_intensity",
             "gemitt_x", "gemitt_y",
-            "alfx", "betx", "alfy", "bety",
+            "alfx", "betx", "alfy", "bety", "W_matrix",
             "dx", "dpx", "dy", "dpy",
             "x_co", "px_co", "y_co", "py_co",
             "zeta_co", "delta_co",
