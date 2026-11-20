@@ -154,6 +154,10 @@ def _resolve_bunch_intensity(*, bunch_intensity, default):
     return float(bunch_intensity)
 
 
+# Fields of older versions, ignored when loading (see TouschekMarker.__init__)
+_LEGACY_FIELDS = ('alfx', 'betx', 'alfy', 'bety')
+
+
 class TouschekMarker(xt.BeamElement):
     """
     Touschek scattering marker: one scattering centre of a line.
@@ -179,10 +183,6 @@ class TouschekMarker(xt.BeamElement):
         Reference momentum [eV].
     bunch_intensity : float, optional
         Number of physical particles in one bunch.
-    alfx, betx : float, optional
-        Horizontal Twiss parameters at the element.
-    alfy, bety : float, optional
-        Vertical Twiss parameters at the element.
     W_matrix : array_like, optional
         Eigenvector matrix ``W`` of the one-turn map at the element, as given
         by the twiss (``twiss['W_matrix', name]``), 6x6 or its 4x4 transverse
@@ -309,10 +309,6 @@ class TouschekMarker(xt.BeamElement):
         'gemitt_x': xo.Float64,
         'gemitt_y': xo.Float64,
         '_W_matrix': xo.Float64[16],
-        'alfx': xo.Float64,
-        'betx': xo.Float64,
-        'alfy': xo.Float64,
-        'bety': xo.Float64,
         'dx': xo.Float64,
         'dpx': xo.Float64,
         'dy': xo.Float64,
@@ -368,7 +364,6 @@ class TouschekMarker(xt.BeamElement):
 
     def __init__(self, p0c=0.0,
                 bunch_intensity=None,
-                alfx=0.0, betx=0.0, alfy=0.0, bety=0.0,
                 W_matrix=None,
                 dx=0.0, dpx=0.0, dy=0.0, dpy=0.0,
                 x_co=0.0, px_co=0.0, y_co=0.0, py_co=0.0,
@@ -398,8 +393,6 @@ class TouschekMarker(xt.BeamElement):
             Reference momentum [eV].
         bunch_intensity : float, optional
             Number of real particles in the bunch.
-        alfx, betx, alfy, bety : float, optional
-            Twiss parameters at the element.
         W_matrix : array_like, optional
             Eigenvector matrix of the one-turn map at the element (6x6 or its
             4x4 transverse block).
@@ -449,6 +442,11 @@ class TouschekMarker(xt.BeamElement):
         # if not isinstance(self._context, xo.ContextCpu) or self._context.openmp_enabled:
         #     raise ValueError('TouschekMarker only enabled on CPU.')
 
+        # Twiss parameters stored by older versions, superseded by W_matrix:
+        # ignored, so that lines saved before can still be loaded
+        for kk in _LEGACY_FIELDS:
+            kwargs.pop(kk, None)
+
         if '_xobject' in kwargs.keys():
             self.xoinitialize(**kwargs)
             return
@@ -459,10 +457,6 @@ class TouschekMarker(xt.BeamElement):
         self.bunch_intensity = _resolve_bunch_intensity(
             bunch_intensity=bunch_intensity,
             default=0.0)
-        self.alfx = alfx
-        self.betx = betx
-        self.alfy = alfy
-        self.bety = bety
         if W_matrix is not None:
             self.W_matrix = W_matrix
         self.dx = dx
@@ -559,7 +553,7 @@ class TouschekMarker(xt.BeamElement):
         config_allowed = {
             "p0c", "bunch_intensity",
             "gemitt_x", "gemitt_y",
-            "alfx", "betx", "alfy", "bety", "W_matrix",
+            "W_matrix",
             "dx", "dpx", "dy", "dpy",
             "x_co", "px_co", "y_co", "py_co",
             "zeta_co", "delta_co",
