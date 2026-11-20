@@ -344,6 +344,7 @@ def _configure_markers(line, *, twiss, lma_s, lma_delta_neg, lma_delta_pos,
             gemitt_y=gemitt_y,
             alfx=twiss['alfx', nn], betx=twiss['betx', nn],
             alfy=twiss['alfy', nn], bety=twiss['bety', nn],
+            W_matrix=twiss['W_matrix', nn],
             dx=twiss['dx', nn], dpx=twiss['dpx', nn],
             dy=twiss['dy', nn], dpy=twiss['dpy', nn],
             x_co=twiss['x', nn], px_co=twiss['px', nn],
@@ -587,7 +588,9 @@ class TouschekGenerator:
 
         Computes the local Piwinski scattering rate at the markers and its
         integral over the section of each marker, and stores on each marker
-        the local optics and closed orbit, the local momentum acceptance, the
+        the local optics (including the eigenvector matrix ``W_matrix`` of the
+        twiss, which describes coupled motion) and closed orbit, the local
+        momentum acceptance, the
         beam parameters and the Monte Carlo settings. The section of a marker
         goes from the previous marker to it, and the section of the first
         one from ``s = 0``: the last marker must sit at the end of the line
