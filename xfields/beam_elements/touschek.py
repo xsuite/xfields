@@ -639,6 +639,11 @@ class TouschekMarker(xt.BeamElement):
             raise ValueError(
                 "`n_scattering_events` must be at least 1 to generate "
                 f"particles (got {self.n_scattering_events}).")
+        W = self.W_matrix
+        if not np.any(W) or abs(W[0, 0]*W[2, 2] - W[0, 2]*W[2, 0]) == 0:
+            raise ValueError(
+                "TouschekMarker has no valid `W_matrix`: configure the markers "
+                "again with `line.xfields.touschek.configure(...)`.")
 
         context = self._context
         if self.rng_source == _TOUSCHEK_RNG_ELEGANT:

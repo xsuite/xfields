@@ -56,17 +56,32 @@ void TouschekMarker_track_local_particle(TouschekMarkerData el, LocalParticle* p
   return;
 }
 
-/* Adapted from Elegant touschekScatter.c: selectPartGauss (logic unchanged). */
+/* Adapted from Elegant touschekScatter.c: selectPartGauss.
+ *
+ * Generalised to coupled transverse optics: the betatron coordinates are
+ * built from the eigenvector matrix W of the one-turn map (4x4 transverse
+ * block, row-major, rows (x, px, y, py), columns the normalised coordinates
+ * (u_x, v_x, u_y, v_y) of the two modes) instead of the Twiss parameters.
+ * Without coupling W is the Courant-Snyder matrix and this is Elegant's
+ * routine. The longitudinal plane is unchanged (alpha_z = 0).
+ *
+ * Particle 2 sits at the position of particle 1 with its own momenta: its
+ * normalised momenta v are sampled, and its normalised positions u solve
+ * A u = r - B v, with A, B the position rows of W (A on the u columns, B on
+ * the v columns) and r the betatron position of particle 2. Ainv is A^-1.
+ */
 void selectPartGauss(double *p1, double *p2,
                      double *dens1, double *dens2,
                      const double *ran1,
                      const double *range,
-                     const double *alfa,
-                     const double *beta,
+                     const double *W,
+                     const double *Ainv,
+                     const double bets,
                      const double *disp,
                      const double *gemitt) {
   int i;
   double U[3], V1[3], V2[3], densa[3], densb[3];
+  double n[4], r[2], u2[2];
 
   /* Select random particle coordinates in normalized phase space */
   for (i = 0; i < 3; i++) {
@@ -76,31 +91,37 @@ void selectPartGauss(double *p1, double *p2,
     densa[i] = exp(-0.5 * (U[i] * U[i] + V1[i] * V1[i]) / gemitt[i]);
   }
   densb[2] = exp(-0.5 * (U[2] * U[2] + V2[2] * V2[2]) / gemitt[2]);
-  /* Transform particle coordinates from normalized to real phase space */
-  for (i = 0; i < 3; i++) {
-    p1[i] = p2[i] = sqrt(beta[i]) * U[i];
-    p1[i + 3] = (V1[i] - alfa[i] * U[i]) / sqrt(beta[i]);
-    p2[i + 3] = (V2[i] - alfa[i] * U[i]) / sqrt(beta[i]);
-  }
-  /* Dispersion correction */
+
+  /* Particle 1, transverse: (x, px, y, py) = W (u_x, v_x, u_y, v_y) */
+  n[0] = U[0]; n[1] = V1[0]; n[2] = U[1]; n[3] = V1[1];
+  p1[0] = W[0]*n[0]  + W[1]*n[1]  + W[2]*n[2]  + W[3]*n[3];
+  p1[3] = W[4]*n[0]  + W[5]*n[1]  + W[6]*n[2]  + W[7]*n[3];
+  p1[1] = W[8]*n[0]  + W[9]*n[1]  + W[10]*n[2] + W[11]*n[3];
+  p1[4] = W[12]*n[0] + W[13]*n[1] + W[14]*n[2] + W[15]*n[3];
+  /* Longitudinal (both particles at the same zeta) */
+  p1[2] = p2[2] = sqrt(bets) * U[2];
+  p1[5] = V1[2] / sqrt(bets);
+  p2[5] = V2[2] / sqrt(bets);
+
+  /* Dispersion correction of particle 1 */
   p1[0] = p1[0] + p1[5] * disp[0];
   p1[1] = p1[1] + p1[5] * disp[1];
   p1[3] = p1[3] + p1[5] * disp[2];
   p1[4] = p1[4] + p1[5] * disp[3];
 
-  p2[0] = p1[0] - p2[5] * disp[0];
-  p2[1] = p1[1] - p2[5] * disp[1];
-  U[0] = p2[0] / sqrt(beta[0]);
-  U[1] = p2[1] / sqrt(beta[1]);
-  p2[3] = (V2[0] - alfa[0] * U[0]) / sqrt(beta[0]);
-  p2[4] = (V2[1] - alfa[1] * U[1]) / sqrt(beta[1]);
-  densb[0] = exp(-0.5 * (U[0] * U[0] + V2[0] * V2[0]) / gemitt[0]);
-  densb[1] = exp(-0.5 * (U[1] * U[1] + V2[1] * V2[1]) / gemitt[1]);
-
+  /* Particle 2 at the same position: betatron position r, sampled
+     normalised momenta v, normalised positions from A u = r - B v */
+  r[0] = p1[0] - p2[5] * disp[0] - W[1]*V2[0] - W[3]*V2[1];
+  r[1] = p1[1] - p2[5] * disp[1] - W[9]*V2[0] - W[11]*V2[1];
+  u2[0] = Ainv[0]*r[0] + Ainv[1]*r[1];
+  u2[1] = Ainv[2]*r[0] + Ainv[3]*r[1];
+  n[0] = u2[0]; n[1] = V2[0]; n[2] = u2[1]; n[3] = V2[1];
   p2[0] = p1[0];
   p2[1] = p1[1];
-  p2[3] = p2[3] + p2[5] * disp[2];
-  p2[4] = p2[4] + p2[5] * disp[3];
+  p2[3] = W[4]*n[0]  + W[5]*n[1]  + W[6]*n[2]  + W[7]*n[3]  + p2[5] * disp[2];
+  p2[4] = W[12]*n[0] + W[13]*n[1] + W[14]*n[2] + W[15]*n[3] + p2[5] * disp[3];
+  densb[0] = exp(-0.5 * (u2[0] * u2[0] + V2[0] * V2[0]) / gemitt[0]);
+  densb[1] = exp(-0.5 * (u2[1] * u2[1] + V2[1] * V2[1]) / gemitt[1]);
 
   *dens1 = densa[0] * densa[1] * densa[2];
   *dens2 = densb[0] * densb[1] * densb[2];
@@ -323,10 +344,6 @@ void TouschekScatter(TouschekMarkerData el,
     const double bunch_intensity = TouschekMarkerData_get_bunch_intensity(el);
     const double gemitt_x = TouschekMarkerData_get_gemitt_x(el);
     const double gemitt_y = TouschekMarkerData_get_gemitt_y(el);
-    const double alfx  = TouschekMarkerData_get_alfx(el);
-    const double betx  = TouschekMarkerData_get_betx(el);
-    const double alfy  = TouschekMarkerData_get_alfy(el);
-    const double bety  = TouschekMarkerData_get_bety(el);
     const double dx    = TouschekMarkerData_get_dx(el);
     const double dpx   = TouschekMarkerData_get_dpx(el);
     const double dy    = TouschekMarkerData_get_dy(el);
@@ -351,10 +368,43 @@ void TouschekScatter(TouschekMarkerData el,
     long   *index  = NULL; 
     double *weight = (double*)malloc(sizeof(double) * n_simulated); 
 
-    const double twissAlpha[3] = { alfx, alfy, 0.0 };
+    /* Transverse block of the eigenvector matrix W (row-major) */
+    double W[16];
+    for (j = 0; j < 16; j++) {
+      W[j] = TouschekMarkerData_get__W_matrix(el, j);
+    }
+    /* A: position rows (x, y) on the normalised position columns (u_x, u_y) */
+    const double detA = W[0]*W[10] - W[2]*W[8];
+    const double Ainv[4] = { W[10]/detA, -W[2]/detA, -W[8]/detA, W[0]/detA };
+    /* det W, for the Jacobian of the sampling */
+    double detW = 0.0;
+    {
+      double M[16];
+      int r, c, k;
+      double sgn = 1.0;
+      for (k = 0; k < 16; k++) M[k] = W[k];
+      detW = 1.0;
+      for (c = 0; c < 4; c++) {
+        int piv = c;
+        for (r = c + 1; r < 4; r++)
+          if (fabs(M[r*4 + c]) > fabs(M[piv*4 + c])) piv = r;
+        if (M[piv*4 + c] == 0.0) { detW = 0.0; break; }
+        if (piv != c) {
+          for (k = 0; k < 4; k++) {
+            double t = M[c*4 + k]; M[c*4 + k] = M[piv*4 + k]; M[piv*4 + k] = t;
+          }
+          sgn = -sgn;
+        }
+        detW *= M[c*4 + c];
+        for (r = c + 1; r < 4; r++) {
+          double f = M[r*4 + c] / M[c*4 + c];
+          for (k = c; k < 4; k++) M[r*4 + k] -= f * M[c*4 + k];
+        }
+      }
+      detW *= sgn;
+    }
 
     const double bets = sigma_z/sigma_delta;
-    const double twissBeta[3] = { betx, bety, bets };
 
     const double twissDisp[4] = { dx, dy, dpx, dpy };
 
@@ -371,7 +421,11 @@ void TouschekScatter(TouschekMarkerData el,
 
     double weight_limit, weight_ave, wTotal;
 
-    const double sigxyz = sqrt(twissBeta[0]*gemitt[0]) * sqrt(twissBeta[1]*gemitt[1]) * sigma_z;
+    /* Jacobian of the sampling: particle 1 maps the normalised coordinates
+       with |det W|, the momenta of particle 2 at fixed position with
+       |det W / det A|. Without coupling (Courant-Snyder W, det W = 1) this
+       gives Elegant's sqrt(betx*emitx) * sqrt(bety*emity) * sigma_z. */
+    const double sigxyz = sqrt(gemitt[0] * gemitt[1]) * sigma_z * fabs(detA) / POW2(detW);
     temp = POW2(bunch_intensity) * POW2(PI) * POW2(RADIUS_ELECTRON) * C_LIGHT / 4.;
     double factor = temp * pow(range[0], 3.0) * pow(range[1], 3.0) * pow(range[2], 3.0) / pow(2 * PI, 6.0) / sigxyz;
 
@@ -420,7 +474,7 @@ void TouschekScatter(TouschekMarkerData el,
 
         total_event++;
 
-        selectPartGauss(p1, p2, &dens1, &dens2, ran1, range, twissAlpha, twissBeta, twissDisp, gemitt);
+        selectPartGauss(p1, p2, &dens1, &dens2, ran1, range, W, Ainv, bets, twissDisp, gemitt);
 
         if (!dens1 || !dens2) {
           continue;
