@@ -75,6 +75,16 @@ def _configure(line, **kwargs):
     line.xfields.touschek.configure(**config)
 
 
+def _assert_same_dict(dct, other):
+    """Compare two element dicts, array values element-wise."""
+    assert dct.keys() == other.keys()
+    for kk, vv in dct.items():
+        if isinstance(vv, np.ndarray) or isinstance(other[kk], np.ndarray):
+            np.testing.assert_array_equal(vv, other[kk], err_msg=kk)
+        else:
+            assert vv == other[kk], kk
+
+
 def _place_markers(line, positions):
     """Install markers by hand, as in the examples: env.place + insert."""
     env = line.env
@@ -222,8 +232,10 @@ def test_configure_stores_the_configuration_on_the_markers(ring):
     for ii, nn in enumerate(line.xfields.touschek.marker_names):
         marker = line[nn]
         assert marker.p0c == ref.p0c[0]
-        for name, col in [('betx', 'betx'), ('alfy', 'alfy'), ('dx', 'dx'),
-                          ('dpx', 'dpx'), ('x_co', 'x'), ('delta_co', 'delta')]:
+        np.testing.assert_allclose(marker.W_matrix, tw['W_matrix', nn][:4, :4],
+                                   rtol=1e-12, atol=1e-15)
+        for name, col in [('dx', 'dx'), ('dpx', 'dpx'), ('x_co', 'x'),
+                          ('delta_co', 'delta')]:
             assert getattr(marker, name) == pytest.approx(
                 tw[col, nn], rel=1e-12, abs=1e-15)
         assert marker.delta_neg == pytest.approx(LMA_SCALE * lma.delta_neg[ii])
@@ -291,7 +303,7 @@ def test_configure_computes_the_twiss(ring):
                 for nn in line.xfields.touschek.marker_names}
     _configure(line, twiss=tw)
     for nn, dct in computed.items():
-        assert line[nn].to_dict() == dct
+        _assert_same_dict(line[nn].to_dict(), dct)
 
 
 def test_configure_requires_the_last_marker_at_the_end_of_the_line():
@@ -436,7 +448,7 @@ def test_generation_from_a_reloaded_line(ring, tmp_path, rng):
     for loaded in (xt.load(tmp_path / 'line.json'),
                    xt.load(tmp_path / 'env.json').lines['ring']):
         for nn in names:
-            assert loaded[nn].to_dict() == line[nn].to_dict()
+            _assert_same_dict(loaded[nn].to_dict(), line[nn].to_dict())
         reloaded = loaded.xfields.touschek.generate(at=names[1:4])
         for nn, part in expected.items():
             _assert_same_particles(reloaded[nn], part)
