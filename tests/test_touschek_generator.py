@@ -75,6 +75,16 @@ def _configure(line, **kwargs):
     line.xfields.touschek.configure(**config)
 
 
+def _assert_same_dict(dct, other):
+    """Compare two element dicts, array values element-wise."""
+    assert dct.keys() == other.keys()
+    for kk, vv in dct.items():
+        if isinstance(vv, np.ndarray) or isinstance(other[kk], np.ndarray):
+            np.testing.assert_array_equal(vv, other[kk], err_msg=kk)
+        else:
+            assert vv == other[kk], kk
+
+
 def _place_markers(line, positions):
     """Install markers by hand, as in the examples: env.place + insert."""
     env = line.env
@@ -222,8 +232,10 @@ def test_configure_stores_the_configuration_on_the_markers(ring):
     for ii, nn in enumerate(line.xfields.touschek.marker_names):
         marker = line[nn]
         assert marker.p0c == ref.p0c[0]
-        for name, col in [('betx', 'betx'), ('alfy', 'alfy'), ('dx', 'dx'),
-                          ('dpx', 'dpx'), ('x_co', 'x'), ('delta_co', 'delta')]:
+        np.testing.assert_allclose(marker.W_matrix, tw['W_matrix', nn][:4, :4],
+                                   rtol=1e-12, atol=1e-15)
+        for name, col in [('dx', 'dx'), ('dpx', 'dpx'), ('x_co', 'x'),
+                          ('delta_co', 'delta')]:
             assert getattr(marker, name) == pytest.approx(
                 tw[col, nn], rel=1e-12, abs=1e-15)
         assert marker.delta_neg == pytest.approx(LMA_SCALE * lma.delta_neg[ii])
@@ -291,7 +303,7 @@ def test_configure_computes_the_twiss(ring):
                 for nn in line.xfields.touschek.marker_names}
     _configure(line, twiss=tw)
     for nn, dct in computed.items():
-        assert line[nn].to_dict() == dct
+        _assert_same_dict(line[nn].to_dict(), dct)
 
 
 def test_configure_requires_the_last_marker_at_the_end_of_the_line():
@@ -387,6 +399,68 @@ def test_generated_particles(ring):
             0.99 * line[nn].integrated_piwinski_rate, rel=2e-3)
 
 
+# Results of the sampling before it used the W matrix (xfields 0.28.2), at
+# tscatter.1 with the default configuration: number of particles, Monte Carlo
+# rate, sum of the weights, mean delta and mean x
+_UNCOUPLED_REFERENCE = {
+    'elegant': (68, 727244.48863529204, 125311.48679294644,
+                -0.00011512960362769804, 0.00019894767838185134),
+    'xtrack': (121, 235995.82999320142, 125351.82073319989,
+               0.00018003633217392667, 0.00029796174999248485),
+}
+
+
+@pytest.mark.parametrize('rng', ['elegant', 'xtrack'])
+def test_sampling_without_coupling_is_unchanged(ring, rng):
+    # Without coupling the W matrix is the Courant-Snyder one, and the
+    # sampling reduces to Elegant's selectPartGauss: same particles
+    line = _ring_with_markers()
+    _configure(line, twiss=ring[1], rng=rng)
+    part = line.xfields.touschek.generate(at='tscatter.1')
+    alive = part.state > 0
+    n, mc_rate, weight, delta, x = _UNCOUPLED_REFERENCE[rng]
+    assert np.sum(alive) == n
+    assert line['tscatter.1'].total_mc_rate == pytest.approx(mc_rate, rel=1e-9)
+    assert np.sum(part.weight[alive]) == pytest.approx(weight, rel=1e-9)
+    assert np.mean(part.delta[alive]) == pytest.approx(delta, rel=1e-9)
+    assert np.mean(part.x[alive]) == pytest.approx(x, rel=1e-9)
+
+
+def _coupled_ring_with_markers():
+    """The ring with a skew quadrupole, coupling x and y, and the markers."""
+    line = _ring()
+    line.env.new('mqs', xt.Quadrupole, length=0.1, k1s=0.2)
+    line.insert('mqs', at=1.0)
+    tab = line.get_table()
+    magnets = tab.rows[(tab.element_type == 'Bend')
+                       | (tab.element_type == 'Quadrupole')].name
+    line.xfields.touschek.install_markers(at=list(magnets))
+    return line
+
+
+def test_generated_particles_with_coupling():
+    line = _coupled_ring_with_markers()
+    tw = line.twiss(method='4d')
+    lma = _lma(line)
+    _configure(line, twiss=tw, local_momentum_acceptance=lma)
+    tsc = line.xfields.touschek
+    tab = line.get_table()
+    for ii, nn in enumerate(tsc.marker_names):
+        W = line[nn].W_matrix
+        assert np.abs(W[0, 2]) + np.abs(W[2, 0]) > 1e-3*np.abs(W[0, 0])
+        part = tsc.generate(at=nn)
+        alive = part.state > 0
+        assert np.sum(alive) > 0
+        assert np.all(part.s[alive] == tab['s', nn])
+        for cc in ('x', 'px', 'y', 'py', 'zeta', 'delta', 'weight'):
+            assert np.all(np.isfinite(getattr(part, cc)[alive]))
+        delta = part.delta[alive]
+        assert np.all((delta < LMA_SCALE * lma.delta_neg[ii])
+                      | (delta > LMA_SCALE * lma.delta_pos[ii]))
+        assert np.sum(part.weight[alive]) == pytest.approx(
+            0.99 * line[nn].integrated_piwinski_rate, rel=2e-3)
+
+
 def test_generation_does_not_depend_on_the_other_markers(ring):
     line = _ring_with_markers()
     _configure(line, twiss=ring[1])
@@ -436,7 +510,7 @@ def test_generation_from_a_reloaded_line(ring, tmp_path, rng):
     for loaded in (xt.load(tmp_path / 'line.json'),
                    xt.load(tmp_path / 'env.json').lines['ring']):
         for nn in names:
-            assert loaded[nn].to_dict() == line[nn].to_dict()
+            _assert_same_dict(loaded[nn].to_dict(), line[nn].to_dict())
         reloaded = loaded.xfields.touschek.generate(at=names[1:4])
         for nn, part in expected.items():
             _assert_same_particles(reloaded[nn], part)

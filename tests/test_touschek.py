@@ -129,6 +129,16 @@ def toy_ring():
     yield dict(line=line, twiss=tw, lma=lma)
 
 
+def _assert_same_dict(dct, other):
+    """Compare two element dicts, array values element-wise."""
+    assert dct.keys() == other.keys()
+    for kk, vv in dct.items():
+        if isinstance(vv, np.ndarray) or isinstance(other[kk], np.ndarray):
+            np.testing.assert_array_equal(vv, other[kk], err_msg=kk)
+        else:
+            assert vv == other[kk], kk
+
+
 def _build_tracker_or_skip(line, test_context):
     line.discard_tracker()
     try:
@@ -436,7 +446,7 @@ class TestTouschekConfigure:
         configured = {nn: self.line[nn].to_dict() for nn in self.tnames}
         _configure(self.line, self.lma, twiss=None)
         for nn in self.tnames:
-            assert self.line[nn].to_dict() == configured[nn]
+            _assert_same_dict(self.line[nn].to_dict(), configured[nn])
 
     def test_partial_configuration_single_element(self):
         """
@@ -764,7 +774,7 @@ class TestTouschekMarkerSerialization:
 
     CONFIGURATION = (
         'p0c', 'bunch_intensity', 'gemitt_x', 'gemitt_y',
-        'alfx', 'betx', 'alfy', 'bety', 'dx', 'dpx', 'dy', 'dpy',
+        'dx', 'dpx', 'dy', 'dpy',
         'x_co', 'px_co', 'y_co', 'py_co', 'zeta_co', 'delta_co',
         'delta_neg', 'delta_pos', 'sigma_z', 'sigma_delta',
         'n_scattering_events', 'nx', 'ny', 'nz', 'theta_min', 'theta_max',
@@ -791,10 +801,11 @@ class TestTouschekMarkerSerialization:
         for nn in tnames:
             marker = loaded[nn]
             assert isinstance(marker, xf.TouschekMarker)
-            assert line[nn].betx > 0 and line[nn].piwinski_rate > 0
+            assert line[nn].W_matrix[0, 0] > 0 and line[nn].piwinski_rate > 0
             for field in self.CONFIGURATION:
                 assert getattr(marker, field) == getattr(line[nn], field), (
                     f'{nn}: {field} changed in the JSON round trip')
+            np.testing.assert_array_equal(marker.W_matrix, line[nn].W_matrix)
             assert marker.rng == rng
 
 
